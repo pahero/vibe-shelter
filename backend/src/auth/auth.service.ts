@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/database/prisma.service';
 import { UsersService } from '@/users/users.service';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -38,6 +39,29 @@ export class AuthService {
     // Check if user is active
     if (user.status !== 'ACTIVE') {
       throw new UnauthorizedException('User account is inactive');
+    }
+
+    return user;
+  }
+
+  async validatePasswordCredentials(email: string, password: string) {
+    const user = (await this.usersService.findByEmail(email)) as any;
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('User account is inactive');
+    }
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Password login is not enabled for this account');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     return user;

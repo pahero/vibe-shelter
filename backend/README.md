@@ -54,6 +54,7 @@ npm run start:prod
 ## API Endpoints
 
 ### Authentication
+- `POST /auth/login` - Plain email/password login
 - `GET /auth/google` - Start Google OAuth flow
 - `GET /auth/google/callback` - Google OAuth callback
 - `GET /auth/me` - Get current user (requires session)

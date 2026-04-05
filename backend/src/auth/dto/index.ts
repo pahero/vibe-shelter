@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsEmail()
@@ -13,6 +13,11 @@ export class CreateUserDto {
 
   @IsString()
   status: 'active' | 'inactive' = 'active';
+
+  @IsString()
+  @IsOptional()
+  @MinLength(8)
+  password?: string;
 }
 
 export class UpdateUserDto {
@@ -27,6 +32,11 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   status?: 'active' | 'inactive';
+
+  @IsString()
+  @IsOptional()
+  @MinLength(8)
+  password?: string;
 }
 
 export class UserResponseDto {
@@ -45,4 +55,13 @@ export class AuthMeDto {
   email!: string;
   fullName!: string | null;
   role!: 'admin' | 'staff';
+}
+
+export class PasswordLoginDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
 }

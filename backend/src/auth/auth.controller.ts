@@ -5,6 +5,7 @@ import {
   UseGuards,
   Res,
   Req,
+  Body,
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
@@ -15,7 +16,7 @@ import { UsersService } from '@/users/users.service';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ConfigService } from '@nestjs/config';
-import { AuthMeDto } from './dto';
+import { AuthMeDto, PasswordLoginDto } from './dto';
 
 @Controller('auth')
 export class AuthController {
@@ -60,6 +61,22 @@ export class AuthController {
       const frontendUrl = this.configService.get<string>('frontendUrl');
       res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(errorMessage)}`);
     }
+  }
+
+  @Post('login')
+  async passwordLogin(@Body() body: PasswordLoginDto, @Req() req: Request): Promise<AuthMeDto> {
+    const user = await this.authService.validatePasswordCredentials(body.email, body.password);
+    const session = await this.authService.createSession(user.id, req.get('user-agent'), req.ip);
+
+    req.session.userId = user.id;
+    req.session.sessionId = session.id;
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role.toLowerCase(),
+    };
   }
 
   @Get('me')

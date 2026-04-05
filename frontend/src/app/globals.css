@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+@layer base {
+  html,
+  body {
+    @apply min-h-full;
+  }
+
+  body {
+    @apply antialiased;
+    color: #1f2320;
+    font-family: var(--font-display), "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 12% 20%, rgba(208, 90, 44, 0.18), transparent 32%),
+      radial-gradient(circle at 88% 16%, rgba(54, 128, 86, 0.16), transparent 35%),
+      linear-gradient(170deg, #f8f5ef 0%, #efe7da 100%);
+  }
+}

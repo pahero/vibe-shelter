@@ -31,7 +31,7 @@ export class AdminUsersController {
     @Query('role') role?: string,
   ): Promise<UserResponseDto[]> {
     const users = await this.usersService.getAll({ status, role });
-    return users.map((user) => ({
+    return users.map((user: any) => ({
       id: user.id,
       email: user.email,
       fullName: user.fullName,

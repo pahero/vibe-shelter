@@ -1,0 +1,16 @@
+{
+  "name": "shelter-integration-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test --project=backend-api",
+    "test:web": "playwright test --project=frontend-ui-chromium",
+    "test:headed": "playwright test --project=frontend-ui-chromium --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "dotenv": "^17.4.0",
+    "typescript": "^6.0.2"
+  }
+}
