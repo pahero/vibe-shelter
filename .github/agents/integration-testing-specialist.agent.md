@@ -16,7 +16,7 @@ handoffs:
     send: true
     model: Claude Haiku 4.5 (copilot)
   - label: Clarify Requirements
-    agent: Feature Implementation Planner
+    agent: Plan Execution Orchestrator
     prompt: Need clarification on requirements or architecture decisions based on test results
     send: true
     model: Claude Haiku 4.5 (copilot)

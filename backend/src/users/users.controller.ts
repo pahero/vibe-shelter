@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UserResponseDto } from '@/auth/dto';
 import { SessionAuthGuard } from '@/auth/guards/session-auth.guard';
@@ -9,6 +10,12 @@ export class UsersController {
 
   @Get()
   @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all users with optional filters' })
+  @ApiQuery({ name: 'status', required: false, enum: ['active', 'inactive'], description: 'Filter by user status' })
+  @ApiQuery({ name: 'role', required: false, enum: ['admin', 'staff'], description: 'Filter by user role' })
+  @ApiResponse({ status: 200, description: 'List of users', type: [UserResponseDto] })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   async getAll(
     @Query('status') status?: string,
     @Query('role') role?: string,
@@ -28,6 +35,12 @@ export class UsersController {
 
   @Get(':id')
   @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user details by ID' })
+  @ApiParam({ name: 'id', description: 'User ID', example: 'uuid-1234' })
+  @ApiResponse({ status: 200, description: 'User details', type: UserResponseDto })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getById(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.usersService.findById(id);
 

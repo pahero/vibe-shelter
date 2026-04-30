@@ -21,8 +21,8 @@ handoffs:
     send: true
     model: Claude Haiku 4.5 (copilot)
   - label: Refine Plan
-    agent: Feature Implementation Planner
-    prompt: Refine or adjust the plan based on implementation discoveries
+    agent: Requirements Writer
+    prompt: Change the requirements brief based on new information discovered during execution
     send: true
     model: Claude Haiku 4.5 (copilot)
 ---

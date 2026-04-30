@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { AppModule } from './app.module';
@@ -46,8 +47,19 @@ async function bootstrap() {
     }),
   );
 
+  // OpenAPI/Swagger configuration
+  const config = new DocumentBuilder()
+    .setTitle('Shelter Backend API')
+    .setDescription('API documentation for Shelter Backend')
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
   await app.listen(port, () => {
     console.log(`✅ Shelter backend listening on port ${port}`);
+    console.log(`📖 OpenAPI documentation available at http://localhost:${port}/api/docs`);
   });
 }
 

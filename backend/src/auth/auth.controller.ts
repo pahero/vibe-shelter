@@ -10,6 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { UsersService } from '@/users/users.service';
@@ -28,12 +29,16 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Initiate Google OAuth authentication' })
+  @ApiResponse({ status: 302, description: 'Redirects to Google OAuth login' })
   async googleAuth() {
     // Passport redirects to Google
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback endpoint' })
+  @ApiResponse({ status: 302, description: 'Redirects to dashboard or login with error' })
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     try {
       const user = req.user as any;
@@ -64,6 +69,10 @@ export class AuthController {
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiBody({ type: PasswordLoginDto })
+  @ApiResponse({ status: 201, description: 'Login successful', type: AuthMeDto })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async passwordLogin(@Body() body: PasswordLoginDto, @Req() req: Request): Promise<AuthMeDto> {
     const user = await this.authService.validatePasswordCredentials(body.email, body.password);
     const session = await this.authService.createSession(user.id, req.get('user-agent'), req.ip);
@@ -81,6 +90,10 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current authenticated user' })
+  @ApiResponse({ status: 200, description: 'Current user info', type: AuthMeDto })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   async getCurrentUser(@CurrentUser() user: any): Promise<AuthMeDto> {
     if (!user) {
       throw new UnauthorizedException('User not authenticated');
@@ -96,6 +109,10 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout current user' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   async logout(@Req() req: Request, @Res() res: Response) {
     try {
       const sessionId = req.session.sessionId;
@@ -119,6 +136,10 @@ export class AuthController {
 
   @Post('session/refresh')
   @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refresh current session' })
+  @ApiResponse({ status: 200, description: 'Session refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
   async refreshSession(@Req() req: Request) {
     try {
       const userId = req.session.userId;
