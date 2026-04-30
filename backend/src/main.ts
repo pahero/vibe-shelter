@@ -56,6 +56,11 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+  
+  // Expose OpenAPI JSON at /api/openapi.json
+  app.getHttpAdapter().get('/api/openapi.json', (req, res) => {
+    res.json(document);
+  });
 
   await app.listen(port, () => {
     console.log(`✅ Shelter backend listening on port ${port}`);

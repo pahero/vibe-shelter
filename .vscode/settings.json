@@ -2,6 +2,13 @@
     "chat.tools.terminal.autoApprove": {
         "npx prisma": true,
         "docker-compose": true,
-        "Push-Location": true
+        "Push-Location": true,
+        "npm install": true,
+        "npm test": true,
+        "Tee-Object": true,
+        "Out-Null": true,
+        "Pop-Location": true,
+        "npm run build": true,
+        "npm run dev": true
     }
 }

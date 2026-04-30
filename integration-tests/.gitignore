@@ -38,3 +38,7 @@ prisma/.env
 
 # OS
 Thumbs.db
+
+playwright-report/
+test-results/
+test-output.txt

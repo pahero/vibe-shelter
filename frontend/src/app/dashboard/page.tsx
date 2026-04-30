@@ -50,6 +50,12 @@ export default async function DashboardPage() {
         <div className="mt-6 flex animate-rise flex-wrap gap-3 [animation-delay:220ms]">
           <Link
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
+            href="/locations"
+          >
+            Manage Locations
+          </Link>
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white/35 px-4 text-sm font-semibold text-[#1f2320] transition hover:-translate-y-px hover:bg-white/50"
             href="/"
           >
             Home

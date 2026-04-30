@@ -1,7 +1,40 @@
-// src/locations/dto/update-location.dto.ts
+import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
 export class UpdateLocationDto {
+  @ApiProperty({
+    description: 'Location name',
+    example: 'Downtown Shelter Updated',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
   name?: string;
+
+  @ApiProperty({
+    description: 'Location description',
+    example: 'Updated description',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    description: 'Owner user ID',
+    required: false,
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
   ownerId?: string | null;
-  status?: string; // "ACTIVE" | "INACTIVE" | "ARCHIVED"
+
+  @ApiProperty({
+    description: 'Location status',
+    enum: ['ACTIVE', 'INACTIVE', 'ARCHIVED'],
+    required: false,
+  })
+  @IsEnum(['ACTIVE', 'INACTIVE', 'ARCHIVED'])
+  @IsOptional()
+  status?: string;
 }

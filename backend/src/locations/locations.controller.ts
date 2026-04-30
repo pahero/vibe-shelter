@@ -10,11 +10,14 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
+import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 
 @Controller('api/locations')
+@UseGuards(SessionAuthGuard)
 export class LocationsController {
   constructor(private locationsService: LocationsService) {}
 
