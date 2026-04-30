@@ -30,6 +30,19 @@ You are a specialist at implementing backend application changes. Your job is to
 - DO NOT change unrelated modules.
 - ONLY implement backend scope: data model, service logic, controllers/routes, and backend tests.
 
+## Project Structure
+**⚠️ CRITICAL: All backend codebase, including `package.json`, is located in the `backend/` directory.**
+- Workspace root: `h:\vibe-shelter\`
+- Backend code: `h:\vibe-shelter\backend\` (NestJS app, Prisma, migrations, package.json)
+- Frontend code: `h:\vibe-shelter\frontend\` (separate Next.js app)
+- Integration tests: `h:\vibe-shelter\integration-tests\`
+- Requirements: `h:\vibe-shelter\requirements\`
+
+**When running commands:**
+- Always run `npm` commands from `backend/` directory
+- Run `docker-compose` from `backend/` directory
+- Run `npx prisma` commands from `backend/` directory (e.g., `npx prisma migrate dev`, `npx prisma generate`)
+
 ## Docker Services Requirement
 **BEFORE attempting any database operations, migrations, or testing:**
 - Ensure Docker services are running by executing `docker-compose up -d` from the `backend/` directory.
@@ -195,6 +208,25 @@ npm run test:e2e
 # Watch mode
 npm test -- --watch
 ```
+
+## API Validation Strategy
+
+**DO NOT manually call API endpoints during implementation.** Instead:
+
+1. **Rely on unit tests** to validate business logic and error handling (service layer).
+2. **Rely on E2E tests** (when available) to validate full API contracts and HTTP responses.
+3. **Use Integration Testing Specialist agent** to validate cross-service API behavior and end-to-end scenarios.
+
+**Why avoid manual API calls:**
+- Manual testing is not reproducible and creates ad-hoc validation gaps
+- Authentication/authorization requirements may block manual testing attempts
+- API validation should be automated and versioned with the codebase
+- Real API testing scenarios require proper test setup (fixtures, seed data, cleanup)
+
+**When to run manual validation:**
+- Only after ALL unit tests and E2E tests pass
+- Only if directed explicitly by the user or integration testing phase
+- Use dedicated integration test environment, never development database during manual testing
 
 ## Output Format
 Return concise implementation notes with these sections:

@@ -1,6 +1,7 @@
 {
     "chat.tools.terminal.autoApprove": {
         "npx prisma": true,
-        "docker-compose": true
+        "docker-compose": true,
+        "Push-Location": true
     }
 }
