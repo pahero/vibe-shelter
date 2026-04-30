@@ -61,8 +61,9 @@ Always run `npm run db:seed` immediately after `npm run db:migrate:prod` for loc
 2. **Start Docker Services** - Run `docker-compose up -d` from the `backend/` directory
 3. **Verify Container Health** - Run `docker-compose ps` and confirm PostgreSQL shows "healthy" status
 4. **Apply Migrations** - Run `npx prisma migrate deploy` from the `backend/` directory
-5. **Seed Database** - Run `npm run db:seed` from the `backend/` directory immediately after migrations
-6. **Start NestJS App** - Run `npm run start:dev` from the `backend/` directory to start the backend server
+5. **Generate Prisma Client When Needed** - Run `npx prisma generate` after Prisma schema changes or whenever generated client code may be out of date
+6. **Seed Database** - Run `npm run db:seed` from the `backend/` directory immediately after migrations
+7. **Start NestJS App** - Run `npm run start:dev` from the `backend/` directory to start the backend server
 
 The app should be accessible at `http://localhost:3000` after these steps are complete.
 
