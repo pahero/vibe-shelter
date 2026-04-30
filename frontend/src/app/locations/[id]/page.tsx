@@ -71,7 +71,7 @@ export default function LocationDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
+      <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-gray-600">Loading location...</p>
         </div>
@@ -81,7 +81,7 @@ export default function LocationDetailPage() {
 
   if (error && !location) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
+      <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
         <div className="mx-auto max-w-2xl">
           <Link href="/locations" className="text-sm font-medium text-[#d05a2c] hover:text-[#b24a20]">
             ← Back to Locations
@@ -102,7 +102,7 @@ export default function LocationDetailPage() {
   const statusStyle = statusStyles[location.status];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
+    <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
       <div className="mx-auto max-w-2xl">
         {/* Navigation */}
         <div className="mb-8">

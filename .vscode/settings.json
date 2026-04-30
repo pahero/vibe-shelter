@@ -9,6 +9,8 @@
         "Out-Null": true,
         "Pop-Location": true,
         "npm run build": true,
-        "npm run dev": true
+        "npm run dev": true,
+        "npm run lint": true,
+        "npm run --prefix backend": true
     }
 }

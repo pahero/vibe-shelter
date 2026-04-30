@@ -19,7 +19,7 @@ export default async function LocationsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
+    <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
       <div className="mx-auto max-w-6xl">
         {/* Top Navigation */}
         <div className="mb-8 flex items-center justify-between border-b border-[#d4c7b4] pb-6">

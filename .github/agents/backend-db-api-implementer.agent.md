@@ -55,6 +55,17 @@ Always run `npm run db:seed` immediately after `npm run db:migrate:prod` for loc
 - If Docker services are not running, operations like `prisma migrate`, `npm test`, or connecting to the database will fail.
 - Do not proceed with implementation until Docker services are confirmed healthy.
 
+## Running the App - Initialization Checklist
+**When starting or resuming work, ensure the app is fully initialized:**
+1. **Install Dependencies** - Run `npm install` from the `backend/` directory to ensure all dependencies are available
+2. **Start Docker Services** - Run `docker-compose up -d` from the `backend/` directory
+3. **Verify Container Health** - Run `docker-compose ps` and confirm PostgreSQL shows "healthy" status
+4. **Apply Migrations** - Run `npx prisma migrate deploy` from the `backend/` directory
+5. **Seed Database** - Run `npm run db:seed` from the `backend/` directory immediately after migrations
+6. **Start NestJS App** - Run `npm run start:dev` from the `backend/` directory to start the backend server
+
+The app should be accessible at `http://localhost:3000` after these steps are complete.
+
 ## Pre-Implementation Checkpoint
 **DO NOT start implementation until BOTH conditions are met:**
 1. A backend spec file exists at `/requirements/<feature-slug>.backend-spec.md` containing detailed backend requirements, API contracts, and acceptance criteria.

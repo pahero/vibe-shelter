@@ -31,7 +31,7 @@ export default function CreateLocationPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
+    <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">

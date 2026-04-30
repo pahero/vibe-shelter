@@ -15,7 +15,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="grid min-h-screen w-full place-items-center p-6">
+    <main className="grid min-h-dvh w-full place-items-center p-6">
       <section className="w-full max-w-4xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-7 shadow-panel backdrop-blur-sm md:p-8">
         <p className="inline-block rounded-full border border-[#d05a2c]/25 bg-[#d05a2c]/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">
           Shelter Platform
