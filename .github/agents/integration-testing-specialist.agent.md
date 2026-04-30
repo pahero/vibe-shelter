@@ -5,6 +5,11 @@ tools: [read, search, edit, execute, agent, todo]
 argument-hint: "Test to run, test failures to debug, or integration test scenarios to implement"
 user-invocable: true
 handoffs:
+  - label: Clarify Requirements
+    agent: Requirements Writer
+    prompt: Need clarification on requirements or have discovered gaps/uncertainties with tests
+    send: true
+    model: Claude Haiku 4.5 (copilot)
   - label: Fix Backend Issue
     agent: Backend DB/API Implementer
     prompt: Fix the backend API or database issue discovered during integration testing
@@ -13,11 +18,6 @@ handoffs:
   - label: Fix Frontend Issue
     agent: Frontend Implementer
     prompt: Fix the frontend component or state management issue discovered during integration testing
-    send: true
-    model: Claude Haiku 4.5 (copilot)
-  - label: Clarify Requirements
-    agent: Plan Execution Orchestrator
-    prompt: Need clarification on requirements or architecture decisions based on test results
     send: true
     model: Claude Haiku 4.5 (copilot)
 ---

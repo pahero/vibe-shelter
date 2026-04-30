@@ -5,17 +5,17 @@ tools: [read, search, edit, execute, web, agent, todo]
 argument-hint: "Frontend feature to implement, UI/UX requirements, and constraints"
 user-invocable: true
 handoffs:
-  - label: Adjust Backend API
-    agent: Backend DB/API Implementer
-    prompt: Adjust API contract to support frontend needs
-    send: true
-    model: Claude Haiku 4.5 (copilot)
   - label: Clarify Requirements
-    agent: Plan Execution Orchestrator
-    prompt: Need clarification on requirements or need plan adjustment
+    agent: Requirements Writer
+    prompt: Need clarification on requirements or have discovered gaps/uncertainties
     send: true
     model: Claude Haiku 4.5 (copilot)
-  - label: Run Integration Tests
+  - label: Request Backend Changes
+    agent: Backend DB/API Implementer
+    prompt: Request API adjustments or backend changes to support frontend needs
+    send: true
+    model: Claude Haiku 4.5 (copilot)
+  - label: Validate with Integration Tests
     agent: Integration Testing Specialist
     prompt: Run integration tests to validate frontend and backend integration
     send: true

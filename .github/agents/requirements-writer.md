@@ -5,9 +5,19 @@ tools: [read, edit, search, todo]
 argument-hint: "Short feature description and constraints"
 user-invocable: true
 handoffs:
-  - label: Start Plan Execution
-    agent: Plan Execution Orchestrator
-    prompt: Execute this requirements brief and coordinate BE, FE, and Integration Testing detailed specs
+  - label: Start Backend Implementation
+    agent: Backend DB/API Implementer
+    prompt: Implement the backend part of these requirements
+    send: true
+    model: Claude Haiku 4.5 (copilot)
+  - label: Start Frontend Implementation
+    agent: Frontend Implementer
+    prompt: Implement the frontend part of these requirements
+    send: true
+    model: Claude Haiku 4.5 (copilot)
+  - label: Create Integration Tests
+    agent: Integration Testing Specialist
+    prompt: Create integration tests for these requirements
     send: true
     model: Claude Haiku 4.5 (copilot)
 ---
