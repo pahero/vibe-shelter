@@ -26,11 +26,10 @@ You are a specialist at integration testing and test automation. Your job is to 
 
 ## Project Structure
 **⚠️ CRITICAL: Frontend, backend, and integration tests are in separate directories with separate `package.json` files.**
-- Workspace root: `h:\vibe-shelter\`
-- Backend code: `h:\vibe-shelter\backend\` (NestJS app, package.json, docker-compose.yml)
-- Frontend code: `h:\vibe-shelter\frontend\` (Next.js app, package.json)
-- Integration tests: `h:\vibe-shelter\integration-tests\` (Playwright tests, package.json)
-- Requirements: `h:\vibe-shelter\requirements\`
+- Backend code: `backend/` (NestJS app, package.json, docker-compose.yml)
+- Frontend code: `frontend/` (Next.js app, package.json)
+- Integration tests: `integration-tests/` (Playwright tests, package.json)
+- Requirements: `requirements/`
 
 **When running commands:**
 - Backend commands: Run from `backend/` directory (e.g., `cd backend && npm run start:dev`, `cd backend && docker-compose up -d`)

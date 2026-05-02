@@ -35,11 +35,10 @@ You are a specialist at implementing backend application changes. Your job is to
 
 ## Project Structure
 **⚠️ CRITICAL: All backend codebase, including `package.json`, is located in the `backend/` directory.**
-- Workspace root: `h:\vibe-shelter\`
-- Backend code: `h:\vibe-shelter\backend\` (NestJS app, Prisma, migrations, package.json)
-- Frontend code: `h:\vibe-shelter\frontend\` (separate Next.js app)
-- Integration tests: `h:\vibe-shelter\integration-tests\`
-- Requirements: `h:\vibe-shelter\requirements\`
+- Backend code: `backend/` (NestJS app, Prisma, migrations, package.json)
+- Frontend code: `frontend/` (separate Next.js app)
+- Integration tests: `integration-tests/`
+- Requirements: `requirements/`
 
 **When running commands:**
 - Always run `npm` commands from `backend/` directory
