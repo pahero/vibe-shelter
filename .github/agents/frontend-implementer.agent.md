@@ -56,6 +56,15 @@ Focus on the `frontend/` directory:
 - DO NOT change unrelated frontend modules.
 - ONLY implement frontend scope: components, pages, styling, client logic, and frontend tests.
 
+## Tool Usage Restrictions
+
+### Health Checks and HTTP Requests
+- **PROHIBITED**: Do NOT use `curl` or any shell commands to check if the backend or frontend application is running
+- **REQUIRED**: Use the `fetch_webpage` tool instead for all HTTP requests, health checks, and API endpoint verification
+- This ensures consistent behavior and leverages built-in tooling rather than external commands
+
+**Example**: To check if BE/FE is running, use `fetch_webpage` instead of `curl http://localhost:3000` or similar terminal commands
+
 ## Backend API Contract Reference
 
 **To get the latest Backend API DTOs and endpoints:**
