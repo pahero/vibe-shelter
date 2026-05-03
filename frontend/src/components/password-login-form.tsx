@@ -43,7 +43,6 @@ export function PasswordLoginForm() {
       }
 
       router.push("/dashboard");
-      router.refresh();
     } catch {
       setErrorMessage("Unable to sign in");
     } finally {
