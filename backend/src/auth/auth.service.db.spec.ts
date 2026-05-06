@@ -24,18 +24,16 @@ describe('AuthService (db)', () => {
   let usersService: UsersService;
   let authService: AuthService;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     prisma = await startTestDatabase();
     usersService = new UsersService(prisma);
     authService = new AuthService(prisma, usersService, new TestConfigService() as unknown as ConfigService);
-  });
-
-  beforeEach(async () => {
-    await beginTestTransaction();
+    await beginTestTransaction(prisma);
   });
 
   afterEach(async () => {
-    await rollbackTestTransaction();
+    await rollbackTestTransaction(prisma);
+    await prisma.$disconnect();
   });
 
   it('validates password credentials for active users', async () => {

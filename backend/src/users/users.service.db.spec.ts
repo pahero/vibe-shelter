@@ -12,16 +12,19 @@ describe('UsersService (db)', () => {
   let usersService: UsersService;
 
   beforeAll(async () => {
-    prisma = await startTestDatabase();
-    usersService = new UsersService(prisma);
+    const bootstrapPrisma = await startTestDatabase();
+    await bootstrapPrisma.$disconnect();
   });
 
   beforeEach(async () => {
-    await beginTestTransaction();
+    prisma = await startTestDatabase();
+    usersService = new UsersService(prisma);
+    await beginTestTransaction(prisma);
   });
 
   afterEach(async () => {
-    await rollbackTestTransaction();
+    await rollbackTestTransaction(prisma);
+    await prisma.$disconnect();
   });
 
   it('creates a user and normalizes email to lowercase', async () => {
