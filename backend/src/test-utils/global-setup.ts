@@ -25,7 +25,7 @@ export default async function globalSetup(): Promise<void> {
 
   const databaseUrl = container.getConnectionUri();
   process.env.DATABASE_URL = databaseUrl;
-  process.env.S3_ENDPOINT = garage.endpoint;
+  process.env.AWS_ENDPOINT_URL_S3 = garage.endpoint;
   process.env.AWS_ACCESS_KEY_ID = garage.accessKeyId;
   process.env.AWS_SECRET_ACCESS_KEY = garage.secretAccessKey;
   process.env.S3_BUCKET = garage.bucket;

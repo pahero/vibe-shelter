@@ -2,6 +2,12 @@ export default () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT ?? '3000', 10),
   databaseUrl: process.env.DATABASE_URL,
+  s3: {
+    endpoint: process.env.AWS_ENDPOINT_URL_S3,
+    bucketName: process.env.S3_BUCKET,
+    apiKey: process.env.AWS_ACCESS_KEY_ID,
+    secret: process.env.AWS_SECRET_ACCESS_KEY,
+  },
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
