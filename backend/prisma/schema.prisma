@@ -64,6 +64,25 @@ enum LocationStatus {
   ARCHIVED
 }
 
+enum CatSex {
+  FEMALE
+  MALE
+  UNKNOWN
+}
+
+enum SterilizationStatus {
+  STERILIZED
+  NOT_STERILIZED
+  UNKNOWN
+}
+
+enum CatStatus {
+  ACTIVE
+  ADOPTED
+  DECEASED
+  ARCHIVED
+}
+
 model Location {
   id          String         @id @default(cuid())
   name        String         @unique
@@ -74,8 +93,33 @@ model Location {
   status      LocationStatus @default(ACTIVE)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  cats        Cat[]
 
   @@index([type])
   @@index([ownerId])
   @@index([status])
+}
+
+model Cat {
+  id                  String              @id @default(cuid())
+  name                String
+  sex                 CatSex              @default(UNKNOWN)
+  color               String?
+  estimatedBirthDate  DateTime?
+  intakeDate          DateTime?
+  rescueSource        String?
+  microchipNumber     String?             @unique
+  passportNumber      String?             @unique
+  sterilizationStatus SterilizationStatus @default(UNKNOWN)
+  status              CatStatus           @default(ACTIVE)
+  currentLocationId   String?
+  currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
+  primaryPhotoKey     String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([currentLocationId])
+  @@index([status])
+  @@index([name])
+  @@index([intakeDate])
 }

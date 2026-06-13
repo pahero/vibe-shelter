@@ -1,0 +1,245 @@
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
+import configuration from '../config/configuration';
+import { PrismaService } from '../database/prisma.service';
+import {
+  beginTestTransaction,
+  rollbackTestTransaction,
+  startTestDatabase,
+} from '../test-utils/test-db';
+import { CatPhotoUrlService } from './cat-photo-url.service';
+import { CatsService } from './cats.service';
+
+describe('CatsService', () => {
+  let moduleRef: TestingModule;
+  let service: CatsService;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    prisma = await startTestDatabase();
+    moduleRef = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ load: [configuration], isGlobal: true })],
+      providers: [
+        CatsService,
+        CatPhotoUrlService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    service = moduleRef.get(CatsService);
+  });
+
+  beforeEach(async () => {
+    await beginTestTransaction(prisma);
+  });
+
+  afterEach(async () => {
+    await rollbackTestTransaction(prisma);
+  });
+
+  afterAll(async () => {
+    await moduleRef.close();
+    await prisma.$disconnect();
+  });
+
+  it('creates a cat card with location name and no primary photo from create payload', async () => {
+    const location = await createLocation(prisma, 'create');
+
+    const card = await service.createCat({
+      name: '  Mila  ',
+      sex: 'FEMALE',
+      color: 'Calico',
+      intakeDate: '2026-04-01',
+      microchipNumber: unique('chip'),
+      passportNumber: unique('pass'),
+      sterilizationStatus: 'STERILIZED',
+      currentLocationId: location.id,
+    });
+
+    expect(card.name).toBe('Mila');
+    expect(card.currentLocationName).toBe(location.name);
+    expect(card.primaryPhotoUrl).toBeNull();
+    expect(card).not.toHaveProperty('primaryPhotoKey');
+  });
+
+  it('uploads primary photo data to S3 and returns a presigned URL', async () => {
+    const card = await service.createCat({
+      name: 'Photo Cat',
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'UNKNOWN',
+    });
+
+    const updated = await service.updatePrimaryPhoto(card.id, {
+      originalname: 'mila portrait.jpg',
+      mimetype: 'image/jpeg',
+      buffer: Buffer.from('fake image bytes'),
+    });
+
+    expect(updated.primaryPhotoUrl).toContain(`cats/${card.id}/primary/`);
+    expect(updated.primaryPhotoUrl).toContain('mila-portrait.jpg');
+    const stored = await (prisma as any).cat.findUnique({ where: { id: card.id } });
+    expect(stored.primaryPhotoKey).toContain(`cats/${card.id}/primary/`);
+  });
+
+  it('rejects empty primary photo upload requests', async () => {
+    const card = await service.createCat({
+      name: 'No Photo Cat',
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'UNKNOWN',
+    });
+
+    await expect(service.updatePrimaryPhoto(card.id, undefined)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('rejects missing required fields, invalid enums, and invalid dates', async () => {
+    await expect(
+      service.createCat({ name: '', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.createCat({ name: 'Mila', sex: 'OTHER', sterilizationStatus: 'UNKNOWN' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.createCat({ name: 'Mila', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', intakeDate: 'not-a-date' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects duplicate microchip and passport numbers', async () => {
+    const microchipNumber = unique('chip');
+    const passportNumber = unique('pass');
+    await service.createCat({
+      name: 'Mila',
+      sex: 'FEMALE',
+      microchipNumber,
+      passportNumber,
+      sterilizationStatus: 'UNKNOWN',
+    });
+
+    await expect(
+      service.createCat({
+        name: 'Luna',
+        sex: 'FEMALE',
+        microchipNumber,
+        sterilizationStatus: 'UNKNOWN',
+      }),
+    ).rejects.toThrow(ConflictException);
+    await expect(
+      service.createCat({
+        name: 'Leo',
+        sex: 'MALE',
+        passportNumber,
+        sterilizationStatus: 'UNKNOWN',
+      }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('validates active location references', async () => {
+    const inactive = await createLocation(prisma, 'inactive', 'INACTIVE');
+
+    await expect(
+      service.createCat({
+        name: 'Mila',
+        sex: 'FEMALE',
+        sterilizationStatus: 'UNKNOWN',
+        currentLocationId: inactive.id,
+      }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('filters by default active status, location, search, and pagination', async () => {
+    const location = await createLocation(prisma, 'filter');
+    const otherLocation = await createLocation(prisma, 'other');
+    const prefix = unique('search');
+    await service.createCat({ name: `${prefix} Mila`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, microchipNumber: `${prefix}-001` });
+    await service.createCat({ name: `${prefix} Boris`, sex: 'MALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, passportNumber: `${prefix}-P` });
+    const archived = await service.createCat({ name: `${prefix} Old`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
+    await service.updateCat(archived.id, { status: 'ARCHIVED' });
+    await service.createCat({ name: `${prefix} Elsewhere`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: otherLocation.id });
+
+    const page = await service.findAll({ locationId: location.id, search: prefix, skip: 1, limit: 1 });
+    expect(page.total).toBe(2);
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].status).toBe('ACTIVE');
+
+    const archivedPage = await service.findAll({ status: 'ARCHIVED', search: prefix });
+    expect(archivedPage.data).toHaveLength(1);
+    expect(archivedPage.data[0].name).toContain('Old');
+  });
+
+  it('updates cat card fields and can clear nullable fields', async () => {
+    const location = await createLocation(prisma, 'update');
+    const card = await service.createCat({ name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
+
+    const updated = await service.updateCat(card.id, {
+      name: 'Luna',
+      color: null,
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'STERILIZED',
+      currentLocationId: null,
+    });
+
+    expect(updated.name).toBe('Luna');
+    expect(updated.color).toBeNull();
+    expect(updated.currentLocationId).toBeNull();
+  });
+
+  it('returns 404 for missing cards and 400 for invalid pagination', async () => {
+    await expect(service.findCardById('missing')).rejects.toThrow(NotFoundException);
+    await expect(service.findAll({ limit: 101 })).rejects.toThrow(BadRequestException);
+    await expect(service.findAll({ skip: -1 })).rejects.toThrow(BadRequestException);
+  });
+
+  it('has migration-backed indexes, unique constraints, enum defaults, and nullable location on delete', async () => {
+    const indexes = await prisma.$queryRaw<Array<{ indexname: string }>>`
+      SELECT indexname FROM pg_indexes WHERE tablename = 'Cat'
+    `;
+    expect(indexes.map((index) => index.indexname)).toEqual(
+      expect.arrayContaining([
+        'Cat_currentLocationId_idx',
+        'Cat_status_idx',
+        'Cat_name_idx',
+        'Cat_intakeDate_idx',
+        'Cat_microchipNumber_key',
+        'Cat_passportNumber_key',
+      ]),
+    );
+
+    const defaults = await prisma.$queryRaw<Array<{ sex_default: string; status_default: string; sterilization_default: string }>>`
+      SELECT
+        column_default AS sex_default,
+        (SELECT column_default FROM information_schema.columns WHERE table_name = 'Cat' AND column_name = 'status') AS status_default,
+        (SELECT column_default FROM information_schema.columns WHERE table_name = 'Cat' AND column_name = 'sterilizationStatus') AS sterilization_default
+      FROM information_schema.columns
+      WHERE table_name = 'Cat' AND column_name = 'sex'
+    `;
+    expect(defaults[0].sex_default).toContain('UNKNOWN');
+    expect(defaults[0].status_default).toContain('ACTIVE');
+    expect(defaults[0].sterilization_default).toContain('UNKNOWN');
+
+    const foreignKeys = await prisma.$queryRaw<Array<{ delete_rule: string }>>`
+      SELECT delete_rule
+      FROM information_schema.referential_constraints
+      WHERE constraint_name = 'Cat_currentLocationId_fkey'
+    `;
+    expect(foreignKeys[0].delete_rule).toBe('SET NULL');
+  });
+});
+
+function unique(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function createLocation(
+  prisma: PrismaService,
+  namePrefix: string,
+  status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' = 'ACTIVE',
+) {
+  return (prisma as any).location.create({
+    data: {
+      name: unique(`cats-${namePrefix}`),
+      type: 'FOSTER',
+      status,
+    },
+  });
+}
