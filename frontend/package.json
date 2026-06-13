@@ -6,7 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.2.2",
@@ -19,7 +20,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.27",
-    "eslint": "^10",
+    "eslint": "^9.39.4",
     "eslint-config-next": "16.2.2",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",

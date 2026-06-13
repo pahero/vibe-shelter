@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { locationsApi, Location } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
+import { LocationCatsSection } from "@/components/location-cats-section";
 
 const typeStyles = {
   SHELTER: { bg: "bg-blue-100", text: "text-blue-800" },
@@ -72,7 +73,7 @@ export default function LocationDetailPage() {
   if (isLoading) {
     return (
       <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-6xl text-center">
           <p className="text-gray-600">Loading location...</p>
         </div>
       </main>
@@ -82,7 +83,7 @@ export default function LocationDetailPage() {
   if (error && !location) {
     return (
       <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-6xl">
           <Link href="/locations" className="text-sm font-medium text-[#d05a2c] hover:text-[#b24a20]">
             ← Back to Locations
           </Link>
@@ -103,7 +104,7 @@ export default function LocationDetailPage() {
 
   return (
     <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-6xl">
         {/* Navigation */}
         <div className="mb-8">
           <Link href="/locations" className="text-sm font-medium text-[#d05a2c] hover:text-[#b24a20]">
@@ -193,6 +194,8 @@ export default function LocationDetailPage() {
             </div>
           </div>
         </div>
+
+        <LocationCatsSection locationId={location.id} locationName={location.name} />
       </div>
     </main>
   );

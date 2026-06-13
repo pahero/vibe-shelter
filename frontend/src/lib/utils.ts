@@ -21,28 +21,29 @@ export function formatDateShort(dateString: string): string {
 export class ApiErrorHandler {
   static handle(error: unknown): string {
     if (error && typeof error === "object" && "message" in error) {
-      return (error as any).message;
+      const message = (error as { message?: unknown }).message;
+      return typeof message === "string" ? message : "An unexpected error occurred";
     }
     return "An unexpected error occurred";
   }
 
   static isDuplicateError(error: unknown): boolean {
     if (error && typeof error === "object" && "statusCode" in error) {
-      return (error as any).statusCode === 409;
+      return (error as { statusCode?: unknown }).statusCode === 409;
     }
     return false;
   }
 
   static isValidationError(error: unknown): boolean {
     if (error && typeof error === "object" && "statusCode" in error) {
-      return (error as any).statusCode === 400;
+      return (error as { statusCode?: unknown }).statusCode === 400;
     }
     return false;
   }
 
   static isNotFoundError(error: unknown): boolean {
     if (error && typeof error === "object" && "statusCode" in error) {
-      return (error as any).statusCode === 404;
+      return (error as { statusCode?: unknown }).statusCode === 404;
     }
     return false;
   }
