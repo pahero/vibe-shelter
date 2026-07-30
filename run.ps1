@@ -1,3 +1,7 @@
+Set-Location "$PSScriptRoot"
+
+npm install
+
 Set-Location "$PSScriptRoot/backend"
 
 podman compose up -d --wait
