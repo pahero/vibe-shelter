@@ -191,7 +191,7 @@ describe('CatsService', () => {
   });
 
   it('has migration-backed indexes, unique constraints, enum defaults, and nullable location on delete', async () => {
-    const indexes = await prisma.$queryRaw<Array<{ indexname: string }>>`
+    const indexes: Array<{ indexname: string }> = await prisma.$queryRaw`
       SELECT indexname FROM pg_indexes WHERE tablename = 'Cat'
     `;
     expect(indexes.map((index) => index.indexname)).toEqual(

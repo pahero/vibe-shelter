@@ -74,6 +74,10 @@ export type CreateCatDto = {
   currentLocationId?: string | null;
 };
 
+export type UpdateCatDto = Partial<CreateCatDto> & {
+  status?: CatStatus;
+};
+
 export type CreateLocationDto = {
   name: string;
   type: "SHELTER" | "CLINIC" | "FOSTER";
@@ -203,6 +207,30 @@ export const catsApi = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+    });
+    return handleResponse<CatCard>(response);
+  },
+
+  async updateCat(id: string, data: UpdateCatDto): Promise<CatCard> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<CatCard>(response);
+  },
+
+  async updatePrimaryPhoto(id: string, photo: File): Promise<CatCard> {
+    const formData = new FormData();
+    formData.append("photo", photo);
+
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/primary-photo`, {
+      method: "PUT",
+      credentials: "include",
+      body: formData,
     });
     return handleResponse<CatCard>(response);
   },
