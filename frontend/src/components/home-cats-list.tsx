@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CatCard } from "@/components/cat-card";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, catsApi } from "@/lib/api";
+import { CatCard as CatCardType, Location, catsApi, locationsApi } from "@/lib/api";
 
 const CATS_PER_PAGE = 6;
 
@@ -13,9 +13,46 @@ export function HomeCatsList() {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchLocations() {
+      setIsLoadingLocations(true);
+      setLocationError(null);
+
+      try {
+        const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
+
+        if (!cancelled) {
+          setLocations(response.data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLocationError(ApiErrorHandler.handle(err));
+          setLocations([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingLocations(false);
+        }
+      }
+    }
+
+    fetchLocations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +64,7 @@ export function HomeCatsList() {
 
       try {
         const response = await catsApi.listCats({
+          locationId: locationFilter || undefined,
           status: "ACTIVE",
           search: search.trim() || undefined,
           skip: (currentPage - 1) * CATS_PER_PAGE,
@@ -60,9 +98,10 @@ export function HomeCatsList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, search]);
+  }, [currentPage, locationFilter, search]);
 
   const totalPages = Math.ceil(total / CATS_PER_PAGE);
+  const locationFilterLabel = locations.find((location) => location.id === locationFilter)?.name ?? "All locations";
 
   return (
     <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm [animation-delay:160ms] md:p-8">
@@ -83,7 +122,7 @@ export function HomeCatsList() {
         </Link>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_auto] sm:items-end">
         <label className="grid max-w-md flex-1 gap-1 text-sm font-medium text-gray-800">
           Search cats
           <input
@@ -96,8 +135,75 @@ export function HomeCatsList() {
             className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
           />
         </label>
-        <p className="text-sm text-[#6d6a66]">{total} active cat{total === 1 ? "" : "s"}</p>
+
+        <div className="relative grid gap-1 text-sm font-medium text-gray-800">
+          <span id="home-location-filter-label">Location</span>
+          <button
+            type="button"
+            aria-labelledby="home-location-filter-label"
+            aria-haspopup="listbox"
+            aria-expanded={isLocationFilterOpen}
+            disabled={isLoadingLocations || locations.length === 0}
+            onClick={() => setIsLocationFilterOpen((isOpen) => !isOpen)}
+            onBlur={(event) => {
+              if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) {
+                setIsLocationFilterOpen(false);
+              }
+            }}
+            className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span>{isLoadingLocations ? "Loading locations..." : locationFilterLabel}</span>
+            <span className="text-[#6d6a66]">⌄</span>
+          </button>
+          {isLocationFilterOpen && (
+            <div
+              role="listbox"
+              aria-labelledby="home-location-filter-label"
+              className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
+            >
+              <button
+                type="button"
+                role="option"
+                aria-selected={locationFilter === ""}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setLocationFilter("");
+                  setCurrentPage(1);
+                  setIsLocationFilterOpen(false);
+                }}
+                className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
+                  locationFilter === "" ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]" : "text-gray-900"
+                }`}
+              >
+                All locations
+              </button>
+              {locations.map((location) => (
+                <button
+                  key={location.id}
+                  type="button"
+                  role="option"
+                  aria-selected={locationFilter === location.id}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setLocationFilter(location.id);
+                    setCurrentPage(1);
+                    setIsLocationFilterOpen(false);
+                  }}
+                  className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
+                    locationFilter === location.id ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]" : "text-gray-900"
+                  }`}
+                >
+                  {location.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="text-sm text-[#6d6a66] sm:pb-2">{total} active cat{total === 1 ? "" : "s"}</p>
       </div>
+
+      {locationError && <p className="mt-2 text-sm text-red-700">Locations could not be loaded: {locationError}</p>}
 
       {isLoading && <p className="py-10 text-center text-sm text-[#6d6a66]">Loading cat cards...</p>}
 

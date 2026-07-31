@@ -184,6 +184,25 @@ describe('CatsService', () => {
     expect(updated.currentLocationId).toBeNull();
   });
 
+  it('adds, lists, and removes cat weight entries', async () => {
+    const card = await service.createCat({ name: 'Weight Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+
+    const weight = await service.addWeight(card.id, { weightKg: 4.25, measuredAt: '2026-07-30' });
+
+    expect(weight.catId).toBe(card.id);
+    expect(weight.weightKg).toBe(4.25);
+    expect(weight.measuredAt).toContain('2026-07-30');
+
+    const weights = await service.listWeights(card.id);
+    expect(weights).toHaveLength(1);
+    expect(weights[0].id).toBe(weight.id);
+
+    await service.removeWeight(card.id, weight.id);
+    await expect(service.removeWeight(card.id, weight.id)).rejects.toThrow(NotFoundException);
+    await expect(service.addWeight(card.id, { weightKg: 0, measuredAt: '2026-07-30' })).rejects.toThrow(BadRequestException);
+    await expect(service.addWeight(card.id, { weightKg: 4, measuredAt: 'bad-date' })).rejects.toThrow(BadRequestException);
+  });
+
   it('returns 404 for missing cards and 400 for invalid pagination', async () => {
     await expect(service.findCardById('missing')).rejects.toThrow(NotFoundException);
     await expect(service.findAll({ limit: 101 })).rejects.toThrow(BadRequestException);

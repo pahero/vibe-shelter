@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { CreateCatDto, UpdateCatDto } from './dto';
+import { CreateCatDto, CreateCatWeightDto, UpdateCatDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 
 const VALID_CAT_SEXES = ['FEMALE', 'MALE', 'UNKNOWN'] as const;
@@ -55,6 +55,14 @@ export type CatFilters = {
   search?: string;
   skip?: number;
   limit?: number;
+};
+
+export type CatWeight = {
+  id: string;
+  catId: string;
+  weightKg: number;
+  measuredAt: string;
+  createdAt: string;
 };
 
 export type PrimaryPhotoUpload = {
@@ -171,6 +179,51 @@ export class CatsService {
     return this.toCatCard(cat);
   }
 
+  async listWeights(catId: string): Promise<CatWeight[]> {
+    this.validateId(catId);
+    await this.findExistingCat(catId);
+
+    const weights = await (this.prisma as any).catWeight.findMany({
+      where: { catId },
+      orderBy: [{ measuredAt: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    return weights.map((weight: any) => this.toCatWeight(weight));
+  }
+
+  async addWeight(catId: string, data: CreateCatWeightDto): Promise<CatWeight> {
+    this.validateId(catId);
+    await this.findExistingCat(catId);
+    const measuredAt = this.parseRequiredDate(data.measuredAt, 'measuredAt');
+    this.validateWeightKg(data.weightKg);
+
+    const weight = await (this.prisma as any).catWeight.create({
+      data: {
+        catId,
+        weightKg: data.weightKg,
+        measuredAt,
+      },
+    });
+
+    return this.toCatWeight(weight);
+  }
+
+  async removeWeight(catId: string, weightId: string): Promise<void> {
+    this.validateId(catId);
+    this.validateId(weightId);
+    await this.findExistingCat(catId);
+
+    const weight = await (this.prisma as any).catWeight.findFirst({
+      where: { id: weightId, catId },
+      select: { id: true },
+    });
+    if (!weight) {
+      throw new NotFoundException('Weight entry not found');
+    }
+
+    await (this.prisma as any).catWeight.delete({ where: { id: weightId } });
+  }
+
   private async findExistingCat(id: string): Promise<CatWithLocation> {
     const cat = await (this.prisma as any).cat.findUnique({
       where: { id },
@@ -274,6 +327,23 @@ export class CatsService {
     return date;
   }
 
+  private parseRequiredDate(value: string | null | undefined, field: string): Date {
+    if (value === undefined || value === null || value === '') {
+      throw new BadRequestException(`${field} is required`);
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(`${field} must be a valid date`);
+    }
+    return date;
+  }
+
+  private validateWeightKg(value: number): void {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+      throw new BadRequestException('weightKg must be a positive number');
+    }
+  }
+
   private validatePagination(skipInput = 0, limitInput = 50): { skip: number; limit: number } {
     const skip = Number(skipInput);
     const limit = Number(limitInput);
@@ -346,6 +416,16 @@ export class CatsService {
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),
+    };
+  }
+
+  private toCatWeight(weight: any): CatWeight {
+    return {
+      id: weight.id,
+      catId: weight.catId,
+      weightKg: weight.weightKg,
+      measuredAt: weight.measuredAt.toISOString(),
+      createdAt: weight.createdAt.toISOString(),
     };
   }
 

@@ -4,8 +4,8 @@ import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
-import { CatCard as CatCardType, CatSex, CatStatus, SterilizationStatus, catsApi } from "@/lib/api";
-import { ApiErrorHandler, formatDate } from "@/lib/utils";
+import { CatCard as CatCardType, CatSex, CatStatus, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
 type CatEditForm = {
   name: string;
@@ -16,6 +16,7 @@ type CatEditForm = {
   microchipNumber: string;
   sterilizationStatus: SterilizationStatus;
   status: CatStatus;
+  currentLocationId: string;
 };
 
 function dateInputValue(date: string | null): string {
@@ -32,6 +33,7 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     microchipNumber: cat.microchipNumber ?? "",
     sterilizationStatus: cat.sterilizationStatus,
     status: cat.status,
+    currentLocationId: cat.currentLocationId ?? "",
   };
 }
 
@@ -48,6 +50,16 @@ export default function CatProfilePage() {
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [detailsSuccess, setDetailsSuccess] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<CatEditForm | null>(null);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [weights, setWeights] = useState<CatWeight[]>([]);
+  const [isLoadingWeights, setIsLoadingWeights] = useState(true);
+  const [isAddingWeight, setIsAddingWeight] = useState(false);
+  const [removingWeightId, setRemovingWeightId] = useState<string | null>(null);
+  const [weightKg, setWeightKg] = useState("");
+  const [weightDate, setWeightDate] = useState("");
+  const [weightError, setWeightError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!catId) return;
@@ -69,6 +81,67 @@ export default function CatProfilePage() {
     };
 
     fetchCat();
+  }, [catId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchLocations = async () => {
+      setIsLoadingLocations(true);
+      setLocationsError(null);
+      try {
+        const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
+        if (!cancelled) {
+          setLocations(response.data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLocationsError(ApiErrorHandler.handle(err));
+          setLocations([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingLocations(false);
+        }
+      }
+    };
+
+    fetchLocations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!catId) return;
+    let cancelled = false;
+
+    const fetchWeights = async () => {
+      setIsLoadingWeights(true);
+      setWeightError(null);
+      try {
+        const data = await catsApi.listWeights(catId);
+        if (!cancelled) {
+          setWeights(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setWeightError(ApiErrorHandler.handle(err));
+          setWeights([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingWeights(false);
+        }
+      }
+    };
+
+    fetchWeights();
+
+    return () => {
+      cancelled = true;
+    };
   }, [catId]);
 
   const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -132,6 +205,7 @@ export default function CatProfilePage() {
         microchipNumber: editForm.microchipNumber.trim() || null,
         sterilizationStatus: editForm.sterilizationStatus,
         status: editForm.status,
+        currentLocationId: editForm.currentLocationId || null,
       });
       setCat(updated);
       setEditForm(catToEditForm(updated));
@@ -143,6 +217,61 @@ export default function CatProfilePage() {
       setIsSavingDetails(false);
     }
   };
+
+  const handleWeightSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!cat) return;
+
+    const parsedWeight = Number(weightKg);
+    if (!Number.isFinite(parsedWeight) || parsedWeight <= 0) {
+      setWeightError("Weight must be a positive number.");
+      return;
+    }
+    if (!weightDate) {
+      setWeightError("Weight date is required.");
+      return;
+    }
+
+    setIsAddingWeight(true);
+    setWeightError(null);
+    try {
+      const created = await catsApi.addWeight(cat.id, { weightKg: parsedWeight, measuredAt: weightDate });
+      setWeights((prev) => [created, ...prev].sort((a, b) => b.measuredAt.localeCompare(a.measuredAt)));
+      setWeightKg("");
+      setWeightDate("");
+    } catch (err) {
+      setWeightError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsAddingWeight(false);
+    }
+  };
+
+  const handleRemoveWeight = async (weightId: string) => {
+    if (!cat) return;
+
+    setRemovingWeightId(weightId);
+    setWeightError(null);
+    try {
+      await catsApi.removeWeight(cat.id, weightId);
+      setWeights((prev) => prev.filter((weight) => weight.id !== weightId));
+    } catch (err) {
+      setWeightError(ApiErrorHandler.handle(err));
+    } finally {
+      setRemovingWeightId(null);
+    }
+  };
+
+  const graphWeights = [...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
+  const graphValues = graphWeights.map((weight) => weight.weightKg);
+  const minGraphWeight = Math.min(...graphValues);
+  const maxGraphWeight = Math.max(...graphValues);
+  const graphRange = maxGraphWeight - minGraphWeight || 1;
+  const graphPoints = graphWeights.map((weight, index) => {
+    const x = graphWeights.length === 1 ? 50 : 10 + (index / (graphWeights.length - 1)) * 80;
+    const y = 80 - ((weight.weightKg - minGraphWeight) / graphRange) * 60;
+    return { ...weight, x, y };
+  });
+  const graphLine = graphPoints.map((point) => `${point.x},${point.y}`).join(" ");
 
   return (
     <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
@@ -208,6 +337,26 @@ export default function CatProfilePage() {
               {isEditingDetails && editForm ? (
                 <form onSubmit={handleDetailsSubmit} className="mt-6 space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                      Current location
+                      <select
+                        value={editForm.currentLocationId}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, currentLocationId: event.target.value })}
+                        disabled={isLoadingLocations}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <option value="">Unassigned</option>
+                        {cat.currentLocationId && !locations.some((location) => location.id === cat.currentLocationId) && (
+                          <option value={cat.currentLocationId}>{cat.currentLocationName || "Current location"}</option>
+                        )}
+                        {locations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>
+                        ))}
+                      </select>
+                      {locationsError && <span className="text-xs font-medium text-red-700">Locations could not be loaded: {locationsError}</span>}
+                    </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Name *
                       <input
@@ -321,6 +470,107 @@ export default function CatProfilePage() {
                     <dd className="mt-1 font-semibold">{formatDate(cat.updatedAt)}</dd>
                   </div>
                 </dl>
+              )}
+            </section>
+            <section className="md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Weight history</p>
+                <h2 className="mt-1 text-2xl font-semibold text-gray-900">Recorded weights</h2>
+              </div>
+
+              <form onSubmit={handleWeightSubmit} className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+                <label className="grid gap-1 text-sm font-medium text-gray-800">
+                  Weight, kg
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={weightKg}
+                    onChange={(event) => setWeightKg(event.target.value)}
+                    className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                    placeholder="4.25"
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium text-gray-800">
+                  Date
+                  <input
+                    type="date"
+                    lang="en-GB"
+                    value={weightDate}
+                    onChange={(event) => setWeightDate(event.target.value)}
+                    className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={isAddingWeight}
+                  className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isAddingWeight ? "Adding..." : "Add weight"}
+                </button>
+              </form>
+
+              {weightError && <p className="mt-3 text-sm font-medium text-red-700">{weightError}</p>}
+              {isLoadingWeights && <p className="mt-5 text-sm text-[#6d6a66]">Loading weight history...</p>}
+
+              {!isLoadingWeights && weights.length === 0 && (
+                <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/45 p-6 text-center">
+                  <p className="text-sm text-[#6d6a66]">No weights recorded yet.</p>
+                </div>
+              )}
+
+              {!isLoadingWeights && weights.length > 0 && (
+                <>
+                  <div className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/50 p-4">
+                    <div className="flex items-center justify-between gap-3 text-xs text-[#6d6a66]">
+                      <span>{formatDateShort(graphWeights[0].measuredAt)}</span>
+                      <span>{formatDateShort(graphWeights[graphWeights.length - 1].measuredAt)}</span>
+                    </div>
+                    <svg viewBox="0 0 100 90" role="img" aria-label="Weight trend" className="mt-2 h-40 w-full overflow-visible">
+                      <line x1="10" y1="80" x2="90" y2="80" stroke="#d4c7b4" strokeWidth="1" />
+                      <line x1="10" y1="20" x2="10" y2="80" stroke="#d4c7b4" strokeWidth="1" />
+                      {graphLine && <polyline fill="none" points={graphLine} stroke="#d05a2c" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />}
+                      {graphPoints.map((point) => (
+                        <g key={point.id}>
+                          <circle cx={point.x} cy={point.y} r="3" fill="#d05a2c" />
+                          <text x={point.x} y={Math.max(10, point.y - 7)} textAnchor="middle" className="fill-[#6d6a66] text-[5px] font-semibold">
+                            {point.weightKg.toFixed(1)}
+                          </text>
+                        </g>
+                      ))}
+                    </svg>
+                  </div>
+
+                  <div className="mt-5 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/50">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#d05a2c]/10 text-[#6d6a66]">
+                        <tr>
+                          <th className="px-4 py-3 font-mono text-xs uppercase tracking-[0.1em]">Date</th>
+                          <th className="px-4 py-3 font-mono text-xs uppercase tracking-[0.1em]">Weight</th>
+                          <th className="px-4 py-3 text-right font-mono text-xs uppercase tracking-[0.1em]">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#d4c7b4]">
+                        {weights.map((weight) => (
+                          <tr key={weight.id}>
+                            <td className="px-4 py-3 font-medium text-gray-900">{formatDateShort(weight.measuredAt)}</td>
+                            <td className="px-4 py-3 text-gray-700">{weight.weightKg.toFixed(2)} kg</td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveWeight(weight.id)}
+                                disabled={removingWeightId === weight.id}
+                                className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {removingWeightId === weight.id ? "Removing..." : "Remove"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </section>
           </div>

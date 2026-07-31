@@ -116,9 +116,22 @@ model Cat {
   primaryPhotoKey     String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
+  weights             CatWeight[]
 
   @@index([currentLocationId])
   @@index([status])
   @@index([name])
   @@index([intakeDate])
+}
+
+model CatWeight {
+  id         String   @id @default(cuid())
+  catId      String
+  cat        Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  weightKg   Float
+  measuredAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([catId])
+  @@index([measuredAt])
 }

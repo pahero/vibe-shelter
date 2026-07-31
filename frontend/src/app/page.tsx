@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import Link from "next/link";
+import { AppHeader } from "@/components/app-header";
 import { AuthLinkButton } from "@/components/auth-link-button";
 import { HomeCatsList } from "@/components/home-cats-list";
-import { LogoutButton } from "@/components/logout-button";
 import { PasswordLoginForm } from "@/components/password-login-form";
 import { BACKEND_URL, fetchCurrentUser } from "@/lib/backend";
 
@@ -12,31 +12,20 @@ export default async function Home() {
   const user = await fetchCurrentUser(cookieHeader);
 
   return (
-    <main className="grid min-h-dvh w-full place-items-center gap-6 p-6">
-      <section className="w-full max-w-4xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-7 shadow-panel backdrop-blur-sm md:p-8">
-        <p className="inline-block rounded-full border border-[#d05a2c]/25 bg-[#d05a2c]/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">
-          Shelter Platform
-        </p>
+    <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
+      <AppHeader user={user} />
+
+      <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-7 shadow-panel backdrop-blur-sm [animation-delay:80ms] md:p-8">
         <h1 className="mt-2 text-4xl font-semibold leading-[1.03] tracking-[-0.03em] md:text-6xl">
           Operations at humane speed
         </h1>
         <p className="mt-3 max-w-[62ch] text-base leading-relaxed text-[#6d6a66] md:text-lg">
           Shelter runs on secure staff access only. {user
-            ? "Browse cats below or open your staff dashboard."
+            ? "Browse cats below or manage shelter locations from the navigation."
             : "Sign in with your approved account using Google SSO or plain email and password."}
         </p>
 
-        {user ? (
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
-              href="/dashboard"
-            >
-              Open dashboard
-            </Link>
-            <LogoutButton />
-          </div>
-        ) : (
+        {!user && (
           <>
             <PasswordLoginForm />
 

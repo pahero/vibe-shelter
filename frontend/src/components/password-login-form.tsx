@@ -42,7 +42,7 @@ export function PasswordLoginForm() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push("/");
     } catch {
       setErrorMessage("Unable to sign in");
     } finally {

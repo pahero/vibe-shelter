@@ -113,6 +113,33 @@ describe('Cats endpoints', () => {
     expect(response.body.status).toBe('ADOPTED');
   });
 
+  it('manages cat weight history endpoints', async () => {
+    const cat = await createCat(prisma, { name: unique('weight') });
+
+    const created = await request(app.getHttpServer())
+      .post(`/api/cats/${cat.id}/weights`)
+      .send({ weightKg: 3.8, measuredAt: '2026-07-30' })
+      .expect(201);
+
+    expect(created.body.weightKg).toBe(3.8);
+    expect(created.body.measuredAt).toContain('2026-07-30');
+
+    const list = await request(app.getHttpServer())
+      .get(`/api/cats/${cat.id}/weights`)
+      .expect(200);
+
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].id).toBe(created.body.id);
+
+    await request(app.getHttpServer())
+      .delete(`/api/cats/${cat.id}/weights/${created.body.id}`)
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .delete(`/api/cats/${cat.id}/weights/${created.body.id}`)
+      .expect(404);
+  });
+
   it('returns validation and not found errors', async () => {
     await request(app.getHttpServer()).get('/api/cats').query({ limit: 101 }).expect(400);
     await request(app.getHttpServer()).get('/api/cats/missing/card').expect(404);

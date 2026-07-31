@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const user = await fetchCurrentUser(cookieHeader);
 
   if (user) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   const query = await searchParams;

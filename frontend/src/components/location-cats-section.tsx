@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, CatSex, CreateCatDto, catsApi, SterilizationStatus } from "@/lib/api";
+import { CatCard as CatCardType, CatSex, CreateCatDto, Location, catsApi, locationsApi, SterilizationStatus } from "@/lib/api";
 
 type LocationCatsSectionProps = {
   locationId: string;
@@ -12,17 +12,20 @@ type LocationCatsSectionProps = {
 
 const CATS_PER_PAGE = 6;
 
-const emptyForm = {
-  name: "",
-  sex: "UNKNOWN" as CatSex,
-  color: "",
-  estimatedBirthDate: "",
-  intakeDate: "",
-  microchipNumber: "",
-  passportNumber: "",
-  rescueSource: "",
-  sterilizationStatus: "UNKNOWN" as SterilizationStatus,
-};
+function emptyForm(locationId: string) {
+  return {
+    name: "",
+    sex: "UNKNOWN" as CatSex,
+    color: "",
+    estimatedBirthDate: "",
+    intakeDate: "",
+    microchipNumber: "",
+    passportNumber: "",
+    rescueSource: "",
+    sterilizationStatus: "UNKNOWN" as SterilizationStatus,
+    currentLocationId: locationId,
+  };
+}
 
 export function LocationCatsSection({ locationId, locationName }: LocationCatsSectionProps) {
   const [cats, setCats] = useState<CatCardType[]>([]);
@@ -34,7 +37,42 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [form, setForm] = useState(() => emptyForm(locationId));
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, currentLocationId: locationId }));
+  }, [locationId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchLocations() {
+      setIsLoadingLocations(true);
+      try {
+        const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
+        if (!cancelled) {
+          setLocations(response.data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(ApiErrorHandler.handle(err));
+          setLocations([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingLocations(false);
+        }
+      }
+    }
+
+    fetchLocations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     fetchCats();
@@ -80,17 +118,19 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
       microchipNumber: form.microchipNumber.trim() || null,
       passportNumber: form.passportNumber.trim() || null,
       sterilizationStatus: form.sterilizationStatus,
-      currentLocationId: locationId,
+      currentLocationId: form.currentLocationId || null,
     };
 
     setIsCreating(true);
     try {
       const created = await catsApi.createCat(payload);
-      setCats((prev) => [created, ...prev].slice(0, CATS_PER_PAGE));
-      setTotal((prev) => prev + 1);
-      setForm(emptyForm);
+      if (created.currentLocationId === locationId) {
+        setCats((prev) => [created, ...prev].slice(0, CATS_PER_PAGE));
+        setTotal((prev) => prev + 1);
+      }
+      setForm(emptyForm(locationId));
       setShowForm(false);
-      setSuccess(`${created.name} was added to ${locationName}.`);
+      setSuccess(`${created.name} was added to ${created.currentLocationName || "the selected location"}.`);
       setCurrentPage(1);
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
@@ -169,6 +209,24 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
                 <option value="UNKNOWN">Unknown</option>
                 <option value="STERILIZED">Sterilized</option>
                 <option value="NOT_STERILIZED">Not sterilized</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Location
+              <select
+                value={form.currentLocationId}
+                onChange={(event) => setForm((prev) => ({ ...prev, currentLocationId: event.target.value }))}
+                disabled={isLoadingLocations}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <option value={locationId}>{locationName}</option>
+                {locations
+                  .filter((location) => location.id !== locationId)
+                  .map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">

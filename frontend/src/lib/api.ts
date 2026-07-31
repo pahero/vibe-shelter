@@ -46,6 +46,14 @@ export type CatCard = {
   updatedAt: string;
 };
 
+export type CatWeight = {
+  id: string;
+  catId: string;
+  weightKg: number;
+  measuredAt: string;
+  createdAt: string;
+};
+
 export type ListCatsParams = {
   locationId?: string;
   status?: CatStatus;
@@ -233,5 +241,35 @@ export const catsApi = {
       body: formData,
     });
     return handleResponse<CatCard>(response);
+  },
+
+  async listWeights(id: string): Promise<CatWeight[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/weights`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatWeight[]>(response);
+  },
+
+  async addWeight(id: string, data: { weightKg: number; measuredAt: string }): Promise<CatWeight> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/weights`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<CatWeight>(response);
+  },
+
+  async removeWeight(id: string, weightId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/weights/${weightId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      await handleResponse<never>(response);
+    }
   },
 };
