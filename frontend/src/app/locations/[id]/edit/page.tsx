@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { LocationForm } from "@/components/location-form";
 import { locationsApi, Location, CreateLocationDto, UpdateLocationDto } from "@/lib/api";
-import { ApiErrorHandler } from "@/lib/utils";
+import { ApiErrorHandler, formatDate } from "@/lib/utils";
 
 export default function EditLocationPage() {
   const router = useRouter();
@@ -103,6 +103,16 @@ export default function EditLocationPage() {
 
         {/* Form Container */}
         <div className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-8 shadow-panel backdrop-blur-sm">
+          <div className="mb-6 grid gap-3 rounded-2xl border border-[#d4c7b4] bg-white/45 p-4 text-sm">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Location ID</span>
+              <p className="mt-1 break-words font-mono font-medium text-gray-900">{location.id}</p>
+            </div>
+            <div>
+              <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Created</span>
+              <p className="mt-1 font-medium text-gray-900">{formatDate(location.createdAt)}</p>
+            </div>
+          </div>
           <LocationForm initialData={location} onSubmit={handleSubmit} isLoading={isSaving} error={error} />
         </div>
       </div>

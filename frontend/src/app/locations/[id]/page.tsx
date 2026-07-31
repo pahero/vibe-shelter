@@ -132,6 +132,9 @@ export default function LocationDetailPage() {
                 <span className={`rounded-full px-3 py-1 font-mono text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
                   {location.status}
                 </span>
+                <span className="rounded-full border border-[#d4c7b4] bg-white/50 px-3 py-1 font-mono text-xs text-[#6d6a66]">
+                  Updated {formatDate(location.updatedAt)}
+                </span>
               </div>
             </div>
 
@@ -143,30 +146,12 @@ export default function LocationDetailPage() {
               </div>
             )}
 
-            {/* Details Grid */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            {location.ownerId && (
               <div className="rounded-lg border border-[#d4c7b4] bg-white/40 p-4">
-                <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Location ID</span>
-                <p className="mt-2 break-words font-mono text-sm font-medium">{location.id}</p>
+                <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Owner ID</span>
+                <p className="mt-2 break-words font-mono text-sm font-medium">{location.ownerId}</p>
               </div>
-
-              {location.ownerId && (
-                <div className="rounded-lg border border-[#d4c7b4] bg-white/40 p-4">
-                  <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Owner ID</span>
-                  <p className="mt-2 break-words font-mono text-sm font-medium">{location.ownerId}</p>
-                </div>
-              )}
-
-              <div className="rounded-lg border border-[#d4c7b4] bg-white/40 p-4">
-                <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Created</span>
-                <p className="mt-2 text-sm">{formatDate(location.createdAt)}</p>
-              </div>
-
-              <div className="rounded-lg border border-[#d4c7b4] bg-white/40 p-4">
-                <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Updated</span>
-                <p className="mt-2 text-sm">{formatDate(location.updatedAt)}</p>
-              </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3 border-t border-[#d4c7b4] pt-6">

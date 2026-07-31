@@ -38,9 +38,11 @@ function optionalDate(date: string | null): string {
 export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
   const initials = cat.name.trim().slice(0, 2).toUpperCase() || "CAT";
   const photoUrl = cat.primaryPhotoUrl ?? fallbackCatPhotoUrl;
+  const profileHref = `/cats/${cat.id}`;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/70 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="group relative overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/70 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md has-focus-visible:ring-2 has-focus-visible:ring-[#d05a2c]">
+      {showProfileLink && <Link href={profileHref} aria-label={`Open profile for ${cat.name}`} className="absolute inset-0 z-10 cursor-pointer" />}
       <div className="relative h-40 bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
         <div
           aria-label={`Photo of ${cat.name}`}
@@ -89,12 +91,9 @@ export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
         <div className="flex items-center justify-between gap-3 border-t border-[#d4c7b4] pt-3">
           <span className="text-xs text-[#6d6a66]">Updated {formatDateShort(cat.updatedAt)}</span>
           {showProfileLink && (
-            <Link
-              href={`/cats/${cat.id}`}
-              className="inline-flex items-center justify-center rounded-lg border border-[#d05a2c]/30 bg-[#d05a2c]/10 px-3 py-2 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20"
-            >
+            <span className="inline-flex items-center justify-center rounded-lg border border-[#d05a2c]/30 bg-[#d05a2c]/10 px-3 py-2 text-xs font-semibold text-[#b24a20] transition group-hover:bg-[#d05a2c]/20">
               Open profile
-            </Link>
+            </span>
           )}
         </div>
       </div>
