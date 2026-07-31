@@ -14,16 +14,13 @@ export function LocationsList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [archivingId, setArchivingId] = useState<string | null>(null);
 
   // Filters
   const [typeFilter, setTypeFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [ownerIdFilter, setOwnerIdFilter] = useState<string>("");
 
   useEffect(() => {
     fetchLocations();
-  }, [currentPage, typeFilter, statusFilter, ownerIdFilter]);
+  }, [currentPage, typeFilter]);
 
   const fetchLocations = async () => {
     setIsLoading(true);
@@ -35,8 +32,6 @@ export function LocationsList() {
       };
 
       if (typeFilter) params.type = typeFilter;
-      if (statusFilter) params.status = statusFilter;
-      if (ownerIdFilter) params.ownerId = ownerIdFilter;
 
       const response = await locationsApi.listLocations(params);
       setLocations(response.data);
@@ -45,19 +40,6 @@ export function LocationsList() {
       setError(ApiErrorHandler.handle(err));
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleArchive = async (id: string) => {
-    setArchivingId(id);
-    try {
-      await locationsApi.archiveLocation(id);
-      setLocations((prev) => prev.filter((loc) => loc.id !== id));
-      setTotal((prev) => prev - 1);
-    } catch (err) {
-      setError(ApiErrorHandler.handle(err));
-    } finally {
-      setArchivingId(null);
     }
   };
 
@@ -71,7 +53,6 @@ export function LocationsList() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900">Locations</h1>
-          <p className="mt-1 text-sm text-gray-600">Manage shelters, clinics, and foster locations</p>
         </div>
         <Link
           href="/locations/new"
@@ -90,7 +71,7 @@ export function LocationsList() {
 
       {/* Filters */}
       <div className="rounded-lg border border-[#d4c7b4] bg-white p-4">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:max-w-xs">
           <div>
             <label htmlFor="type-filter" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
               Type Filter
@@ -109,43 +90,6 @@ export function LocationsList() {
               <option value="CLINIC">Clinic</option>
               <option value="FOSTER">Foster</option>
             </select>
-          </div>
-
-          <div>
-            <label htmlFor="status-filter" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
-              Status Filter
-            </label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="mt-2 w-full rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-            >
-              <option value="">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="ARCHIVED">Archived</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="owner-id-filter" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
-              Owner ID Filter
-            </label>
-            <input
-              id="owner-id-filter"
-              type="text"
-              value={ownerIdFilter}
-              onChange={(e) => {
-                setOwnerIdFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Filter by owner ID"
-              className="mt-2 w-full rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-            />
           </div>
         </div>
       </div>
@@ -168,12 +112,7 @@ export function LocationsList() {
       {!isLoading && locations.length > 0 && (
         <div className="grid gap-4">
           {locations.map((location) => (
-            <LocationItem
-              key={location.id}
-              location={location}
-              onArchive={handleArchive}
-              isArchiving={archivingId === location.id}
-            />
+            <LocationItem key={location.id} location={location} />
           ))}
         </div>
       )}

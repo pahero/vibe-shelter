@@ -153,25 +153,26 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
         />
       </div>
 
-      {/* Owner ID (Foster-specific) */}
-      <div>
-        <label htmlFor="ownerId" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
-          Owner ID {formData.type === "FOSTER" && "*"}
-        </label>
-        <input
-          id="ownerId"
-          type="text"
-          placeholder={formData.type === "FOSTER" ? "Enter foster owner ID (required for foster)" : "Optional owner ID"}
-          value={formData.ownerId}
-          onChange={(e) => handleChange("ownerId", e.target.value)}
-          className={`mt-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 ${
-            validationErrors.ownerId
-              ? "border-red-300 bg-red-50 focus:ring-red-500"
-              : "border-[#d4c7b4] bg-white focus:ring-[#d05a2c]"
-          }`}
-        />
-        {validationErrors.ownerId && <p className="mt-1 text-xs text-red-600">{validationErrors.ownerId}</p>}
-      </div>
+      {!initialData && (
+        <div>
+          <label htmlFor="ownerId" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+            Owner ID {formData.type === "FOSTER" && "*"}
+          </label>
+          <input
+            id="ownerId"
+            type="text"
+            placeholder={formData.type === "FOSTER" ? "Enter foster owner ID (required for foster)" : "Optional owner ID"}
+            value={formData.ownerId}
+            onChange={(e) => handleChange("ownerId", e.target.value)}
+            className={`mt-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 ${
+              validationErrors.ownerId
+                ? "border-red-300 bg-red-50 focus:ring-red-500"
+                : "border-[#d4c7b4] bg-white focus:ring-[#d05a2c]"
+            }`}
+          />
+          {validationErrors.ownerId && <p className="mt-1 text-xs text-red-600">{validationErrors.ownerId}</p>}
+        </div>
+      )}
 
       {/* Status (Edit only) */}
       {initialData && (
