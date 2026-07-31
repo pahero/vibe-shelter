@@ -48,7 +48,7 @@ export default function EditLocationPage() {
 
     try {
       await locationsApi.updateLocation(location.id, data as UpdateLocationDto);
-      router.push(`/locations/${location.id}?success=updated`);
+      router.push("/locations?success=updated");
     } catch (err) {
       if (ApiErrorHandler.isDuplicateError(err)) {
         setError("A location with this name already exists");

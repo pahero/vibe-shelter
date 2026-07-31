@@ -4,6 +4,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
+import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatCard as CatCardType, CatSex, CatStatus, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -17,6 +18,25 @@ type CatEditForm = {
   sterilizationStatus: SterilizationStatus;
   status: CatStatus;
   currentLocationId: string;
+};
+
+const sexLabels: Record<CatSex, string> = {
+  FEMALE: "Female",
+  MALE: "Male",
+  UNKNOWN: "Unknown",
+};
+
+const sterilizationLabels: Record<SterilizationStatus, string> = {
+  STERILIZED: "Neutered",
+  NOT_STERILIZED: "Not neutered",
+  UNKNOWN: "Unknown",
+};
+
+const statusLabels: Record<CatStatus, string> = {
+  ACTIVE: "Active",
+  ADOPTED: "Adopted",
+  DECEASED: "Deceased",
+  ARCHIVED: "Archived",
 };
 
 function dateInputValue(date: string | null): string {
@@ -60,6 +80,7 @@ export default function CatProfilePage() {
   const [weightKg, setWeightKg] = useState("");
   const [weightDate, setWeightDate] = useState("");
   const [weightError, setWeightError] = useState<string | null>(null);
+  const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
 
   useEffect(() => {
     if (!catId) return;
@@ -291,7 +312,18 @@ export default function CatProfilePage() {
         {!isLoading && cat && (
           <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,360px)_1fr]">
             <div className="space-y-4">
-              <CatCard cat={cat} showProfileLink={false} />
+              {cat.primaryPhotoUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoExpanded(true)}
+                  className="block w-full rounded-2xl text-left focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                  aria-label={`Expand photo of ${cat.name}`}
+                >
+                  <CatCard cat={cat} showProfileLink={false} />
+                </button>
+              ) : (
+                <CatCard cat={cat} showProfileLink={false} />
+              )}
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Photo</p>
                 <h2 className="mt-1 text-lg font-semibold text-gray-900">Edit primary photo</h2>
@@ -370,8 +402,10 @@ export default function CatProfilePage() {
                       <input
                         value={editForm.color}
                         onChange={(event) => setEditForm((prev) => prev && { ...prev, color: event.target.value })}
+                        list="cat-color-options"
                         className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       />
+                      <CatColorDatalist />
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Sex
@@ -399,7 +433,7 @@ export default function CatProfilePage() {
                       </select>
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Sterilization
+                      Neutering
                       <select
                         value={editForm.sterilizationStatus}
                         onChange={(event) =>
@@ -408,8 +442,8 @@ export default function CatProfilePage() {
                         className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       >
                         <option value="UNKNOWN">Unknown</option>
-                        <option value="STERILIZED">Sterilized</option>
-                        <option value="NOT_STERILIZED">Not sterilized</option>
+                        <option value="STERILIZED">Neutered</option>
+                        <option value="NOT_STERILIZED">Not neutered</option>
                       </select>
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
@@ -456,26 +490,29 @@ export default function CatProfilePage() {
                   </div>
                 </form>
               ) : (
-                <dl className="mt-6 grid gap-4">
-                  <div className="rounded-xl border border-[#d4c7b4] bg-white/50 p-4">
-                    <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Current location</dt>
-                    <dd className="mt-1 font-semibold">{cat.currentLocationName || "Not assigned"}</dd>
-                  </div>
-                  <div className="rounded-xl border border-[#d4c7b4] bg-white/50 p-4">
-                    <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Cat ID</dt>
-                    <dd className="mt-1 break-words font-mono text-sm font-medium">{cat.id}</dd>
-                  </div>
-                  <div className="rounded-xl border border-[#d4c7b4] bg-white/50 p-4">
-                    <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Last updated</dt>
-                    <dd className="mt-1 font-semibold">{formatDate(cat.updatedAt)}</dd>
-                  </div>
+                <dl className="mt-6 grid gap-x-6 gap-y-3 rounded-2xl border border-[#d4c7b4] bg-white/45 p-4 sm:grid-cols-2">
+                  {[
+                    ["Current location", cat.currentLocationName || "Not assigned"],
+                    ["Sex", sexLabels[cat.sex]],
+                    ["Status", statusLabels[cat.status]],
+                    ["Neutering", sterilizationLabels[cat.sterilizationStatus]],
+                    ["Color", cat.color || "Not set"],
+                    ["Microchip number", cat.microchipNumber || "Not set"],
+                    ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
+                    ["Estimated birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
+                    ["Last updated", formatDate(cat.updatedAt)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 sm:[&:nth-last-child(2)]:border-b-0">
+                      <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">{label}</dt>
+                      <dd className="mt-0.5 truncate font-semibold text-gray-900">{value}</dd>
+                    </div>
+                  ))}
                 </dl>
               )}
             </section>
             <section className="md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Weight history</p>
-                <h2 className="mt-1 text-2xl font-semibold text-gray-900">Recorded weights</h2>
               </div>
 
               <form onSubmit={handleWeightSubmit} className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
@@ -573,6 +610,24 @@ export default function CatProfilePage() {
                 </>
               )}
             </section>
+          </div>
+        )}
+
+        {cat?.primaryPhotoUrl && isPhotoExpanded && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true" aria-label={`Photo of ${cat.name}`}>
+            <button
+              type="button"
+              onClick={() => setIsPhotoExpanded(false)}
+              className="absolute right-4 top-4 z-20 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+            >
+              Close
+            </button>
+            <button type="button" onClick={() => setIsPhotoExpanded(false)} className="absolute inset-0 z-0 cursor-zoom-out" aria-label="Close expanded photo" />
+            <div
+              aria-label={`Photo of ${cat.name}`}
+              className="relative z-10 h-[90dvh] w-[95vw] rounded-2xl bg-contain bg-center bg-no-repeat shadow-2xl"
+              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
+            />
           </div>
         )}
       </div>

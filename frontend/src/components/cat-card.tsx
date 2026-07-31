@@ -16,9 +16,9 @@ const sexLabels = {
 };
 
 const sterilizationLabels = {
-  STERILIZED: "Sterilized",
-  NOT_STERILIZED: "Not sterilized",
-  UNKNOWN: "Sterilization unknown",
+  STERILIZED: "Neutered",
+  NOT_STERILIZED: "Not neutered",
+  UNKNOWN: "Neutering unknown",
 };
 
 const statusStyles = {
@@ -28,31 +28,31 @@ const statusStyles = {
   ARCHIVED: "bg-red-100 text-red-800",
 };
 
-const fallbackCatPhotoUrl =
-  "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=900&q=80";
-
 function optionalDate(date: string | null): string {
   return date ? formatDateShort(date) : "Not set";
 }
 
 export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
   const initials = cat.name.trim().slice(0, 2).toUpperCase() || "CAT";
-  const photoUrl = cat.primaryPhotoUrl ?? fallbackCatPhotoUrl;
   const profileHref = `/cats/${cat.id}`;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/70 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md has-focus-visible:ring-2 has-focus-visible:ring-[#d05a2c]">
       {showProfileLink && <Link href={profileHref} aria-label={`Open profile for ${cat.name}`} className="absolute inset-0 z-10 cursor-pointer" />}
       <div className="relative h-40 bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
-        <div
-          aria-label={`Photo of ${cat.name}`}
-          className="h-full w-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${photoUrl})` }}
-        />
-        {!cat.primaryPhotoUrl && (
-          <span className="absolute bottom-3 left-3 rounded-full bg-white/85 px-3 py-1 font-mono text-xs font-bold text-[#b24a20] shadow-sm">
-            {initials}
-          </span>
+        {cat.primaryPhotoUrl ? (
+          <div
+            aria-label={`Photo of ${cat.name}`}
+            className="h-full w-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
+          />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[#b24a20]" aria-label={`No photo for ${cat.name}`}>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#d05a2c]/25 bg-white/55 shadow-sm">
+              <span className="text-4xl" aria-hidden="true">🐾</span>
+            </div>
+            <span className="rounded-full bg-white/85 px-3 py-1 font-mono text-xs font-bold shadow-sm">{initials}</span>
+          </div>
         )}
       </div>
 
@@ -77,7 +77,7 @@ export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
             <dd className="font-medium">{optionalDate(cat.estimatedBirthDate)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-[#6d6a66]">Sterilization</dt>
+            <dt className="text-[#6d6a66]">Neutering</dt>
             <dd className="font-medium text-right">{sterilizationLabels[cat.sterilizationStatus]}</dd>
           </div>
           {cat.microchipNumber && (

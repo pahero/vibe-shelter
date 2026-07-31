@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
+import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatCard as CatCardType, CatSex, CreateCatDto, Location, catsApi, locationsApi, SterilizationStatus } from "@/lib/api";
 
@@ -181,9 +182,11 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               <input
                 value={form.color}
                 onChange={(event) => setForm((prev) => ({ ...prev, color: event.target.value }))}
+                list="cat-color-options"
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                placeholder="Calico"
+                placeholder="Black-white"
               />
+              <CatColorDatalist />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Sex *
@@ -198,7 +201,7 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Sterilization *
+              Neutering *
               <select
                 value={form.sterilizationStatus}
                 onChange={(event) =>
@@ -207,8 +210,8 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               >
                 <option value="UNKNOWN">Unknown</option>
-                <option value="STERILIZED">Sterilized</option>
-                <option value="NOT_STERILIZED">Not sterilized</option>
+                <option value="STERILIZED">Neutered</option>
+                <option value="NOT_STERILIZED">Not neutered</option>
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">

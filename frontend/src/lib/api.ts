@@ -96,7 +96,7 @@ export type CreateLocationDto = {
 export type UpdateLocationDto = {
   name?: string;
   description?: string | null;
-  ownerId?: string;
+  ownerId?: string | null;
   status?: "ACTIVE" | "INACTIVE" | "ARCHIVED";
 };
 

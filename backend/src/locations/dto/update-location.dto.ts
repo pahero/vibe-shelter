@@ -18,7 +18,7 @@ export class UpdateLocationDto {
   })
   @IsString()
   @IsOptional()
-  description?: string;
+  description?: string | null;
 
   @ApiProperty({
     description: 'Owner user ID',

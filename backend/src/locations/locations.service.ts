@@ -188,8 +188,8 @@ export class LocationsService {
 
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name.trim();
-    if (data.description !== undefined) updateData.description = data.description?.trim();
-    if (data.ownerId !== undefined) updateData.ownerId = data.ownerId;
+    if (data.description !== undefined) updateData.description = data.description?.trim() || null;
+    if (data.ownerId !== undefined) updateData.ownerId = data.ownerId?.trim() || null;
     if (data.status !== undefined) updateData.status = data.status;
 
     return await (this.prisma as any).location.update({

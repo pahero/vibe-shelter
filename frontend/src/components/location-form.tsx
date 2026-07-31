@@ -66,12 +66,12 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
     }
 
     const submitData = initialData
-      ? {
-          name: formData.name,
-          description: formData.description || null,
-          ownerId: formData.ownerId,
-          status: formData.status,
-        }
+        ? {
+            name: formData.name,
+            description: formData.description || null,
+            ownerId: formData.ownerId || null,
+            status: formData.status,
+          }
       : {
           name: formData.name,
           type: formData.type,

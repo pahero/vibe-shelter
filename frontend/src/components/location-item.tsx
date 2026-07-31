@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Location } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
 
 export type LocationItemProps = {
   location: Location;
@@ -33,7 +32,8 @@ export function LocationItem({ location, onArchive, isArchiving = false }: Locat
   };
 
   return (
-    <div className={`rounded-lg border ${typeStyle.border} ${typeStyle.bg} p-4 transition hover:shadow-md`}>
+    <div className={`group relative rounded-lg border ${typeStyle.border} ${typeStyle.bg} p-4 transition hover:shadow-md`}>
+      <Link href={`/locations/${location.id}`} aria-label={`View ${location.name}`} className="absolute inset-0 z-10 cursor-pointer rounded-lg" />
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -45,19 +45,7 @@ export function LocationItem({ location, onArchive, isArchiving = false }: Locat
 
           {location.description && <p className="mt-1 text-sm text-gray-600">{location.description}</p>}
 
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-600">
-            <span>
-              <strong>ID:</strong> {location.id.slice(0, 8)}...
-            </span>
-            {location.ownerId && (
-              <span>
-                <strong>Owner:</strong> {location.ownerId.slice(0, 8)}...
-              </span>
-            )}
-            <span>
-              <strong>Created:</strong> {formatDate(location.createdAt)}
-            </span>
-          </div>
+          {location.ownerId && <p className="mt-3 text-xs text-gray-600"><strong>Owner:</strong> {location.ownerId.slice(0, 8)}...</p>}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -67,7 +55,7 @@ export function LocationItem({ location, onArchive, isArchiving = false }: Locat
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="relative z-20 mt-3 flex gap-2">
         <Link
           href={`/locations/${location.id}`}
           className="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100"

@@ -99,6 +99,25 @@ describe('LocationsService', () => {
     });
   });
 
+  describe('updateLocation', () => {
+    it('updates description and normalizes blank owner id to null', async () => {
+      const location = { id: 'location-id', name: 'Shelter', ownerId: null };
+      prisma.location.findUnique.mockResolvedValueOnce(location);
+      prisma.location.update.mockResolvedValue({ ...location, description: 'Updated' });
+
+      await service.updateLocation('location-id', {
+        description: ' Updated ',
+        ownerId: '',
+      });
+
+      expect(prisma.location.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ description: 'Updated', ownerId: null }),
+        }),
+      );
+    });
+  });
+
   describe('validation methods', () => {
     it('should validate location type', async () => {
       expect(await service.validateLocationTypeValid('SHELTER')).toBe(true);
