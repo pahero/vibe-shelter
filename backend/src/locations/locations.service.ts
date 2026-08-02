@@ -9,11 +9,9 @@ import { PrismaService } from '../database/prisma.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
 import { Prisma } from '@prisma/client';
 
-const VALID_LOCATION_TYPES = ['SHELTER', 'CLINIC', 'FOSTER'];
 const VALID_LOCATION_STATUSES = ['ACTIVE', 'INACTIVE', 'ARCHIVED'];
 
 export interface LocationFilters {
-  type?: string;
   ownerId?: string;
   status?: string;
   skip?: number;
@@ -25,13 +23,6 @@ export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
   async createLocation(data: CreateLocationDto) {
-    // Validate location type
-    if (!VALID_LOCATION_TYPES.includes(data.type)) {
-      throw new BadRequestException(
-        `Invalid location type. Must be one of: ${VALID_LOCATION_TYPES.join(', ')}`,
-      );
-    }
-
     // Validate name is not empty
     if (!data.name || data.name.trim().length === 0) {
       throw new BadRequestException('Location name is required');
@@ -52,7 +43,6 @@ export class LocationsService {
         data: {
           name: data.name.trim(),
           description: data.description?.trim(),
-          type: data.type,
           ownerId: data.ownerId || null,
           status: 'ACTIVE',
         },
@@ -71,18 +61,10 @@ export class LocationsService {
   }
 
   async findAll(filters: LocationFilters = {}) {
-    const { type, ownerId, status, skip = 0, limit = 50 } = filters;
+    const { ownerId, status, skip = 0, limit = 50 } = filters;
 
     // Build where clause
     const where: any = {};
-    if (type) {
-      if (!VALID_LOCATION_TYPES.includes(type)) {
-        throw new BadRequestException(
-          `Invalid type filter. Must be one of: ${VALID_LOCATION_TYPES.join(', ')}`,
-        );
-      }
-      where.type = type;
-    }
     if (ownerId) {
       where.ownerId = ownerId;
     }
@@ -235,9 +217,5 @@ export class LocationsService {
       where: { id },
     });
     return location?.status === 'ACTIVE';
-  }
-
-  async validateLocationTypeValid(type: string): Promise<boolean> {
-    return VALID_LOCATION_TYPES.includes(type);
   }
 }

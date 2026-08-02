@@ -7,12 +7,6 @@ export type LocationItemProps = {
   location: Location;
 };
 
-const typeStyles = {
-  SHELTER: { bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-700", badge: "bg-blue-100" },
-  CLINIC: { bg: "bg-green-50", border: "border-green-300", text: "text-green-700", badge: "bg-green-100" },
-  FOSTER: { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", badge: "bg-purple-100" },
-};
-
 const statusStyles = {
   ACTIVE: { bg: "bg-green-100", text: "text-green-800" },
   INACTIVE: { bg: "bg-yellow-100", text: "text-yellow-800" },
@@ -20,11 +14,10 @@ const statusStyles = {
 };
 
 export function LocationItem({ location }: LocationItemProps) {
-  const typeStyle = typeStyles[location.type];
   const statusStyle = statusStyles[location.status];
 
   return (
-    <div className={`group relative rounded-lg border ${typeStyle.border} ${typeStyle.bg} p-4 transition hover:shadow-md`}>
+    <div className="group relative rounded-lg border border-[#d4c7b4] bg-white/75 p-4 transition hover:shadow-md">
       <Link href={`/locations/${location.id}`} aria-label={`View ${location.name}`} className="absolute inset-0 z-10 cursor-pointer rounded-lg" />
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">

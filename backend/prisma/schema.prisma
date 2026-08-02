@@ -51,12 +51,6 @@ enum UserRole {
   STAFF
 }
 
-enum LocationType {
-  SHELTER
-  CLINIC
-  FOSTER
-}
-
 enum LocationStatus {
   ACTIVE
   INACTIVE
@@ -86,7 +80,6 @@ model Location {
   id          String         @id @default(cuid())
   name        String         @unique
   description String?
-  type        LocationType
   ownerId     String?
   owner       User?          @relation("ownedLocations", fields: [ownerId], references: [id], onDelete: SetNull)
   status      LocationStatus @default(ACTIVE)
@@ -94,7 +87,6 @@ model Location {
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
 
-  @@index([type])
   @@index([ownerId])
   @@index([status])
 }
@@ -128,6 +120,7 @@ model Cat {
 model CatTag {
   id        String        @id @default(cuid())
   name      String        @unique
+  color     String        @default("#ffb38a")
   createdAt DateTime      @default(now())
   cats      CatTagOnCat[]
 

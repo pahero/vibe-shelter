@@ -15,12 +15,9 @@ export function LocationsList() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Filters
-  const [typeFilter, setTypeFilter] = useState<string>("");
-
   useEffect(() => {
     fetchLocations();
-  }, [currentPage, typeFilter]);
+  }, [currentPage]);
 
   const fetchLocations = async () => {
     setIsLoading(true);
@@ -30,8 +27,6 @@ export function LocationsList() {
         skip: (currentPage - 1) * LOCATIONS_PER_PAGE,
         limit: LOCATIONS_PER_PAGE,
       };
-
-      if (typeFilter) params.type = typeFilter;
 
       const response = await locationsApi.listLocations(params);
       setLocations(response.data);
@@ -68,31 +63,6 @@ export function LocationsList() {
           <p className="text-sm font-medium text-red-800">{error}</p>
         </div>
       )}
-
-      {/* Filters */}
-      <div className="rounded-lg border border-[#d4c7b4] bg-white p-4">
-        <div className="grid gap-3 sm:max-w-xs">
-          <div>
-            <label htmlFor="type-filter" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
-              Type Filter
-            </label>
-            <select
-              id="type-filter"
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="mt-2 w-full rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-            >
-              <option value="">All Types</option>
-              <option value="SHELTER">Shelter</option>
-              <option value="CLINIC">Clinic</option>
-              <option value="FOSTER">Foster</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Loading State */}
       {isLoading && (

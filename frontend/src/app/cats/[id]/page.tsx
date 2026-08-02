@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatCard as CatCardType, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
 type CatEditForm = {
@@ -411,13 +412,13 @@ export default function CatProfilePage() {
               )}
               <div className="relative flex flex-wrap items-center gap-1.5 px-1">
                 {cat.tags.map((tag) => (
-                  <span key={tag.id} className="inline-flex items-center gap-1 rounded-full border border-[#d4c7b4] bg-white/65 px-2.5 py-1 text-xs font-semibold text-gray-900">
+                  <span key={tag.id} style={tagChipStyle(tag)} className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold text-gray-900">
                     {tag.name}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag.id)}
                       disabled={removingTagId === tag.id}
-                      className="text-[#b24a20] transition hover:text-red-700 disabled:opacity-50"
+                      className="text-gray-700 transition hover:text-red-700 disabled:opacity-50"
                       aria-label={`Remove ${tag.name} tag`}
                     >
                       ×
@@ -444,7 +445,8 @@ export default function CatProfilePage() {
                             type="button"
                             onClick={() => addTagByName(tag.name)}
                             disabled={isSavingTag}
-                            className="rounded-full border border-[#d4c7b4] bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 transition hover:bg-[#fff0e8] disabled:cursor-not-allowed disabled:opacity-60"
+                            style={tagChipStyle(tag)}
+                            className="rounded-full border px-2.5 py-1 text-xs font-semibold text-gray-900 transition brightness-100 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {tag.name}
                           </button>

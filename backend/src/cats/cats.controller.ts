@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
-import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto } from './dto';
+import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 
 @Controller('api/cats')
 @UseGuards(SessionAuthGuard)
@@ -53,6 +53,17 @@ export class CatsController {
   @HttpCode(HttpStatus.CREATED)
   async createTag(@Body() dto: CreateCatTagDto) {
     return this.catsService.createTag(dto);
+  }
+
+  @Patch('tags/:tagId')
+  async updateTag(@Param('tagId') tagId: string, @Body() dto: UpdateCatTagDto) {
+    return this.catsService.updateTag(tagId, dto);
+  }
+
+  @Delete('tags/:tagId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTag(@Param('tagId') tagId: string) {
+    await this.catsService.deleteTag(tagId);
   }
 
   @Patch(':id')

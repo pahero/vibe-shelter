@@ -146,14 +146,23 @@ describe('Cats endpoints', () => {
 
     const createdTag = await request(app.getHttpServer())
       .post('/api/cats/tags')
-      .send({ name: unique('tag') })
+      .send({ name: unique('tag'), color: '#8ecaff' })
       .expect(201);
+
+    expect(createdTag.body.color).toBe('#8ecaff');
+
+    const renamedTag = await request(app.getHttpServer())
+      .patch(`/api/cats/tags/${createdTag.body.id}`)
+      .send({ color: '#ffd166' })
+      .expect(200);
+
+    expect(renamedTag.body.color).toBe('#ffd166');
 
     const taggedCat = await request(app.getHttpServer())
       .post(`/api/cats/${cat.id}/tags/${createdTag.body.id}`)
       .expect(201);
 
-    expect(taggedCat.body.tags).toEqual([{ id: createdTag.body.id, name: createdTag.body.name }]);
+    expect(taggedCat.body.tags).toEqual([{ id: createdTag.body.id, name: createdTag.body.name, color: '#ffd166' }]);
 
     const list = await request(app.getHttpServer())
       .get('/api/cats')
@@ -163,8 +172,16 @@ describe('Cats endpoints', () => {
     expect(list.body.data.map((item: { id: string }) => item.id)).toEqual([cat.id]);
 
     await request(app.getHttpServer())
+      .delete(`/api/cats/tags/${createdTag.body.id}`)
+      .expect(409);
+
+    await request(app.getHttpServer())
       .delete(`/api/cats/${cat.id}/tags/${createdTag.body.id}`)
       .expect(200);
+
+    await request(app.getHttpServer())
+      .delete(`/api/cats/tags/${createdTag.body.id}`)
+      .expect(204);
   });
 
   it('returns validation and not found errors', async () => {
@@ -186,7 +203,7 @@ function unique(prefix: string): string {
 
 async function createLocation(prisma: PrismaService, prefix: string) {
   return (prisma as any).location.create({
-    data: { name: unique(`endpoint-${prefix}`), type: 'FOSTER', status: 'ACTIVE' },
+    data: { name: unique(`endpoint-${prefix}`), status: 'ACTIVE' },
   });
 }
 

@@ -29,14 +29,12 @@ export class LocationsController {
 
   @Get()
   async listLocations(
-    @Query('type') type?: string,
     @Query('ownerId') ownerId?: string,
     @Query('status') status?: string,
     @Query('skip') skip?: string,
     @Query('limit') limit?: string,
   ) {
     return await this.locationsService.findAll({
-      type,
       ownerId,
       status,
       skip: skip ? parseInt(skip, 10) : 0,

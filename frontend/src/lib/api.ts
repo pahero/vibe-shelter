@@ -4,7 +4,6 @@ export type Location = {
   id: string;
   name: string;
   description: string | null;
-  type: "SHELTER" | "CLINIC" | "FOSTER";
   ownerId: string | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   createdAt: string;
@@ -12,7 +11,6 @@ export type Location = {
 };
 
 export type ListLocationsParams = {
-  type?: string;
   ownerId?: string;
   status?: string;
   skip?: number;
@@ -50,6 +48,7 @@ export type CatCard = {
 export type CatTag = {
   id: string;
   name: string;
+  color: string;
 };
 
 export type CatWeight = {
@@ -95,7 +94,6 @@ export type UpdateCatDto = Partial<CreateCatDto> & {
 
 export type CreateLocationDto = {
   name: string;
-  type: "SHELTER" | "CLINIC" | "FOSTER";
   description?: string;
   ownerId?: string;
 };
@@ -127,13 +125,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
       error: error.error,
     } as ApiError;
   }
+  if (response.status === 204) {
+    return undefined as T;
+  }
   return (await response.json()) as T;
 }
 
 export const locationsApi = {
   async listLocations(params?: ListLocationsParams): Promise<ListLocationsResponse> {
     const query = new URLSearchParams();
-    if (params?.type) query.append("type", params.type);
     if (params?.ownerId) query.append("ownerId", params.ownerId);
     if (params?.status) query.append("status", params.status);
     if (params?.skip !== undefined) query.append("skip", params.skip.toString());
@@ -182,12 +182,12 @@ export const locationsApi = {
     return handleResponse<Location>(response);
   },
 
-  async archiveLocation(id: string): Promise<Location> {
+  async archiveLocation(id: string): Promise<void> {
     const response = await fetch(`${BACKEND_URL}/api/locations/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
-    return handleResponse<Location>(response);
+    return handleResponse<void>(response);
   },
 };
 
@@ -228,16 +228,36 @@ export const catsApi = {
     return handleResponse<CatTag[]>(response);
   },
 
-  async createTag(name: string): Promise<CatTag> {
+  async createTag(name: string, color?: string): Promise<CatTag> {
     const response = await fetch(`${BACKEND_URL}/api/cats/tags`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, color }),
     });
     return handleResponse<CatTag>(response);
+  },
+
+  async updateTag(id: string, data: { name?: string; color?: string }): Promise<CatTag> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tags/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<CatTag>(response);
+  },
+
+  async deleteTag(id: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tags/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleResponse<void>(response);
   },
 
   async addTag(id: string, tagId: string): Promise<CatCard> {

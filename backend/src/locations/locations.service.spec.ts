@@ -38,20 +38,10 @@ describe('LocationsService', () => {
   });
 
   describe('createLocation', () => {
-    it('should validate location type', async () => {
-      await expect(
-        service.createLocation({
-          name: 'Test',
-          type: 'INVALID',
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
     it('should reject empty name', async () => {
       await expect(
         service.createLocation({
           name: '',
-          type: 'SHELTER',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -62,7 +52,6 @@ describe('LocationsService', () => {
       await expect(
         service.createLocation({
           name: 'Foster',
-          type: 'FOSTER',
           ownerId: 'invalid-user',
         }),
       ).rejects.toThrow(BadRequestException);
@@ -86,12 +75,6 @@ describe('LocationsService', () => {
   });
 
   describe('findAll', () => {
-    it('should reject invalid type filter', async () => {
-      await expect(
-        service.findAll({ type: 'INVALID' }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
     it('should reject invalid status filter', async () => {
       await expect(
         service.findAll({ status: 'INVALID' }),
@@ -118,12 +101,4 @@ describe('LocationsService', () => {
     });
   });
 
-  describe('validation methods', () => {
-    it('should validate location type', async () => {
-      expect(await service.validateLocationTypeValid('SHELTER')).toBe(true);
-      expect(await service.validateLocationTypeValid('CLINIC')).toBe(true);
-      expect(await service.validateLocationTypeValid('FOSTER')).toBe(true);
-      expect(await service.validateLocationTypeValid('INVALID')).toBe(false);
-    });
-  });
 });

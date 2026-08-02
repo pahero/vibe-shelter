@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CatCard as CatCardType } from "@/lib/api";
+import { tagChipStyle } from "@/lib/tag-colors";
 import { formatDateShort } from "@/lib/utils";
 
 export type CatCardProps = {
@@ -81,7 +82,7 @@ export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
         {cat.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {cat.tags.map((tag) => (
-              <span key={tag.id} className="rounded-full border border-[#d4c7b4] bg-white/65 px-2.5 py-1 text-xs font-semibold text-[#6d6a66]">
+              <span key={tag.id} style={tagChipStyle(tag)} className="rounded-full border px-2.5 py-1 text-xs font-semibold text-gray-900">
                 {tag.name}
               </span>
             ))}

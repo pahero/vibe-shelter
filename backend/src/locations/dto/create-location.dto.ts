@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLocationDto {
@@ -20,16 +20,7 @@ export class CreateLocationDto {
   description?: string;
 
   @ApiProperty({
-    description: 'Location type',
-    enum: ['SHELTER', 'CLINIC', 'FOSTER'],
-    example: 'SHELTER',
-  })
-  @IsEnum(['SHELTER', 'CLINIC', 'FOSTER'])
-  @IsNotEmpty()
-  type!: string;
-
-  @ApiProperty({
-    description: 'Owner user ID (for FOSTER locations)',
+    description: 'Owner user ID',
     required: false,
   })
   @IsString()

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto } from './dto';
+import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 
 const VALID_CAT_SEXES = ['FEMALE', 'MALE', 'UNKNOWN'] as const;
@@ -16,6 +16,28 @@ const VALID_STERILIZATION_STATUSES = [
   'UNKNOWN',
 ] as const;
 const VALID_CAT_STATUSES = ['ACTIVE', 'ADOPTED', 'DECEASED', 'ARCHIVED'] as const;
+const VALID_TAG_COLORS = [
+  '#ffb38a',
+  '#f5a3ad',
+  '#ffd166',
+  '#9ee6a8',
+  '#8ecaff',
+  '#b8a7ff',
+  '#eda6f0',
+  '#95d8c8',
+  '#ffd6a5',
+  '#f7e36d',
+  '#caffbf',
+  '#9bf6ff',
+  '#a0c4ff',
+  '#bdb2ff',
+  '#ffc6ff',
+  '#e7c6ff',
+  '#cdeac0',
+  '#f2a7b7',
+  '#bde0fe',
+  '#d8b996',
+] as const;
 
 type CatWithLocation = {
   id: string;
@@ -37,6 +59,7 @@ type CatWithLocation = {
 export type CatTag = {
   id: string;
   name: string;
+  color: string;
 };
 
 export type CatCard = {
@@ -199,9 +222,10 @@ export class CatsService {
 
   async createTag(data: CreateCatTagDto): Promise<CatTag> {
     const name = this.validateTagName(data.name);
+    const color = this.validateTagColor(data.color);
 
     try {
-      const tag = await (this.prisma as any).catTag.create({ data: { name } });
+      const tag = await (this.prisma as any).catTag.create({ data: { name, color } });
       return this.toCatTag(tag);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -210,6 +234,42 @@ export class CatsService {
       }
       throw error;
     }
+  }
+
+  async updateTag(id: string, data: UpdateCatTagDto): Promise<CatTag> {
+    this.validateId(id);
+    if (data.name === undefined && data.color === undefined) {
+      throw new BadRequestException('Tag name or color is required');
+    }
+
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = this.validateTagName(data.name);
+    if (data.color !== undefined) updateData.color = this.validateTagColor(data.color);
+
+    try {
+      const tag = await (this.prisma as any).catTag.update({ where: { id }, data: updateData });
+      return this.toCatTag(tag);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Tag not found');
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('A tag with this name already exists');
+      }
+      throw error;
+    }
+  }
+
+  async deleteTag(id: string): Promise<void> {
+    this.validateId(id);
+    await this.findExistingTag(id);
+
+    const usedCount = await (this.prisma as any).catTagOnCat.count({ where: { tagId: id } });
+    if (usedCount > 0) {
+      throw new ConflictException('Cannot remove a tag that is used by cats');
+    }
+
+    await (this.prisma as any).catTag.delete({ where: { id } });
   }
 
   async addTag(catId: string, tagId: string): Promise<CatCard> {
@@ -411,6 +471,14 @@ export class CatsService {
     return name;
   }
 
+  private validateTagColor(value: string | undefined): string {
+    const color = (value?.trim() || VALID_TAG_COLORS[0]).toLowerCase();
+    if (!VALID_TAG_COLORS.includes(color as (typeof VALID_TAG_COLORS)[number])) {
+      throw new BadRequestException('Tag color must be one of the allowed colors');
+    }
+    return color;
+  }
+
   private validatePagination(skipInput = 0, limitInput = 50): { skip: number; limit: number } {
     const skip = Number(skipInput);
     const limit = Number(limitInput);
@@ -506,6 +574,7 @@ export class CatsService {
     return {
       id: tag.id,
       name: tag.name,
+      color: tag.color,
     };
   }
 

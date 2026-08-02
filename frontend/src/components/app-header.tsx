@@ -6,11 +6,9 @@ type AppHeaderProps = {
   user: AuthUser | null;
 };
 
-const navLinks = [
-  { href: "/locations", label: "Locations" },
-];
-
 export function AppHeader({ user }: AppHeaderProps) {
+  const navLinks = user?.role === "admin" ? [{ href: "/edit-shelter", label: "Edit shelter" }] : [];
+
   return (
     <header className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 px-5 py-4 shadow-panel backdrop-blur-sm md:px-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

@@ -212,7 +212,7 @@ describe('CatsService', () => {
     expect(duplicate.id).toBe(tag.id);
 
     const tagged = await service.addTag(cat.id, tag.id);
-    expect(tagged.tags).toEqual([{ id: tag.id, name: 'Needs foster' }]);
+    expect(tagged.tags).toEqual([{ id: tag.id, name: 'Needs foster', color: '#ffb38a' }]);
 
     const page = await service.findAll({ tagId: tag.id, limit: 10 });
     expect(page.data.map((item) => item.id)).toContain(cat.id);
@@ -221,6 +221,22 @@ describe('CatsService', () => {
     const removed = await service.removeTag(cat.id, tag.id);
     expect(removed.tags).toHaveLength(0);
     await expect(service.createTag({ name: '' })).rejects.toThrow(BadRequestException);
+  });
+
+  it('updates tag color and blocks deleting tags that are used by cats', async () => {
+    const cat = await service.createCat({ name: unique('tagged-delete'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+    const tag = await service.createTag({ name: unique('editable-tag'), color: '#9ee6a8' });
+
+    expect(tag.color).toBe('#9ee6a8');
+    const updated = await service.updateTag(tag.id, { name: unique('renamed-tag'), color: '#8ecaff' });
+    expect(updated.color).toBe('#8ecaff');
+    await expect(service.updateTag(tag.id, { color: '#123456' })).rejects.toThrow(BadRequestException);
+
+    await service.addTag(cat.id, tag.id);
+    await expect(service.deleteTag(tag.id)).rejects.toThrow(ConflictException);
+
+    await service.removeTag(cat.id, tag.id);
+    await expect(service.deleteTag(tag.id)).resolves.toBeUndefined();
   });
 
   it('returns 404 for missing cards and 400 for invalid pagination', async () => {
@@ -277,7 +293,6 @@ async function createLocation(
   return (prisma as any).location.create({
     data: {
       name: unique(`cats-${namePrefix}`),
-      type: 'FOSTER',
       status,
     },
   });

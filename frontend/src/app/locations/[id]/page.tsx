@@ -7,12 +7,6 @@ import { locationsApi, Location } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
 import { LocationCatsSection } from "@/components/location-cats-section";
 
-const typeStyles = {
-  SHELTER: { bg: "bg-blue-100", text: "text-blue-800" },
-  CLINIC: { bg: "bg-green-100", text: "text-green-800" },
-  FOSTER: { bg: "bg-purple-100", text: "text-purple-800" },
-};
-
 const statusStyles = {
   ACTIVE: { bg: "bg-green-100", text: "text-green-800" },
   INACTIVE: { bg: "bg-yellow-100", text: "text-yellow-800" },
@@ -99,7 +93,6 @@ export default function LocationDetailPage() {
     return null;
   }
 
-  const typeStyle = typeStyles[location.type];
   const statusStyle = statusStyles[location.status];
 
   return (
@@ -122,13 +115,10 @@ export default function LocationDetailPage() {
         {/* Location Details */}
         <div className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-8 shadow-panel backdrop-blur-sm">
           <div className="space-y-6">
-            {/* Name and Type */}
+            {/* Name and status */}
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-4xl font-semibold text-gray-900">{location.name}</h1>
-                <span className={`rounded-full px-3 py-1 font-mono text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
-                  {location.type}
-                </span>
                 <span className={`rounded-full px-3 py-1 font-mono text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
                   {location.status}
                 </span>

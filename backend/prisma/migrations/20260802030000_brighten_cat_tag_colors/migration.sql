@@ -1,0 +1,12 @@
+UPDATE "CatTag" SET "color" = '#ffb38a' WHERE "color" = '#ffe0d1';
+UPDATE "CatTag" SET "color" = '#f5a3ad' WHERE "color" = '#f8d7da';
+UPDATE "CatTag" SET "color" = '#ffd166' WHERE "color" = '#fdecc8';
+UPDATE "CatTag" SET "color" = '#9ee6a8' WHERE "color" = '#d9f0df';
+UPDATE "CatTag" SET "color" = '#8ecaff' WHERE "color" = '#d7ecff';
+UPDATE "CatTag" SET "color" = '#b8a7ff' WHERE "color" = '#e4dcff';
+UPDATE "CatTag" SET "color" = '#eda6f0' WHERE "color" = '#f4d9f6';
+UPDATE "CatTag" SET "color" = '#95d8c8' WHERE "color" = '#d8efe9';
+UPDATE "CatTag" SET "color" = '#f7e36d' WHERE "color" = '#fdffb6';
+UPDATE "CatTag" SET "color" = '#f2a7b7' WHERE "color" = '#ffcad4';
+UPDATE "CatTag" SET "color" = '#d8b996' WHERE "color" = '#f1e3d3';
+ALTER TABLE "CatTag" ALTER COLUMN "color" SET DEFAULT '#ffb38a';
