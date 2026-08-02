@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, Location, catsApi, locationsApi } from "@/lib/api";
+import { CatCard as CatCardType, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
 
 const CATS_PER_PAGE = 6;
 
@@ -13,12 +13,15 @@ export function HomeCatsList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);
+  const [tags, setTags] = useState<CatTag[]>([]);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [tagError, setTagError] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(false);
 
   useEffect(() => {
@@ -56,6 +59,31 @@ export function HomeCatsList() {
   useEffect(() => {
     let cancelled = false;
 
+    async function fetchTags() {
+      setTagError(null);
+      try {
+        const data = await catsApi.listTags();
+        if (!cancelled) {
+          setTags(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setTagError(ApiErrorHandler.handle(err));
+          setTags([]);
+        }
+      }
+    }
+
+    fetchTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
     async function fetchCats() {
       setIsLoading(true);
       setError(null);
@@ -66,6 +94,7 @@ export function HomeCatsList() {
           locationId: locationFilter || undefined,
           status: "ACTIVE",
           search: search.trim() || undefined,
+          tagId: tagFilter || undefined,
           skip: (currentPage - 1) * CATS_PER_PAGE,
           limit: CATS_PER_PAGE,
         });
@@ -97,7 +126,7 @@ export function HomeCatsList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, locationFilter, search]);
+  }, [currentPage, locationFilter, search, tagFilter]);
 
   const totalPages = Math.ceil(total / CATS_PER_PAGE);
   const locationFilterLabel = locations.find((location) => location.id === locationFilter)?.name ?? "All locations";
@@ -110,7 +139,7 @@ export function HomeCatsList() {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_auto] sm:items-end">
+      <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_minmax(180px,260px)] md:items-end">
         <label className="grid max-w-md flex-1 gap-1 text-sm font-medium text-gray-800">
           Search cats
           <input
@@ -188,9 +217,29 @@ export function HomeCatsList() {
           )}
         </div>
 
+        <label className="grid gap-1 text-sm font-medium text-gray-800">
+          Tag
+          <select
+            value={tagFilter}
+            onChange={(event) => {
+              setTagFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+          >
+            <option value="">All tags</option>
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
       </div>
 
       {locationError && <p className="mt-2 text-sm text-red-700">Locations could not be loaded: {locationError}</p>}
+      {tagError && <p className="mt-2 text-sm text-red-700">Tags could not be loaded: {tagError}</p>}
 
       {isLoading && <p className="py-10 text-center text-sm text-[#6d6a66]">Loading cat cards...</p>}
 

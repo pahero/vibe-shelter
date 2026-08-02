@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
-import { CatCard as CatCardType, CatSex, CatStatus, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatCard as CatCardType, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
 type CatEditForm = {
@@ -81,6 +81,12 @@ export default function CatProfilePage() {
   const [weightDate, setWeightDate] = useState("");
   const [weightError, setWeightError] = useState<string | null>(null);
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
+  const [availableTags, setAvailableTags] = useState<CatTag[]>([]);
+  const [tagName, setTagName] = useState("");
+  const [tagError, setTagError] = useState<string | null>(null);
+  const [isSavingTag, setIsSavingTag] = useState(false);
+  const [removingTagId, setRemovingTagId] = useState<string | null>(null);
+  const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!catId) return;
@@ -168,6 +174,30 @@ export default function CatProfilePage() {
       cancelled = true;
     };
   }, [catId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchTags = async () => {
+      setTagError(null);
+      try {
+        const tags = await catsApi.listTags();
+        if (!cancelled) {
+          setAvailableTags(tags);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setTagError(ApiErrorHandler.handle(err));
+        }
+      }
+    };
+
+    fetchTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -290,6 +320,51 @@ export default function CatProfilePage() {
     }
   };
 
+  const addTagByName = async (name: string) => {
+    if (!cat) return;
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setTagError("Tag name is required.");
+      return;
+    }
+
+    setIsSavingTag(true);
+    setTagError(null);
+    try {
+      const existing = availableTags.find((tag) => tag.name.toLowerCase() === trimmedName.toLowerCase());
+      const tag = existing ?? (await catsApi.createTag(trimmedName));
+      const updated = await catsApi.addTag(cat.id, tag.id);
+      setCat(updated);
+      setAvailableTags((prev) => (prev.some((item) => item.id === tag.id) ? prev : [...prev, tag].sort((a, b) => a.name.localeCompare(b.name))));
+      setTagName("");
+      setIsTagPickerOpen(false);
+    } catch (err) {
+      setTagError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSavingTag(false);
+    }
+  };
+
+  const handleAddTag = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await addTagByName(tagName);
+  };
+
+  const handleRemoveTag = async (tagId: string) => {
+    if (!cat) return;
+
+    setRemovingTagId(tagId);
+    setTagError(null);
+    try {
+      setCat(await catsApi.removeTag(cat.id, tagId));
+    } catch (err) {
+      setTagError(ApiErrorHandler.handle(err));
+    } finally {
+      setRemovingTagId(null);
+    }
+  };
+
   const graphWeights = [...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
   const graphValues = graphWeights.map((weight) => weight.weightKg);
   const minGraphWeight = Math.min(...graphValues);
@@ -301,6 +376,8 @@ export default function CatProfilePage() {
     return { ...weight, x, y };
   });
   const graphLine = graphPoints.map((point) => `${point.x},${point.y}`).join(" ");
+  const currentTagIds = new Set(cat?.tags.map((tag) => tag.id) ?? []);
+  const tagsToAdd = availableTags.filter((tag) => !currentTagIds.has(tag.id));
 
   return (
     <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
@@ -332,6 +409,73 @@ export default function CatProfilePage() {
               ) : (
                 <CatCard cat={cat} showProfileLink={false} />
               )}
+              <div className="relative flex flex-wrap items-center gap-1.5 px-1">
+                {cat.tags.map((tag) => (
+                  <span key={tag.id} className="inline-flex items-center gap-1 rounded-full border border-[#d4c7b4] bg-white/65 px-2.5 py-1 text-xs font-semibold text-gray-900">
+                    {tag.name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag.id)}
+                      disabled={removingTagId === tag.id}
+                      className="text-[#b24a20] transition hover:text-red-700 disabled:opacity-50"
+                      aria-label={`Remove ${tag.name} tag`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTagPickerOpen((isOpen) => !isOpen);
+                    setTagError(null);
+                  }}
+                  className="inline-flex items-center rounded-full border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 px-2.5 py-1 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20"
+                >
+                  + tag
+                </button>
+                {isTagPickerOpen && (
+                  <div className="absolute left-1 right-1 top-full z-20 mt-2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-3 shadow-lg">
+                    {tagsToAdd.length > 0 && (
+                      <div className="flex max-h-28 flex-wrap gap-1.5 overflow-auto">
+                        {tagsToAdd.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => addTagByName(tag.name)}
+                            disabled={isSavingTag}
+                            className="rounded-full border border-[#d4c7b4] bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 transition hover:bg-[#fff0e8] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {tag.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <form onSubmit={handleAddTag} className="mt-2 flex gap-2">
+                      <input
+                        value={tagName}
+                        onChange={(event) => setTagName(event.target.value)}
+                        list="cat-tag-options"
+                        className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                        placeholder="New label"
+                      />
+                      <datalist id="cat-tag-options">
+                        {availableTags.map((tag) => (
+                          <option key={tag.id} value={tag.name} />
+                        ))}
+                      </datalist>
+                      <button
+                        type="submit"
+                        disabled={isSavingTag}
+                        className="rounded-lg border border-[#b24a20] bg-[#d05a2c] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingTag ? "..." : "Add"}
+                      </button>
+                    </form>
+                    {tagError && <p className="mt-2 text-xs font-medium text-red-700">{tagError}</p>}
+                  </div>
+                )}
+              </div>
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Photo</p>
                 <h2 className="mt-1 text-lg font-semibold text-gray-900">Edit primary photo</h2>

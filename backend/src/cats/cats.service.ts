@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { CreateCatDto, CreateCatWeightDto, UpdateCatDto } from './dto';
+import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 
 const VALID_CAT_SEXES = ['FEMALE', 'MALE', 'UNKNOWN'] as const;
@@ -31,6 +31,12 @@ type CatWithLocation = {
   primaryPhotoKey: string | null;
   microchipNumber: string | null;
   updatedAt: Date;
+  tags?: Array<{ tag: CatTag }>;
+};
+
+export type CatTag = {
+  id: string;
+  name: string;
 };
 
 export type CatCard = {
@@ -47,12 +53,14 @@ export type CatCard = {
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
   updatedAt: string;
+  tags: CatTag[];
 };
 
 export type CatFilters = {
   locationId?: string;
   status?: string;
   search?: string;
+  tagId?: string;
   skip?: number;
   limit?: number;
 };
@@ -85,7 +93,7 @@ export class CatsService {
     try {
       const cat = await (this.prisma as any).cat.create({
         data: this.toCreateData(data),
-        include: { currentLocation: { select: { name: true } } },
+        include: this.catCardInclude(),
       });
       return this.toCatCard(cat);
     } catch (error) {
@@ -104,7 +112,7 @@ export class CatsService {
       const cat = await (this.prisma as any).cat.update({
         where: { id },
         data: this.toUpdateData(data),
-        include: { currentLocation: { select: { name: true } } },
+        include: this.catCardInclude(),
       });
       return this.toCatCard(cat);
     } catch (error) {
@@ -131,7 +139,7 @@ export class CatsService {
     const cat = await (this.prisma as any).cat.update({
       where: { id },
       data: { primaryPhotoKey: key },
-      include: { currentLocation: { select: { name: true } } },
+      include: this.catCardInclude(),
     });
     return this.toCatCard(cat);
   }
@@ -145,6 +153,9 @@ export class CatsService {
     if (filters.locationId) {
       where.currentLocationId = filters.locationId;
     }
+    if (filters.tagId) {
+      where.tags = { some: { tagId: filters.tagId } };
+    }
     const search = filters.search?.trim();
     if (search) {
       where.OR = [
@@ -157,7 +168,7 @@ export class CatsService {
     const [data, total] = await Promise.all([
       (this.prisma as any).cat.findMany({
         where,
-        include: { currentLocation: { select: { name: true } } },
+        include: this.catCardInclude(),
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         skip,
         take: limit,
@@ -177,6 +188,51 @@ export class CatsService {
     this.validateId(id);
     const cat = await this.findExistingCat(id);
     return this.toCatCard(cat);
+  }
+
+  async listTags(): Promise<CatTag[]> {
+    const tags = await (this.prisma as any).catTag.findMany({
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    });
+    return tags.map((tag: any) => this.toCatTag(tag));
+  }
+
+  async createTag(data: CreateCatTagDto): Promise<CatTag> {
+    const name = this.validateTagName(data.name);
+
+    try {
+      const tag = await (this.prisma as any).catTag.create({ data: { name } });
+      return this.toCatTag(tag);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const tag = await (this.prisma as any).catTag.findUnique({ where: { name } });
+        return this.toCatTag(tag);
+      }
+      throw error;
+    }
+  }
+
+  async addTag(catId: string, tagId: string): Promise<CatCard> {
+    this.validateId(catId);
+    this.validateId(tagId);
+    await this.findExistingCat(catId);
+    await this.findExistingTag(tagId);
+
+    await (this.prisma as any).catTagOnCat.upsert({
+      where: { catId_tagId: { catId, tagId } },
+      create: { catId, tagId },
+      update: {},
+    });
+
+    return this.findCardById(catId);
+  }
+
+  async removeTag(catId: string, tagId: string): Promise<CatCard> {
+    this.validateId(catId);
+    this.validateId(tagId);
+    await this.findExistingCat(catId);
+    await (this.prisma as any).catTagOnCat.deleteMany({ where: { catId, tagId } });
+    return this.findCardById(catId);
   }
 
   async listWeights(catId: string): Promise<CatWeight[]> {
@@ -227,7 +283,7 @@ export class CatsService {
   private async findExistingCat(id: string): Promise<CatWithLocation> {
     const cat = await (this.prisma as any).cat.findUnique({
       where: { id },
-      include: { currentLocation: { select: { name: true } } },
+      include: this.catCardInclude(),
     });
     if (!cat) {
       throw new NotFoundException('Cat not found');
@@ -344,6 +400,17 @@ export class CatsService {
     }
   }
 
+  private validateTagName(value: string | undefined): string {
+    const name = value?.trim();
+    if (!name) {
+      throw new BadRequestException('Tag name is required');
+    }
+    if (name.length > 40) {
+      throw new BadRequestException('Tag name must be at most 40 characters');
+    }
+    return name;
+  }
+
   private validatePagination(skipInput = 0, limitInput = 50): { skip: number; limit: number } {
     const skip = Number(skipInput);
     const limit = Number(limitInput);
@@ -360,6 +427,21 @@ export class CatsService {
     if (!id || id.trim().length === 0) {
       throw new BadRequestException('Cat ID is required');
     }
+  }
+
+  private async findExistingTag(id: string): Promise<CatTag> {
+    const tag = await (this.prisma as any).catTag.findUnique({ where: { id } });
+    if (!tag) {
+      throw new NotFoundException('Tag not found');
+    }
+    return this.toCatTag(tag);
+  }
+
+  private catCardInclude() {
+    return {
+      currentLocation: { select: { name: true } },
+      tags: { include: { tag: true }, orderBy: { tag: { name: 'asc' } } },
+    };
   }
 
   private toCreateData(data: CreateCatDto): any {
@@ -416,6 +498,14 @@ export class CatsService {
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),
+      tags: cat.tags?.map((item) => this.toCatTag(item.tag)) ?? [],
+    };
+  }
+
+  private toCatTag(tag: any): CatTag {
+    return {
+      id: tag.id,
+      name: tag.name,
     };
   }
 

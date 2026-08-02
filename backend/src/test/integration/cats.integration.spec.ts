@@ -140,6 +140,33 @@ describe('Cats endpoints', () => {
       .expect(404);
   });
 
+  it('manages cat tags and filters cat cards by tag', async () => {
+    const cat = await createCat(prisma, { name: unique('tagged') });
+    await createCat(prisma, { name: unique('untagged') });
+
+    const createdTag = await request(app.getHttpServer())
+      .post('/api/cats/tags')
+      .send({ name: unique('tag') })
+      .expect(201);
+
+    const taggedCat = await request(app.getHttpServer())
+      .post(`/api/cats/${cat.id}/tags/${createdTag.body.id}`)
+      .expect(201);
+
+    expect(taggedCat.body.tags).toEqual([{ id: createdTag.body.id, name: createdTag.body.name }]);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/cats')
+      .query({ tagId: createdTag.body.id })
+      .expect(200);
+
+    expect(list.body.data.map((item: { id: string }) => item.id)).toEqual([cat.id]);
+
+    await request(app.getHttpServer())
+      .delete(`/api/cats/${cat.id}/tags/${createdTag.body.id}`)
+      .expect(200);
+  });
+
   it('returns validation and not found errors', async () => {
     await request(app.getHttpServer()).get('/api/cats').query({ limit: 101 }).expect(400);
     await request(app.getHttpServer()).get('/api/cats/missing/card').expect(404);

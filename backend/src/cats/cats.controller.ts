@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
-import { CreateCatDto, CreateCatWeightDto, UpdateCatDto } from './dto';
+import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto } from './dto';
 
 @Controller('api/cats')
 @UseGuards(SessionAuthGuard)
@@ -14,6 +14,7 @@ export class CatsController {
     @Query('locationId') locationId?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('tagId') tagId?: string,
     @Query('skip') skip?: string,
     @Query('limit') limit?: string,
   ) {
@@ -21,9 +22,15 @@ export class CatsController {
       locationId,
       status,
       search,
+      tagId,
       skip: skip === undefined ? undefined : Number(skip),
       limit: limit === undefined ? undefined : Number(limit),
     });
+  }
+
+  @Get('tags')
+  async listTags() {
+    return this.catsService.listTags();
   }
 
   @Get(':id/card')
@@ -42,9 +49,25 @@ export class CatsController {
     return this.catsService.createCat(dto);
   }
 
+  @Post('tags')
+  @HttpCode(HttpStatus.CREATED)
+  async createTag(@Body() dto: CreateCatTagDto) {
+    return this.catsService.createTag(dto);
+  }
+
   @Patch(':id')
   async updateCat(@Param('id') id: string, @Body() dto: UpdateCatDto) {
     return this.catsService.updateCat(id, dto);
+  }
+
+  @Post(':id/tags/:tagId')
+  async addTag(@Param('id') id: string, @Param('tagId') tagId: string) {
+    return this.catsService.addTag(id, tagId);
+  }
+
+  @Delete(':id/tags/:tagId')
+  async removeTag(@Param('id') id: string, @Param('tagId') tagId: string) {
+    return this.catsService.removeTag(id, tagId);
   }
 
   @Post(':id/weights')

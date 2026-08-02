@@ -203,6 +203,26 @@ describe('CatsService', () => {
     await expect(service.addWeight(card.id, { weightKg: 4, measuredAt: 'bad-date' })).rejects.toThrow(BadRequestException);
   });
 
+  it('creates reusable tags, attaches them to cats, and filters by tag', async () => {
+    const cat = await service.createCat({ name: unique('tagged'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+    const otherCat = await service.createCat({ name: unique('untagged'), sex: 'MALE', sterilizationStatus: 'UNKNOWN' });
+
+    const tag = await service.createTag({ name: '  Needs foster  ' });
+    const duplicate = await service.createTag({ name: 'Needs foster' });
+    expect(duplicate.id).toBe(tag.id);
+
+    const tagged = await service.addTag(cat.id, tag.id);
+    expect(tagged.tags).toEqual([{ id: tag.id, name: 'Needs foster' }]);
+
+    const page = await service.findAll({ tagId: tag.id, limit: 10 });
+    expect(page.data.map((item) => item.id)).toContain(cat.id);
+    expect(page.data.map((item) => item.id)).not.toContain(otherCat.id);
+
+    const removed = await service.removeTag(cat.id, tag.id);
+    expect(removed.tags).toHaveLength(0);
+    await expect(service.createTag({ name: '' })).rejects.toThrow(BadRequestException);
+  });
+
   it('returns 404 for missing cards and 400 for invalid pagination', async () => {
     await expect(service.findCardById('missing')).rejects.toThrow(NotFoundException);
     await expect(service.findAll({ limit: 101 })).rejects.toThrow(BadRequestException);

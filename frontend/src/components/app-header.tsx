@@ -7,7 +7,6 @@ type AppHeaderProps = {
 };
 
 const navLinks = [
-  { href: "/", label: "Home" },
   { href: "/locations", label: "Locations" },
 ];
 

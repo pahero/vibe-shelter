@@ -117,11 +117,31 @@ model Cat {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   weights             CatWeight[]
+  tags                CatTagOnCat[]
 
   @@index([currentLocationId])
   @@index([status])
   @@index([name])
   @@index([intakeDate])
+}
+
+model CatTag {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  cats      CatTagOnCat[]
+
+  @@index([name])
+}
+
+model CatTagOnCat {
+  catId String
+  tagId String
+  cat   Cat    @relation(fields: [catId], references: [id], onDelete: Cascade)
+  tag   CatTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([catId, tagId])
+  @@index([tagId])
 }
 
 model CatWeight {

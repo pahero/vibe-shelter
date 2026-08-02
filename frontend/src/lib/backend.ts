@@ -9,13 +9,18 @@ export type AuthUser = {
 };
 
 export async function fetchCurrentUser(cookieHeader: string): Promise<AuthUser | null> {
-  const response = await fetch(`${BACKEND_URL}/auth/me`, {
-    method: "GET",
-    headers: {
-      cookie: cookieHeader,
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        cookie: cookieHeader,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) {
     return null;

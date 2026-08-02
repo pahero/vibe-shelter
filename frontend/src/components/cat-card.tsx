@@ -78,6 +78,16 @@ export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
           )}
         </dl>
 
+        {cat.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {cat.tags.map((tag) => (
+              <span key={tag.id} className="rounded-full border border-[#d4c7b4] bg-white/65 px-2.5 py-1 text-xs font-semibold text-[#6d6a66]">
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-3 border-t border-[#d4c7b4] pt-3">
           <span className="text-xs text-[#6d6a66]">Updated {formatDateShort(cat.updatedAt)}</span>
           {showProfileLink && (

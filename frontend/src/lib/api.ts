@@ -44,6 +44,12 @@ export type CatCard = {
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
   updatedAt: string;
+  tags: CatTag[];
+};
+
+export type CatTag = {
+  id: string;
+  name: string;
 };
 
 export type CatWeight = {
@@ -58,6 +64,7 @@ export type ListCatsParams = {
   locationId?: string;
   status?: CatStatus;
   search?: string;
+  tagId?: string;
   skip?: number;
   limit?: number;
 };
@@ -108,6 +115,11 @@ export type ApiError = {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    if ((response.status === 401 || response.status === 403) && typeof window !== "undefined") {
+      const nextPath = `${window.location.pathname}${window.location.search}`;
+      window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
+    }
+
     const error = (await response.json()) as ApiError;
     throw {
       message: error.message || "An error occurred",
@@ -185,6 +197,7 @@ export const catsApi = {
     if (params?.locationId) query.append("locationId", params.locationId);
     if (params?.status) query.append("status", params.status);
     if (params?.search) query.append("search", params.search);
+    if (params?.tagId) query.append("tagId", params.tagId);
     if (params?.skip !== undefined) query.append("skip", params.skip.toString());
     if (params?.limit !== undefined) query.append("limit", params.limit.toString());
 
@@ -202,6 +215,42 @@ export const catsApi = {
   async getCatCard(id: string): Promise<CatCard> {
     const response = await fetch(`${BACKEND_URL}/api/cats/${id}/card`, {
       method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatCard>(response);
+  },
+
+  async listTags(): Promise<CatTag[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tags`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatTag[]>(response);
+  },
+
+  async createTag(name: string): Promise<CatTag> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tags`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
+    return handleResponse<CatTag>(response);
+  },
+
+  async addTag(id: string, tagId: string): Promise<CatCard> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/tags/${tagId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return handleResponse<CatCard>(response);
+  },
+
+  async removeTag(id: string, tagId: string): Promise<CatCard> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/tags/${tagId}`, {
+      method: "DELETE",
       credentials: "include",
     });
     return handleResponse<CatCard>(response);

@@ -9,16 +9,25 @@ type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function getSafeNextPath(next: string | string[] | undefined): string {
+  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//")) {
+    return "/";
+  }
+
+  return next;
+}
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const requestHeaders = await headers();
   const cookieHeader = requestHeaders.get("cookie") ?? "";
   const user = await fetchCurrentUser(cookieHeader);
+  const query = await searchParams;
+  const nextPath = getSafeNextPath(query.next);
 
   if (user) {
-    redirect("/");
+    redirect(nextPath);
   }
 
-  const query = await searchParams;
   const authError = typeof query.error === "string" ? query.error : null;
 
   return (
@@ -35,7 +44,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           password or Google sign-in.
         </p>
 
-        <PasswordLoginForm />
+        <PasswordLoginForm nextPath={nextPath} />
 
         <div className="mt-6 flex items-center gap-3 text-sm text-[#6d6a66]">
           <span className="h-px flex-1 bg-[#d4c7b4]" />

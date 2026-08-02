@@ -4,7 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/lib/backend";
 
-export function PasswordLoginForm() {
+type PasswordLoginFormProps = {
+  nextPath?: string;
+};
+
+export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +46,7 @@ export function PasswordLoginForm() {
         return;
       }
 
-      router.push("/");
+      router.push(nextPath);
     } catch {
       setErrorMessage("Unable to sign in");
     } finally {
