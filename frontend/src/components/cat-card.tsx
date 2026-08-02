@@ -4,12 +4,12 @@ import Link from "next/link";
 import { TagColorStrip } from "@/components/tag-color-strip";
 import { CatCard as CatCardType } from "@/lib/api";
 import { tagChipStyle } from "@/lib/tag-colors";
-import { formatDateShort } from "@/lib/utils";
 
 export type CatCardProps = {
   cat: CatCardType;
   showProfileLink?: boolean;
   showTags?: boolean;
+  onPhotoClick?: () => void;
 };
 
 const sexLabels = {
@@ -18,18 +18,32 @@ const sexLabels = {
   UNKNOWN: "Unknown sex",
 };
 
-const sterilizationLabels = {
-  STERILIZED: "Neutered",
-  NOT_STERILIZED: "Not neutered",
-  UNKNOWN: "Neutering unknown",
-};
+function formatAge(dateString: string | null): string {
+  if (!dateString) return "Not set";
 
-function optionalDate(date: string | null): string {
-  return date ? formatDateShort(date) : "Not set";
+  const birthDate = new Date(dateString);
+  if (Number.isNaN(birthDate.getTime())) return "Not set";
+
+  const today = new Date();
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+
+  if (today.getDate() < birthDate.getDate()) {
+    months -= 1;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  if (years < 0) return "Not set";
+
+  const parts = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
+  if (months > 0 || years === 0) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+  return parts.join(" ");
 }
 
-export function CatCard({ cat, showProfileLink = true, showTags = true }: CatCardProps) {
-  const initials = cat.name.trim().slice(0, 2).toUpperCase() || "CAT";
+export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoClick }: CatCardProps) {
   const profileHref = `/cats/${cat.id}`;
 
   return (
@@ -37,17 +51,27 @@ export function CatCard({ cat, showProfileLink = true, showTags = true }: CatCar
       {showProfileLink && <Link href={profileHref} aria-label={`Open profile for ${cat.name}`} className="absolute inset-0 z-10 cursor-pointer" />}
       <div className="relative h-40 bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
         {cat.primaryPhotoUrl ? (
-          <div
-            aria-label={`Photo of ${cat.name}`}
-            className="h-full w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
-          />
+          onPhotoClick ? (
+            <button
+              type="button"
+              onClick={onPhotoClick}
+              aria-label={`Expand photo of ${cat.name}`}
+              className="h-full w-full bg-cover bg-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c]"
+              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
+            />
+          ) : (
+            <div
+              aria-label={`Photo of ${cat.name}`}
+              className="h-full w-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
+            />
+          )
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[#b24a20]" aria-label={`No photo for ${cat.name}`}>
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#d05a2c]/25 bg-white/55 shadow-sm">
               <span className="text-4xl" aria-hidden="true">🐾</span>
             </div>
-            <span className="rounded-full bg-white/85 px-3 py-1 font-mono text-xs font-bold shadow-sm">{initials}</span>
+            <span className="max-w-[85%] rounded-full bg-white/85 px-3 py-1 text-center text-sm font-semibold shadow-sm">{cat.name}</span>
           </div>
         )}
       </div>
@@ -63,16 +87,12 @@ export function CatCard({ cat, showProfileLink = true, showTags = true }: CatCar
 
         <dl className="grid gap-2 text-sm text-gray-700">
           <div className="flex justify-between gap-3">
-            <dt className="text-[#6d6a66]">Intake</dt>
-            <dd className="font-medium">{optionalDate(cat.intakeDate)}</dd>
+            <dt className="text-[#6d6a66]">Location</dt>
+            <dd className="text-right font-medium">{cat.currentLocationName || "Not set"}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-[#6d6a66]">Birth estimate</dt>
-            <dd className="font-medium">{optionalDate(cat.estimatedBirthDate)}</dd>
-          </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-[#6d6a66]">Neutering</dt>
-            <dd className="font-medium text-right">{sterilizationLabels[cat.sterilizationStatus]}</dd>
+            <dt className="text-[#6d6a66]">Age</dt>
+            <dd className="text-right font-medium">{formatAge(cat.estimatedBirthDate)}</dd>
           </div>
           {cat.microchipNumber && (
             <div className="flex justify-between gap-3">
@@ -92,9 +112,6 @@ export function CatCard({ cat, showProfileLink = true, showTags = true }: CatCar
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3 border-t border-[#d4c7b4] pt-3">
-          <span className="text-xs text-[#6d6a66]">Updated {formatDateShort(cat.updatedAt)}</span>
-        </div>
       </div>
     </article>
   );

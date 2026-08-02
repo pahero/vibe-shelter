@@ -398,18 +398,7 @@ export default function CatProfilePage() {
         {!isLoading && cat && (
           <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,360px)_1fr]">
             <div className="space-y-4">
-              {cat.primaryPhotoUrl ? (
-                <button
-                  type="button"
-                  onClick={() => setIsPhotoExpanded(true)}
-                  className="block w-full rounded-2xl text-left focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                  aria-label={`Expand photo of ${cat.name}`}
-                >
-                  <CatCard cat={cat} showProfileLink={false} showTags={false} />
-                </button>
-              ) : (
-                <CatCard cat={cat} showProfileLink={false} showTags={false} />
-              )}
+              <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={cat.primaryPhotoUrl ? () => setIsPhotoExpanded(true) : undefined} />
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Photo</p>
                 <h2 className="mt-1 text-lg font-semibold text-gray-900">Edit primary photo</h2>
