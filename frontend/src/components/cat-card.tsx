@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TagColorStrip } from "@/components/tag-color-strip";
 import { CatCard as CatCardType } from "@/lib/api";
 import { tagChipStyle } from "@/lib/tag-colors";
+import { formatDateShort } from "@/lib/utils";
 
 export type CatCardProps = {
   cat: CatCardType;
@@ -77,7 +78,7 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
       </div>
       <TagColorStrip tags={cat.tags} />
 
-      <div className="space-y-4 p-4">
+      <div className="space-y-2.5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-xl font-semibold text-gray-900">{cat.name}</h3>
@@ -85,7 +86,7 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
           </div>
         </div>
 
-        <dl className="grid gap-2 text-sm text-gray-700">
+        <dl className="grid gap-1 text-sm text-gray-700">
           <div className="flex justify-between gap-3">
             <dt className="text-[#6d6a66]">Location</dt>
             <dd className="text-right font-medium">{cat.currentLocationName || "Not set"}</dd>
@@ -94,12 +95,10 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
             <dt className="text-[#6d6a66]">Age</dt>
             <dd className="text-right font-medium">{formatAge(cat.estimatedBirthDate)}</dd>
           </div>
-          {cat.microchipNumber && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-[#6d6a66]">Microchip</dt>
-              <dd className="font-mono text-xs font-medium">{cat.microchipNumber}</dd>
-            </div>
-          )}
+          <div className="flex justify-between gap-3">
+            <dt className="text-[#6d6a66]">Microchip</dt>
+            <dd className="text-right font-mono text-xs font-medium">{cat.microchipNumber || "Not set"}</dd>
+          </div>
         </dl>
 
         {showTags && cat.tags.length > 0 && (
@@ -112,6 +111,9 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
           </div>
         )}
 
+        <div className="border-t border-[#d4c7b4] pt-3">
+          <span className="text-xs text-[#6d6a66]">Updated {formatDateShort(cat.updatedAt)}</span>
+        </div>
       </div>
     </article>
   );
