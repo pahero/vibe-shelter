@@ -405,12 +405,46 @@ export default function CatProfilePage() {
                   className="block w-full rounded-2xl text-left focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                   aria-label={`Expand photo of ${cat.name}`}
                 >
-                  <CatCard cat={cat} showProfileLink={false} />
+                  <CatCard cat={cat} showProfileLink={false} showTags={false} />
                 </button>
               ) : (
-                <CatCard cat={cat} showProfileLink={false} />
+                <CatCard cat={cat} showProfileLink={false} showTags={false} />
               )}
-              <div className="relative flex flex-wrap items-center gap-1.5 px-1">
+              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Photo</p>
+                <h2 className="mt-1 text-lg font-semibold text-gray-900">Edit primary photo</h2>
+                <p className="mt-1 text-sm text-[#6d6a66]">Upload a new image to replace the card photo.</p>
+                <label className="mt-4 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#d05a2c]/30 bg-[#d05a2c]/10 px-4 text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60">
+                  {isUploadingPhoto ? "Uploading..." : cat.primaryPhotoUrl ? "Replace photo" : "Upload photo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingPhoto}
+                    onChange={handlePhotoChange}
+                    className="sr-only"
+                  />
+                </label>
+                {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
+              </section>
+            </div>
+            <section className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</p>
+                  <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name}</h1>
+                </div>
+                {!isEditingDetails && (
+                  <button
+                    type="button"
+                    onClick={startEditingDetails}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
+                  >
+                    Edit details
+                  </button>
+                )}
+              </div>
+
+              <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
                 {cat.tags.map((tag) => (
                   <span key={tag.id} style={tagChipStyle(tag)} className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold text-gray-900">
                     {tag.name}
@@ -436,7 +470,7 @@ export default function CatProfilePage() {
                   + tag
                 </button>
                 {isTagPickerOpen && (
-                  <div className="absolute left-1 right-1 top-full z-20 mt-2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-3 shadow-lg">
+                  <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-3 shadow-lg">
                     {tagsToAdd.length > 0 && (
                       <div className="flex max-h-28 flex-wrap gap-1.5 overflow-auto">
                         {tagsToAdd.map((tag) => (
@@ -476,39 +510,6 @@ export default function CatProfilePage() {
                     </form>
                     {tagError && <p className="mt-2 text-xs font-medium text-red-700">{tagError}</p>}
                   </div>
-                )}
-              </div>
-              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Photo</p>
-                <h2 className="mt-1 text-lg font-semibold text-gray-900">Edit primary photo</h2>
-                <p className="mt-1 text-sm text-[#6d6a66]">Upload a new image to replace the card photo.</p>
-                <label className="mt-4 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#d05a2c]/30 bg-[#d05a2c]/10 px-4 text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                  {isUploadingPhoto ? "Uploading..." : cat.primaryPhotoUrl ? "Replace photo" : "Upload photo"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isUploadingPhoto}
-                    onChange={handlePhotoChange}
-                    className="sr-only"
-                  />
-                </label>
-                {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
-              </section>
-            </div>
-            <section className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</p>
-                  <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name}</h1>
-                </div>
-                {!isEditingDetails && (
-                  <button
-                    type="button"
-                    onClick={startEditingDetails}
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
-                  >
-                    Edit details
-                  </button>
                 )}
               </div>
 

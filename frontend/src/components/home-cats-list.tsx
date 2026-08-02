@@ -265,7 +265,7 @@ export function HomeCatsList() {
       {!isLoading && cats.length > 0 && (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {cats.map((cat) => (
-            <CatCard key={cat.id} cat={cat} />
+            <CatCard key={cat.id} cat={cat} showTags={false} />
           ))}
         </div>
       )}
