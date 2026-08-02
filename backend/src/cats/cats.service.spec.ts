@@ -75,10 +75,40 @@ describe('CatsService', () => {
       buffer: Buffer.from('fake image bytes'),
     });
 
-    expect(updated.primaryPhotoUrl).toContain(`cats/${card.id}/primary/`);
+    expect(updated.primaryPhotoUrl).toContain(`cats/${card.id}/photos/`);
     expect(updated.primaryPhotoUrl).toContain('mila-portrait.jpg');
     const stored = await (prisma as any).cat.findUnique({ where: { id: card.id } });
-    expect(stored.primaryPhotoKey).toContain(`cats/${card.id}/primary/`);
+    expect(stored.primaryPhotoKey).toContain(`cats/${card.id}/photos/`);
+  });
+
+  it('manages gallery photos and primary photo selection', async () => {
+    const card = await service.createCat({
+      name: 'Gallery Cat',
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'UNKNOWN',
+    });
+
+    const first = await service.addPhoto(card.id, {
+      originalname: 'first.jpg',
+      mimetype: 'image/jpeg',
+      buffer: Buffer.from('first image bytes'),
+    });
+    const second = await service.addPhoto(card.id, {
+      originalname: 'second.jpg',
+      mimetype: 'image/jpeg',
+      buffer: Buffer.from('second image bytes'),
+    });
+
+    expect(first.isPrimary).toBe(true);
+    expect(second.isPrimary).toBe(false);
+    expect(await service.listPhotos(card.id)).toHaveLength(2);
+
+    const updated = await service.setPrimaryPhoto(card.id, second.id);
+    expect(updated.primaryPhotoUrl).toContain('second.jpg');
+
+    const afterDelete = await service.deletePhoto(card.id, second.id);
+    expect(afterDelete.primaryPhotoUrl).toContain('first.jpg');
+    expect(await service.listPhotos(card.id)).toHaveLength(1);
   });
 
   it('rejects empty primary photo upload requests', async () => {

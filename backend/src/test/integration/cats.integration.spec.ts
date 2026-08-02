@@ -70,9 +70,46 @@ describe('Cats endpoints', () => {
       })
       .expect(200);
 
-    expect(response.body.primaryPhotoUrl).toContain(`cats/${cat.id}/primary/`);
+    expect(response.body.primaryPhotoUrl).toContain(`cats/${cat.id}/photos/`);
     expect(response.body.primaryPhotoUrl).toContain('mila-portrait.jpg');
     expect(response.body.primaryPhotoKey).toBeUndefined();
+  });
+
+  it('manages cat gallery photo endpoints', async () => {
+    const cat = await createCat(prisma, { name: unique('gallery') });
+
+    const first = await request(app.getHttpServer())
+      .post(`/api/cats/${cat.id}/photos`)
+      .attach('photo', Buffer.from('first image bytes'), {
+        filename: 'first.jpg',
+        contentType: 'image/jpeg',
+      })
+      .expect(201);
+    const second = await request(app.getHttpServer())
+      .post(`/api/cats/${cat.id}/photos`)
+      .attach('photo', Buffer.from('second image bytes'), {
+        filename: 'second.jpg',
+        contentType: 'image/jpeg',
+      })
+      .expect(201);
+
+    expect(first.body.isPrimary).toBe(true);
+    expect(second.body.isPrimary).toBe(false);
+
+    const list = await request(app.getHttpServer())
+      .get(`/api/cats/${cat.id}/photos`)
+      .expect(200);
+    expect(list.body).toHaveLength(2);
+
+    const primary = await request(app.getHttpServer())
+      .put(`/api/cats/${cat.id}/photos/${second.body.id}/primary`)
+      .expect(200);
+    expect(primary.body.primaryPhotoUrl).toContain('second.jpg');
+
+    const afterDelete = await request(app.getHttpServer())
+      .delete(`/api/cats/${cat.id}/photos/${second.body.id}`)
+      .expect(200);
+    expect(afterDelete.body.primaryPhotoUrl).toContain('first.jpg');
   });
 
   it('GET /api/cats lists active cat cards with filters', async () => {

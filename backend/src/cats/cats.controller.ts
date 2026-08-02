@@ -43,6 +43,11 @@ export class CatsController {
     return this.catsService.listWeights(id);
   }
 
+  @Get(':id/photos')
+  async listPhotos(@Param('id') id: string) {
+    return this.catsService.listPhotos(id);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createCat(@Body() dto: CreateCatDto) {
@@ -85,6 +90,23 @@ export class CatsController {
   @HttpCode(HttpStatus.CREATED)
   async addWeight(@Param('id') id: string, @Body() dto: CreateCatWeightDto) {
     return this.catsService.addWeight(id, dto);
+  }
+
+  @Post(':id/photos')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('photo'))
+  async addPhoto(@Param('id') id: string, @UploadedFile() photo?: PrimaryPhotoUpload) {
+    return this.catsService.addPhoto(id, photo);
+  }
+
+  @Put(':id/photos/:photoId/primary')
+  async setPrimaryPhoto(@Param('id') id: string, @Param('photoId') photoId: string) {
+    return this.catsService.setPrimaryPhoto(id, photoId);
+  }
+
+  @Delete(':id/photos/:photoId')
+  async deletePhoto(@Param('id') id: string, @Param('photoId') photoId: string) {
+    return this.catsService.deletePhoto(id, photoId);
   }
 
   @Delete(':id/weights/:weightId')

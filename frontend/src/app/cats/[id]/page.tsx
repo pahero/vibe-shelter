@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
-import { CatCard as CatCardType, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatCard as CatCardType, CatPhoto, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -81,7 +81,12 @@ export default function CatProfilePage() {
   const [weightKg, setWeightKg] = useState("");
   const [weightDate, setWeightDate] = useState("");
   const [weightError, setWeightError] = useState<string | null>(null);
-  const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
+  const [expandedPhotoId, setExpandedPhotoId] = useState<string | null>(null);
+  const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+  const [photos, setPhotos] = useState<CatPhoto[]>([]);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
+  const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
+  const [settingPrimaryPhotoId, setSettingPrimaryPhotoId] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<CatTag[]>([]);
   const [tagName, setTagName] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
@@ -144,6 +149,37 @@ export default function CatProfilePage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!catId) return;
+    let cancelled = false;
+
+    const fetchPhotos = async () => {
+      setIsLoadingPhotos(true);
+      setPhotoError(null);
+      try {
+        const data = await catsApi.listPhotos(catId);
+        if (!cancelled) {
+          setPhotos(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPhotoError(ApiErrorHandler.handle(err));
+          setPhotos([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingPhotos(false);
+        }
+      }
+    };
+
+    fetchPhotos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [catId]);
 
   useEffect(() => {
     if (!catId) return;
@@ -215,12 +251,61 @@ export default function CatProfilePage() {
     setPhotoError(null);
 
     try {
-      setCat(await catsApi.updatePrimaryPhoto(cat.id, file));
+      await catsApi.addPhoto(cat.id, file);
+      const [updatedCat, updatedPhotos] = await Promise.all([catsApi.getCatCard(cat.id), catsApi.listPhotos(cat.id)]);
+      setCat(updatedCat);
+      setPhotos(updatedPhotos);
     } catch (err) {
       setPhotoError(ApiErrorHandler.handle(err));
     } finally {
       setIsUploadingPhoto(false);
     }
+  };
+
+  const handleSetPrimaryPhoto = async (photoId: string) => {
+    if (!cat) return;
+    setSettingPrimaryPhotoId(photoId);
+    setPhotoError(null);
+    try {
+      const updatedCat = await catsApi.setPrimaryPhoto(cat.id, photoId);
+      const updatedPhotos = await catsApi.listPhotos(cat.id);
+      setCat(updatedCat);
+      setPhotos(updatedPhotos);
+      setIsPhotoMenuOpen(false);
+    } catch (err) {
+      setPhotoError(ApiErrorHandler.handle(err));
+    } finally {
+      setSettingPrimaryPhotoId(null);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!cat) return;
+    const nextExpandedPhotoId = expandedPhotoId === photoId ? photos.find((photo) => photo.id !== photoId)?.id ?? null : expandedPhotoId;
+    setRemovingPhotoId(photoId);
+    setPhotoError(null);
+    try {
+      const updatedCat = await catsApi.deletePhoto(cat.id, photoId);
+      const updatedPhotos = await catsApi.listPhotos(cat.id);
+      setCat(updatedCat);
+      setPhotos(updatedPhotos);
+      setExpandedPhotoId(nextExpandedPhotoId && updatedPhotos.some((photo) => photo.id === nextExpandedPhotoId) ? nextExpandedPhotoId : null);
+      setIsPhotoMenuOpen(false);
+    } catch (err) {
+      setPhotoError(ApiErrorHandler.handle(err));
+    } finally {
+      setRemovingPhotoId(null);
+    }
+  };
+
+  const openPhoto = (photoId: string) => {
+    setExpandedPhotoId(photoId);
+    setIsPhotoMenuOpen(false);
+  };
+
+  const closePhoto = () => {
+    setExpandedPhotoId(null);
+    setIsPhotoMenuOpen(false);
   };
 
   const startEditingDetails = () => {
@@ -379,6 +464,19 @@ export default function CatProfilePage() {
   const graphLine = graphPoints.map((point) => `${point.x},${point.y}`).join(" ");
   const currentTagIds = new Set(cat?.tags.map((tag) => tag.id) ?? []);
   const tagsToAdd = availableTags.filter((tag) => !currentTagIds.has(tag.id));
+  const primaryPhoto = photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
+  const expandedPhotoIndex = expandedPhotoId ? photos.findIndex((photo) => photo.id === expandedPhotoId) : -1;
+  const expandedPhoto = expandedPhotoIndex >= 0 ? photos[expandedPhotoIndex] : null;
+  const hasMultiplePhotos = photos.length > 1;
+  const visibleGalleryPhotos = photos.slice(0, 3);
+  const showPreviousPhoto = () => {
+    if (!hasMultiplePhotos || expandedPhotoIndex < 0) return;
+    openPhoto(photos[(expandedPhotoIndex - 1 + photos.length) % photos.length].id);
+  };
+  const showNextPhoto = () => {
+    if (!hasMultiplePhotos || expandedPhotoIndex < 0) return;
+    openPhoto(photos[(expandedPhotoIndex + 1) % photos.length].id);
+  };
 
   return (
     <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
@@ -398,21 +496,32 @@ export default function CatProfilePage() {
         {!isLoading && cat && (
           <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,360px)_1fr]">
             <div className="space-y-4">
-              <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={cat.primaryPhotoUrl ? () => setIsPhotoExpanded(true) : undefined} />
-              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Photo</p>
-                <h2 className="mt-1 text-lg font-semibold text-gray-900">Edit primary photo</h2>
-                <p className="mt-1 text-sm text-[#6d6a66]">Upload a new image to replace the card photo.</p>
-                <label className="mt-4 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#d05a2c]/30 bg-[#d05a2c]/10 px-4 text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                  {isUploadingPhoto ? "Uploading..." : cat.primaryPhotoUrl ? "Replace photo" : "Upload photo"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isUploadingPhoto}
-                    onChange={handlePhotoChange}
-                    className="sr-only"
-                  />
-                </label>
+              <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={primaryPhoto ? () => openPhoto(primaryPhoto.id) : undefined} />
+              <section className="inline-block max-w-full rounded-2xl border border-[#d4c7b4] bg-white/60 p-3 shadow-sm">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Gallery</p>
+
+                {isLoadingPhotos && <p className="mt-4 text-sm text-[#6d6a66]">Loading photos...</p>}
+
+                {!isLoadingPhotos && (
+                  <div className="mt-3 grid w-fit grid-cols-4 gap-2">
+                    {visibleGalleryPhotos.map((photo) => (
+                      <div key={photo.id} className="overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]">
+                        <button
+                          type="button"
+                          onClick={() => openPhoto(photo.id)}
+                          className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105"
+                          style={photo.url ? { backgroundImage: `url(${photo.url})` } : undefined}
+                          aria-label={`Open photo of ${cat.name}`}
+                        />
+                      </div>
+                    ))}
+                    <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-2xl font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60" aria-label="Add photo">
+                      {isUploadingPhoto ? "..." : "+"}
+                      <input type="file" accept="image/*" disabled={isUploadingPhoto} onChange={handlePhotoChange} className="sr-only" />
+                    </label>
+                  </div>
+                )}
+
                 {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
               </section>
             </div>
@@ -756,21 +865,72 @@ export default function CatProfilePage() {
           </div>
         )}
 
-        {cat?.primaryPhotoUrl && isPhotoExpanded && (
+        {cat && expandedPhoto && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true" aria-label={`Photo of ${cat.name}`}>
-            <button
-              type="button"
-              onClick={() => setIsPhotoExpanded(false)}
-              className="absolute right-4 top-4 z-20 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
-            >
-              Close
-            </button>
-            <button type="button" onClick={() => setIsPhotoExpanded(false)} className="absolute inset-0 z-0 cursor-zoom-out" aria-label="Close expanded photo" />
-            <div
-              aria-label={`Photo of ${cat.name}`}
-              className="relative z-10 h-[90dvh] w-[95vw] rounded-2xl bg-contain bg-center bg-no-repeat shadow-2xl"
-              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
-            />
+            <button type="button" onClick={closePhoto} className="absolute inset-0 z-0 cursor-zoom-out" aria-label="Close expanded photo" />
+
+            <div className="absolute left-4 top-4 z-30 rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white">
+              {expandedPhotoIndex + 1} / {photos.length}
+            </div>
+
+            <div className="absolute right-4 top-4 z-30 flex items-start gap-2">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoMenuOpen((isOpen) => !isOpen)}
+                  className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                  aria-expanded={isPhotoMenuOpen}
+                >
+                  Actions
+                </button>
+                {isPhotoMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
+                    {!expandedPhoto.isPrimary && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetPrimaryPhoto(expandedPhoto.id)}
+                        disabled={settingPrimaryPhotoId === expandedPhoto.id}
+                        className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10 disabled:opacity-50"
+                      >
+                        {settingPrimaryPhotoId === expandedPhoto.id ? "Setting..." : "Make primary"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePhoto(expandedPhoto.id)}
+                      disabled={removingPhotoId === expandedPhoto.id}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {removingPhotoId === expandedPhoto.id ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button type="button" onClick={closePhoto} className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20">
+                Close
+              </button>
+            </div>
+
+            {hasMultiplePhotos && (
+              <button type="button" onClick={showPreviousPhoto} className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20" aria-label="Previous photo">
+                ‹
+              </button>
+            )}
+
+            <div className="relative z-10 flex max-h-[92dvh] w-[95vw] flex-col items-center gap-2">
+              <div
+                aria-label={`Photo of ${cat.name}`}
+                className="h-[88dvh] w-full rounded-2xl bg-contain bg-center bg-no-repeat shadow-2xl"
+                style={expandedPhoto.url ? { backgroundImage: `url(${expandedPhoto.url})` } : undefined}
+              />
+              <p className="text-xs font-medium text-white/75">Added {formatDate(expandedPhoto.createdAt)}</p>
+            </div>
+
+            {hasMultiplePhotos && (
+              <button type="button" onClick={showNextPhoto} className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20" aria-label="Next photo">
+                ›
+              </button>
+            )}
           </div>
         )}
       </div>

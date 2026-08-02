@@ -96,6 +96,14 @@ export type CatWeight = {
   createdAt: string;
 };
 
+export type CatPhoto = {
+  id: string;
+  catId: string;
+  url: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+};
+
 export type PrimaryPhotoUpload = {
   originalname?: string;
   mimetype?: string;
@@ -152,19 +160,82 @@ export class CatsService {
       throw new BadRequestException('Primary photo file is required');
     }
 
+    const created = await this.addPhoto(id, photo);
+
+    const cat = await (this.prisma as any).cat.update({
+      where: { id },
+      data: { primaryPhotoKey: await this.findPhotoKey(created.id) },
+      include: this.catCardInclude(),
+    });
+    return this.toCatCard(cat);
+  }
+
+  async listPhotos(catId: string): Promise<CatPhoto[]> {
+    this.validateId(catId);
+    const cat = await this.findExistingCat(catId);
+    const photos = await (this.prisma as any).catPhoto.findMany({
+      where: { catId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return Promise.all(photos.map((photo: any) => this.toCatPhoto(photo, cat.primaryPhotoKey)));
+  }
+
+  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined): Promise<CatPhoto> {
+    this.validateId(catId);
+    const cat = await this.findExistingCat(catId);
+
+    if (!photo?.buffer || photo.buffer.length === 0) {
+      throw new BadRequestException('Photo file is required');
+    }
+
     const key = await this.photoUrls.uploadPrimaryPhoto({
-      catId: id,
+      catId,
       originalName: photo.originalname,
       contentType: photo.mimetype,
       body: photo.buffer,
     });
+    const created = await (this.prisma as any).catPhoto.create({ data: { catId, key } });
 
+    if (!cat.primaryPhotoKey) {
+      await (this.prisma as any).cat.update({ where: { id: catId }, data: { primaryPhotoKey: key } });
+      return this.toCatPhoto(created, key);
+    }
+
+    return this.toCatPhoto(created, cat.primaryPhotoKey);
+  }
+
+  async setPrimaryPhoto(catId: string, photoId: string): Promise<CatCard> {
+    this.validateId(catId);
+    this.validateId(photoId);
+    await this.findExistingCat(catId);
+    const photo = await this.findExistingPhoto(catId, photoId);
     const cat = await (this.prisma as any).cat.update({
-      where: { id },
-      data: { primaryPhotoKey: key },
+      where: { id: catId },
+      data: { primaryPhotoKey: photo.key },
       include: this.catCardInclude(),
     });
     return this.toCatCard(cat);
+  }
+
+  async deletePhoto(catId: string, photoId: string): Promise<CatCard> {
+    this.validateId(catId);
+    this.validateId(photoId);
+    const cat = await this.findExistingCat(catId);
+    const photo = await this.findExistingPhoto(catId, photoId);
+    await (this.prisma as any).catPhoto.delete({ where: { id: photoId } });
+    await this.photoUrls.deletePhoto(photo.key);
+
+    let primaryPhotoKey = cat.primaryPhotoKey;
+    if (cat.primaryPhotoKey === photo.key) {
+      const nextPhoto = await (this.prisma as any).catPhoto.findFirst({
+        where: { catId },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      });
+      primaryPhotoKey = nextPhoto?.key ?? null;
+      await (this.prisma as any).cat.update({ where: { id: catId }, data: { primaryPhotoKey } });
+    }
+
+    return this.findCardById(catId);
   }
 
   async findAll(filters: CatFilters = {}) {
@@ -505,6 +576,20 @@ export class CatsService {
     return this.toCatTag(tag);
   }
 
+  private async findExistingPhoto(catId: string, photoId: string): Promise<{ id: string; key: string; createdAt: Date }> {
+    const photo = await (this.prisma as any).catPhoto.findFirst({ where: { id: photoId, catId } });
+    if (!photo) {
+      throw new NotFoundException('Photo not found');
+    }
+    return photo;
+  }
+
+  private async findPhotoKey(photoId: string): Promise<string> {
+    const photo = await (this.prisma as any).catPhoto.findUnique({ where: { id: photoId } });
+    if (!photo) throw new NotFoundException('Photo not found');
+    return photo.key;
+  }
+
   private catCardInclude() {
     return {
       currentLocation: { select: { name: true } },
@@ -575,6 +660,16 @@ export class CatsService {
       id: tag.id,
       name: tag.name,
       color: tag.color,
+    };
+  }
+
+  private async toCatPhoto(photo: any, primaryPhotoKey: string | null): Promise<CatPhoto> {
+    return {
+      id: photo.id,
+      catId: photo.catId,
+      url: await this.photoUrls.getPhotoUrl(photo.key),
+      isPrimary: photo.key === primaryPhotoKey,
+      createdAt: photo.createdAt.toISOString(),
     };
   }
 

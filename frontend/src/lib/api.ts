@@ -59,6 +59,14 @@ export type CatWeight = {
   createdAt: string;
 };
 
+export type CatPhoto = {
+  id: string;
+  catId: string;
+  url: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+};
+
 export type ListCatsParams = {
   locationId?: string;
   status?: CatStatus;
@@ -308,6 +316,42 @@ export const catsApi = {
       method: "PUT",
       credentials: "include",
       body: formData,
+    });
+    return handleResponse<CatCard>(response);
+  },
+
+  async listPhotos(id: string): Promise<CatPhoto[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/photos`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatPhoto[]>(response);
+  },
+
+  async addPhoto(id: string, photo: File): Promise<CatPhoto> {
+    const formData = new FormData();
+    formData.append("photo", photo);
+
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/photos`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    return handleResponse<CatPhoto>(response);
+  },
+
+  async setPrimaryPhoto(id: string, photoId: string): Promise<CatCard> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/photos/${photoId}/primary`, {
+      method: "PUT",
+      credentials: "include",
+    });
+    return handleResponse<CatCard>(response);
+  },
+
+  async deletePhoto(id: string, photoId: string): Promise<CatCard> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/photos/${photoId}`, {
+      method: "DELETE",
+      credentials: "include",
     });
     return handleResponse<CatCard>(response);
   },

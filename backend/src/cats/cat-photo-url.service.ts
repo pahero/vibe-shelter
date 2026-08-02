@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -32,6 +32,10 @@ export class CatPhotoUrlService {
     );
   }
 
+  async getPhotoUrl(key: string): Promise<string | null> {
+    return this.getPrimaryPhotoUrl(key);
+  }
+
   async uploadPrimaryPhoto(input: {
     catId: string;
     originalName?: string;
@@ -55,11 +59,16 @@ export class CatPhotoUrlService {
     return key;
   }
 
+  async deletePhoto(key: string): Promise<void> {
+    if (!this.bucketName) return;
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }));
+  }
+
   private buildPrimaryPhotoKey(catId: string, originalName?: string): string {
     const safeName = (originalName ?? 'photo')
       .replace(/[^a-zA-Z0-9._-]/g, '-')
       .replace(/-+/g, '-')
       .slice(0, 120);
-    return `cats/${catId}/primary/${Date.now()}-${safeName}`;
+    return `cats/${catId}/photos/${Date.now()}-${safeName}`;
   }
 }

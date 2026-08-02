@@ -110,11 +110,23 @@ model Cat {
   updatedAt           DateTime            @updatedAt
   weights             CatWeight[]
   tags                CatTagOnCat[]
+  photos              CatPhoto[]
 
   @@index([currentLocationId])
   @@index([status])
   @@index([name])
   @@index([intakeDate])
+}
+
+model CatPhoto {
+  id        String   @id @default(cuid())
+  catId     String
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  key       String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([catId])
+  @@index([createdAt])
 }
 
 model CatTag {
