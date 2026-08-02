@@ -19,7 +19,7 @@ export function AppHeader({ user }: AppHeaderProps) {
           href="/"
           className="inline-flex w-fit rounded-full border border-[#d05a2c]/25 bg-[#d05a2c]/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c] transition hover:bg-[#d05a2c]/15"
         >
-          Shelter Platform
+          Friends of Larnaca cats
         </Link>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

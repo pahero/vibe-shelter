@@ -1,10 +1,7 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
-import { AuthLinkButton } from "@/components/auth-link-button";
 import { HomeCatsList } from "@/components/home-cats-list";
-import { PasswordLoginForm } from "@/components/password-login-form";
-import { BACKEND_URL, fetchCurrentUser } from "@/lib/backend";
+import { fetchCurrentUser } from "@/lib/backend";
 
 export default async function Home() {
   const requestHeaders = await headers();
@@ -14,55 +11,6 @@ export default async function Home() {
   return (
     <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
       <AppHeader user={user} />
-
-      <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-7 shadow-panel backdrop-blur-sm [animation-delay:80ms] md:p-8">
-        <h1 className="mt-2 text-4xl font-semibold leading-[1.03] tracking-[-0.03em] md:text-6xl">
-          Operations at humane speed
-        </h1>
-        <p className="mt-3 max-w-[62ch] text-base leading-relaxed text-[#6d6a66] md:text-lg">
-          Shelter runs on secure staff access only. {user
-            ? "Browse cats below or manage shelter locations from the navigation."
-            : "Sign in with your approved account using Google SSO or plain email and password."}
-        </p>
-
-        {!user && (
-          <>
-            <PasswordLoginForm />
-
-            <div className="mt-6 flex items-center gap-3 text-sm text-[#6d6a66]">
-              <span className="h-px flex-1 bg-[#d4c7b4]" />
-              <span>or continue with</span>
-              <span className="h-px flex-1 bg-[#d4c7b4]" />
-            </div>
-
-            <div className="mt-6 flex animate-rise flex-wrap gap-3 [animation-delay:120ms]">
-              <AuthLinkButton href={`${BACKEND_URL}/auth/google`} label="Sign in with Google" />
-              <Link
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d4c7b4] px-4 text-sm font-semibold text-[#1f2320] transition hover:-translate-y-px hover:bg-black/5"
-                href="/login"
-              >
-                Open full login page
-              </Link>
-            </div>
-          </>
-        )}
-
-        <div className="mt-6 grid animate-rise grid-cols-1 gap-3 [animation-delay:220ms] md:grid-cols-3">
-          <article className="rounded-2xl border border-[#d4c7b4] bg-white/35 p-3.5">
-            <span className="block text-base font-bold">Flexible Sign-in</span>
-            <span className="mt-1.5 block text-sm text-[#6d6a66]">Google SSO and password login</span>
-          </article>
-          <article className="rounded-2xl border border-[#d4c7b4] bg-white/35 p-3.5">
-            <span className="block text-base font-bold">Role-based</span>
-            <span className="mt-1.5 block text-sm text-[#6d6a66]">Admin and staff scopes</span>
-          </article>
-          <article className="rounded-2xl border border-[#d4c7b4] bg-white/35 p-3.5">
-            <span className="block text-base font-bold">Session-backed</span>
-            <span className="mt-1.5 block text-sm text-[#6d6a66]">Server-side access control</span>
-          </article>
-        </div>
-      </section>
-
       <HomeCatsList />
     </main>
   );

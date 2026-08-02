@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { CatCard } from "@/components/cat-card";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatCard as CatCardType, Location, catsApi, locationsApi } from "@/lib/api";
@@ -108,18 +107,7 @@ export function HomeCatsList() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cats list</p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-gray-900">Active cats at a glance</h2>
-          <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-[#6d6a66]">
-            Browse current cat cards from the home page. Search by name, microchip, or passport number.
-          </p>
         </div>
-
-        <Link
-          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white/60 px-4 text-sm font-semibold text-[#1f2320] transition hover:-translate-y-px hover:bg-white"
-          href="/locations"
-        >
-          Manage locations
-        </Link>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_auto] sm:items-end">
@@ -200,7 +188,6 @@ export function HomeCatsList() {
           )}
         </div>
 
-        <p className="text-sm text-[#6d6a66] sm:pb-2">{total} active cat{total === 1 ? "" : "s"}</p>
       </div>
 
       {locationError && <p className="mt-2 text-sm text-red-700">Locations could not be loaded: {locationError}</p>}
@@ -222,7 +209,7 @@ export function HomeCatsList() {
 
       {!isLoading && !needsSignIn && !error && cats.length === 0 && (
         <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/45 p-8 text-center">
-          <p className="text-sm text-[#6d6a66]">No active cats found.</p>
+          <p className="text-sm text-[#6d6a66]">No cats found.</p>
         </div>
       )}
 

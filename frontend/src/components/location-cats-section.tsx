@@ -55,6 +55,12 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
         const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
         if (!cancelled) {
           setLocations(response.data);
+          setForm((prev) => ({
+            ...prev,
+            currentLocationId: response.data.some((location) => location.id === prev.currentLocationId)
+              ? prev.currentLocationId
+              : response.data[0]?.id ?? "",
+          }));
         }
       } catch (err) {
         if (!cancelled) {
@@ -106,6 +112,10 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
     const name = form.name.trim();
     if (!name) {
       setError("Cat name is required.");
+      return;
+    }
+    if (!locations.some((location) => location.id === form.currentLocationId)) {
+      setError("Choose an active location for this cat.");
       return;
     }
 
@@ -219,17 +229,15 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               <select
                 value={form.currentLocationId}
                 onChange={(event) => setForm((prev) => ({ ...prev, currentLocationId: event.target.value }))}
-                disabled={isLoadingLocations}
+                disabled={isLoadingLocations || locations.length === 0}
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <option value={locationId}>{locationName}</option>
-                {locations
-                  .filter((location) => location.id !== locationId)
-                  .map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.name}
-                    </option>
-                  ))}
+                {locations.length === 0 && <option value="">No active locations</option>}
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
@@ -285,7 +293,7 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               Cancel
             </button>
             <button
-              disabled={isCreating}
+              disabled={isCreating || isLoadingLocations || locations.length === 0}
               className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isCreating ? "Adding..." : "Add cat"}

@@ -114,6 +114,10 @@ export default function CatProfilePage() {
         const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
         if (!cancelled) {
           setLocations(response.data);
+          setEditForm((prev) => {
+            if (!prev || response.data.some((location) => location.id === prev.currentLocationId)) return prev;
+            return { ...prev, currentLocationId: response.data[0]?.id ?? "" };
+          });
         }
       } catch (err) {
         if (!cancelled) {
@@ -209,6 +213,10 @@ export default function CatProfilePage() {
     const name = editForm.name.trim();
     if (!name) {
       setDetailsError("Cat name is required.");
+      return;
+    }
+    if (!locations.some((location) => location.id === editForm.currentLocationId)) {
+      setDetailsError("Choose an active location for this cat.");
       return;
     }
 
@@ -377,7 +385,6 @@ export default function CatProfilePage() {
                         disabled={isLoadingLocations}
                         className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <option value="">Unassigned</option>
                         {cat.currentLocationId && !locations.some((location) => location.id === cat.currentLocationId) && (
                           <option value={cat.currentLocationId}>{cat.currentLocationName || "Current location"}</option>
                         )}

@@ -21,13 +21,6 @@ const sterilizationLabels = {
   UNKNOWN: "Neutering unknown",
 };
 
-const statusStyles = {
-  ACTIVE: "bg-green-100 text-green-800",
-  ADOPTED: "bg-blue-100 text-blue-800",
-  DECEASED: "bg-gray-200 text-gray-700",
-  ARCHIVED: "bg-red-100 text-red-800",
-};
-
 function optionalDate(date: string | null): string {
   return date ? formatDateShort(date) : "Not set";
 }
@@ -62,9 +55,6 @@ export function CatCard({ cat, showProfileLink = true }: CatCardProps) {
             <h3 className="text-xl font-semibold text-gray-900">{cat.name}</h3>
             <p className="text-sm text-[#6d6a66]">{[sexLabels[cat.sex], cat.color].filter(Boolean).join(" • ")}</p>
           </div>
-          <span className={`rounded-full px-2.5 py-1 font-mono text-xs font-medium ${statusStyles[cat.status]}`}>
-            {cat.status}
-          </span>
         </div>
 
         <dl className="grid gap-2 text-sm text-gray-700">
