@@ -23,7 +23,7 @@ export default async function EditShelterPage() {
 
   return (
     <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
-      <AppHeader user={user} />
+      <AppHeader user={user} hideEditShelterLink />
       <EditShelterClient />
     </main>
   );
