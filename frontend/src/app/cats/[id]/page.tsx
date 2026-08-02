@@ -383,8 +383,8 @@ export default function CatProfilePage() {
   return (
     <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
       <div className="mx-auto max-w-4xl">
-        <Link href={cat?.currentLocationId ? `/locations/${cat.currentLocationId}` : "/locations"} className="text-sm font-medium text-[#d05a2c] hover:text-[#b24a20]">
-          ← Back to {cat?.currentLocationName || "Locations"}
+        <Link href="/" className="text-sm font-medium text-[#d05a2c] hover:text-[#b24a20]">
+          ← Back to home
         </Link>
 
         {isLoading && <p className="mt-8 text-center text-sm text-[#6d6a66]">Loading cat profile...</p>}
