@@ -1,6 +1,6 @@
 export default () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT ?? '3000', 10),
+  port: parseInt(process.env.PORT ?? '4000', 10),
   databaseUrl: process.env.DATABASE_URL,
   s3: {
     endpoint: process.env.AWS_ENDPOINT_URL_S3,
@@ -15,6 +15,6 @@ export default () => ({
   sessionSecret: process.env.SESSION_SECRET,
   sessionTtlHours: parseInt(process.env.SESSION_TTL_HOURS ?? '168', 10),
   sessionTtlMs: parseInt(process.env.SESSION_TTL_HOURS ?? '168', 10) * 60 * 60 * 1000,
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:4001',
   allowedGoogleDomain: process.env.ALLOWED_GOOGLE_DOMAIN,
 });

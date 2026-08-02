@@ -144,7 +144,7 @@ npm run db:seed
 npm run start:dev
 ```
 
-Server runs on `http://localhost:3000`
+Server runs on `http://localhost:4000`
 
 ## API Endpoints
 
@@ -191,7 +191,7 @@ Server runs on `http://localhost:3000`
 
 ```
 NODE_ENV                 # development/production
-PORT                     # Server port (default: 3000)
+PORT                     # Server port (default: 4000)
 DATABASE_URL             # PostgreSQL connection string
 GOOGLE_CLIENT_ID         # Google OAuth credentials
 GOOGLE_CLIENT_SECRET     # Google OAuth credentials

@@ -13,14 +13,14 @@ Next.js frontend for the Shelter app with Google SSO and plain email/password au
 ## Prerequisites
 
 - Node.js LTS
-- Running backend on `http://localhost:3000` (or your configured API URL)
+- Running backend on `http://localhost:4000` (or your configured API URL)
 
 ## Environment
 
 Create `.env.local` (or copy `.env.example`):
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
 
 ## Run
@@ -30,14 +30,14 @@ npm install
 npm run dev
 ```
 
-App runs at `http://localhost:3001`.
+App runs at `http://localhost:4001`.
 
 ## Important Backend Setting
 
 In backend `.env`, set frontend URL to match the actual Next.js URL:
 
 ```bash
-FRONTEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:4001
 ```
 
 This is used for CORS and OAuth redirect destination.

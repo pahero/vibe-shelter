@@ -35,7 +35,7 @@ npm run db:seed
 
 ### 4. Google OAuth Setup
 1. Create a Google OAuth app at https://console.cloud.google.com
-2. Add callback URL: `http://localhost:3000/auth/google/callback`
+2. Add callback URL: `http://localhost:4000/auth/google/callback`
 3. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `.env`
 
 ## Running the Application

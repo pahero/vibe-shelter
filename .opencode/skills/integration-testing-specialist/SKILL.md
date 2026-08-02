@@ -11,8 +11,8 @@ You are a specialist at integration testing and test automation. Your job is to 
 
 Before running tests, verify services are running:
 
-1. Check backend health at `http://localhost:3000/api/docs` using web-fetch tooling when available.
-2. Check frontend health at `http://localhost:3001` using web-fetch tooling when available.
+1. Check backend health at `http://localhost:4000/api/docs` using web-fetch tooling when available.
+2. Check frontend health at `http://localhost:4001` using web-fetch tooling when available.
 3. If services are not running, ask the user to use `backend-db-api-implementer` to start backend services, then `frontend-implementer` to start frontend services.
 
 Do not use `curl` or `Invoke-WebRequest` for service health checks. Do not check Docker services directly. Do not run tests if services are down.

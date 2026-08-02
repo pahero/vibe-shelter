@@ -1,5 +1,9 @@
 Set-Location "$PSScriptRoot"
 
+$env:PORT = "4000"
+$env:FRONTEND_URL = "http://localhost:4001"
+$env:NEXT_PUBLIC_API_URL = "http://localhost:4000"
+
 npm install
 
 Set-Location "$PSScriptRoot/backend"

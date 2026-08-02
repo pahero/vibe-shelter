@@ -42,8 +42,8 @@ npm run test:web
 
 Optional values in `integration-tests/.env`:
 
-- `BACKEND_URL` (default `http://localhost:3000`)
-- `FRONTEND_URL` (default `http://localhost:3001`)
+- `BACKEND_URL` (default `http://localhost:4000`)
+- `FRONTEND_URL` (default `http://localhost:4001`)
 - `INTEGRATION_ADMIN_EMAIL` (default `admin@shelter.local`)
 - `INTEGRATION_ADMIN_PASSWORD` (default `admin12345`)
 

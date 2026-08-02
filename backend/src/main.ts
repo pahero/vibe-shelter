@@ -10,13 +10,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  const port = configService.get<number>('port', 3000);
-  const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:3001');
+  const port = configService.get<number>('port', 4000);
+  const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:4001');
   const sessionSecret = configService.get<string>('sessionSecret') ?? 'dev-session-secret';
 
   // Enable CORS
   app.enableCors({
-    origin: [frontendUrl, 'http://192.168.1.138:3001'],
+    origin: [frontendUrl, 'http://192.168.1.138:4001'],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',

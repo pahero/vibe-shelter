@@ -36,7 +36,7 @@ npm run db:seed
 npm run start:dev
 ```
 
-Server runs on `http://localhost:3000`
+Server runs on `http://localhost:4000`
 
 ### Database Commands
 ```bash
@@ -66,7 +66,7 @@ docker build -t shelter-backend:latest .
 ```bash
 docker run -d \
   --name shelter-backend \
-  -p 3000:3000 \
+  -p 4000:4000 \
   -e DATABASE_URL="postgresql://user:pass@postgres:5432/shelter" \
   -e GOOGLE_CLIENT_ID="your-client-id" \
   -e GOOGLE_CLIENT_SECRET="your-client-secret" \
@@ -88,7 +88,7 @@ docker-compose up -d
 ### Environment Variables (Production)
 ```
 NODE_ENV=production
-PORT=3000
+PORT=4000
 DATABASE_URL=postgresql://user:securepass@db-host:5432/shelter
 GOOGLE_CLIENT_ID=your-production-client-id
 GOOGLE_CLIENT_SECRET=your-production-secret
@@ -144,7 +144,7 @@ pm2 logs shelter-backend
 ### Nginx Configuration Example
 ```nginx
 upstream shelter_backend {
-  server 127.0.0.1:3000;
+  server 127.0.0.1:4000;
 }
 
 server {
@@ -177,7 +177,7 @@ server {
 
 ### Health Endpoint
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:4000/health
 ```
 
 ### Structured Logging
@@ -241,8 +241,8 @@ echo $DATABASE_URL
 
 ### Port already in use
 ```bash
-# Find process using port 3000
-lsof -i :3000
+# Find process using port 4000
+lsof -i :4000
 
 # Kill process
 kill -9 <PID>

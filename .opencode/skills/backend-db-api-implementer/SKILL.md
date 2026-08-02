@@ -33,7 +33,7 @@ All commands should run from `backend/`.
 - Run tests: `npm test`
 - Run e2e tests: `npm run test:e2e`
 
-The backend should be accessible at `http://localhost:3000` after initialization. Use web-fetch tooling to verify `http://localhost:3000/api/docs` when available instead of shell HTTP commands.
+The backend should be accessible at `http://localhost:4000` after initialization. Use web-fetch tooling to verify `http://localhost:4000/api/docs` when available instead of shell HTTP commands.
 
 ## Approach
 

@@ -26,7 +26,7 @@ You are a specialist at implementing frontend application changes. Your job is t
 All commands should run from `frontend/`.
 
 - Install: `npm install`
-- Start dev server: `npm run dev` on port 3001
+- Start dev server: `npm run dev` on port 4001
 - Build: `npm run build`
 - Lint: `npm run lint`
 - Tests: `npm test`
@@ -37,7 +37,7 @@ Use web-fetch tooling for HTTP requests, health checks, and API endpoint verific
 
 ## Backend API Contract Reference
 
-The live backend OpenAPI spec is the source of truth. When backend is running, inspect `http://localhost:3000/api/openapi.json` and `http://localhost:3000/api/docs` with web-fetch/browser tooling.
+The live backend OpenAPI spec is the source of truth. When backend is running, inspect `http://localhost:4000/api/openapi.json` and `http://localhost:4000/api/docs` with web-fetch/browser tooling.
 
 ## Default Test Credentials
 
@@ -47,9 +47,9 @@ The live backend OpenAPI spec is the source of truth. When backend is running, i
 ## Pre-Handoff Checklist
 
 - Run frontend build and linting.
-- Start the frontend dev server on port 3001 when integration testing is next.
-- Verify the frontend is accessible at `http://localhost:3001`.
-- Ensure backend availability on port 3000 is coordinated with the backend workstream.
+- Start the frontend dev server on port 4001 when integration testing is next.
+- Verify the frontend is accessible at `http://localhost:4001`.
+- Ensure backend availability on port 4000 is coordinated with the backend workstream.
 - Keep the frontend running for integration tests when handing off.
 
 ## Approach
