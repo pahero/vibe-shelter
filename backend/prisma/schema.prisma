@@ -160,3 +160,25 @@ model CatWeight {
   @@index([catId])
   @@index([measuredAt])
 }
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorEmail  String?
+  actorName   String?
+  action      String
+  entityType  String
+  entityId    String?
+  entityName  String?
+  oldValues   Json?
+  newValues   Json?
+  changes     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([actorEmail])
+  @@index([actorName])
+  @@index([entityType])
+  @@index([action])
+  @@index([createdAt])
+}

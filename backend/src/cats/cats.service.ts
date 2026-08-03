@@ -3,11 +3,13 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
+import { AuditActor, AuditService } from '../audit/audit.service';
 
 const VALID_CAT_SEXES = ['FEMALE', 'MALE', 'UNKNOWN'] as const;
 const VALID_STERILIZATION_STATUSES = [
@@ -115,9 +117,10 @@ export class CatsService {
   constructor(
     private prisma: PrismaService,
     private photoUrls: CatPhotoUrlService,
+    @Optional() private audit?: AuditService,
   ) {}
 
-  async createCat(data: CreateCatDto): Promise<CatCard> {
+  async createCat(data: CreateCatDto, actor?: AuditActor | null): Promise<CatCard> {
     this.validateCreate(data);
     await this.validateActiveLocation(data.currentLocationId);
 
@@ -126,24 +129,14 @@ export class CatsService {
         data: this.toCreateData(data),
         include: this.catCardInclude(),
       });
-      return this.toCatCard(cat);
-    } catch (error) {
-      this.handlePrismaError(error);
-      throw error;
-    }
-  }
-
-  async updateCat(id: string, data: UpdateCatDto): Promise<CatCard> {
-    this.validateId(id);
-    this.validateUpdate(data);
-    await this.findExistingCat(id);
-    await this.validateActiveLocation(data.currentLocationId);
-
-    try {
-      const cat = await (this.prisma as any).cat.update({
-        where: { id },
-        data: this.toUpdateData(data),
-        include: this.catCardInclude(),
+      await this.audit?.record({
+        actor,
+        action: 'create',
+        entityType: 'cat',
+        entityId: cat.id,
+        entityName: cat.name,
+        oldValues: null,
+        newValues: this.catAuditValues(cat),
       });
       return this.toCatCard(cat);
     } catch (error) {
@@ -152,7 +145,35 @@ export class CatsService {
     }
   }
 
-  async updatePrimaryPhoto(id: string, photo: PrimaryPhotoUpload | undefined): Promise<CatCard> {
+  async updateCat(id: string, data: UpdateCatDto, actor?: AuditActor | null): Promise<CatCard> {
+    this.validateId(id);
+    this.validateUpdate(data);
+    const existingCat = await this.findExistingCat(id);
+    await this.validateActiveLocation(data.currentLocationId);
+
+    try {
+      const cat = await (this.prisma as any).cat.update({
+        where: { id },
+        data: this.toUpdateData(data),
+        include: this.catCardInclude(),
+      });
+      await this.audit?.record({
+        actor,
+        action: 'update',
+        entityType: 'cat',
+        entityId: cat.id,
+        entityName: cat.name,
+        oldValues: this.catAuditValues(existingCat),
+        newValues: this.catAuditValues(cat),
+      });
+      return this.toCatCard(cat);
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  async updatePrimaryPhoto(id: string, photo: PrimaryPhotoUpload | undefined, actor?: AuditActor | null): Promise<CatCard> {
     this.validateId(id);
     await this.findExistingCat(id);
 
@@ -160,7 +181,7 @@ export class CatsService {
       throw new BadRequestException('Primary photo file is required');
     }
 
-    const created = await this.addPhoto(id, photo);
+    const created = await this.addPhoto(id, photo, actor);
 
     const cat = await (this.prisma as any).cat.update({
       where: { id },
@@ -180,7 +201,7 @@ export class CatsService {
     return Promise.all(photos.map((photo: any) => this.toCatPhoto(photo, cat.primaryPhotoKey)));
   }
 
-  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined): Promise<CatPhoto> {
+  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined, actor?: AuditActor | null): Promise<CatPhoto> {
     this.validateId(catId);
     const cat = await this.findExistingCat(catId);
 
@@ -198,26 +219,31 @@ export class CatsService {
 
     if (!cat.primaryPhotoKey) {
       await (this.prisma as any).cat.update({ where: { id: catId }, data: { primaryPhotoKey: key } });
-      return this.toCatPhoto(created, key);
+      const result = await this.toCatPhoto(created, key);
+      await this.audit?.record({ actor, action: 'create', entityType: 'cat_photo', entityId: created.id, entityName: photo.originalname ?? null, oldValues: null, newValues: { catId, key, isPrimary: true } });
+      return result;
     }
 
-    return this.toCatPhoto(created, cat.primaryPhotoKey);
+    const result = await this.toCatPhoto(created, cat.primaryPhotoKey);
+    await this.audit?.record({ actor, action: 'create', entityType: 'cat_photo', entityId: created.id, entityName: photo.originalname ?? null, oldValues: null, newValues: { catId, key, isPrimary: false } });
+    return result;
   }
 
-  async setPrimaryPhoto(catId: string, photoId: string): Promise<CatCard> {
+  async setPrimaryPhoto(catId: string, photoId: string, actor?: AuditActor | null): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(photoId);
-    await this.findExistingCat(catId);
+    const existingCat = await this.findExistingCat(catId);
     const photo = await this.findExistingPhoto(catId, photoId);
     const cat = await (this.prisma as any).cat.update({
       where: { id: catId },
       data: { primaryPhotoKey: photo.key },
       include: this.catCardInclude(),
     });
+    await this.audit?.record({ actor, action: 'update', entityType: 'cat', entityId: catId, entityName: cat.name, oldValues: { primaryPhotoKey: existingCat.primaryPhotoKey }, newValues: { primaryPhotoKey: photo.key } });
     return this.toCatCard(cat);
   }
 
-  async deletePhoto(catId: string, photoId: string): Promise<CatCard> {
+  async deletePhoto(catId: string, photoId: string, actor?: AuditActor | null): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(photoId);
     const cat = await this.findExistingCat(catId);
@@ -234,6 +260,8 @@ export class CatsService {
       primaryPhotoKey = nextPhoto?.key ?? null;
       await (this.prisma as any).cat.update({ where: { id: catId }, data: { primaryPhotoKey } });
     }
+
+    await this.audit?.record({ actor, action: 'delete', entityType: 'cat_photo', entityId: photoId, entityName: photo.key, oldValues: { catId, key: photo.key, isPrimary: cat.primaryPhotoKey === photo.key }, newValues: null });
 
     return this.findCardById(catId);
   }
@@ -291,13 +319,15 @@ export class CatsService {
     return tags.map((tag: any) => this.toCatTag(tag));
   }
 
-  async createTag(data: CreateCatTagDto): Promise<CatTag> {
+  async createTag(data: CreateCatTagDto, actor?: AuditActor | null): Promise<CatTag> {
     const name = this.validateTagName(data.name);
     const color = this.validateTagColor(data.color);
 
     try {
       const tag = await (this.prisma as any).catTag.create({ data: { name, color } });
-      return this.toCatTag(tag);
+      const result = this.toCatTag(tag);
+      await this.audit?.record({ actor, action: 'create', entityType: 'cat_tag', entityId: tag.id, entityName: tag.name, oldValues: null, newValues: result });
+      return result;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const tag = await (this.prisma as any).catTag.findUnique({ where: { name } });
@@ -307,7 +337,7 @@ export class CatsService {
     }
   }
 
-  async updateTag(id: string, data: UpdateCatTagDto): Promise<CatTag> {
+  async updateTag(id: string, data: UpdateCatTagDto, actor?: AuditActor | null): Promise<CatTag> {
     this.validateId(id);
     if (data.name === undefined && data.color === undefined) {
       throw new BadRequestException('Tag name or color is required');
@@ -318,8 +348,11 @@ export class CatsService {
     if (data.color !== undefined) updateData.color = this.validateTagColor(data.color);
 
     try {
+      const existingTag = await this.findExistingTag(id);
       const tag = await (this.prisma as any).catTag.update({ where: { id }, data: updateData });
-      return this.toCatTag(tag);
+      const result = this.toCatTag(tag);
+      await this.audit?.record({ actor, action: 'update', entityType: 'cat_tag', entityId: tag.id, entityName: tag.name, oldValues: existingTag, newValues: result });
+      return result;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException('Tag not found');
@@ -331,9 +364,9 @@ export class CatsService {
     }
   }
 
-  async deleteTag(id: string): Promise<void> {
+  async deleteTag(id: string, actor?: AuditActor | null): Promise<void> {
     this.validateId(id);
-    await this.findExistingTag(id);
+    const tag = await this.findExistingTag(id);
 
     const usedCount = await (this.prisma as any).catTagOnCat.count({ where: { tagId: id } });
     if (usedCount > 0) {
@@ -341,13 +374,14 @@ export class CatsService {
     }
 
     await (this.prisma as any).catTag.delete({ where: { id } });
+    await this.audit?.record({ actor, action: 'delete', entityType: 'cat_tag', entityId: id, entityName: tag.name, oldValues: tag, newValues: null });
   }
 
-  async addTag(catId: string, tagId: string): Promise<CatCard> {
+  async addTag(catId: string, tagId: string, actor?: AuditActor | null): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(tagId);
-    await this.findExistingCat(catId);
-    await this.findExistingTag(tagId);
+    const cat = await this.findExistingCat(catId);
+    const tag = await this.findExistingTag(tagId);
 
     await (this.prisma as any).catTagOnCat.upsert({
       where: { catId_tagId: { catId, tagId } },
@@ -355,14 +389,17 @@ export class CatsService {
       update: {},
     });
 
+    await this.audit?.record({ actor, action: 'create', entityType: 'cat_tag_assignment', entityId: `${catId}:${tagId}`, entityName: `${cat.name}: ${tag.name}`, oldValues: null, newValues: { catId, tagId } });
     return this.findCardById(catId);
   }
 
-  async removeTag(catId: string, tagId: string): Promise<CatCard> {
+  async removeTag(catId: string, tagId: string, actor?: AuditActor | null): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(tagId);
-    await this.findExistingCat(catId);
+    const cat = await this.findExistingCat(catId);
+    const tag = await this.findExistingTag(tagId);
     await (this.prisma as any).catTagOnCat.deleteMany({ where: { catId, tagId } });
+    await this.audit?.record({ actor, action: 'delete', entityType: 'cat_tag_assignment', entityId: `${catId}:${tagId}`, entityName: `${cat.name}: ${tag.name}`, oldValues: { catId, tagId }, newValues: null });
     return this.findCardById(catId);
   }
 
@@ -378,7 +415,7 @@ export class CatsService {
     return weights.map((weight: any) => this.toCatWeight(weight));
   }
 
-  async addWeight(catId: string, data: CreateCatWeightDto): Promise<CatWeight> {
+  async addWeight(catId: string, data: CreateCatWeightDto, actor?: AuditActor | null): Promise<CatWeight> {
     this.validateId(catId);
     await this.findExistingCat(catId);
     const measuredAt = this.parseRequiredDate(data.measuredAt, 'measuredAt');
@@ -392,23 +429,25 @@ export class CatsService {
       },
     });
 
-    return this.toCatWeight(weight);
+    const result = this.toCatWeight(weight);
+    await this.audit?.record({ actor, action: 'create', entityType: 'cat_weight', entityId: weight.id, entityName: catId, oldValues: null, newValues: result });
+    return result;
   }
 
-  async removeWeight(catId: string, weightId: string): Promise<void> {
+  async removeWeight(catId: string, weightId: string, actor?: AuditActor | null): Promise<void> {
     this.validateId(catId);
     this.validateId(weightId);
     await this.findExistingCat(catId);
 
     const weight = await (this.prisma as any).catWeight.findFirst({
       where: { id: weightId, catId },
-      select: { id: true },
     });
     if (!weight) {
       throw new NotFoundException('Weight entry not found');
     }
 
     await (this.prisma as any).catWeight.delete({ where: { id: weightId } });
+    await this.audit?.record({ actor, action: 'delete', entityType: 'cat_weight', entityId: weightId, entityName: catId, oldValues: this.toCatWeight(weight), newValues: null });
   }
 
   private async findExistingCat(id: string): Promise<CatWithLocation> {
@@ -652,6 +691,21 @@ export class CatsService {
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),
       tags: cat.tags?.map((item) => this.toCatTag(item.tag)) ?? [],
+    };
+  }
+
+  private catAuditValues(cat: any) {
+    return {
+      name: cat.name,
+      sex: cat.sex,
+      color: cat.color ?? null,
+      estimatedBirthDate: cat.estimatedBirthDate?.toISOString?.() ?? null,
+      intakeDate: cat.intakeDate?.toISOString?.() ?? null,
+      status: cat.status,
+      sterilizationStatus: cat.sterilizationStatus,
+      currentLocationId: cat.currentLocationId ?? null,
+      primaryPhotoKey: cat.primaryPhotoKey ?? null,
+      microchipNumber: cat.microchipNumber ?? null,
     };
   }
 

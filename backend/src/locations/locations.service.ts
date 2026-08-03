@@ -1,6 +1,7 @@
 // src/locations/locations.service.ts
 import {
   Injectable,
+  Optional,
   BadRequestException,
   NotFoundException,
   ConflictException,
@@ -8,6 +9,7 @@ import {
 import { PrismaService } from '../database/prisma.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
 import { Prisma } from '@prisma/client';
+import { AuditActor, AuditService } from '../audit/audit.service';
 
 const VALID_LOCATION_STATUSES = ['ACTIVE', 'INACTIVE', 'ARCHIVED'];
 
@@ -20,9 +22,12 @@ export interface LocationFilters {
 
 @Injectable()
 export class LocationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private audit?: AuditService,
+  ) {}
 
-  async createLocation(data: CreateLocationDto) {
+  async createLocation(data: CreateLocationDto, actor?: AuditActor | null) {
     // Validate name is not empty
     if (!data.name || data.name.trim().length === 0) {
       throw new BadRequestException('Location name is required');
@@ -39,7 +44,7 @@ export class LocationsService {
     }
 
     try {
-      return await (this.prisma as any).location.create({
+      const location = await (this.prisma as any).location.create({
         data: {
           name: data.name.trim(),
           description: data.description?.trim(),
@@ -50,6 +55,16 @@ export class LocationsService {
           owner: true,
         },
       });
+      await this.audit?.record({
+        actor,
+        action: 'create',
+        entityType: 'location',
+        entityId: location.id,
+        entityName: location.name,
+        oldValues: null,
+        newValues: this.locationAuditValues(location),
+      });
+      return location;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
@@ -135,9 +150,9 @@ export class LocationsService {
     });
   }
 
-  async updateLocation(id: string, data: UpdateLocationDto) {
+  async updateLocation(id: string, data: UpdateLocationDto, actor?: AuditActor | null) {
     // Verify location exists
-    await this.findById(id);
+    const existingLocation = await this.findById(id);
 
     // If updating name, check uniqueness (except current location)
     if (data.name) {
@@ -174,24 +189,44 @@ export class LocationsService {
     if (data.ownerId !== undefined) updateData.ownerId = data.ownerId?.trim() || null;
     if (data.status !== undefined) updateData.status = data.status;
 
-    return await (this.prisma as any).location.update({
+    const location = await (this.prisma as any).location.update({
       where: { id },
       data: updateData,
       include: {
         owner: true,
       },
     });
+    await this.audit?.record({
+      actor,
+      action: 'update',
+      entityType: 'location',
+      entityId: location.id,
+      entityName: location.name,
+      oldValues: this.locationAuditValues(existingLocation),
+      newValues: this.locationAuditValues(location),
+    });
+    return location;
   }
 
-  async archiveLocation(id: string) {
-    await this.findById(id);
-    return await (this.prisma as any).location.update({
+  async archiveLocation(id: string, actor?: AuditActor | null) {
+    const existingLocation = await this.findById(id);
+    const location = await (this.prisma as any).location.update({
       where: { id },
       data: { status: 'ARCHIVED' },
       include: {
         owner: true,
       },
     });
+    await this.audit?.record({
+      actor,
+      action: 'archive',
+      entityType: 'location',
+      entityId: location.id,
+      entityName: location.name,
+      oldValues: this.locationAuditValues(existingLocation),
+      newValues: this.locationAuditValues(location),
+    });
+    return location;
   }
 
   async reactivateLocation(id: string) {
@@ -217,5 +252,14 @@ export class LocationsService {
       where: { id },
     });
     return location?.status === 'ACTIVE';
+  }
+
+  private locationAuditValues(location: any) {
+    return {
+      name: location.name,
+      description: location.description ?? null,
+      ownerId: location.ownerId ?? null,
+      status: location.status,
+    };
   }
 }

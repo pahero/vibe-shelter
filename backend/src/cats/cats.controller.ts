@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
 import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 
@@ -50,77 +51,78 @@ export class CatsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createCat(@Body() dto: CreateCatDto) {
-    return this.catsService.createCat(dto);
+  async createCat(@Body() dto: CreateCatDto, @CurrentUser() user: Express.User) {
+    return this.catsService.createCat(dto, user);
   }
 
   @Post('tags')
   @HttpCode(HttpStatus.CREATED)
-  async createTag(@Body() dto: CreateCatTagDto) {
-    return this.catsService.createTag(dto);
+  async createTag(@Body() dto: CreateCatTagDto, @CurrentUser() user: Express.User) {
+    return this.catsService.createTag(dto, user);
   }
 
   @Patch('tags/:tagId')
-  async updateTag(@Param('tagId') tagId: string, @Body() dto: UpdateCatTagDto) {
-    return this.catsService.updateTag(tagId, dto);
+  async updateTag(@Param('tagId') tagId: string, @Body() dto: UpdateCatTagDto, @CurrentUser() user: Express.User) {
+    return this.catsService.updateTag(tagId, dto, user);
   }
 
   @Delete('tags/:tagId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTag(@Param('tagId') tagId: string) {
-    await this.catsService.deleteTag(tagId);
+  async deleteTag(@Param('tagId') tagId: string, @CurrentUser() user: Express.User) {
+    await this.catsService.deleteTag(tagId, user);
   }
 
   @Patch(':id')
-  async updateCat(@Param('id') id: string, @Body() dto: UpdateCatDto) {
-    return this.catsService.updateCat(id, dto);
+  async updateCat(@Param('id') id: string, @Body() dto: UpdateCatDto, @CurrentUser() user: Express.User) {
+    return this.catsService.updateCat(id, dto, user);
   }
 
   @Post(':id/tags/:tagId')
-  async addTag(@Param('id') id: string, @Param('tagId') tagId: string) {
-    return this.catsService.addTag(id, tagId);
+  async addTag(@Param('id') id: string, @Param('tagId') tagId: string, @CurrentUser() user: Express.User) {
+    return this.catsService.addTag(id, tagId, user);
   }
 
   @Delete(':id/tags/:tagId')
-  async removeTag(@Param('id') id: string, @Param('tagId') tagId: string) {
-    return this.catsService.removeTag(id, tagId);
+  async removeTag(@Param('id') id: string, @Param('tagId') tagId: string, @CurrentUser() user: Express.User) {
+    return this.catsService.removeTag(id, tagId, user);
   }
 
   @Post(':id/weights')
   @HttpCode(HttpStatus.CREATED)
-  async addWeight(@Param('id') id: string, @Body() dto: CreateCatWeightDto) {
-    return this.catsService.addWeight(id, dto);
+  async addWeight(@Param('id') id: string, @Body() dto: CreateCatWeightDto, @CurrentUser() user: Express.User) {
+    return this.catsService.addWeight(id, dto, user);
   }
 
   @Post(':id/photos')
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('photo'))
-  async addPhoto(@Param('id') id: string, @UploadedFile() photo?: PrimaryPhotoUpload) {
-    return this.catsService.addPhoto(id, photo);
+  async addPhoto(@Param('id') id: string, @CurrentUser() user: Express.User, @UploadedFile() photo?: PrimaryPhotoUpload) {
+    return this.catsService.addPhoto(id, photo, user);
   }
 
   @Put(':id/photos/:photoId/primary')
-  async setPrimaryPhoto(@Param('id') id: string, @Param('photoId') photoId: string) {
-    return this.catsService.setPrimaryPhoto(id, photoId);
+  async setPrimaryPhoto(@Param('id') id: string, @Param('photoId') photoId: string, @CurrentUser() user: Express.User) {
+    return this.catsService.setPrimaryPhoto(id, photoId, user);
   }
 
   @Delete(':id/photos/:photoId')
-  async deletePhoto(@Param('id') id: string, @Param('photoId') photoId: string) {
-    return this.catsService.deletePhoto(id, photoId);
+  async deletePhoto(@Param('id') id: string, @Param('photoId') photoId: string, @CurrentUser() user: Express.User) {
+    return this.catsService.deletePhoto(id, photoId, user);
   }
 
   @Delete(':id/weights/:weightId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeWeight(@Param('id') id: string, @Param('weightId') weightId: string) {
-    await this.catsService.removeWeight(id, weightId);
+  async removeWeight(@Param('id') id: string, @Param('weightId') weightId: string, @CurrentUser() user: Express.User) {
+    await this.catsService.removeWeight(id, weightId, user);
   }
 
   @Put(':id/primary-photo')
   @UseInterceptors(FileInterceptor('photo'))
   async updatePrimaryPhoto(
     @Param('id') id: string,
-    @UploadedFile() photo?: PrimaryPhotoUpload,
+    @UploadedFile() photo: PrimaryPhotoUpload | undefined,
+    @CurrentUser() user: Express.User,
   ) {
-    return this.catsService.updatePrimaryPhoto(id, photo);
+    return this.catsService.updatePrimaryPhoto(id, photo, user);
   }
 }

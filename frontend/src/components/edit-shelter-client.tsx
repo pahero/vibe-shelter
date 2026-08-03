@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatTag, Location, catsApi, locationsApi } from "@/lib/api";
+import { AuditLog, CatTag, Location, auditApi, catsApi, locationsApi } from "@/lib/api";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
 
 type LocationDraft = {
@@ -26,6 +26,16 @@ type EditingTag = {
 
 const emptyLocation: LocationDraft = { name: "", description: "" };
 
+function auditValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "empty";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+}
+
+function auditDate(value: string): string {
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
+
 export function EditShelterClient() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
@@ -42,9 +52,46 @@ export function EditShelterClient() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditUser, setAuditUser] = useState("");
+  const [auditFrom, setAuditFrom] = useState("");
+  const [auditTo, setAuditTo] = useState("");
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(true);
 
   useEffect(() => {
     void loadEditors();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInitialAudit() {
+      setIsLoadingAudit(true);
+      setAuditError(null);
+      try {
+        const response = await auditApi.listAudit({ limit: 50 });
+        if (!cancelled) {
+          setAuditLogs(response.data);
+          setAuditTotal(response.total);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAuditError(ApiErrorHandler.handle(err));
+          setAuditLogs([]);
+          setAuditTotal(0);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingAudit(false);
+      }
+    }
+
+    void loadInitialAudit();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function loadEditors() {
@@ -62,6 +109,32 @@ export function EditShelterClient() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function loadAudit() {
+    setIsLoadingAudit(true);
+    setAuditError(null);
+    try {
+      const response = await auditApi.listAudit({
+        user: auditUser.trim() || undefined,
+        from: auditFrom || undefined,
+        to: auditTo || undefined,
+        limit: 50,
+      });
+      setAuditLogs(response.data);
+      setAuditTotal(response.total);
+    } catch (err) {
+      setAuditError(ApiErrorHandler.handle(err));
+      setAuditLogs([]);
+      setAuditTotal(0);
+    } finally {
+      setIsLoadingAudit(false);
+    }
+  }
+
+  async function filterAudit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await loadAudit();
   }
 
   async function createLocation(event: FormEvent<HTMLFormElement>) {
@@ -397,6 +470,61 @@ export function EditShelterClient() {
             </div>
           </section>
         </div>
+      )}
+
+      {!isLoading && (
+        <section className="mt-6 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 className="text-3xl font-semibold text-gray-900">Audit</h2>
+              <p className="mt-1 text-sm text-[#6d6a66]">Recent user actions and changed values.</p>
+            </div>
+            <form onSubmit={filterAudit} className="grid gap-2 sm:grid-cols-[minmax(140px,1fr)_auto_auto_auto]">
+              <input value={auditUser} onChange={(event) => setAuditUser(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm" placeholder="User name or email" />
+              <input type="date" value={auditFrom} onChange={(event) => setAuditFrom(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm" aria-label="Audit from date" />
+              <input type="date" value={auditTo} onChange={(event) => setAuditTo(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm" aria-label="Audit to date" />
+              <button type="submit" disabled={isLoadingAudit} className="rounded-lg bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Filter</button>
+            </form>
+          </div>
+
+          {auditError && <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">{auditError}</p>}
+          {isLoadingAudit && <p className="py-8 text-center text-sm text-[#6d6a66]">Loading audit...</p>}
+
+          {!isLoadingAudit && auditLogs.length === 0 && (
+            <div className="mt-4 rounded-lg border border-[#d4c7b4] bg-[#fff8ee]/50 p-8 text-center">
+              <p className="text-sm text-gray-600">No audit records found.</p>
+            </div>
+          )}
+
+          {!isLoadingAudit && auditLogs.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs font-medium text-[#6d6a66]">Showing {auditLogs.length} of {auditTotal}</p>
+              {auditLogs.map((log) => (
+                <article key={log.id} className="rounded-xl border border-[#d4c7b4] bg-white/75 p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {(log.actorName || log.actorEmail || "Unknown user")} {log.action} {log.entityType.replaceAll("_", " ")}
+                      </p>
+                      <p className="mt-1 text-xs text-[#6d6a66]">{log.entityName || log.entityId || "Unknown item"}</p>
+                    </div>
+                    <time className="text-xs font-medium text-[#6d6a66]" dateTime={log.createdAt}>{auditDate(log.createdAt)}</time>
+                  </div>
+                  {log.changes.length > 0 && (
+                    <div className="mt-3 grid gap-1.5 text-xs">
+                      {log.changes.slice(0, 6).map((change) => (
+                        <p key={`${log.id}-${change.field}`} className="rounded-lg bg-[#fff8ee]/80 px-3 py-2 text-gray-700">
+                          <span className="font-semibold text-gray-900">{change.field}</span>: {auditValue(change.from)} -&gt; {auditValue(change.to)}
+                        </p>
+                      ))}
+                      {log.changes.length > 6 && <p className="text-[#6d6a66]">+ {log.changes.length - 6} more changes</p>}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       )}
     </section>
   );

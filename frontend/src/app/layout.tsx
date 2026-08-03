@@ -14,8 +14,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shelter Frontend",
-  description: "Secure authentication frontend for Shelter",
+  title: "Friends Of Larnaca Cats",
+  description: "Friends Of Larnaca Cats shelter workspace",
 };
 
 export default function RootLayout({

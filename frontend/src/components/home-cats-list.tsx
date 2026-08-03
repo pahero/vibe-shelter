@@ -1,11 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
+import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
+import { CatCard as CatCardType, CatSex, CatTag, CreateCatDto, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 
 const CATS_PER_PAGE = 6;
+
+function emptyCatForm(locationId = "") {
+  return {
+    name: "",
+    sex: "UNKNOWN" as CatSex,
+    color: "",
+    estimatedBirthDate: "",
+    intakeDate: "",
+    microchipNumber: "",
+    passportNumber: "",
+    rescueSource: "",
+    sterilizationStatus: "UNKNOWN" as SterilizationStatus,
+    currentLocationId: locationId,
+  };
+}
 
 export function HomeCatsList() {
   const [cats, setCats] = useState<CatCardType[]>([]);
@@ -23,6 +39,11 @@ export function HomeCatsList() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+  const [createForm, setCreateForm] = useState(() => emptyCatForm());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +57,10 @@ export function HomeCatsList() {
 
         if (!cancelled) {
           setLocations(response.data);
+          setCreateForm((prev) => ({
+            ...prev,
+            currentLocationId: response.data.some((location) => location.id === prev.currentLocationId) ? prev.currentLocationId : response.data[0]?.id ?? "",
+          }));
         }
       } catch (err) {
         if (!cancelled) {
@@ -126,20 +151,141 @@ export function HomeCatsList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, locationFilter, search, tagFilter]);
+  }, [currentPage, locationFilter, refreshKey, search, tagFilter]);
+
+  const handleCreateCat = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setCreateSuccess(null);
+
+    const name = createForm.name.trim();
+    if (!name) {
+      setError("Cat name is required.");
+      return;
+    }
+    if (!locations.some((location) => location.id === createForm.currentLocationId)) {
+      setError("Choose an active location for this cat.");
+      return;
+    }
+
+    const payload: CreateCatDto = {
+      name,
+      sex: createForm.sex,
+      color: createForm.color.trim() || null,
+      estimatedBirthDate: createForm.estimatedBirthDate || null,
+      intakeDate: createForm.intakeDate || null,
+      rescueSource: createForm.rescueSource.trim() || null,
+      microchipNumber: createForm.microchipNumber.trim() || null,
+      passportNumber: createForm.passportNumber.trim() || null,
+      sterilizationStatus: createForm.sterilizationStatus,
+      currentLocationId: createForm.currentLocationId || null,
+    };
+
+    setIsCreating(true);
+    try {
+      const created = await catsApi.createCat(payload);
+      setCreateForm(emptyCatForm(locations[0]?.id ?? ""));
+      setShowCreateForm(false);
+      setCreateSuccess(`${created.name} was added.`);
+      setCurrentPage(1);
+      setRefreshKey((value) => value + 1);
+    } catch (err) {
+      setError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const totalPages = Math.ceil(total / CATS_PER_PAGE);
   const locationFilterLabel = locations.find((location) => location.id === locationFilter)?.name ?? "All locations";
 
   return (
-    <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm [animation-delay:160ms] md:p-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 px-6 pb-6 pt-3 shadow-panel backdrop-blur-sm [animation-delay:160ms] md:px-8 md:pb-8 md:pt-3">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cats list</p>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            setShowCreateForm((isOpen) => !isOpen);
+            setCreateSuccess(null);
+            setError(null);
+          }}
+          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
+        >
+          {showCreateForm ? "Close form" : "+ Add Cat"}
+        </button>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_minmax(180px,260px)] md:items-end">
+      {createSuccess && <p className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800">{createSuccess}</p>}
+
+      {showCreateForm && (
+        <form onSubmit={handleCreateCat} className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Name *
+              <input value={createForm.name} onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Mila" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Color
+              <input value={createForm.color} onChange={(event) => setCreateForm((prev) => ({ ...prev, color: event.target.value }))} list="cat-color-options" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Black-white" />
+              <CatColorDatalist />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Sex *
+              <select value={createForm.sex} onChange={(event) => setCreateForm((prev) => ({ ...prev, sex: event.target.value as CatSex }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                <option value="UNKNOWN">Unknown</option>
+                <option value="FEMALE">Female</option>
+                <option value="MALE">Male</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Neutering *
+              <select value={createForm.sterilizationStatus} onChange={(event) => setCreateForm((prev) => ({ ...prev, sterilizationStatus: event.target.value as SterilizationStatus }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                <option value="UNKNOWN">Unknown</option>
+                <option value="STERILIZED">Neutered</option>
+                <option value="NOT_STERILIZED">Not neutered</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Location
+              <select value={createForm.currentLocationId} onChange={(event) => setCreateForm((prev) => ({ ...prev, currentLocationId: event.target.value }))} disabled={isLoadingLocations || locations.length === 0} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60">
+                {locations.length === 0 && <option value="">No active locations</option>}
+                {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Intake date
+              <input type="date" value={createForm.intakeDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Estimated birth date
+              <input type="date" value={createForm.estimatedBirthDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, estimatedBirthDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Microchip number
+              <input value={createForm.microchipNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, microchipNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Passport number
+              <input value={createForm.passportNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, passportNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Rescue source
+              <input value={createForm.rescueSource} onChange={(event) => setCreateForm((prev) => ({ ...prev, rescueSource: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
+            </label>
+          </div>
+          <div className="mt-4 flex justify-end gap-3">
+            <button type="button" onClick={() => setShowCreateForm(false)} className="rounded-xl border border-[#d4c7b4] bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Cancel</button>
+            <button disabled={isCreating || isLoadingLocations || locations.length === 0} className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50">
+              {isCreating ? "Adding..." : "Add cat"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="mt-2 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_minmax(180px,260px)] md:items-end">
         <label className="grid max-w-md flex-1 gap-1 text-sm font-medium text-gray-800">
           Search cats
           <input
