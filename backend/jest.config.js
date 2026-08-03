@@ -9,7 +9,6 @@ module.exports = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   globalSetup: '<rootDir>/test-utils/global-setup.ts',
-  globalTeardown: '<rootDir>/test-utils/global-teardown.ts',
   roots: ['<rootDir>'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',

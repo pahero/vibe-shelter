@@ -17,19 +17,9 @@ export function writeTestDatabaseState(state: TestDatabaseState): void {
   fs.writeFileSync(testDatabaseStatePath, JSON.stringify(state), 'utf8');
 }
 
-export function readTestDatabaseState(): TestDatabaseState {
-  const raw = fs.readFileSync(testDatabaseStatePath, 'utf8');
-  return JSON.parse(raw) as TestDatabaseState;
-}
-
-export function deleteTestDatabaseState(): void {
-  if (fs.existsSync(testDatabaseStatePath)) {
-    fs.unlinkSync(testDatabaseStatePath);
-  }
-}
-
 export function ensureTestDatabaseEnv(): void {
-  const state = readTestDatabaseState();
+  const raw = fs.readFileSync(testDatabaseStatePath, 'utf8');
+  const state = JSON.parse(raw) as TestDatabaseState;
 
   process.env.DATABASE_URL ??= state.databaseUrl;
   process.env.AWS_ENDPOINT_URL_S3 ??= state.garageEndpoint;
