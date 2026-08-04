@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -62,6 +62,24 @@ export class CatPhotoUrlService {
   async deletePhoto(key: string): Promise<void> {
     if (!this.bucketName) return;
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }));
+  }
+
+  async listPhotoObjects(prefix: string): Promise<Array<{ key: string; lastModified: Date | null }>> {
+    const objects: Array<{ key: string; lastModified: Date | null }> = [];
+    let continuationToken: string | undefined;
+    do {
+      const result = await this.client.send(new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }));
+      for (const item of result.Contents ?? []) {
+        if (item.Key) objects.push({ key: item.Key, lastModified: item.LastModified ?? null });
+      }
+      continuationToken = result.NextContinuationToken;
+    } while (continuationToken);
+
+    return objects;
   }
 
   private buildPrimaryPhotoKey(catId: string, originalName?: string): string {
