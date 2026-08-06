@@ -7,11 +7,12 @@ import { CatPhotoUrlService } from './cat-photo-url.service';
 import { CatPhotoCleanupService } from './cat-photo-cleanup.service';
 import { CatsController } from './cats.controller';
 import { CatsService } from './cats.service';
+import { CreateCatHandler } from './commands/create-cat.handler';
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule, AuditModule],
   controllers: [CatsController],
-  providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService],
+  providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService, CreateCatHandler],
   exports: [CatsService],
 })
 export class CatsModule {}

@@ -48,12 +48,18 @@ The backend should be accessible at `http://localhost:4000` after initialization
 
 - TypeScript `any` is prohibited, both explicit and implicit. Use precise types or `unknown` with proper narrowing.
 - Maintain a strict separation of concerns between controllers, command/query handlers, and shared services.
-- Controllers only transform requests into commands or queries, invoke the appropriate handler, and transform results into responses. Do not put business logic or persistence in controllers.
+- Request DTOs own conversion to commands or queries through `toCommand(...)` or `toQuery(...)` methods. Controllers call those methods and pass the result to the appropriate handler.
+- Perform all request parsing and normalization in the DTO conversion method, including trimming, enum narrowing, date conversion, empty-to-null conversion, and request-user projection. Handlers receive already parsed values.
+- Commands and queries are plain, transport-independent classes. Keep their fields flat; do not store DTOs, request objects, actor/user objects, or nested `data` payloads in them.
+- Controllers only invoke DTO conversion, call the appropriate handler, and transform results into responses. Do not put parsing, business logic, or persistence in controllers.
 - Use command handlers for state-changing operations and query handlers for read operations instead of application service classes.
 - Do not create interfaces for command/query handlers. Handlers must never call other handlers and are invoked primarily by controllers.
 - All database reads and writes must happen in command/query handlers.
 - When a command handler performs more than one Prisma create, update, or delete operation, wrap those operations in a transaction.
+- Never catch or translate database-vendor or ORM-specific exceptions. Check expected domain conflicts and required records explicitly before writing, inside the same transaction, and throw domain-appropriate HTTP exceptions from those checks.
+- Keep database constraints as integrity backstops, but do not use constraint exceptions as application control flow.
 - Shared service classes are allowed only for reusable domain logic. They must be stateless, have no injected dependencies, and perform no database access or persistence so they can be safely used by multiple handlers.
+- When replacing a legacy service method with a handler, remove the old method, obsolete input types, private parsers/validators/mappers, and service tests that only covered the removed path. Move unrelated test setup to typed database fixtures.
 
 ## Testing Requirements
 
@@ -61,6 +67,9 @@ The backend should be accessible at `http://localhost:4000` after initialization
   1. Unit tests with DB
   2. Integration tests of endpoints
 - All business logic and command/query handlers must be covered with unit tests. Controllers are not unit tested; cover their request/response wiring through endpoint integration tests.
+- Tests for DTO conversion must cover every input field and every parsing branch: populated values, optional or null values, normalization, valid enums/dates, invalid enums/dates, and actor/user projection where applicable.
+- Tests for handlers must cover every command/query field reaching persistence or output and every control-flow branch, including successful optional relationships, missing/inactive relationships, persistence conflicts, and non-translated error propagation.
+- Require 100% statement, branch, and function coverage for each newly added DTO conversion and command/query handler. Remove genuinely unreachable code instead of manufacturing impossible mocked states solely for coverage.
 - Unit tests with DB should use real PostgreSQL via Testcontainers where applicable.
 - All unit tests are isolated by transactions.
 - Do not mock database, S3, config, file systems, or similar dependencies unless there is no viable alternative.

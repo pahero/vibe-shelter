@@ -16,17 +16,15 @@ export default async function globalSetup(): Promise<void> {
     .start();
   const garage = await startGarageTestContainer();
 
-  const databaseAUrl = container.getConnectionUri();
-  // Ends with /{databaseName}, we need to replace it with /integration_tests for the second database
-  const databaseBUrl = databaseAUrl.replace(/\/[^\/]+$/, '/integration_tests'); 
-  process.env.DATABASE_URL = databaseAUrl;
+  const databaseUrl = container.getConnectionUri();
+  process.env.DATABASE_URL = databaseUrl;
   process.env.AWS_ENDPOINT_URL_S3 = garage.endpoint;
   process.env.AWS_ACCESS_KEY_ID = garage.accessKeyId;
   process.env.AWS_SECRET_ACCESS_KEY = garage.secretAccessKey;
   process.env.S3_BUCKET = garage.bucket;
   process.env.AWS_REGION = garage.region;
   writeTestDatabaseState({
-    databaseUrl: databaseAUrl,
+    databaseUrl,
     garageEndpoint: garage.endpoint,
     garageAccessKeyId: garage.accessKeyId,
     garageSecretAccessKey: garage.secretAccessKey,
@@ -35,19 +33,11 @@ export default async function globalSetup(): Promise<void> {
   });
 
   const backendRoot = path.resolve(__dirname, '..', '..');
-  const procA = execAsync('npx prisma migrate deploy', {
+  await execAsync('npx prisma migrate deploy', {
     cwd: backendRoot,
     env: {
       ...process.env,
-      DATABASE_URL: databaseAUrl,
-    }
+      DATABASE_URL: databaseUrl,
+    },
   });
-  const procB = execAsync('npx prisma migrate deploy', {
-    cwd: backendRoot,
-    env: {
-      ...process.env,
-      DATABASE_URL: databaseBUrl,
-    }
-  });
-  await Promise.all([procA, procB]);
 }

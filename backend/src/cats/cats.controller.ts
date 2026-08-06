@@ -3,12 +3,16 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
+import { CreateCatHandler } from './commands/create-cat.handler';
 import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 
 @Controller('api/cats')
 @UseGuards(SessionAuthGuard)
 export class CatsController {
-  constructor(private catsService: CatsService) {}
+  constructor(
+    private catsService: CatsService,
+    private createCatHandler: CreateCatHandler,
+  ) {}
 
   @Get()
   async listCats(
@@ -52,7 +56,7 @@ export class CatsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createCat(@Body() dto: CreateCatDto, @CurrentUser() user: Express.User) {
-    return this.catsService.createCat(dto, user);
+    return this.createCatHandler.execute(dto.toCommand(user));
   }
 
   @Post('tags')

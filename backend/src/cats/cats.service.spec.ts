@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import configuration from '../config/configuration';
 import { PrismaService } from '../database/prisma.service';
@@ -42,28 +43,8 @@ describe('CatsService', () => {
     await prisma.$disconnect();
   });
 
-  it('creates a cat card with location name and no primary photo from create payload', async () => {
-    const location = await createLocation(prisma, 'create');
-
-    const card = await service.createCat({
-      name: '  Mila  ',
-      sex: 'FEMALE',
-      color: 'Calico',
-      intakeDate: '2026-04-01',
-      microchipNumber: unique('chip'),
-      passportNumber: unique('pass'),
-      sterilizationStatus: 'STERILIZED',
-      currentLocationId: location.id,
-    });
-
-    expect(card.name).toBe('Mila');
-    expect(card.currentLocationName).toBe(location.name);
-    expect(card.primaryPhotoUrl).toBeNull();
-    expect(card).not.toHaveProperty('primaryPhotoKey');
-  });
-
   it('uploads primary photo data to S3 and returns a presigned URL', async () => {
-    const card = await service.createCat({
+    const card = await createCatFixture(prisma, {
       name: 'Photo Cat',
       sex: 'UNKNOWN',
       sterilizationStatus: 'UNKNOWN',
@@ -82,7 +63,7 @@ describe('CatsService', () => {
   });
 
   it('manages gallery photos and primary photo selection', async () => {
-    const card = await service.createCat({
+    const card = await createCatFixture(prisma, {
       name: 'Gallery Cat',
       sex: 'UNKNOWN',
       sterilizationStatus: 'UNKNOWN',
@@ -112,7 +93,7 @@ describe('CatsService', () => {
   });
 
   it('rejects empty primary photo upload requests', async () => {
-    const card = await service.createCat({
+    const card = await createCatFixture(prisma, {
       name: 'No Photo Cat',
       sex: 'UNKNOWN',
       sterilizationStatus: 'UNKNOWN',
@@ -123,69 +104,15 @@ describe('CatsService', () => {
     );
   });
 
-  it('rejects missing required fields, invalid enums, and invalid dates', async () => {
-    await expect(
-      service.createCat({ name: '', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' }),
-    ).rejects.toThrow(BadRequestException);
-    await expect(
-      service.createCat({ name: 'Mila', sex: 'OTHER', sterilizationStatus: 'UNKNOWN' }),
-    ).rejects.toThrow(BadRequestException);
-    await expect(
-      service.createCat({ name: 'Mila', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', intakeDate: 'not-a-date' }),
-    ).rejects.toThrow(BadRequestException);
-  });
-
-  it('rejects duplicate microchip and passport numbers', async () => {
-    const microchipNumber = unique('chip');
-    const passportNumber = unique('pass');
-    await service.createCat({
-      name: 'Mila',
-      sex: 'FEMALE',
-      microchipNumber,
-      passportNumber,
-      sterilizationStatus: 'UNKNOWN',
-    });
-
-    await expect(
-      service.createCat({
-        name: 'Luna',
-        sex: 'FEMALE',
-        microchipNumber,
-        sterilizationStatus: 'UNKNOWN',
-      }),
-    ).rejects.toThrow(ConflictException);
-    await expect(
-      service.createCat({
-        name: 'Leo',
-        sex: 'MALE',
-        passportNumber,
-        sterilizationStatus: 'UNKNOWN',
-      }),
-    ).rejects.toThrow(ConflictException);
-  });
-
-  it('validates active location references', async () => {
-    const inactive = await createLocation(prisma, 'inactive', 'INACTIVE');
-
-    await expect(
-      service.createCat({
-        name: 'Mila',
-        sex: 'FEMALE',
-        sterilizationStatus: 'UNKNOWN',
-        currentLocationId: inactive.id,
-      }),
-    ).rejects.toThrow(NotFoundException);
-  });
-
   it('filters by default active status, location, search, and pagination', async () => {
     const location = await createLocation(prisma, 'filter');
     const otherLocation = await createLocation(prisma, 'other');
     const prefix = unique('search');
-    await service.createCat({ name: `${prefix} Mila`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, microchipNumber: `${prefix}-001` });
-    await service.createCat({ name: `${prefix} Boris`, sex: 'MALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, passportNumber: `${prefix}-P` });
-    const archived = await service.createCat({ name: `${prefix} Old`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
+    await createCatFixture(prisma, { name: `${prefix} Mila`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, microchipNumber: `${prefix}-001` });
+    await createCatFixture(prisma, { name: `${prefix} Boris`, sex: 'MALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, passportNumber: `${prefix}-P` });
+    const archived = await createCatFixture(prisma, { name: `${prefix} Old`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
     await service.updateCat(archived.id, { status: 'ARCHIVED' });
-    await service.createCat({ name: `${prefix} Elsewhere`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: otherLocation.id });
+    await createCatFixture(prisma, { name: `${prefix} Elsewhere`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: otherLocation.id });
 
     const page = await service.findAll({ locationId: location.id, search: prefix, skip: 1, limit: 1 });
     expect(page.total).toBe(2);
@@ -199,7 +126,7 @@ describe('CatsService', () => {
 
   it('updates cat card fields and can clear nullable fields', async () => {
     const location = await createLocation(prisma, 'update');
-    const card = await service.createCat({ name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
+    const card = await createCatFixture(prisma, { name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
 
     const updated = await service.updateCat(card.id, {
       name: 'Luna',
@@ -215,7 +142,7 @@ describe('CatsService', () => {
   });
 
   it('adds, lists, and removes cat weight entries', async () => {
-    const card = await service.createCat({ name: 'Weight Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+    const card = await createCatFixture(prisma, { name: 'Weight Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
 
     const weight = await service.addWeight(card.id, { weightKg: 4.25, measuredAt: '2026-07-30' });
 
@@ -234,8 +161,8 @@ describe('CatsService', () => {
   });
 
   it('creates reusable tags, attaches them to cats, and filters by tag', async () => {
-    const cat = await service.createCat({ name: unique('tagged'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
-    const otherCat = await service.createCat({ name: unique('untagged'), sex: 'MALE', sterilizationStatus: 'UNKNOWN' });
+    const cat = await createCatFixture(prisma, { name: unique('tagged'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+    const otherCat = await createCatFixture(prisma, { name: unique('untagged'), sex: 'MALE', sterilizationStatus: 'UNKNOWN' });
 
     const tag = await service.createTag({ name: '  Needs foster  ' });
     const duplicate = await service.createTag({ name: 'Needs foster' });
@@ -254,7 +181,7 @@ describe('CatsService', () => {
   });
 
   it('updates tag color and blocks deleting tags that are used by cats', async () => {
-    const cat = await service.createCat({ name: unique('tagged-delete'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+    const cat = await createCatFixture(prisma, { name: unique('tagged-delete'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
     const tag = await service.createTag({ name: unique('editable-tag'), color: '#9ee6a8' });
 
     expect(tag.color).toBe('#9ee6a8');
@@ -313,6 +240,13 @@ describe('CatsService', () => {
 
 function unique(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function createCatFixture(
+  prisma: PrismaService,
+  data: Prisma.CatUncheckedCreateInput,
+) {
+  return prisma.$transaction((transaction) => transaction.cat.create({ data }));
 }
 
 async function createLocation(

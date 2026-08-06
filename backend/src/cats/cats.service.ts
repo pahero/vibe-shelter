@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
+import { CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 import { AuditActor, AuditService } from '../audit/audit.service';
 
@@ -119,31 +119,6 @@ export class CatsService {
     private photoUrls: CatPhotoUrlService,
     @Optional() private audit?: AuditService,
   ) {}
-
-  async createCat(data: CreateCatDto, actor?: AuditActor | null): Promise<CatCard> {
-    this.validateCreate(data);
-    await this.validateActiveLocation(data.currentLocationId);
-
-    try {
-      const cat = await (this.prisma as any).cat.create({
-        data: this.toCreateData(data),
-        include: this.catCardInclude(),
-      });
-      await this.audit?.record({
-        actor,
-        action: 'create',
-        entityType: 'cat',
-        entityId: cat.id,
-        entityName: cat.name,
-        oldValues: null,
-        newValues: this.catAuditValues(cat),
-      });
-      return this.toCatCard(cat);
-    } catch (error) {
-      this.handlePrismaError(error);
-      throw error;
-    }
-  }
 
   async updateCat(id: string, data: UpdateCatDto, actor?: AuditActor | null): Promise<CatCard> {
     this.validateId(id);
@@ -474,20 +449,9 @@ export class CatsService {
     }
   }
 
-  private validateCreate(data: CreateCatDto): void {
-    this.validateName(data.name, true);
-    this.validateRequiredEnum(data.sex, VALID_CAT_SEXES, 'sex');
-    this.validateRequiredEnum(
-      data.sterilizationStatus,
-      VALID_STERILIZATION_STATUSES,
-      'sterilizationStatus',
-    );
-    this.validateOptionalDates(data);
-  }
-
   private validateUpdate(data: UpdateCatDto): void {
     if (data.name !== undefined) {
-      this.validateName(data.name, false);
+      this.validateName(data.name);
     }
     if (data.sex !== undefined) {
       this.validateRequiredEnum(data.sex, VALID_CAT_SEXES, 'sex');
@@ -505,8 +469,8 @@ export class CatsService {
     this.validateOptionalDates(data);
   }
 
-  private validateName(name: string | undefined, required: boolean): void {
-    if ((required && name === undefined) || name === null || name?.trim().length === 0) {
+  private validateName(name: string | undefined): void {
+    if (name === null || name?.trim().length === 0) {
       throw new BadRequestException('Cat name is required');
     }
   }
@@ -633,21 +597,6 @@ export class CatsService {
     return {
       currentLocation: { select: { name: true } },
       tags: { include: { tag: true }, orderBy: { tag: { name: 'asc' } } },
-    };
-  }
-
-  private toCreateData(data: CreateCatDto): any {
-    return {
-      name: data.name.trim(),
-      sex: data.sex,
-      color: this.optionalTrim(data.color),
-      estimatedBirthDate: this.parseOptionalDate(data.estimatedBirthDate, 'estimatedBirthDate'),
-      intakeDate: this.parseOptionalDate(data.intakeDate, 'intakeDate'),
-      rescueSource: this.optionalTrim(data.rescueSource),
-      microchipNumber: this.optionalTrim(data.microchipNumber),
-      passportNumber: this.optionalTrim(data.passportNumber),
-      sterilizationStatus: data.sterilizationStatus,
-      currentLocationId: data.currentLocationId || null,
     };
   }
 
