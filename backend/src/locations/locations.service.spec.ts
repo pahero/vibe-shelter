@@ -1,40 +1,27 @@
-// src/locations/locations.service.spec.ts
-import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { beginTestTransaction, rollbackTestTransaction, startTestDatabase } from '../test-utils/test-db';
 import { LocationsService } from './locations.service';
 
 describe('LocationsService', () => {
   let service: LocationsService;
-  let prisma: any;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    prisma = await startTestDatabase();
+    service = new LocationsService(prisma);
+  });
 
   beforeEach(async () => {
-    // Mock Prisma service
-    prisma = {
-      user: {
-        findUnique: jest.fn(),
-      },
-      location: {
-        create: jest.fn(),
-        findMany: jest.fn(),
-        findUnique: jest.fn(),
-        count: jest.fn(),
-        update: jest.fn(),
-        deleteMany: jest.fn(),
-      },
-    };
+    await beginTestTransaction(prisma);
+  });
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        LocationsService,
-        {
-          provide: PrismaService,
-          useValue: prisma,
-        },
-      ],
-    }).compile();
+  afterEach(async () => {
+    await rollbackTestTransaction(prisma);
+  });
 
-    service = module.get<LocationsService>(LocationsService);
+  afterAll(async () => {
+    await prisma.$disconnect();
   });
 
   describe('createLocation', () => {
@@ -47,8 +34,6 @@ describe('LocationsService', () => {
     });
 
     it('should validate owner exists if provided', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
-
       await expect(
         service.createLocation({
           name: 'Foster',
@@ -60,8 +45,6 @@ describe('LocationsService', () => {
 
   describe('findById', () => {
     it('should throw NotFoundException for non-existent location', async () => {
-      prisma.location.findUnique.mockResolvedValue(null);
-
       await expect(service.findById('invalid-id')).rejects.toThrow(
         NotFoundException,
       );
@@ -84,21 +67,23 @@ describe('LocationsService', () => {
 
   describe('updateLocation', () => {
     it('updates description and normalizes blank owner id to null', async () => {
-      const location = { id: 'location-id', name: 'Shelter', ownerId: null };
-      prisma.location.findUnique.mockResolvedValueOnce(location);
-      prisma.location.update.mockResolvedValue({ ...location, description: 'Updated' });
+      const location = await prisma.location.create({
+        data: { name: `Shelter ${unique()}`, ownerId: null },
+      });
 
-      await service.updateLocation('location-id', {
+      await service.updateLocation(location.id, {
         description: ' Updated ',
         ownerId: '',
       });
 
-      expect(prisma.location.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ description: 'Updated', ownerId: null }),
-        }),
-      );
+      const updated = await prisma.location.findUniqueOrThrow({ where: { id: location.id } });
+      expect(updated.description).toBe('Updated');
+      expect(updated.ownerId).toBeNull();
     });
   });
 
 });
+
+function unique(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}

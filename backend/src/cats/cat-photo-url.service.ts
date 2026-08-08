@@ -5,16 +5,11 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CatPhotoUrlService {
-  private readonly client: S3Client;
-  private readonly bucketName?: string;
-
-  constructor(configService: ConfigService) {
-    this.bucketName = configService.get<string>('s3.bucketName') ?? process.env.S3_BUCKET;
-    this.client = new S3Client({
-      endpoint: configService.get<string>('s3.endpoint') ?? process.env.AWS_ENDPOINT_URL_S3,
-      region: process.env.AWS_REGION ?? 'us-east-1',
-      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
-    });
+  bucketName: string;
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly client: S3Client) {
+    this.bucketName = this.configService.get<string>('s3.bucketName') ?? '';
   }
 
   async getPrimaryPhotoUrl(key: string | null): Promise<string | null> {

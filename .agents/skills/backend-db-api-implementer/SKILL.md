@@ -72,6 +72,9 @@ The backend should be accessible at `http://localhost:4000` after initialization
 - Require 100% statement, branch, and function coverage for each newly added DTO conversion and command/query handler. Remove genuinely unreachable code instead of manufacturing impossible mocked states solely for coverage.
 - Unit tests with DB should use real PostgreSQL via Testcontainers where applicable.
 - All unit tests are isolated by transactions.
+- Enforce full unit-test isolation: `beforeAll` may perform only stateless setup, while `beforeEach` and `afterEach` must use only unique per-test resources.
+- Never create Nest test modules (`Test.createTestingModule`) in unit tests for handlers/services; wire dependencies through native constructor-based DI with real collaborators.
+- Use `backend/src/cats/cats.service.spec.ts` as the canonical initialization pattern for unit tests that need database and storage setup/teardown.
 - Do not mock database, S3, config, file systems, or similar dependencies unless there is no viable alternative.
 - Do not inject dependencies into shared services or introduce service-to-service constructor dependencies. Extract shared logic into stateless, dependency-free services or utilities instead.
 - Every endpoint must have at least one test, and usually exactly/at least one endpoint integration test where appropriate.

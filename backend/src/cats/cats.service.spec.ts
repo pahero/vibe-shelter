@@ -1,46 +1,48 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
-import { Test, TestingModule } from '@nestjs/testing';
-import configuration from '../config/configuration';
-import { PrismaService } from '../database/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import { PrismaClient, Prisma } from '@prisma/client';
 import {
   beginTestTransaction,
+  createBucket,
+  deleteBucket,
+  getS3Client,
+  getTestDatabase,
   rollbackTestTransaction,
-  startTestDatabase,
 } from '../test-utils/test-db';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 import { CatsService } from './cats.service';
+import { S3Client } from '@aws-sdk/client-s3';
 
 describe('CatsService', () => {
-  let moduleRef: TestingModule;
   let service: CatsService;
-  let prisma: PrismaService;
+  let prisma: PrismaClient;
+  let s3Client: S3Client;
+  let bucketName: string;
 
   beforeAll(async () => {
-    prisma = await startTestDatabase();
-    moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ load: [configuration], isGlobal: true })],
-      providers: [
-        CatsService,
-        CatPhotoUrlService,
-        { provide: PrismaService, useValue: prisma },
-      ],
-    }).compile();
-    service = moduleRef.get(CatsService);
+    prisma = getTestDatabase();
+    s3Client = getS3Client();
   });
 
   beforeEach(async () => {
+    bucketName = await createBucket('cats-service-test', s3Client);
+    const config = new ConfigService()
+    config.set('s3.bucketName', bucketName);
+    service = new CatsService(
+      prisma,
+      new CatPhotoUrlService(config, s3Client),
+      undefined);
     await beginTestTransaction(prisma);
   });
 
   afterEach(async () => {
     await rollbackTestTransaction(prisma);
+    await deleteBucket(bucketName, s3Client);
   });
 
   afterAll(async () => {
-    await moduleRef.close();
     await prisma.$disconnect();
+    s3Client.destroy();
   });
 
   it('uploads primary photo data to S3 and returns a presigned URL', async () => {
@@ -243,14 +245,14 @@ function unique(prefix: string): string {
 }
 
 async function createCatFixture(
-  prisma: PrismaService,
+  prisma: PrismaClient,
   data: Prisma.CatUncheckedCreateInput,
 ) {
   return prisma.$transaction((transaction) => transaction.cat.create({ data }));
 }
 
 async function createLocation(
-  prisma: PrismaService,
+  prisma: PrismaClient,
   namePrefix: string,
   status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' = 'ACTIVE',
 ) {

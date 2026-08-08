@@ -1,10 +1,10 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import configuration from '../../config/configuration';
+import { ConfigService } from '@nestjs/config';
+import { S3Client } from '@aws-sdk/client-s3';
 import { PrismaService } from '../../database/prisma.service';
 import {
   beginTestTransaction,
+  getS3Client,
   rollbackTestTransaction,
   startTestDatabase,
 } from '../../test-utils/test-db';
@@ -13,29 +13,25 @@ import { CreateCatCommand } from './create-cat.command';
 import { CreateCatHandler } from './create-cat.handler';
 
 describe('CreateCatHandler', () => {
-  let moduleRef: TestingModule;
   let handler: CreateCatHandler;
   let prisma: PrismaService;
+  let s3Client: S3Client;
 
   beforeAll(async () => {
     prisma = await startTestDatabase();
-    moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ load: [configuration], isGlobal: true })],
-      providers: [
-        CreateCatHandler,
-        CatPhotoUrlService,
-        { provide: PrismaService, useValue: prisma },
-      ],
-    }).compile();
-    handler = moduleRef.get(CreateCatHandler);
+    s3Client = getS3Client();
+    handler = new CreateCatHandler(
+      prisma,
+      new CatPhotoUrlService(new ConfigService(), s3Client),
+    );
   });
 
   beforeEach(async () => beginTestTransaction(prisma));
   afterEach(async () => rollbackTestTransaction(prisma));
 
   afterAll(async () => {
-    await moduleRef.close();
     await prisma.$disconnect();
+    s3Client.destroy();
   });
 
   it('creates a cat card and audit record', async () => {

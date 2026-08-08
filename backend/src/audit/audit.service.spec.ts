@@ -1,20 +1,15 @@
 import { BadRequestException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../database/prisma.service';
 import { beginTestTransaction, rollbackTestTransaction, startTestDatabase } from '../test-utils/test-db';
 import { AuditService } from './audit.service';
 
 describe('AuditService', () => {
-  let moduleRef: TestingModule;
   let service: AuditService;
   let prisma: PrismaService;
 
   beforeAll(async () => {
     prisma = await startTestDatabase();
-    moduleRef = await Test.createTestingModule({
-      providers: [AuditService, { provide: PrismaService, useValue: prisma }],
-    }).compile();
-    service = moduleRef.get(AuditService);
+    service = new AuditService(prisma);
   });
 
   beforeEach(async () => {
@@ -26,7 +21,6 @@ describe('AuditService', () => {
   });
 
   afterAll(async () => {
-    await moduleRef.close();
     await prisma.$disconnect();
   });
 

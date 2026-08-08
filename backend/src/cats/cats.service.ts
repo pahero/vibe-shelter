@@ -5,8 +5,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../database/prisma.service';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 import { AuditActor, AuditService } from '../audit/audit.service';
@@ -115,7 +114,7 @@ export type PrimaryPhotoUpload = {
 @Injectable()
 export class CatsService {
   constructor(
-    private prisma: PrismaService,
+    private prisma: PrismaClient,
     private photoUrls: CatPhotoUrlService,
     @Optional() private audit?: AuditService,
   ) {}

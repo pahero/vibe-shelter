@@ -9,22 +9,26 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 export default async function globalSetup(): Promise<void> {
-  const container = await new PostgreSqlContainer('postgres:18-alpine')
+  const containerPromise = new PostgreSqlContainer('postgres:18-alpine')
     .withWaitStrategy(Wait.forAll([Wait.forHealthCheck()]))
     .withLabels({ 'suite': 'shelter-backend-unit-tests' })
     .withReuse()
     .start();
-  const garage = await startGarageTestContainer();
+  const garagePromise = startGarageTestContainer();
 
-  const databaseUrl = container.getConnectionUri();
-  process.env.DATABASE_URL = databaseUrl;
+  const container = await containerPromise;
+  const garage = await garagePromise;
+  const unitTestsDatabaseUrl = container.getConnectionUri();
+  const integrationTestsDatabaseUrl = unitTestsDatabaseUrl.replace(/\/([^\/]+)$/, '/integration-tests');
+  process.env.DATABASE_URL = unitTestsDatabaseUrl;
   process.env.AWS_ENDPOINT_URL_S3 = garage.endpoint;
   process.env.AWS_ACCESS_KEY_ID = garage.accessKeyId;
   process.env.AWS_SECRET_ACCESS_KEY = garage.secretAccessKey;
   process.env.S3_BUCKET = garage.bucket;
   process.env.AWS_REGION = garage.region;
   writeTestDatabaseState({
-    databaseUrl,
+    unitTestsDatabaseUrl,
+    integrationTestsDatabaseUrl: integrationTestsDatabaseUrl,
     garageEndpoint: garage.endpoint,
     garageAccessKeyId: garage.accessKeyId,
     garageSecretAccessKey: garage.secretAccessKey,
@@ -33,11 +37,19 @@ export default async function globalSetup(): Promise<void> {
   });
 
   const backendRoot = path.resolve(__dirname, '..', '..');
-  await execAsync('npx prisma migrate deploy', {
+  const promiseA = execAsync('npx prisma migrate deploy', {
     cwd: backendRoot,
     env: {
       ...process.env,
-      DATABASE_URL: databaseUrl,
+      DATABASE_URL: unitTestsDatabaseUrl,
     },
   });
+  const promiseB = execAsync('npx prisma migrate deploy', {
+    cwd: backendRoot,
+    env: {
+      ...process.env,
+      DATABASE_URL: integrationTestsDatabaseUrl,
+    },
+  });
+  await Promise.all([promiseA, promiseB]);
 }

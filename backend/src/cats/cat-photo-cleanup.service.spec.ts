@@ -1,31 +1,25 @@
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import configuration from '../config/configuration';
+import { S3Client } from '@aws-sdk/client-s3';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
-import { beginTestTransaction, rollbackTestTransaction, startTestDatabase } from '../test-utils/test-db';
+import { beginTestTransaction, getS3Client, rollbackTestTransaction, startTestDatabase } from '../test-utils/test-db';
 import { CatPhotoCleanupService } from './cat-photo-cleanup.service';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 
 describe('CatPhotoCleanupService', () => {
-  let moduleRef: TestingModule;
   let service: CatPhotoCleanupService;
   let photoUrls: CatPhotoUrlService;
   let prisma: PrismaService;
+  let s3Client: S3Client;
+  let config: ConfigService;
   const uploadedKeys: string[] = [];
 
   beforeAll(async () => {
     prisma = await startTestDatabase();
-    moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ load: [configuration], isGlobal: true })],
-      providers: [
-        CatPhotoCleanupService,
-        CatPhotoUrlService,
-        { provide: PrismaService, useValue: prisma },
-        ConfigModule
-      ]
-    }).compile();
-    service = moduleRef.get(CatPhotoCleanupService);
-    photoUrls = moduleRef.get(CatPhotoUrlService);
+    s3Client = getS3Client();
+    config = new ConfigService();
+    config.set('s3.bucketName', process.env.S3_BUCKET);
+    photoUrls = new CatPhotoUrlService(config, s3Client);
+    service = new CatPhotoCleanupService(prisma, photoUrls, config);
   });
 
   beforeEach(async () => {
@@ -40,14 +34,13 @@ describe('CatPhotoCleanupService', () => {
   });
 
   afterAll(async () => {
-    await moduleRef.close();
     await prisma.$disconnect();
+    s3Client.destroy();
   });
 
   it('deletes unreferenced S3 cat photos and keeps referenced photos', async () => {
     const catId = `cleanup-${Date.now()}`;
     const prefix = `cats/${catId}/photos/`;
-    const config = moduleRef.get(ConfigService);
     jest.spyOn(config, 'get').mockImplementation((name: string) => {
       if (name === 'S3_DANGLING_PHOTO_CLEANUP_GRACE_MS') return '1';
       if (name === 'S3_DANGLING_PHOTO_CLEANUP_PREFIX') return prefix;

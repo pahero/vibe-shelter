@@ -12,18 +12,19 @@ describe('UsersService (db)', () => {
   let usersService: UsersService;
 
   beforeAll(async () => {
-    const bootstrapPrisma = await startTestDatabase();
-    await bootstrapPrisma.$disconnect();
+    prisma = await startTestDatabase();
+    usersService = new UsersService(prisma);
   });
 
   beforeEach(async () => {
-    prisma = await startTestDatabase();
-    usersService = new UsersService(prisma);
     await beginTestTransaction(prisma);
   });
 
   afterEach(async () => {
     await rollbackTestTransaction(prisma);
+  });
+
+  afterAll(async () => {
     await prisma.$disconnect();
   });
 

@@ -24,15 +24,21 @@ describe('AuthService (db)', () => {
   let usersService: UsersService;
   let authService: AuthService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     prisma = await startTestDatabase();
     usersService = new UsersService(prisma);
     authService = new AuthService(prisma, usersService, new TestConfigService() as unknown as ConfigService);
+  });
+
+  beforeEach(async () => {
     await beginTestTransaction(prisma);
   });
 
   afterEach(async () => {
     await rollbackTestTransaction(prisma);
+  });
+
+  afterAll(async () => {
     await prisma.$disconnect();
   });
 
