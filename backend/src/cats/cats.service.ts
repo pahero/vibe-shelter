@@ -297,18 +297,15 @@ export class CatsService {
     const name = this.validateTagName(data.name);
     const color = this.validateTagColor(data.color);
 
-    try {
-      const tag = await (this.prisma as any).catTag.create({ data: { name, color } });
-      const result = this.toCatTag(tag);
-      await this.audit?.record({ actor, action: 'create', entityType: 'cat_tag', entityId: tag.id, entityName: tag.name, oldValues: null, newValues: result });
-      return result;
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        const tag = await (this.prisma as any).catTag.findUnique({ where: { name } });
-        return this.toCatTag(tag);
-      }
-      throw error;
+    const existing = await (this.prisma as any).catTag.findUnique({ where: { name } });
+    if (existing) {
+      return this.toCatTag(existing);
     }
+
+    const tag = await (this.prisma as any).catTag.create({ data: { name, color } });
+    const result = this.toCatTag(tag);
+    await this.audit?.record({ actor, action: 'create', entityType: 'cat_tag', entityId: tag.id, entityName: tag.name, oldValues: null, newValues: result });
+    return result;
   }
 
   async updateTag(id: string, data: UpdateCatTagDto, actor?: AuditActor | null): Promise<CatTag> {

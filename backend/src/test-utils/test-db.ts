@@ -1,6 +1,6 @@
 import { PrismaService } from '@/database/prisma.service';
 import { ensureTestDatabaseEnv, getGarageTestConnection, getUnitTestDatabaseUrl } from './test-db-env';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { CreateBucketCommand, DeleteBucketCommand, DeleteObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 import { Test } from '@nestjs/testing';
@@ -69,4 +69,19 @@ export async function beginTestTransaction(prismaInstance: PrismaClient): Promis
 
 export async function rollbackTestTransaction(prismaInstance: PrismaClient): Promise<void> {
   await prismaInstance.$executeRawUnsafe('ROLLBACK');
+}
+
+export async function runInTestTransaction(
+  prismaInstance: PrismaClient,
+  fn: (tx: Prisma.TransactionClient) => Promise<void>): Promise<void> {
+  try {
+    await prismaInstance.$transaction(async (tx) => {
+      await fn(tx);
+      throw new Error('Rollback successful');
+    });
+  } catch (err) {
+    if (!(err instanceof Error && err.message === 'Rollback successful')) {
+      throw err;
+    }
+  }
 }
