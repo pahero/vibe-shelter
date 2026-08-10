@@ -15,12 +15,7 @@ describe('CreateCatDto', () => {
     dto.sterilizationStatus = 'STERILIZED';
     dto.currentLocationId = '  location-1  ';
 
-    const command = dto.toCommand({
-      id: 'user-1',
-      email: 'staff@example.com',
-      fullName: 'Shelter Staff',
-      role: 'STAFF',
-    });
+    const command = dto.toCommand();
 
     expect(command).toMatchObject({
       name: 'Mila',
@@ -33,9 +28,6 @@ describe('CreateCatDto', () => {
       passportNumber: 'AB123456',
       sterilizationStatus: 'STERILIZED',
       currentLocationId: 'location-1',
-      actorUserId: 'user-1',
-      actorEmail: 'staff@example.com',
-      actorName: 'Shelter Staff',
     });
   });
 
@@ -61,25 +53,16 @@ describe('CreateCatDto', () => {
       microchipNumber: null,
       passportNumber: null,
       currentLocationId: null,
-      actorUserId: null,
-      actorEmail: null,
-      actorName: null,
     });
   });
 
-  it('normalizes whitespace-only optional strings and a null actor name', () => {
+  it('normalizes whitespace-only optional strings', () => {
     const dto = createRequiredDto();
     dto.color = '   ';
 
-    const command = dto.toCommand({
-      id: 'user-1',
-      email: 'staff@example.com',
-      fullName: null,
-      role: 'STAFF',
-    });
+    const command = dto.toCommand();
 
     expect(command.color).toBeNull();
-    expect(command.actorName).toBeNull();
   });
 
   it.each([undefined, '', '   '])('rejects an absent or empty name: %p', (name) => {

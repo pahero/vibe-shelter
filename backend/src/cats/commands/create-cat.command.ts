@@ -12,8 +12,5 @@ export class CreateCatCommand {
     readonly passportNumber: string | null,
     readonly sterilizationStatus: SterilizationStatus,
     readonly currentLocationId: string | null,
-    readonly actorUserId: string | null,
-    readonly actorEmail: string | null,
-    readonly actorName: string | null,
   ) {}
 }

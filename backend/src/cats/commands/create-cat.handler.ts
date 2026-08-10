@@ -67,25 +67,6 @@ export class CreateCatHandler {
           },
           include: CAT_CARD_INCLUDE,
         });
-        const auditValues = this.toAuditValues(created);
-        await transaction.auditLog.create({
-          data: {
-            actorUserId: command.actorUserId,
-            actorEmail: command.actorEmail,
-            actorName: command.actorName,
-            action: 'create',
-            entityType: 'cat',
-            entityId: created.id,
-            entityName: created.name,
-            oldValues: Prisma.JsonNull,
-            newValues: auditValues,
-            changes: Object.entries(auditValues).map(([field, value]) => ({
-              field,
-              from: null,
-              to: value,
-            })),
-          },
-        });
         return created;
     });
 
@@ -104,32 +85,6 @@ export class CreateCatHandler {
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),
       tags: [],
-    };
-  }
-
-  private toAuditValues(cat: {
-    name: string;
-    sex: string;
-    color: string | null;
-    estimatedBirthDate: Date | null;
-    intakeDate: Date | null;
-    status: string;
-    sterilizationStatus: string;
-    currentLocationId: string | null;
-    primaryPhotoKey: string | null;
-    microchipNumber: string | null;
-  }) {
-    return {
-      name: cat.name,
-      sex: cat.sex,
-      color: cat.color,
-      estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,
-      intakeDate: cat.intakeDate?.toISOString() ?? null,
-      status: cat.status,
-      sterilizationStatus: cat.sterilizationStatus,
-      currentLocationId: cat.currentLocationId,
-      primaryPhotoKey: cat.primaryPhotoKey,
-      microchipNumber: cat.microchipNumber,
     };
   }
 }

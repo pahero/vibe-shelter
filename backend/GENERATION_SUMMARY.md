@@ -238,7 +238,6 @@ See **DEPLOYMENT.md** for production deployment guide.
 - [ ] WebSocket support
 - [ ] Redis session store
 - [ ] Two-factor authentication
-- [ ] Audit logging
 - [ ] API versioning
 
 ## Security Configuration

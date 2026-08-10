@@ -8,7 +8,6 @@ import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
 import { LocationsModule } from './locations/locations.module';
 import { CatsModule } from './cats/cats.module';
-import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -23,7 +22,6 @@ import { AuditModule } from './audit/audit.module';
     AdminModule,
     LocationsModule,
     CatsModule,
-    AuditModule,
   ],
   controllers: [AppController],
   providers: [],

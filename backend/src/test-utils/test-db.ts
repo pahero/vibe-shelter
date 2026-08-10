@@ -16,7 +16,7 @@ export async function startTestDatabase(): Promise<PrismaService> {
   return prisma;
 }
 
-export function getTestDatabase(): PrismaClient {
+function getTestDatabase(): PrismaClient {
   const databaseUrl = getUnitTestDatabaseUrl();
   const prisma = new PrismaClient({
     adapter: new PrismaPg({
@@ -71,11 +71,10 @@ export async function rollbackTestTransaction(prismaInstance: PrismaClient): Pro
   await prismaInstance.$executeRawUnsafe('ROLLBACK');
 }
 
-export async function runInTestTransaction(
-  prismaInstance: PrismaClient,
-  fn: (tx: Prisma.TransactionClient) => Promise<void>): Promise<void> {
+export async function runInTestTransaction(fn: (tx: Prisma.TransactionClient) => Promise<void>): Promise<void> {
+  const testConnection = getTestDatabase();
   try {
-    await prismaInstance.$transaction(async (tx) => {
+    await testConnection.$transaction(async (tx) => {
       await fn(tx);
       throw new Error('Rollback successful');
     });
@@ -83,5 +82,7 @@ export async function runInTestTransaction(
     if (!(err instanceof Error && err.message === 'Rollback successful')) {
       throw err;
     }
+  } finally {
+    await testConnection.$disconnect();
   }
 }

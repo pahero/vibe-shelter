@@ -119,42 +119,6 @@ export type ApiError = {
   error?: string;
 };
 
-export type AuditChange = {
-  field: string;
-  from: unknown;
-  to: unknown;
-};
-
-export type AuditLog = {
-  id: string;
-  actorUserId: string | null;
-  actorEmail: string | null;
-  actorName: string | null;
-  action: string;
-  entityType: string;
-  entityId: string | null;
-  entityName: string | null;
-  oldValues: Record<string, unknown> | null;
-  newValues: Record<string, unknown> | null;
-  changes: AuditChange[];
-  createdAt: string;
-};
-
-export type ListAuditParams = {
-  user?: string;
-  from?: string;
-  to?: string;
-  skip?: number;
-  limit?: number;
-};
-
-export type ListAuditResponse = {
-  data: AuditLog[];
-  total: number;
-  skip: number;
-  limit: number;
-};
-
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     if ((response.status === 401 || response.status === 403) && typeof window !== "undefined") {
@@ -232,21 +196,6 @@ export const locationsApi = {
       credentials: "include",
     });
     return handleResponse<void>(response);
-  },
-};
-
-export const auditApi = {
-  async listAudit(params?: ListAuditParams): Promise<ListAuditResponse> {
-    const query = new URLSearchParams();
-    if (params?.user) query.append("user", params.user);
-    if (params?.from) query.append("from", params.from);
-    if (params?.to) query.append("to", params.to);
-    if (params?.skip !== undefined) query.append("skip", params.skip.toString());
-    if (params?.limit !== undefined) query.append("limit", params.limit.toString());
-
-    const url = query.toString() ? `${BACKEND_URL}/api/audit?${query.toString()}` : `${BACKEND_URL}/api/audit`;
-    const response = await fetch(url, { method: "GET", credentials: "include" });
-    return handleResponse<ListAuditResponse>(response);
   },
 };
 

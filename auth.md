@@ -82,7 +82,6 @@ Session:
 - Use secure, HttpOnly, SameSite cookies for sessions.
 - Validate Google ID token server-side.
 - Restrict accepted Google account domain if required.
-- Add basic audit logs for sign-in and sign-out.
 
 ## 8. UI Pages (MVP)
 - Sign In page (one button: Sign in with Google)

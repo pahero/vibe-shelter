@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module';
-import { AuditModule } from '../audit/audit.module';
 import { DatabaseModule } from '../database/database.module';
 import { CatPhotoUrlService } from './cat-photo-url.service';
 import { CatPhotoCleanupService } from './cat-photo-cleanup.service';
@@ -10,7 +9,7 @@ import { CatsService } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, AuthModule, AuditModule],
+  imports: [ConfigModule, DatabaseModule, AuthModule],
   controllers: [CatsController],
   providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService, CreateCatHandler],
   exports: [CatsService],

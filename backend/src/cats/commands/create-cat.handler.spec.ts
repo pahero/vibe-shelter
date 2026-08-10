@@ -34,14 +34,7 @@ describe('CreateCatHandler', () => {
     s3Client.destroy();
   });
 
-  it('creates a cat card and audit record', async () => {
-    const actor: Express.User = {
-      id: 'user-1',
-      email: 'staff@example.com',
-      fullName: 'Shelter Staff',
-      role: 'STAFF',
-    };
-
+  it('creates a cat card', async () => {
     const card = await handler.execute(new CreateCatCommand(
       'Mila',
       'FEMALE',
@@ -53,20 +46,10 @@ describe('CreateCatHandler', () => {
       null,
       'STERILIZED',
       null,
-      actor.id,
-      actor.email,
-      actor.fullName,
     ));
 
     expect(card.name).toBe('Mila');
     expect(card.primaryPhotoUrl).toBeNull();
-    const audit = await prisma.auditLog.findFirst({ where: { entityId: card.id } });
-    expect(audit).toMatchObject({
-      actorUserId: actor.id,
-      action: 'create',
-      entityType: 'cat',
-      entityName: 'Mila',
-    });
   });
 
   it('persists every command field and returns the active location', async () => {
@@ -89,9 +72,6 @@ describe('CreateCatHandler', () => {
       passportNumber,
       'STERILIZED',
       location.id,
-      'user-1',
-      'staff@example.com',
-      'Shelter Staff',
     ));
 
     expect(card).toMatchObject({
@@ -168,9 +148,6 @@ function createCommand(overrides: CommandOverrides = {}): CreateCatCommand {
     overrides.passportNumber ?? null,
     'UNKNOWN',
     overrides.currentLocationId ?? null,
-    null,
-    null,
-    null,
   );
 }
 

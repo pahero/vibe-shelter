@@ -42,7 +42,7 @@ export class CreateCatDto {
   @IsOptional()
   currentLocationId?: string | null;
 
-  toCommand(actor?: Express.User | null): CreateCatCommand {
+  toCommand(): CreateCatCommand {
     const name = this.name?.trim();
     if (!name) {
       throw new BadRequestException('Cat name is required');
@@ -63,9 +63,6 @@ export class CreateCatDto {
         'sterilizationStatus',
       ),
       this.optionalTrim(this.currentLocationId),
-      actor?.id ?? null,
-      actor?.email ?? null,
-      actor?.fullName ?? null,
     );
   }
 

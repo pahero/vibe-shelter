@@ -15,7 +15,6 @@ import {
 import { LocationsService } from './locations.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('api/locations')
 @UseGuards(SessionAuthGuard)
@@ -24,8 +23,8 @@ export class LocationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createLocation(@Body() dto: CreateLocationDto, @CurrentUser() user: Express.User) {
-    return await this.locationsService.createLocation(dto, user);
+  async createLocation(@Body() dto: CreateLocationDto) {
+    return await this.locationsService.createLocation(dto);
   }
 
   @Get()
@@ -52,14 +51,13 @@ export class LocationsController {
   async updateLocation(
     @Param('id') id: string,
     @Body() dto: UpdateLocationDto,
-    @CurrentUser() user: Express.User,
   ) {
-    return await this.locationsService.updateLocation(id, dto, user);
+    return await this.locationsService.updateLocation(id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteLocation(@Param('id') id: string, @CurrentUser() user: Express.User) {
-    await this.locationsService.archiveLocation(id, user);
+  async deleteLocation(@Param('id') id: string) {
+    await this.locationsService.archiveLocation(id);
   }
 }

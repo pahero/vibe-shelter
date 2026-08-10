@@ -1,7 +1,6 @@
 // src/locations/locations.service.ts
 import {
   Injectable,
-  Optional,
   BadRequestException,
   NotFoundException,
   ConflictException,
@@ -9,7 +8,6 @@ import {
 import { PrismaService } from '../database/prisma.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
 import { Prisma } from '@prisma/client';
-import { AuditActor, AuditService } from '../audit/audit.service';
 
 const VALID_LOCATION_STATUSES = ['ACTIVE', 'INACTIVE', 'ARCHIVED'];
 
@@ -22,12 +20,9 @@ export interface LocationFilters {
 
 @Injectable()
 export class LocationsService {
-  constructor(
-    private prisma: PrismaService,
-    @Optional() private audit?: AuditService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async createLocation(data: CreateLocationDto, actor?: AuditActor | null) {
+  async createLocation(data: CreateLocationDto) {
     // Validate name is not empty
     if (!data.name || data.name.trim().length === 0) {
       throw new BadRequestException('Location name is required');
@@ -54,15 +49,6 @@ export class LocationsService {
         include: {
           owner: true,
         },
-      });
-      await this.audit?.record({
-        actor,
-        action: 'create',
-        entityType: 'location',
-        entityId: location.id,
-        entityName: location.name,
-        oldValues: null,
-        newValues: this.locationAuditValues(location),
       });
       return location;
     } catch (error) {
@@ -150,7 +136,7 @@ export class LocationsService {
     });
   }
 
-  async updateLocation(id: string, data: UpdateLocationDto, actor?: AuditActor | null) {
+  async updateLocation(id: string, data: UpdateLocationDto) {
     // Verify location exists
     const existingLocation = await this.findById(id);
 
@@ -196,35 +182,17 @@ export class LocationsService {
         owner: true,
       },
     });
-    await this.audit?.record({
-      actor,
-      action: 'update',
-      entityType: 'location',
-      entityId: location.id,
-      entityName: location.name,
-      oldValues: this.locationAuditValues(existingLocation),
-      newValues: this.locationAuditValues(location),
-    });
     return location;
   }
 
-  async archiveLocation(id: string, actor?: AuditActor | null) {
-    const existingLocation = await this.findById(id);
+  async archiveLocation(id: string) {
+    await this.findById(id);
     const location = await (this.prisma as any).location.update({
       where: { id },
       data: { status: 'ARCHIVED' },
       include: {
         owner: true,
       },
-    });
-    await this.audit?.record({
-      actor,
-      action: 'archive',
-      entityType: 'location',
-      entityId: location.id,
-      entityName: location.name,
-      oldValues: this.locationAuditValues(existingLocation),
-      newValues: this.locationAuditValues(location),
     });
     return location;
   }
@@ -254,12 +222,4 @@ export class LocationsService {
     return location?.status === 'ACTIVE';
   }
 
-  private locationAuditValues(location: any) {
-    return {
-      name: location.name,
-      description: location.description ?? null,
-      ownerId: location.ownerId ?? null,
-      status: location.status,
-    };
-  }
 }
