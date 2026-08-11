@@ -154,6 +154,59 @@ describe('CatsService', () => {
     });
   });
 
+  it('writes granular audit events only for changed cat fields', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'field-auditor');
+      const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      await service.updateCat(card.id, { name: 'Luna', color: 'Calico', status: 'ADOPTED' }, actor.id);
+
+      const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { eventType: 'asc' } });
+      expect(events.map((event: any) => event.eventType)).toEqual(['name_changed', 'status_changed']);
+      expect(events).toEqual(expect.arrayContaining([
+        expect.objectContaining({ actorUserId: actor.id, oldValue: 'Mila', newValue: 'Luna' }),
+        expect.objectContaining({ actorUserId: actor.id, oldValue: 'ACTIVE', newValue: 'ADOPTED' }),
+      ]));
+    });
+  });
+
+  it('suppresses audit events for no-op and failed cat updates', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'suppression-auditor');
+      const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      await service.updateCat(card.id, { name: 'Mila', sex: 'FEMALE' }, actor.id);
+      await expect(service.updateCat(card.id, { sex: 'BAD' }, actor.id)).rejects.toThrow(BadRequestException);
+
+      expect(await (tx as any).catAuditEvent.count({ where: { catId: card.id } })).toBe(0);
+    });
+  });
+
+  it('writes photo-created and photo-deleted audit events while hiding deleted photos from the active gallery', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'photo-auditor');
+      const card = await createCatFixture(tx, { name: 'Photo Audit Cat', sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      const photo = await service.addPhoto(card.id, {
+        originalname: 'audit.jpg',
+        mimetype: 'image/jpeg',
+        buffer: Buffer.from('photo audit bytes'),
+      }, actor.id);
+      await service.deletePhoto(card.id, photo.id, actor.id);
+
+      expect(await service.listPhotos(card.id)).toHaveLength(0);
+      const storedPhoto = await (tx as any).catPhoto.findUnique({ where: { id: photo.id } });
+      expect(storedPhoto).toMatchObject({ createdByUserId: actor.id, deletedByUserId: actor.id });
+      expect(storedPhoto.deletedAt).toBeInstanceOf(Date);
+      const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
+      expect(events.map((event: any) => event.eventType)).toEqual(['photo_created', 'photo_deleted']);
+      expect(events.every((event: any) => event.photoId === photo.id && event.actorUserId === actor.id)).toBe(true);
+    });
+  });
+
   it('adds, lists, and removes cat weight entries', async () => {
     await runInTestTransaction(async (tx) => {
       const card = await createCatFixture(tx, { name: 'Weight Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
@@ -286,5 +339,11 @@ async function createLocation(
       name: unique(`cats-${namePrefix}`),
       status,
     },
+  });
+}
+
+async function createUser(prisma: PrismaClient | Prisma.TransactionClient, prefix: string) {
+  return prisma.user.create({
+    data: { email: `${unique(prefix)}@example.com`, fullName: 'Audit Actor', status: 'ACTIVE' },
   });
 }

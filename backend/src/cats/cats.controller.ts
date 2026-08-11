@@ -1,9 +1,14 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
 import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
+import { ListCatHistoryQuery } from './queries/list-cat-history.query';
+
+type AuthenticatedUser = { id: string };
 
 @Controller('api/cats')
 @UseGuards(SessionAuthGuard)
@@ -11,6 +16,7 @@ export class CatsController {
   constructor(
     private catsService: CatsService,
     private createCatHandler: CreateCatHandler,
+    private listCatHistoryQuery: ListCatHistoryQuery,
   ) {}
 
   @Get()
@@ -52,10 +58,27 @@ export class CatsController {
     return this.catsService.listPhotos(id);
   }
 
+  @Get(':id/history')
+  @ApiOperation({ summary: 'List cat audit history' })
+  @ApiQuery({ name: 'skip', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Cat history entries, newest first' })
+  async listHistory(
+    @Param('id') id: string,
+    @Query('skip') skip?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.listCatHistoryQuery.execute({
+      catId: id,
+      skip: skip === undefined ? undefined : Number(skip),
+      limit: limit === undefined ? undefined : Number(limit),
+    });
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createCat(@Body() dto: CreateCatDto) {
-    return this.createCatHandler.execute(dto.toCommand());
+  async createCat(@Body() dto: CreateCatDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.createCatHandler.execute(dto.toCommand(user.id));
   }
 
   @Post('tags')
@@ -76,8 +99,8 @@ export class CatsController {
   }
 
   @Patch(':id')
-  async updateCat(@Param('id') id: string, @Body() dto: UpdateCatDto) {
-    return this.catsService.updateCat(id, dto);
+  async updateCat(@Param('id') id: string, @Body() dto: UpdateCatDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.catsService.updateCat(id, dto, user.id);
   }
 
   @Post(':id/tags/:tagId')
@@ -99,8 +122,8 @@ export class CatsController {
   @Post(':id/photos')
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('photo'))
-  async addPhoto(@Param('id') id: string, @UploadedFile() photo?: PrimaryPhotoUpload) {
-    return this.catsService.addPhoto(id, photo);
+  async addPhoto(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @UploadedFile() photo?: PrimaryPhotoUpload) {
+    return this.catsService.addPhoto(id, photo, user.id);
   }
 
   @Put(':id/photos/:photoId/primary')
@@ -109,8 +132,8 @@ export class CatsController {
   }
 
   @Delete(':id/photos/:photoId')
-  async deletePhoto(@Param('id') id: string, @Param('photoId') photoId: string) {
-    return this.catsService.deletePhoto(id, photoId);
+  async deletePhoto(@Param('id') id: string, @Param('photoId') photoId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.catsService.deletePhoto(id, photoId, user.id);
   }
 
   @Delete(':id/weights/:weightId')
@@ -123,8 +146,9 @@ export class CatsController {
   @UseInterceptors(FileInterceptor('photo'))
   async updatePrimaryPhoto(
     @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() photo: PrimaryPhotoUpload | undefined,
   ) {
-    return this.catsService.updatePrimaryPhoto(id, photo);
+    return this.catsService.updatePrimaryPhoto(id, photo, user.id);
   }
 }

@@ -1,3 +1,15 @@
+node_modules/
+dist/
+build/
+*.log
+.env*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
 node_modules/.package-lock.json
 node_modules/.bin/conc
 node_modules/.bin/conc.cmd

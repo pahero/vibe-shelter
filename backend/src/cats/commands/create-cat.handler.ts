@@ -64,6 +64,7 @@ export class CreateCatHandler {
             passportNumber: command.passportNumber,
             sterilizationStatus: command.sterilizationStatus,
             currentLocationId: command.currentLocationId,
+            createdByUserId: command.createdByUserId,
           },
           include: CAT_CARD_INCLUDE,
         });
@@ -81,6 +82,7 @@ export class CreateCatHandler {
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
+      createdByUserId: cat.createdByUserId,
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),

@@ -19,6 +19,10 @@ model User {
   updatedAt      DateTime   @updatedAt
   sessions       Session[]
   ownedLocations Location[] @relation("ownedLocations")
+  createdCats    Cat[]      @relation("createdCats")
+  createdPhotos  CatPhoto[] @relation("createdPhotos")
+  deletedPhotos  CatPhoto[] @relation("deletedPhotos")
+  catAuditEvents CatAuditEvent[] @relation("catAuditActors")
 
   @@index([status])
   @@index([role])
@@ -76,6 +80,22 @@ enum CatStatus {
   ARCHIVED
 }
 
+enum CatAuditEventType {
+  name_changed
+  sex_changed
+  color_changed
+  estimated_birth_date_changed
+  intake_date_changed
+  rescue_source_changed
+  microchip_number_changed
+  passport_number_changed
+  sterilization_status_changed
+  status_changed
+  current_location_changed
+  photo_created
+  photo_deleted
+}
+
 model Location {
   id          String         @id @default(cuid())
   name        String         @unique
@@ -105,13 +125,17 @@ model Cat {
   status              CatStatus           @default(ACTIVE)
   currentLocationId   String?
   currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
+  createdByUserId     String?
+  createdByUser       User?               @relation("createdCats", fields: [createdByUserId], references: [id], onDelete: SetNull)
   primaryPhotoKey     String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   weights             CatWeight[]
   tags                CatTagOnCat[]
   photos              CatPhoto[]
+  auditEvents         CatAuditEvent[]
 
+  @@index([createdByUserId])
   @@index([currentLocationId])
   @@index([status])
   @@index([name])
@@ -119,14 +143,42 @@ model Cat {
 }
 
 model CatPhoto {
-  id        String   @id @default(cuid())
-  catId     String
-  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  key       String   @unique
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  catId           String
+  cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  key             String   @unique
+  createdByUserId String?
+  createdByUser   User?    @relation("createdPhotos", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  deletedByUserId String?
+  deletedByUser   User?    @relation("deletedPhotos", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  deletedAt       DateTime?
+  createdAt       DateTime @default(now())
+  auditEvents     CatAuditEvent[]
 
   @@index([catId])
+  @@index([createdByUserId])
+  @@index([deletedByUserId])
+  @@index([deletedAt])
   @@index([createdAt])
+}
+
+model CatAuditEvent {
+  id          String            @id @default(cuid())
+  catId       String
+  cat         Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
+  actorUserId String
+  actorUser   User              @relation("catAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  eventType   CatAuditEventType
+  occurredAt  DateTime          @default(now())
+  oldValue    String?
+  newValue    String?
+  photoId     String?
+  photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
+
+  @@index([catId, occurredAt])
+  @@index([actorUserId])
+  @@index([photoId])
+  @@index([eventType])
 }
 
 model CatTag {

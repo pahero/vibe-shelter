@@ -26,7 +26,13 @@ describe('CreateCatHandler', () => {
     );
   });
 
-  beforeEach(async () => beginTestTransaction(prisma));
+  beforeEach(async () => {
+    await beginTestTransaction(prisma);
+    const user = await prisma.user.create({
+      data: { email: `${unique('creator')}@example.com`, fullName: 'Cat Creator', status: 'ACTIVE' },
+    });
+    actorUserId = user.id;
+  });
   afterEach(async () => rollbackTestTransaction(prisma));
 
   afterAll(async () => {
@@ -46,6 +52,7 @@ describe('CreateCatHandler', () => {
       null,
       'STERILIZED',
       null,
+      actorUserId,
     ));
 
     expect(card.name).toBe('Mila');
@@ -72,6 +79,7 @@ describe('CreateCatHandler', () => {
       passportNumber,
       'STERILIZED',
       location.id,
+      actorUserId,
     ));
 
     expect(card).toMatchObject({
@@ -91,6 +99,7 @@ describe('CreateCatHandler', () => {
     expect(stored).toMatchObject({
       rescueSource: 'Found near clinic',
       passportNumber,
+      createdByUserId: actorUserId,
     });
   });
 
@@ -129,6 +138,8 @@ describe('CreateCatHandler', () => {
   );
 });
 
+let actorUserId: string;
+
 type CommandOverrides = Partial<{
   name: string;
   microchipNumber: string;
@@ -148,6 +159,7 @@ function createCommand(overrides: CommandOverrides = {}): CreateCatCommand {
     overrides.passportNumber ?? null,
     'UNKNOWN',
     overrides.currentLocationId ?? null,
+    actorUserId,
   );
 }
 

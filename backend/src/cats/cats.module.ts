@@ -7,11 +7,13 @@ import { CatPhotoCleanupService } from './cat-photo-cleanup.service';
 import { CatsController } from './cats.controller';
 import { CatsService } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
+import { WriteCatAuditEventCommand } from './commands/write-cat-audit-event.command';
+import { ListCatHistoryQuery } from './queries/list-cat-history.query';
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
   controllers: [CatsController],
-  providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService, CreateCatHandler],
+  providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService, CreateCatHandler, WriteCatAuditEventCommand, ListCatHistoryQuery],
   exports: [CatsService],
 })
 export class CatsModule {}

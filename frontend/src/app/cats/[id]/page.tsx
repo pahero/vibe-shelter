@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
-import { CatCard as CatCardType, CatPhoto, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatHistory } from "@/components/cat-history";
+import { CatCard as CatCardType, CatHistoryEvent, CatPhoto, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -85,6 +86,9 @@ export default function CatProfilePage() {
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [photos, setPhotos] = useState<CatPhoto[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
+  const [historyEvents, setHistoryEvents] = useState<CatHistoryEvent[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
   const [settingPrimaryPhotoId, setSettingPrimaryPhotoId] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<CatTag[]>([]);
@@ -114,6 +118,44 @@ export default function CatProfilePage() {
     };
 
     fetchCat();
+  }, [catId]);
+
+  const refreshHistory = async () => {
+    if (!catId) return;
+    setHistoryError(null);
+    const response = await catsApi.listHistory(catId);
+    setHistoryEvents(response.data);
+  };
+
+  useEffect(() => {
+    if (!catId) return;
+    let cancelled = false;
+
+    const fetchHistory = async () => {
+      setIsLoadingHistory(true);
+      setHistoryError(null);
+      try {
+        const response = await catsApi.listHistory(catId);
+        if (!cancelled) {
+          setHistoryEvents(response.data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setHistoryError(ApiErrorHandler.handle(err));
+          setHistoryEvents([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingHistory(false);
+        }
+      }
+    };
+
+    fetchHistory();
+
+    return () => {
+      cancelled = true;
+    };
   }, [catId]);
 
   useEffect(() => {
@@ -252,7 +294,7 @@ export default function CatProfilePage() {
 
     try {
       await catsApi.addPhoto(cat.id, file);
-      const [updatedCat, updatedPhotos] = await Promise.all([catsApi.getCatCard(cat.id), catsApi.listPhotos(cat.id)]);
+      const [updatedCat, updatedPhotos] = await Promise.all([catsApi.getCatCard(cat.id), catsApi.listPhotos(cat.id), refreshHistory()]);
       setCat(updatedCat);
       setPhotos(updatedPhotos);
     } catch (err) {
@@ -286,7 +328,7 @@ export default function CatProfilePage() {
     setPhotoError(null);
     try {
       const updatedCat = await catsApi.deletePhoto(cat.id, photoId);
-      const updatedPhotos = await catsApi.listPhotos(cat.id);
+      const [updatedPhotos] = await Promise.all([catsApi.listPhotos(cat.id), refreshHistory()]);
       setCat(updatedCat);
       setPhotos(updatedPhotos);
       setExpandedPhotoId(nextExpandedPhotoId && updatedPhotos.some((photo) => photo.id === nextExpandedPhotoId) ? nextExpandedPhotoId : null);
@@ -354,6 +396,7 @@ export default function CatProfilePage() {
       });
       setCat(updated);
       setEditForm(catToEditForm(updated));
+      await refreshHistory();
       setIsEditingDetails(false);
       setDetailsSuccess("Cat details were updated.");
     } catch (err) {
@@ -862,6 +905,7 @@ export default function CatProfilePage() {
                 </>
               )}
             </section>
+            <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} />
           </div>
         )}
 

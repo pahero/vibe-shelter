@@ -14,6 +14,7 @@ describe('Cats endpoints', () => {
   let moduleRef: TestingModule;
   let prisma: PrismaClient;
   let authAgent: ReturnType<typeof request.agent>;
+  let authUser: { id: string; email: string };
 
   beforeAll(async () => {
     const databaseUrl = getIntegrationTestDatabaseUrl();
@@ -35,7 +36,9 @@ describe('Cats endpoints', () => {
     setupApp(app);
     await app.init();
     prisma = await app.resolve(PrismaClient);
-    authAgent = await createAuthenticatedAgent(app, prisma);
+    const auth = await createAuthenticatedAgent(app, prisma);
+    authAgent = auth.agent;
+    authUser = auth.user;
   });
 
   afterAll(async () => {
@@ -58,6 +61,8 @@ describe('Cats endpoints', () => {
     expect(response.body.currentLocationName).toBe(location.name);
     expect(response.body.primaryPhotoUrl).toBeNull();
     expect(response.body.primaryPhotoKey).toBeUndefined();
+    const stored = await (prisma as any).cat.findUnique({ where: { id: response.body.id } });
+    expect(stored.createdByUserId).toBe(authUser.id);
   });
 
   it('PUT /api/cats/:id/primary-photo uploads photo data and updates the cat card', async () => {
@@ -149,6 +154,62 @@ describe('Cats endpoints', () => {
 
     expect(response.body.name).toBe('Updated cat');
     expect(response.body.status).toBe('ADOPTED');
+
+    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(history.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'name_changed', oldValue: cat.name, newValue: 'Updated cat' }),
+      expect.objectContaining({ eventType: 'status_changed', oldValue: 'ACTIVE', newValue: 'ADOPTED' }),
+    ]));
+    expect(history.body.data[0].actor).toMatchObject({ id: authUser.id, email: authUser.email });
+  });
+
+  it('preserves creator attribution when another user updates a cat', async () => {
+    const location = await createLocation(prisma, 'creator');
+    const created = await authAgent.post('/api/cats').send({
+      name: unique('creator-cat'),
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'UNKNOWN',
+      currentLocationId: location.id,
+    }).expect(201);
+    const otherAuth = await createAuthenticatedAgent(app, prisma);
+
+    await otherAuth.agent.patch(`/api/cats/${created.body.id}`).send({ name: 'Updated by second user' }).expect(200);
+
+    const stored = await (prisma as any).cat.findUnique({ where: { id: created.body.id } });
+    expect(stored.createdByUserId).toBe(authUser.id);
+  });
+
+  it('returns newest-first multi-user history and suppresses no-op history', async () => {
+    const cat = await createCat(prisma, { name: unique('history-order') });
+    const otherAuth = await createAuthenticatedAgent(app, prisma);
+
+    await authAgent.patch(`/api/cats/${cat.id}`).send({ name: 'First history name' }).expect(200);
+    await otherAuth.agent.patch(`/api/cats/${cat.id}`).send({ name: 'Second history name' }).expect(200);
+    await otherAuth.agent.patch(`/api/cats/${cat.id}`).send({ name: 'Second history name' }).expect(200);
+
+    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(history.body.total).toBe(2);
+    expect(history.body.data.map((event: any) => event.newValue)).toEqual(['Second history name', 'First history name']);
+    expect(history.body.data[0].actor.id).toBe(otherAuth.user.id);
+  });
+
+  it('returns photo history links while excluding deleted photos from active gallery', async () => {
+    const cat = await createCat(prisma, { name: unique('photo-history') });
+
+    const created = await authAgent
+      .post(`/api/cats/${cat.id}/photos`)
+      .attach('photo', Buffer.from('history image bytes'), { filename: 'history.jpg', contentType: 'image/jpeg' })
+      .expect(201);
+    await authAgent.delete(`/api/cats/${cat.id}/photos/${created.body.id}`).expect(200);
+
+    const photos = await authAgent.get(`/api/cats/${cat.id}/photos`).expect(200);
+    expect(photos.body).toHaveLength(0);
+    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(history.body.data.map((event: any) => event.eventType)).toEqual(['photo_deleted', 'photo_created']);
+    expect(history.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'photo_created', photo: expect.objectContaining({ id: created.body.id, status: 'DELETED', link: expect.stringContaining('history.jpg') }) }),
+      expect.objectContaining({ eventType: 'photo_deleted', photo: expect.objectContaining({ id: created.body.id, status: 'DELETED', link: expect.stringContaining('history.jpg') }) }),
+    ]));
   });
 
   it('manages cat weight history endpoints', async () => {
@@ -260,7 +321,8 @@ async function createAuthenticatedAgent(app: INestApplication, prisma: PrismaCli
     .send({ email, password })
     .expect(201);
 
-  return agent;
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+  return { agent, user: { id: user.id, email } };
 }
 
 async function createLocation(prisma: PrismaClient, prefix: string) {

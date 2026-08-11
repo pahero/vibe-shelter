@@ -15,7 +15,7 @@ describe('CreateCatDto', () => {
     dto.sterilizationStatus = 'STERILIZED';
     dto.currentLocationId = '  location-1  ';
 
-    const command = dto.toCommand();
+    const command = dto.toCommand('user-1');
 
     expect(command).toMatchObject({
       name: 'Mila',
@@ -28,6 +28,7 @@ describe('CreateCatDto', () => {
       passportNumber: 'AB123456',
       sterilizationStatus: 'STERILIZED',
       currentLocationId: 'location-1',
+      createdByUserId: 'user-1',
     });
   });
 
@@ -45,7 +46,7 @@ describe('CreateCatDto', () => {
     dto.passportNumber = value;
     dto.currentLocationId = value;
 
-    expect(dto.toCommand()).toMatchObject({
+    expect(dto.toCommand('user-1')).toMatchObject({
       color: null,
       estimatedBirthDate: null,
       intakeDate: null,
@@ -60,7 +61,7 @@ describe('CreateCatDto', () => {
     const dto = createRequiredDto();
     dto.color = '   ';
 
-    const command = dto.toCommand();
+    const command = dto.toCommand('user-1');
 
     expect(command.color).toBeNull();
   });
@@ -69,7 +70,7 @@ describe('CreateCatDto', () => {
     const dto = createRequiredDto();
     dto.name = name as string;
 
-    expect(() => dto.toCommand()).toThrow(new BadRequestException('Cat name is required'));
+    expect(() => dto.toCommand('user-1')).toThrow(new BadRequestException('Cat name is required'));
   });
 
   it.each([
@@ -83,7 +84,7 @@ describe('CreateCatDto', () => {
     const dto = createRequiredDto();
     Object.assign(dto, { [field]: value });
 
-    expect(() => dto.toCommand()).toThrow(new BadRequestException(message));
+    expect(() => dto.toCommand('user-1')).toThrow(new BadRequestException(message));
   });
 
   it.each(['estimatedBirthDate', 'intakeDate'] as const)(
@@ -92,7 +93,7 @@ describe('CreateCatDto', () => {
       const dto = createRequiredDto();
       dto[field] = 'not-a-date';
 
-      expect(() => dto.toCommand()).toThrow(
+      expect(() => dto.toCommand('user-1')).toThrow(
         new BadRequestException(`${field} must be a valid date`),
       );
     },
@@ -107,7 +108,7 @@ describe('CreateCatDto', () => {
     dto.sex = sex;
     dto.sterilizationStatus = sterilizationStatus;
 
-    expect(dto.toCommand()).toMatchObject({ sex, sterilizationStatus });
+    expect(dto.toCommand('user-1')).toMatchObject({ sex, sterilizationStatus });
   });
 });
 

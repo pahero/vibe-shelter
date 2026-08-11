@@ -39,6 +39,7 @@ export type CatCard = {
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string | null;
   currentLocationName: string | null;
+  createdByUserId: string | null;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
   updatedAt: string;
@@ -65,6 +66,32 @@ export type CatPhoto = {
   url: string | null;
   isPrimary: boolean;
   createdAt: string;
+};
+
+export type CatHistoryEvent = {
+  id: string;
+  catId: string;
+  eventType: string;
+  occurredAt: string;
+  actor: {
+    id: string;
+    displayName: string;
+    email: string;
+  };
+  oldValue: string | null;
+  newValue: string | null;
+  photo: {
+    id: string;
+    link: string | null;
+    status: "ACTIVE" | "DELETED";
+  } | null;
+};
+
+export type CatHistoryResponse = {
+  data: CatHistoryEvent[];
+  total: number;
+  skip: number;
+  limit: number;
 };
 
 export type ListCatsParams = {
@@ -226,6 +253,14 @@ export const catsApi = {
       credentials: "include",
     });
     return handleResponse<CatCard>(response);
+  },
+
+  async listHistory(id: string): Promise<CatHistoryResponse> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/history`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatHistoryResponse>(response);
   },
 
   async listTags(): Promise<CatTag[]> {

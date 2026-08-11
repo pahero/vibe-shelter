@@ -7,6 +7,9 @@ import {
 import { Prisma, PrismaClient } from '@prisma/client';
 import { CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
+import { CAT_AUDIT_EDITABLE_FIELDS, CAT_AUDIT_EVENT_TYPES, CAT_AUDIT_FIELD_EVENT_TYPES, CatAuditEditableField } from './cat-audit-event-types';
+import { formatCatAuditValue } from './cat-audit-values';
+import { WriteCatAuditEventCommand } from './commands/write-cat-audit-event.command';
 
 const VALID_CAT_SEXES = ['FEMALE', 'MALE', 'UNKNOWN'] as const;
 const VALID_STERILIZATION_STATUSES = [
@@ -49,8 +52,11 @@ type CatWithLocation = {
   sterilizationStatus: string;
   currentLocationId: string | null;
   currentLocation: { name: string } | null;
+  createdByUserId: string | null;
   primaryPhotoKey: string | null;
   microchipNumber: string | null;
+  passportNumber: string | null;
+  rescueSource: string | null;
   updatedAt: Date;
   tags?: Array<{ tag: CatTag }>;
 };
@@ -74,6 +80,7 @@ export type CatCard = {
   currentLocationName: string | null;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
+  createdByUserId: string | null;
   updatedAt: string;
   tags: CatTag[];
 };
@@ -114,28 +121,41 @@ export class CatsService {
   constructor(
     private prisma: PrismaClient,
     private photoUrls: CatPhotoUrlService,
+    private auditWriter: WriteCatAuditEventCommand = new WriteCatAuditEventCommand(),
   ) {}
 
-  async updateCat(id: string, data: UpdateCatDto): Promise<CatCard> {
+  async updateCat(id: string, data: UpdateCatDto, actorUserId?: string): Promise<CatCard> {
     this.validateId(id);
     this.validateUpdate(data);
-    await this.findExistingCat(id);
+    const existing = await this.findExistingCat(id);
     await this.validateActiveLocation(data.currentLocationId);
+    const updateData = this.toUpdateData(data);
+    const auditEvents = actorUserId ? this.toFieldAuditEvents(existing, updateData, actorUserId) : [];
+
+    if (Object.keys(updateData).length === 0 || (actorUserId && auditEvents.length === 0)) {
+      return this.toCatCard(existing);
+    }
 
     try {
-      const cat = await (this.prisma as any).cat.update({
-        where: { id },
-        data: this.toUpdateData(data),
-        include: this.catCardInclude(),
+      const cat = await this.runWrite(async (transaction) => {
+        const updated = await transaction.cat.update({
+          where: { id },
+          data: updateData,
+          include: this.catCardInclude(),
+        });
+        for (const event of auditEvents) {
+          await this.auditWriter.execute(transaction, event);
+        }
+        return updated;
       });
-      return this.toCatCard(cat);
+      return this.toCatCard(cat as unknown as CatWithLocation);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
     }
   }
 
-  async updatePrimaryPhoto(id: string, photo: PrimaryPhotoUpload | undefined): Promise<CatCard> {
+  async updatePrimaryPhoto(id: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string): Promise<CatCard> {
     this.validateId(id);
     await this.findExistingCat(id);
 
@@ -143,7 +163,7 @@ export class CatsService {
       throw new BadRequestException('Primary photo file is required');
     }
 
-    const created = await this.addPhoto(id, photo);
+    const created = await this.addPhoto(id, photo, actorUserId);
 
     const cat = await (this.prisma as any).cat.update({
       where: { id },
@@ -157,13 +177,13 @@ export class CatsService {
     this.validateId(catId);
     const cat = await this.findExistingCat(catId);
     const photos = await (this.prisma as any).catPhoto.findMany({
-      where: { catId },
+      where: { catId, deletedAt: null },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
     return Promise.all(photos.map((photo: any) => this.toCatPhoto(photo, cat.primaryPhotoKey)));
   }
 
-  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined): Promise<CatPhoto> {
+  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string): Promise<CatPhoto> {
     this.validateId(catId);
     const cat = await this.findExistingCat(catId);
 
@@ -177,12 +197,26 @@ export class CatsService {
       contentType: photo.mimetype,
       body: photo.buffer,
     });
-    const created = await (this.prisma as any).catPhoto.create({ data: { catId, key } });
+    const created = await this.runWrite(async (transaction) => {
+      const catPhoto = await transaction.catPhoto.create({ data: { catId, key, createdByUserId: actorUserId ?? null } });
 
-    if (!cat.primaryPhotoKey) {
-      await (this.prisma as any).cat.update({ where: { id: catId }, data: { primaryPhotoKey: key } });
-      return this.toCatPhoto(created, key);
-    }
+      if (!cat.primaryPhotoKey) {
+        await transaction.cat.update({ where: { id: catId }, data: { primaryPhotoKey: key } });
+      }
+
+      if (actorUserId) {
+        await this.auditWriter.execute(transaction, {
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.photoCreated,
+          photoId: catPhoto.id,
+        });
+      }
+
+      return catPhoto;
+    });
+
+    if (!cat.primaryPhotoKey) return this.toCatPhoto(created, key);
 
     return this.toCatPhoto(created, cat.primaryPhotoKey);
   }
@@ -200,23 +234,34 @@ export class CatsService {
     return this.toCatCard(cat);
   }
 
-  async deletePhoto(catId: string, photoId: string): Promise<CatCard> {
+  async deletePhoto(catId: string, photoId: string, actorUserId?: string): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(photoId);
     const cat = await this.findExistingCat(catId);
     const photo = await this.findExistingPhoto(catId, photoId);
-    await (this.prisma as any).catPhoto.delete({ where: { id: photoId } });
-    await this.photoUrls.deletePhoto(photo.key);
-
-    let primaryPhotoKey = cat.primaryPhotoKey;
-    if (cat.primaryPhotoKey === photo.key) {
-      const nextPhoto = await (this.prisma as any).catPhoto.findFirst({
-        where: { catId },
-        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    await this.runWrite(async (transaction) => {
+      await transaction.catPhoto.update({
+        where: { id: photoId },
+        data: { deletedAt: new Date(), deletedByUserId: actorUserId ?? null },
       });
-      primaryPhotoKey = nextPhoto?.key ?? null;
-      await (this.prisma as any).cat.update({ where: { id: catId }, data: { primaryPhotoKey } });
-    }
+
+      if (cat.primaryPhotoKey === photo.key) {
+        const nextPhoto = await transaction.catPhoto.findFirst({
+          where: { catId, id: { not: photoId }, deletedAt: null },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        });
+        await transaction.cat.update({ where: { id: catId }, data: { primaryPhotoKey: nextPhoto?.key ?? null } });
+      }
+
+      if (actorUserId) {
+        await this.auditWriter.execute(transaction, {
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.photoDeleted,
+          photoId,
+        });
+      }
+    });
 
     return this.findCardById(catId);
   }
@@ -547,7 +592,7 @@ export class CatsService {
   }
 
   private async findExistingPhoto(catId: string, photoId: string): Promise<{ id: string; key: string; createdAt: Date }> {
-    const photo = await (this.prisma as any).catPhoto.findFirst({ where: { id: photoId, catId } });
+    const photo = await (this.prisma as any).catPhoto.findFirst({ where: { id: photoId, catId, deletedAt: null } });
     if (!photo) {
       throw new NotFoundException('Photo not found');
     }
@@ -560,7 +605,7 @@ export class CatsService {
     return photo.key;
   }
 
-  private catCardInclude() {
+  private catCardInclude(): any {
     return {
       currentLocation: { select: { name: true } },
       tags: { include: { tag: true }, orderBy: { tag: { name: 'asc' } } },
@@ -583,6 +628,34 @@ export class CatsService {
     return updateData;
   }
 
+  private toFieldAuditEvents(existing: CatWithLocation, updateData: any, actorUserId: string) {
+    return CAT_AUDIT_EDITABLE_FIELDS.flatMap((field) => {
+      if (!(field in updateData)) return [];
+      const oldValue = this.auditFieldValue(existing, field);
+      const newValue = formatCatAuditValue(updateData[field]);
+      if (oldValue === newValue) return [];
+      return [{
+        catId: existing.id,
+        actorUserId,
+        eventType: CAT_AUDIT_FIELD_EVENT_TYPES[field],
+        oldValue,
+        newValue,
+      }];
+    });
+  }
+
+  private auditFieldValue(cat: CatWithLocation, field: CatAuditEditableField): string | null {
+    return formatCatAuditValue(cat[field]);
+  }
+
+  private async runWrite<T>(work: (transaction: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    const client = this.prisma as any;
+    if (typeof client.$transaction === 'function') {
+      return client.$transaction((transaction: Prisma.TransactionClient) => work(transaction));
+    }
+    return work(client as Prisma.TransactionClient);
+  }
+
   private optionalTrim(value?: string | null): string | null {
     if (value === undefined || value === null) {
       return null;
@@ -603,6 +676,7 @@ export class CatsService {
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
+      createdByUserId: cat.createdByUserId,
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),
