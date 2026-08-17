@@ -32,6 +32,7 @@ async function main() {
       role: 'ADMIN',
       status: 'ACTIVE',
       passwordHash: adminPasswordHash,
+      isTest: false,
     },
   });
 

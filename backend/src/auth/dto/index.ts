@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
+import { IsBoolean, IsDefined, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -19,11 +19,16 @@ export class CreateUserDto {
   @IsString()
   status: 'active' | 'inactive' = 'active';
 
-  @ApiProperty({ description: 'Password (min 8 characters)', example: 'SecurePass123', required: false, minLength: 8 })
+  @ApiProperty({ description: 'Password (min 8 characters)', example: 'SecurePass123', minLength: 8 })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @MinLength(8)
-  password?: string;
+  password!: string;
+
+  @ApiProperty({ description: 'Whether this user is a test user marker', example: false })
+  @IsDefined()
+  @IsBoolean()
+  isTest!: boolean;
 }
 
 export class UpdateUserDto {
@@ -64,6 +69,9 @@ export class UserResponseDto {
 
   @ApiProperty({ description: 'User role', enum: ['admin', 'staff'] })
   role!: 'admin' | 'staff';
+
+  @ApiProperty({ description: 'Whether this user is marked as a test user' })
+  isTest!: boolean;
 
   @ApiProperty({ description: 'Last login timestamp', nullable: true })
   lastLoginAt!: Date | null;

@@ -151,6 +151,7 @@ Cookie: shelter_session=<session_cookie>
     "fullName": "John Doe",
     "status": "active",
     "role": "staff",
+    "isTest": true,
     "lastLoginAt": "2024-01-15T10:00:00Z",
     "createdAt": "2024-01-01T00:00:00Z",
     "updatedAt": "2024-01-15T10:00:00Z"
@@ -183,6 +184,7 @@ Cookie: shelter_session=<session_cookie>
   "fullName": "John Doe",
   "status": "active",
   "role": "staff",
+  "isTest": true,
   "lastLoginAt": "2024-01-15T10:00:00Z",
   "createdAt": "2024-01-01T00:00:00Z",
   "updatedAt": "2024-01-15T10:00:00Z"
@@ -215,7 +217,9 @@ Content-Type: application/json
   "email": "newuser@example.com",
   "fullName": "Jane Smith",
   "role": "staff",
-  "status": "active"
+  "status": "active",
+  "password": "SecurePass123",
+  "isTest": false
 }
 ```
 
@@ -227,6 +231,7 @@ Content-Type: application/json
   "fullName": "Jane Smith",
   "status": "active",
   "role": "staff",
+  "isTest": false,
   "lastLoginAt": null,
   "createdAt": "2024-01-15T10:30:00Z",
   "updatedAt": "2024-01-15T10:30:00Z"
@@ -235,7 +240,7 @@ Content-Type: application/json
 
 **Status Codes:**
 - `201` - Created
-- `400` - Invalid input
+- `400` - Invalid input, missing password, or missing test-user marker
 - `401` - Not authenticated
 - `403` - Not admin
 
@@ -262,6 +267,7 @@ Cookie: shelter_session=<session_cookie>
     "fullName": "John Doe",
     "status": "active",
     "role": "staff",
+    "isTest": true,
     "lastLoginAt": "2024-01-15T10:00:00Z",
     "createdAt": "2024-01-01T00:00:00Z",
     "updatedAt": "2024-01-15T10:00:00Z"

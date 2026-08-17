@@ -57,6 +57,38 @@ describe('AuthService (db)', () => {
     expect(user.email).toBe('staff@example.com');
   });
 
+  it('validates password credentials identically for test and non-test users', async () => {
+    const password = 'Password123!';
+    const testEmail = `${unique('test-login')}@example.com`;
+    const realEmail = `${unique('real-login')}@example.com`;
+    await prisma.user.createMany({
+      data: [
+        {
+          email: testEmail,
+          role: 'STAFF',
+          status: 'ACTIVE',
+          passwordHash: await bcrypt.hash(password, 10),
+          isTest: true,
+        },
+        {
+          email: realEmail,
+          role: 'STAFF',
+          status: 'ACTIVE',
+          passwordHash: await bcrypt.hash(password, 10),
+          isTest: false,
+        },
+      ],
+    });
+
+    const testUser = await authService.validatePasswordCredentials(testEmail, password);
+    const realUser = await authService.validatePasswordCredentials(realEmail, password);
+
+    expect(testUser.email).toBe(testEmail);
+    expect(realUser.email).toBe(realEmail);
+    expect(testUser.isTest).toBe(true);
+    expect(realUser.isTest).toBe(false);
+  });
+
   it('rejects password login for inactive users', async () => {
     const password = 'Password123!';
     await prisma.user.create({
@@ -92,3 +124,7 @@ describe('AuthService (db)', () => {
     expect(updatedUser.lastLoginAt).toBeTruthy();
   });
 });
+
+function unique(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}

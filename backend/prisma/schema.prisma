@@ -12,6 +12,7 @@ model User {
   email          String     @unique @db.Citext
   fullName       String?
   passwordHash   String?
+  isTest         Boolean    @default(false)
   status         UserStatus @default(ACTIVE)
   role           UserRole   @default(STAFF)
   lastLoginAt    DateTime?

@@ -31,12 +31,13 @@ export class AdminUsersController {
     @Query('role') role?: string,
   ): Promise<UserResponseDto[]> {
     const users = await this.usersService.getAll({ status, role });
-    return users.map((user: any) => ({
+    return users.map((user) => ({
       id: user.id,
       email: user.email,
       fullName: user.fullName,
       status: user.status.toLowerCase() as 'active' | 'inactive',
       role: user.role.toLowerCase() as 'admin' | 'staff',
+      isTest: user.isTest,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -57,6 +58,7 @@ export class AdminUsersController {
       fullName: user.fullName,
       status: user.status.toLowerCase() as 'active' | 'inactive',
       role: user.role.toLowerCase() as 'admin' | 'staff',
+      isTest: user.isTest,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
