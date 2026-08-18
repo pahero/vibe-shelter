@@ -134,6 +134,25 @@ describe('CatsService', () => {
     });
   });
 
+  it('filters cat list and detail by current user test status', async () => {
+    await runInTestTransaction(async (tx) => {
+      const prefix = unique('partition');
+      const regular = await createCatFixture(tx, { name: `${prefix}-regular`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: false });
+      const test = await createCatFixture(tx, { name: `${prefix}-test`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: true });
+      const service = createService(tx);
+
+      const regularPage = await service.findAll({ search: prefix }, false);
+      const testPage = await service.findAll({ search: prefix }, true);
+
+      expect(regularPage.data.map((cat) => cat.id)).toContain(regular.id);
+      expect(regularPage.data.map((cat) => cat.id)).not.toContain(test.id);
+      expect(testPage.data.map((cat) => cat.id)).toContain(test.id);
+      expect(testPage.data.map((cat) => cat.id)).not.toContain(regular.id);
+      await expect(service.findCardById(test.id, false)).rejects.toThrow(NotFoundException);
+      await expect(service.findCardById(regular.id, true)).rejects.toThrow(NotFoundException);
+    });
+  });
+
   it('updates cat card fields and can clear nullable fields', async () => {
     await runInTestTransaction(async (tx) => {
       const location = await createLocation(tx, 'update');
@@ -151,6 +170,18 @@ describe('CatsService', () => {
       expect(updated.name).toBe('Luna');
       expect(updated.color).toBeNull();
       expect(updated.currentLocationId).toBeNull();
+    });
+  });
+
+  it('rejects cat updates that reference an opposite-status location', async () => {
+    await runInTestTransaction(async (tx) => {
+      const regularLocation = await createLocation(tx, 'regular-location', 'ACTIVE', false);
+      const testLocation = await createLocation(tx, 'test-location', 'ACTIVE', true);
+      const regularCat = await createCatFixture(tx, { name: unique('regular-cat'), sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: regularLocation.id, isTest: false });
+      const service = createService(tx);
+
+      await expect(service.updateCat(regularCat.id, { currentLocationId: testLocation.id }, undefined, false)).rejects.toThrow(NotFoundException);
+      await expect(service.updateCat(regularCat.id, { name: 'Hidden Cat' }, undefined, true)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -204,6 +235,25 @@ describe('CatsService', () => {
       const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
       expect(events.map((event: any) => event.eventType)).toEqual(['photo_created', 'photo_deleted']);
       expect(events.every((event: any) => event.photoId === photo.id && event.actorUserId === actor.id)).toBe(true);
+    });
+  });
+
+  it('scopes child cat operations through the current user test status', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'child-scope-auditor');
+      const regularCat = await createCatFixture(tx, { name: unique('regular-child'), sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: false });
+      const testCat = await createCatFixture(tx, { name: unique('test-child'), sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: true });
+      const service = createService(tx);
+      const tag = await service.createTag({ name: `scope-${Math.random().toString(36).slice(2, 8)}` });
+
+      await expect(service.addPhoto(regularCat.id, { originalname: 'blocked.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('x') }, actor.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.listPhotos(regularCat.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.addWeight(regularCat.id, { weightKg: 4, measuredAt: '2026-07-30' }, true)).rejects.toThrow(NotFoundException);
+      await expect(service.listWeights(regularCat.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.addTag(regularCat.id, tag.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.removeTag(regularCat.id, tag.id, true)).rejects.toThrow(NotFoundException);
+
+      await expect(service.addPhoto(testCat.id, { originalname: 'allowed.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('x') }, actor.id, true)).resolves.toMatchObject({ catId: testCat.id });
     });
   });
 
@@ -288,6 +338,7 @@ describe('CatsService', () => {
       expect(indexes.map((index) => index.indexname)).toEqual(
         expect.arrayContaining([
           'Cat_currentLocationId_idx',
+          'Cat_isTest_idx',
           'Cat_status_idx',
           'Cat_name_idx',
           'Cat_intakeDate_idx',
@@ -333,11 +384,13 @@ async function createLocation(
   prisma: PrismaClient | Prisma.TransactionClient,
   namePrefix: string,
   status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' = 'ACTIVE',
+  isTest = false,
 ) {
   return prisma.location.create({
     data: {
       name: unique(`cats-${namePrefix}`),
       status,
+      isTest,
     },
   });
 }

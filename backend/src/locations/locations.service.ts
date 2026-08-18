@@ -22,7 +22,7 @@ export interface LocationFilters {
 export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
-  async createLocation(data: CreateLocationDto) {
+  async createLocation(data: CreateLocationDto, currentUserIsTest = false) {
     // Validate name is not empty
     if (!data.name || data.name.trim().length === 0) {
       throw new BadRequestException('Location name is required');
@@ -44,6 +44,7 @@ export class LocationsService {
           name: data.name.trim(),
           description: data.description?.trim(),
           ownerId: data.ownerId || null,
+          isTest: currentUserIsTest,
           status: 'ACTIVE',
         },
         include: {
@@ -61,11 +62,11 @@ export class LocationsService {
     }
   }
 
-  async findAll(filters: LocationFilters = {}) {
+  async findAll(filters: LocationFilters = {}, currentUserIsTest = false) {
     const { ownerId, status, skip = 0, limit = 50 } = filters;
 
     // Build where clause
-    const where: any = {};
+    const where: any = { isTest: currentUserIsTest };
     if (ownerId) {
       where.ownerId = ownerId;
     }
@@ -101,13 +102,13 @@ export class LocationsService {
     };
   }
 
-  async findById(id: string) {
+  async findById(id: string, currentUserIsTest = false) {
     if (!id || id.trim().length === 0) {
       throw new BadRequestException('Location ID is required');
     }
 
-    const location = await (this.prisma as any).location.findUnique({
-      where: { id },
+    const location = await (this.prisma as any).location.findFirst({
+      where: { id, isTest: currentUserIsTest },
       include: {
         owner: true,
       },
@@ -120,13 +121,13 @@ export class LocationsService {
     return location;
   }
 
-  async findByOwnerId(ownerId: string) {
+  async findByOwnerId(ownerId: string, currentUserIsTest = false) {
     if (!ownerId || ownerId.trim().length === 0) {
       throw new BadRequestException('Owner ID is required');
     }
 
     return await (this.prisma as any).location.findMany({
-      where: { ownerId },
+      where: { ownerId, isTest: currentUserIsTest },
       include: {
         owner: true,
       },
@@ -136,9 +137,9 @@ export class LocationsService {
     });
   }
 
-  async updateLocation(id: string, data: UpdateLocationDto) {
+  async updateLocation(id: string, data: UpdateLocationDto, currentUserIsTest = false) {
     // Verify location exists
-    const existingLocation = await this.findById(id);
+    const existingLocation = await this.findById(id, currentUserIsTest);
 
     // If updating name, check uniqueness (except current location)
     if (data.name) {
@@ -185,8 +186,8 @@ export class LocationsService {
     return location;
   }
 
-  async archiveLocation(id: string) {
-    await this.findById(id);
+  async archiveLocation(id: string, currentUserIsTest = false) {
+    await this.findById(id, currentUserIsTest);
     const location = await (this.prisma as any).location.update({
       where: { id },
       data: { status: 'ARCHIVED' },
@@ -197,8 +198,8 @@ export class LocationsService {
     return location;
   }
 
-  async reactivateLocation(id: string) {
-    await this.findById(id);
+  async reactivateLocation(id: string, currentUserIsTest = false) {
+    await this.findById(id, currentUserIsTest);
     return await (this.prisma as any).location.update({
       where: { id },
       data: { status: 'ACTIVE' },
@@ -208,16 +209,16 @@ export class LocationsService {
     });
   }
 
-  async validateLocationExists(id: string): Promise<boolean> {
+  async validateLocationExists(id: string, currentUserIsTest = false): Promise<boolean> {
     const location = await (this.prisma as any).location.findUnique({
       where: { id },
     });
-    return !!location;
+    return !!location && location.isTest === currentUserIsTest;
   }
 
-  async validateLocationActive(id: string): Promise<boolean> {
-    const location = await (this.prisma as any).location.findUnique({
-      where: { id },
+  async validateLocationActive(id: string, currentUserIsTest = false): Promise<boolean> {
+    const location = await (this.prisma as any).location.findFirst({
+      where: { id, isTest: currentUserIsTest },
     });
     return location?.status === 'ACTIVE';
   }

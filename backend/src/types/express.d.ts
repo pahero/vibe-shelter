@@ -14,6 +14,7 @@ declare global {
       email: string;
       fullName: string | null;
       role: 'ADMIN' | 'STAFF';
+      isTest: boolean;
       status?: 'ACTIVE' | 'INACTIVE';
     }
   }

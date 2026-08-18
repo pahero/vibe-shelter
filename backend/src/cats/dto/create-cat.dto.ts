@@ -42,7 +42,7 @@ export class CreateCatDto {
   @IsOptional()
   currentLocationId?: string | null;
 
-  toCommand(createdByUserId: string): CreateCatCommand {
+  toCommand(createdByUserId: string, currentUserIsTest: boolean): CreateCatCommand {
     const name = this.name?.trim();
     if (!name) {
       throw new BadRequestException('Cat name is required');
@@ -64,6 +64,7 @@ export class CreateCatDto {
       ),
       this.optionalTrim(this.currentLocationId),
       createdByUserId,
+      currentUserIsTest,
     );
   }
 

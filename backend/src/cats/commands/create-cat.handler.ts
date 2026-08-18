@@ -25,9 +25,9 @@ export class CreateCatHandler {
         if (command.currentLocationId) {
           const location = await transaction.location.findUnique({
             where: { id: command.currentLocationId },
-            select: { status: true },
+            select: { status: true, isTest: true },
           });
-          if (location?.status !== 'ACTIVE') {
+          if (location?.status !== 'ACTIVE' || location.isTest !== command.isTest) {
             throw new NotFoundException('Active location not found');
           }
         }
@@ -65,6 +65,7 @@ export class CreateCatHandler {
             sterilizationStatus: command.sterilizationStatus,
             currentLocationId: command.currentLocationId,
             createdByUserId: command.createdByUserId,
+            isTest: command.isTest,
           },
           include: CAT_CARD_INCLUDE,
         });
@@ -79,6 +80,7 @@ export class CreateCatHandler {
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,
       intakeDate: cat.intakeDate?.toISOString() ?? null,
       status: cat.status,
+      isTest: cat.isTest,
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,

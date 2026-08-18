@@ -95,6 +95,9 @@ export class AuthMeDto {
 
   @ApiProperty({ description: 'User role', enum: ['admin', 'staff'] })
   role!: 'admin' | 'staff';
+
+  @ApiProperty({ description: 'Whether this user is marked as a test user' })
+  isTest!: boolean;
 }
 
 export class PasswordLoginDto {

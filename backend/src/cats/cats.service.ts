@@ -53,6 +53,7 @@ type CatWithLocation = {
   currentLocationId: string | null;
   currentLocation: { name: string } | null;
   createdByUserId: string | null;
+  isTest: boolean;
   primaryPhotoKey: string | null;
   microchipNumber: string | null;
   passportNumber: string | null;
@@ -81,6 +82,7 @@ export type CatCard = {
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
   createdByUserId: string | null;
+  isTest: boolean;
   updatedAt: string;
   tags: CatTag[];
 };
@@ -124,11 +126,11 @@ export class CatsService {
     private auditWriter: WriteCatAuditEventCommand = new WriteCatAuditEventCommand(),
   ) {}
 
-  async updateCat(id: string, data: UpdateCatDto, actorUserId?: string): Promise<CatCard> {
+  async updateCat(id: string, data: UpdateCatDto, actorUserId?: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(id);
     this.validateUpdate(data);
-    const existing = await this.findExistingCat(id);
-    await this.validateActiveLocation(data.currentLocationId);
+    const existing = await this.findExistingCat(id, currentUserIsTest);
+    await this.validateActiveLocation(data.currentLocationId, currentUserIsTest);
     const updateData = this.toUpdateData(data);
     const auditEvents = actorUserId ? this.toFieldAuditEvents(existing, updateData, actorUserId) : [];
 
@@ -155,15 +157,15 @@ export class CatsService {
     }
   }
 
-  async updatePrimaryPhoto(id: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string): Promise<CatCard> {
+  async updatePrimaryPhoto(id: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(id);
-    await this.findExistingCat(id);
+    await this.findExistingCat(id, currentUserIsTest);
 
     if (!photo?.buffer || photo.buffer.length === 0) {
       throw new BadRequestException('Primary photo file is required');
     }
 
-    const created = await this.addPhoto(id, photo, actorUserId);
+    const created = await this.addPhoto(id, photo, actorUserId, currentUserIsTest);
 
     const cat = await (this.prisma as any).cat.update({
       where: { id },
@@ -173,9 +175,9 @@ export class CatsService {
     return this.toCatCard(cat);
   }
 
-  async listPhotos(catId: string): Promise<CatPhoto[]> {
+  async listPhotos(catId: string, currentUserIsTest = false): Promise<CatPhoto[]> {
     this.validateId(catId);
-    const cat = await this.findExistingCat(catId);
+    const cat = await this.findExistingCat(catId, currentUserIsTest);
     const photos = await (this.prisma as any).catPhoto.findMany({
       where: { catId, deletedAt: null },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -183,9 +185,9 @@ export class CatsService {
     return Promise.all(photos.map((photo: any) => this.toCatPhoto(photo, cat.primaryPhotoKey)));
   }
 
-  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string): Promise<CatPhoto> {
+  async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string, currentUserIsTest = false): Promise<CatPhoto> {
     this.validateId(catId);
-    const cat = await this.findExistingCat(catId);
+    const cat = await this.findExistingCat(catId, currentUserIsTest);
 
     if (!photo?.buffer || photo.buffer.length === 0) {
       throw new BadRequestException('Photo file is required');
@@ -221,10 +223,10 @@ export class CatsService {
     return this.toCatPhoto(created, cat.primaryPhotoKey);
   }
 
-  async setPrimaryPhoto(catId: string, photoId: string): Promise<CatCard> {
+  async setPrimaryPhoto(catId: string, photoId: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(photoId);
-    await this.findExistingCat(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
     const photo = await this.findExistingPhoto(catId, photoId);
     const cat = await (this.prisma as any).cat.update({
       where: { id: catId },
@@ -234,10 +236,10 @@ export class CatsService {
     return this.toCatCard(cat);
   }
 
-  async deletePhoto(catId: string, photoId: string, actorUserId?: string): Promise<CatCard> {
+  async deletePhoto(catId: string, photoId: string, actorUserId?: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(photoId);
-    const cat = await this.findExistingCat(catId);
+    const cat = await this.findExistingCat(catId, currentUserIsTest);
     const photo = await this.findExistingPhoto(catId, photoId);
     await this.runWrite(async (transaction) => {
       await transaction.catPhoto.update({
@@ -263,15 +265,15 @@ export class CatsService {
       }
     });
 
-    return this.findCardById(catId);
+    return this.findCardById(catId, currentUserIsTest);
   }
 
-  async findAll(filters: CatFilters = {}) {
+  async findAll(filters: CatFilters = {}, currentUserIsTest = false) {
     const { skip, limit } = this.validatePagination(filters.skip, filters.limit);
     const status = filters.status ?? 'ACTIVE';
     this.validateEnum(status, VALID_CAT_STATUSES, 'status');
 
-    const where: any = { status };
+    const where: any = { status, isTest: currentUserIsTest };
     if (filters.locationId) {
       where.currentLocationId = filters.locationId;
     }
@@ -306,9 +308,9 @@ export class CatsService {
     };
   }
 
-  async findCardById(id: string): Promise<CatCard> {
+  async findCardById(id: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(id);
-    const cat = await this.findExistingCat(id);
+    const cat = await this.findExistingCat(id, currentUserIsTest);
     return this.toCatCard(cat);
   }
 
@@ -369,10 +371,10 @@ export class CatsService {
     await (this.prisma as any).catTag.delete({ where: { id } });
   }
 
-  async addTag(catId: string, tagId: string): Promise<CatCard> {
+  async addTag(catId: string, tagId: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(tagId);
-    await this.findExistingCat(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
     await this.findExistingTag(tagId);
 
     await (this.prisma as any).catTagOnCat.upsert({
@@ -381,21 +383,21 @@ export class CatsService {
       update: {},
     });
 
-    return this.findCardById(catId);
+    return this.findCardById(catId, currentUserIsTest);
   }
 
-  async removeTag(catId: string, tagId: string): Promise<CatCard> {
+  async removeTag(catId: string, tagId: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(tagId);
-    await this.findExistingCat(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
     await this.findExistingTag(tagId);
     await (this.prisma as any).catTagOnCat.deleteMany({ where: { catId, tagId } });
-    return this.findCardById(catId);
+    return this.findCardById(catId, currentUserIsTest);
   }
 
-  async listWeights(catId: string): Promise<CatWeight[]> {
+  async listWeights(catId: string, currentUserIsTest = false): Promise<CatWeight[]> {
     this.validateId(catId);
-    await this.findExistingCat(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
 
     const weights = await (this.prisma as any).catWeight.findMany({
       where: { catId },
@@ -405,9 +407,9 @@ export class CatsService {
     return weights.map((weight: any) => this.toCatWeight(weight));
   }
 
-  async addWeight(catId: string, data: CreateCatWeightDto): Promise<CatWeight> {
+  async addWeight(catId: string, data: CreateCatWeightDto, currentUserIsTest = false): Promise<CatWeight> {
     this.validateId(catId);
-    await this.findExistingCat(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
     const measuredAt = this.parseRequiredDate(data.measuredAt, 'measuredAt');
     this.validateWeightKg(data.weightKg);
 
@@ -422,10 +424,10 @@ export class CatsService {
     return this.toCatWeight(weight);
   }
 
-  async removeWeight(catId: string, weightId: string): Promise<void> {
+  async removeWeight(catId: string, weightId: string, currentUserIsTest = false): Promise<void> {
     this.validateId(catId);
     this.validateId(weightId);
-    await this.findExistingCat(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
 
     const weight = await (this.prisma as any).catWeight.findFirst({
       where: { id: weightId, catId },
@@ -437,9 +439,9 @@ export class CatsService {
     await (this.prisma as any).catWeight.delete({ where: { id: weightId } });
   }
 
-  private async findExistingCat(id: string): Promise<CatWithLocation> {
-    const cat = await (this.prisma as any).cat.findUnique({
-      where: { id },
+  private async findExistingCat(id: string, currentUserIsTest = false): Promise<CatWithLocation> {
+    const cat = await (this.prisma as any).cat.findFirst({
+      where: { id, isTest: currentUserIsTest },
       include: this.catCardInclude(),
     });
     if (!cat) {
@@ -448,15 +450,15 @@ export class CatsService {
     return cat;
   }
 
-  private async validateActiveLocation(locationId?: string | null): Promise<void> {
+  private async validateActiveLocation(locationId?: string | null, currentUserIsTest = false): Promise<void> {
     if (locationId === undefined || locationId === null || locationId === '') {
       return;
     }
     const location = await (this.prisma as any).location.findUnique({
       where: { id: locationId },
-      select: { status: true },
+      select: { status: true, isTest: true },
     });
-    if (location?.status !== 'ACTIVE') {
+    if (location?.status !== 'ACTIVE' || location.isTest !== currentUserIsTest) {
       throw new NotFoundException('Active location not found');
     }
   }
@@ -677,6 +679,7 @@ export class CatsService {
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
       createdByUserId: cat.createdByUserId,
+      isTest: cat.isTest,
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),

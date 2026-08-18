@@ -14,7 +14,7 @@ describe('Cats endpoints', () => {
   let moduleRef: TestingModule;
   let prisma: PrismaClient;
   let authAgent: ReturnType<typeof request.agent>;
-  let authUser: { id: string; email: string };
+  let authUser: { id: string; email: string; isTest: boolean };
 
   beforeAll(async () => {
     const databaseUrl = getIntegrationTestDatabaseUrl();
@@ -63,6 +63,59 @@ describe('Cats endpoints', () => {
     expect(response.body.primaryPhotoKey).toBeUndefined();
     const stored = await (prisma as any).cat.findUnique({ where: { id: response.body.id } });
     expect(stored.createdByUserId).toBe(authUser.id);
+    expect(response.body.isTest).toBe(false);
+    expect(stored.isTest).toBe(false);
+  });
+
+  it('isolates cats and locations by authenticated user test status', async () => {
+    const regularAuth = await createAuthenticatedAgent(app, prisma, false);
+    const testAuth = await createAuthenticatedAgent(app, prisma, true);
+
+    const regularLocation = await regularAuth.agent
+      .post('/api/locations')
+      .send({ name: unique('regular-location'), ownerId: regularAuth.user.id })
+      .expect(201);
+    const testLocation = await testAuth.agent
+      .post('/api/locations')
+      .send({ name: unique('test-location'), ownerId: regularAuth.user.id })
+      .expect(201);
+
+    expect(regularLocation.body.isTest).toBe(false);
+    expect(testLocation.body.isTest).toBe(true);
+
+    const regularCat = await regularAuth.agent.post('/api/cats').send({
+      name: unique('regular-cat'),
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'UNKNOWN',
+      currentLocationId: regularLocation.body.id,
+    }).expect(201);
+    const testCat = await testAuth.agent.post('/api/cats').send({
+      name: unique('test-cat'),
+      sex: 'UNKNOWN',
+      sterilizationStatus: 'UNKNOWN',
+      currentLocationId: testLocation.body.id,
+    }).expect(201);
+
+    expect(regularCat.body.isTest).toBe(false);
+    expect(testCat.body.isTest).toBe(true);
+
+    const regularLocations = await regularAuth.agent.get('/api/locations').query({ ownerId: regularAuth.user.id }).expect(200);
+    const testLocations = await testAuth.agent.get('/api/locations').query({ ownerId: regularAuth.user.id }).expect(200);
+    expect(regularLocations.body.data.map((location: { id: string }) => location.id)).toContain(regularLocation.body.id);
+    expect(regularLocations.body.data.map((location: { id: string }) => location.id)).not.toContain(testLocation.body.id);
+    expect(testLocations.body.data.map((location: { id: string }) => location.id)).toContain(testLocation.body.id);
+    expect(testLocations.body.data.map((location: { id: string }) => location.id)).not.toContain(regularLocation.body.id);
+
+    const regularCats = await regularAuth.agent.get('/api/cats').query({ search: 'regular-cat' }).expect(200);
+    const testCats = await testAuth.agent.get('/api/cats').query({ search: 'test-cat' }).expect(200);
+    expect(regularCats.body.data.map((cat: { id: string }) => cat.id)).toContain(regularCat.body.id);
+    expect(regularCats.body.data.map((cat: { id: string }) => cat.id)).not.toContain(testCat.body.id);
+    expect(testCats.body.data.map((cat: { id: string }) => cat.id)).toContain(testCat.body.id);
+    expect(testCats.body.data.map((cat: { id: string }) => cat.id)).not.toContain(regularCat.body.id);
+
+    await regularAuth.agent.get(`/api/locations/${testLocation.body.id}`).expect(404);
+    await testAuth.agent.get(`/api/cats/${regularCat.body.id}/card`).expect(404);
+    await regularAuth.agent.patch(`/api/cats/${regularCat.body.id}`).send({ currentLocationId: testLocation.body.id }).expect(404);
   });
 
   it('PUT /api/cats/:id/primary-photo uploads photo data and updates the cat card', async () => {
@@ -300,7 +353,7 @@ function unique(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-async function createAuthenticatedAgent(app: INestApplication, prisma: PrismaClient) {
+async function createAuthenticatedAgent(app: INestApplication, prisma: PrismaClient, isTest = false) {
   const email = `${unique('cats-auth')}@example.com`;
   const password = 'cats-integration-password';
   const passwordHash = await bcrypt.hash(password, 10);
@@ -312,6 +365,7 @@ async function createAuthenticatedAgent(app: INestApplication, prisma: PrismaCli
       role: 'STAFF',
       status: 'ACTIVE',
       passwordHash,
+      isTest,
     },
   });
 
@@ -322,7 +376,7 @@ async function createAuthenticatedAgent(app: INestApplication, prisma: PrismaCli
     .expect(201);
 
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });
-  return { agent, user: { id: user.id, email } };
+  return { agent, user: { id: user.id, email, isTest: user.isTest } };
 }
 
 async function createLocation(prisma: PrismaClient, prefix: string) {

@@ -7,6 +7,7 @@ type ListCatHistoryInput = {
   catId: string;
   skip?: number;
   limit?: number;
+  currentUserIsTest?: boolean;
 };
 
 @Injectable()
@@ -20,8 +21,8 @@ export class ListCatHistoryQuery {
     this.validateId(input.catId);
     const { skip, limit } = this.validatePagination(input.skip, input.limit);
 
-    const cat = await (this.prisma as any).cat.findUnique({
-      where: { id: input.catId },
+    const cat = await (this.prisma as any).cat.findFirst({
+      where: { id: input.catId, isTest: input.currentUserIsTest ?? false },
       select: { id: true },
     });
     if (!cat) {

@@ -84,7 +84,8 @@ export class AuthController {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      role: user.role.toLowerCase(),
+      role: user.role.toLowerCase() as 'admin' | 'staff',
+      isTest: user.isTest,
     };
   }
 
@@ -94,7 +95,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current authenticated user' })
   @ApiResponse({ status: 200, description: 'Current user info', type: AuthMeDto })
   @ApiResponse({ status: 401, description: 'Not authenticated' })
-  async getCurrentUser(@CurrentUser() user: any): Promise<AuthMeDto> {
+  async getCurrentUser(@CurrentUser() user: Express.User): Promise<AuthMeDto> {
     if (!user) {
       throw new UnauthorizedException('User not authenticated');
     }
@@ -103,7 +104,8 @@ export class AuthController {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      role: user.role.toLowerCase(),
+      role: user.role.toLowerCase() as 'admin' | 'staff',
+      isTest: user.isTest,
     };
   }
 

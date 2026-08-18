@@ -5,6 +5,7 @@ export type Location = {
   name: string;
   description: string | null;
   ownerId: string | null;
+  isTest: boolean;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   createdAt: string;
   updatedAt: string;
@@ -40,6 +41,7 @@ export type CatCard = {
   currentLocationId: string | null;
   currentLocationName: string | null;
   createdByUserId: string | null;
+  isTest: boolean;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
   updatedAt: string;

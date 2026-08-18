@@ -103,12 +103,14 @@ model Location {
   description String?
   ownerId     String?
   owner       User?          @relation("ownedLocations", fields: [ownerId], references: [id], onDelete: SetNull)
+  isTest      Boolean        @default(false)
   status      LocationStatus @default(ACTIVE)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
 
   @@index([ownerId])
+  @@index([isTest])
   @@index([status])
 }
 
@@ -124,6 +126,7 @@ model Cat {
   passportNumber      String?             @unique
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   status              CatStatus           @default(ACTIVE)
+  isTest              Boolean             @default(false)
   currentLocationId   String?
   currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
   createdByUserId     String?
@@ -138,6 +141,7 @@ model Cat {
 
   @@index([createdByUserId])
   @@index([currentLocationId])
+  @@index([isTest])
   @@index([status])
   @@index([name])
   @@index([intakeDate])

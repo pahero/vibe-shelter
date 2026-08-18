@@ -53,6 +53,7 @@ describe('CreateCatHandler', () => {
       'STERILIZED',
       null,
       actorUserId,
+      false,
     ));
 
     expect(card.name).toBe('Mila');
@@ -80,6 +81,7 @@ describe('CreateCatHandler', () => {
       'STERILIZED',
       location.id,
       actorUserId,
+      false,
     ));
 
     expect(card).toMatchObject({
@@ -100,7 +102,32 @@ describe('CreateCatHandler', () => {
       rescueSource: 'Found near clinic',
       passportNumber,
       createdByUserId: actorUserId,
+      isTest: false,
     });
+  });
+
+  it('creates test cats for test users and rejects opposite-status locations', async () => {
+    const testLocation = await prisma.location.create({
+      data: { name: unique('test-location'), status: 'ACTIVE', isTest: true },
+    });
+    const regularLocation = await prisma.location.create({
+      data: { name: unique('regular-location'), status: 'ACTIVE', isTest: false },
+    });
+
+    const card = await handler.execute(createCommand({
+      name: 'Test Partition Cat',
+      currentLocationId: testLocation.id,
+      isTest: true,
+    }));
+
+    const stored = await prisma.cat.findUniqueOrThrow({ where: { id: card.id } });
+    expect(card.isTest).toBe(true);
+    expect(stored.isTest).toBe(true);
+    await expect(handler.execute(createCommand({
+      name: 'Cross Partition Cat',
+      currentLocationId: regularLocation.id,
+      isTest: true,
+    }))).rejects.toThrow(new NotFoundException('Active location not found'));
   });
 
   it.each(['INACTIVE', 'ARCHIVED'] as const)(
@@ -145,6 +172,7 @@ type CommandOverrides = Partial<{
   microchipNumber: string;
   passportNumber: string;
   currentLocationId: string;
+  isTest: boolean;
 }>;
 
 function createCommand(overrides: CommandOverrides = {}): CreateCatCommand {
@@ -160,6 +188,7 @@ function createCommand(overrides: CommandOverrides = {}): CreateCatCommand {
     'UNKNOWN',
     overrides.currentLocationId ?? null,
     actorUserId,
+    overrides.isTest ?? false,
   );
 }
 
