@@ -65,7 +65,7 @@ Content-Type: application/json
 
 ## GET /admin/users
 
-List users for admin management.
+List users for admin management. The frontend registration experience uses this endpoint to show the user list with the registration form and to refresh the list after successful creation.
 
 ### Success Response: 200
 

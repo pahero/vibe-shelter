@@ -48,7 +48,8 @@ Expected outcomes:
 - Registration form requires an explicit test-user yes/no value.
 - Submitted payload includes boolean `isTest`.
 - Validation messages identify missing password or missing marker.
-- Displayed user metadata shows whether the user is a test user.
+- The user list is displayed with the registration form in the same admin registration experience.
+- After successful registration, the colocated user list shows the newly registered user and whether the user is a test user.
 
 ## Manual End-to-End Scenario
 
@@ -62,6 +63,8 @@ Expected outcomes:
 
 3. Open the admin user-management registration flow.
 
+   Expected: the registration form and current user list are visible in the same experience without navigating away from the form.
+
 4. Attempt to create a user without a password.
 
    Expected: creation is rejected and no user appears in the user list.
@@ -72,11 +75,11 @@ Expected outcomes:
 
 6. Create a user with a password and select `Test user`.
 
-   Expected: creation succeeds and the user is displayed as a test user.
+   Expected: creation succeeds and the colocated user list shows the user as a test user.
 
 7. Create a second user with a password and select `Not a test user`.
 
-   Expected: creation succeeds and the user is displayed as not a test user.
+   Expected: creation succeeds and the colocated user list shows the user as not a test user.
 
 8. Sign in as a test user with valid credentials if the user is active.
 

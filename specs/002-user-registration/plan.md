@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend existing admin user management so an authorized admin can register a user only when a password and explicit test-user marker are supplied. The implementation will add a stored `isTest` boolean marker to users, require `password` and `isTest` during admin user creation, return the marker in user responses, and expose the marker in frontend user registration controls while keeping authentication and account behavior unchanged.
+Extend existing admin user management so an authorized admin can register a user only when a password and explicit test-user marker are supplied. The implementation will add a stored `isTest` boolean marker to users, require `password` and `isTest` during admin user creation, return the marker in user responses, and expose the marker in a frontend admin registration experience that shows the user list with the registration form itself while keeping authentication and account behavior unchanged.
 
 ## Technical Context
 
@@ -22,23 +22,23 @@ Extend existing admin user management so an authorized admin can register a user
 
 **Project Type**: Full-stack web application
 
-**Performance Goals**: Authorized admins can complete registration in under 2 minutes; user creation remains a single interactive action under normal application latency
+**Performance Goals**: Authorized admins can complete registration in under 2 minutes; user creation remains a single interactive action under normal application latency; the same registration experience shows the current user list without a separate navigation step
 
 **Constraints**: Password must never be returned in user responses; test-user marker must not change login, permissions, status, or session behavior in this feature; validation errors must not create partial users
 
-**Scale/Scope**: One existing admin user-management flow, one user data model extension, one backend contract update, and optional frontend registration form updates if the UI exposes admin user creation
+**Scale/Scope**: One existing admin user-management flow, one user data model extension, one backend contract update, and one frontend admin registration experience combining the registration form and user list
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **I. Complete Test Coverage**: PASS. Plan requires automated tests for successful registration, missing password, missing marker, duplicate identity, response shape, and no behavior change for test users.
+- **I. Complete Test Coverage**: PASS. Plan requires automated tests for successful registration, missing password, missing marker, duplicate identity, response shape, colocated form/list UI behavior, user-list refresh after creation, and no behavior change for test users.
 - **II. Test Isolation**: PASS. Backend database tests will use existing transaction rollback/test database utilities; integration test data will use unique emails per test.
 - **III. Parallel-Safe Execution**: PASS. Tests must namespace unique user emails and avoid relying on shared seeded users except controlled authenticated admin fixtures.
 - **IV. Behavior-Focused Tests**: PASS. Tests verify observable contracts and stored outcomes rather than implementation internals, except password hash non-disclosure and bcrypt comparison where security behavior requires evidence.
 - **V. Continuous Verification**: PASS. Quickstart identifies local verification commands that must pass before implementation is complete.
 
-Post-design re-check: PASS. Phase 1 artifacts include explicit backend/API/UI contracts and validation scenarios that preserve isolated, behavior-focused, parallel-safe tests.
+Post-design re-check: PASS. Phase 1 artifacts include explicit backend/API/UI contracts and validation scenarios for the combined form/list experience that preserve isolated, behavior-focused, parallel-safe tests.
 
 ## Project Structure
 
@@ -82,7 +82,7 @@ frontend/
 integration-tests/
 ```
 
-**Structure Decision**: Use the existing full-stack web application structure. Backend user registration behavior belongs in the existing admin/users service and DTO path, with Prisma schema migration for persisted marker data. Frontend changes belong in the existing Next.js app only if an admin user creation screen exists or is introduced during implementation. Cross-process validation can be covered by backend integration tests and optional E2E tests if a UI workflow is implemented.
+**Structure Decision**: Use the existing full-stack web application structure. Backend user registration behavior belongs in the existing admin/users service and DTO path, with Prisma schema migration for persisted marker data. Frontend changes belong in the existing Next.js app admin user-management area and must provide a single registration experience where the user list is displayed with the form. Cross-process validation can be covered by backend integration tests, frontend component tests, and E2E tests if the combined UI workflow is implemented end-to-end.
 
 ## Complexity Tracking
 

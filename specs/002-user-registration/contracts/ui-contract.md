@@ -2,7 +2,13 @@
 
 ## Scope
 
-If the frontend exposes admin user creation, the registration UI must collect a password and explicit test-user marker before submitting the admin creation request.
+The frontend admin registration UI must collect a password and explicit test-user marker before submitting the admin creation request, and it must show the current user list with the registration form itself.
+
+## Layout and Navigation
+
+- The registration form and user list must be visible in the same admin registration experience without requiring navigation away from the form.
+- The user list may be beside, above, or below the form depending on viewport size, but both must remain part of the same screen or route.
+- On smaller screens, stacking the form and list is acceptable if the operator can move between them by scrolling rather than changing pages.
 
 ## Registration Form Fields
 
@@ -20,12 +26,13 @@ If the frontend exposes admin user creation, the registration UI must collect a 
 - Disable or reject submission when password is missing, empty, or blank.
 - Disable or reject submission when the test-user marker has not been selected.
 - Submit `isTest: true` for test users and `isTest: false` for non-test users.
-- On success, show a clear success confirmation and include the marker wherever the created user is displayed.
+- On success, show a clear success confirmation and update or refresh the colocated user list so the created user is displayed with the selected marker.
 - On validation failure, show a field-specific correction message and do not imply that the user was created.
 
 ## Display Behavior
 
 - User lists and user details that show administrative user metadata should display whether the user is a test user.
+- The user list shown with the registration form must include existing users and the newly registered user after successful submission.
 - The marker must be informational only; it must not hide actions, change navigation, alter permissions, or block login.
 
 ## Accessibility and Usability

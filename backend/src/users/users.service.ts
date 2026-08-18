@@ -57,11 +57,18 @@ export class UsersService {
   }
 
   async getAll(filters?: { status?: string; role?: string }) {
+    const where: Prisma.UserWhereInput = {};
+
+    if (filters?.status) {
+      where.status = filters.status.toUpperCase() as UserStatus;
+    }
+
+    if (filters?.role) {
+      where.role = filters.role.toUpperCase() as UserRole;
+    }
+
     return this.prisma.user.findMany({
-      where: {
-        ...(filters?.status && { status: filters.status.toUpperCase() as any }),
-        ...(filters?.role && { role: filters.role.toUpperCase() as any }),
-      },
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }

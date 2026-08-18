@@ -32,6 +32,14 @@ Include the marker in admin and authenticated user list/detail responses, but ne
 
 **Alternatives considered**: Storing the marker without returning it was rejected because it would not satisfy the user story for identifying test users. Returning password-related data was rejected for security reasons.
 
+## Decision: Combine Registration Form and User List in Admin UI
+
+Show the current admin user list in the same registration experience as the user creation form, and refresh or update that list after a successful registration.
+
+**Rationale**: The updated requirement asks for the user list with the registration form itself. Keeping both together lets authorized operators verify existing users before submission, see whether a duplicate may already exist, and confirm the newly registered user and marker without navigating away.
+
+**Alternatives considered**: Keeping the form and list on separate pages was rejected because it requires navigation away from the registration form. Showing only the newly created user confirmation was rejected because it does not provide the requested full user list context. Embedding a read-only snapshot that does not refresh was rejected because it can leave the operator without confirmation that the created user is now in the list.
+
 ## Decision: Preserve Account Behavior for Test Users
 
 Do not change login, role, status, permissions, session creation, or visibility based on `isTest`.

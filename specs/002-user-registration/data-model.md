@@ -60,3 +60,18 @@ Represents whether a user is marked for testing.
 - Must be explicitly selected during registration.
 - Must remain boolean in request and response contracts.
 - Must not affect authentication, authorization, account status, or session behavior in this feature.
+
+## Read Model: Admin User List
+
+Represents the collection of users displayed with the registration form in the admin registration experience.
+
+### Fields
+
+The list uses the non-secret user response fields from the `User` entity: `id`, `email`, `fullName`, `status`, `role`, `isTest`, `lastLoginAt`, `createdAt`, and `updatedAt`.
+
+### Validation Rules
+
+- Must be visible in the same registration experience as the user creation form.
+- Must include `isTest` for each listed user.
+- Must exclude `password`, `passwordHash`, and password-derived secret data.
+- Must update or refresh after successful registration so the newly created user appears without requiring a separate navigation step.

@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Add a feature of user registration. The password must be provided and a user must be specified as test or not. For now, it's just a marker"
+**Input**: User description: "Add a feature of user registration. The password must be provided and a user must be specified as test or not. For now, it's just a marker. Update the user registration plan so the user list is shown with the user registration form itself."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -22,6 +22,7 @@ An authorized shelter operator creates a new user account by entering the requir
 
 1. **Given** an authorized operator has valid new-user details, **When** they submit registration with a password and test-user marker, **Then** the system creates the user and confirms registration succeeded.
 2. **Given** an authorized operator registers a user, **When** registration succeeds, **Then** the user record includes whether the user is marked as a test user.
+3. **Given** an authorized operator opens the registration experience, **When** the form is displayed, **Then** the current user list is visible in the same experience without navigating away from the form.
 
 ---
 
@@ -77,10 +78,13 @@ An authorized shelter operator specifies whether each registered user is a test 
 - **FR-008**: System MUST confirm successful registration in a way the operator can understand.
 - **FR-009**: System MUST provide clear validation feedback when registration cannot be completed.
 - **FR-010**: System MUST ensure failed registration attempts do not create partial or active user accounts.
+- **FR-011**: System MUST display the current user list with the user registration form in the same admin registration experience.
+- **FR-012**: System MUST update or refresh the displayed user list after successful registration so the newly registered user is visible with the selected test-user marker.
 
 ### Key Entities *(include if feature involves data)*
 
 - **User**: A registered account representing a person who can be identified by the system. Key attributes include user identity, registration status, required password presence, and test-user marker.
+- **Admin User List**: The visible collection of registered users shown alongside the registration form so an authorized operator can verify existing users and newly registered users without leaving the form.
 - **Test-User Marker**: A required yes-or-no designation stored with a user to indicate whether the account is for testing. For this feature, it is informational only and does not alter account behavior.
 
 ## Success Criteria *(mandatory)*
@@ -92,10 +96,12 @@ An authorized shelter operator specifies whether each registered user is a test 
 - **SC-003**: 100% of registration attempts missing the test-user marker are rejected without creating a user account.
 - **SC-004**: Authorized operators can complete a valid user registration in under 2 minutes during normal use.
 - **SC-005**: At least 95% of validation failures display a clear message identifying the field that must be corrected.
+- **SC-006**: Authorized operators can see the user list and registration form together throughout registration, and a successfully registered user appears in the list without a separate navigation step.
 
 ## Assumptions
 
 - Registration is performed by an already authorized operator rather than by public self-service signup.
+- The frontend admin registration experience is in scope and should combine user creation and user-list review in one screen or equivalent single experience.
 - Existing user identity rules define what makes a user unique, such as an email address, username, or other project-standard identifier.
 - Password quality rules beyond being present are outside this feature unless already required elsewhere in the product.
 - The test-user marker is required at registration time and remains an informational flag only until a future feature gives it additional behavior.
