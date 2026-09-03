@@ -54,6 +54,47 @@ Focus on the `integration-tests/` directory:
 6. Escalate backend or frontend issues instead of editing app code directly.
 7. Report clear test results and recommendations.
 
+## File / Photo Uploads
+
+`page.setInputFiles()` (and `locator.setInputFiles()`) only places the file into
+the `<input type="file">` and fires `change`. The client's `onChange` handler is
+**async** — it POSTs multipart data to the backend, writes the object store, and
+updates state. Do NOT treat "the input got the file" as proof the upload
+succeeded, and do not assert only on resulting DOM.
+
+Always prove the upload reached the backend and was accepted:
+
+1. Resolve the target entity id first (e.g. from `page.url()` after navigation).
+2. Register a `waitForResponse` **before** triggering the upload, matching the
+   upload endpoint and method.
+3. Assert the response status is the expected success code (e.g. `201`).
+
+```ts
+const upload = page.waitForResponse(
+  (res) =>
+    res.url().includes(`/api/cats/${catId}/photos`) &&
+    res.request().method() === "POST",
+);
+await page.locator('input[type="file"]').setInputFiles(photoPath);
+expect((await upload).status()).toBe(201);
+```
+
+Additional rules:
+
+- Keep upload fixtures under `integration-tests/data/` and reference them with a
+  helper that resolves the absolute path (e.g. `catPhotoPath("cat1.jpg")`), never
+  a relative path.
+- `.setInputFiles()` works even when the input is visually hidden (the app uses
+  `sr-only` file inputs); it does not require visibility.
+- A hidden file input that shows an upload state (e.g. `disabled` while
+  uploading) is safe: the handler re-enables it only after the request finishes.
+- To seed existing photos for a UI test, prefer the API
+  (`page.request.post(..., { multipart: { photo: { name, mimeType, buffer } } })`)
+  over the UI.
+- In the shelter app the first uploaded photo automatically becomes the primary
+  photo; gallery order is `createdAt asc` (oldest first). Use these facts when
+  asserting gallery counts and "Make primary" flows.
+
 ## Output Format
 
 Return concise integration test notes with these sections:

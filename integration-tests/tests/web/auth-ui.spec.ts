@@ -1,28 +1,32 @@
 import { expect, test } from "@playwright/test";
-
-const adminEmail = process.env.INTEGRATION_ADMIN_EMAIL ?? "admin@shelter.local";
-const adminPassword = process.env.INTEGRATION_ADMIN_PASSWORD ?? "admin12345";
+import { getTestEnv, uniqueEmail, uniqueName } from "../support/env";
 
 test.describe("frontend auth flow", () => {
-  test("user can sign in through UI and reach dashboard", async ({ page }) => {
+  test("pre-registered test user can sign in through UI and reach the cats list", async ({ page }) => {
+    const { staffTestUser } = getTestEnv();
+
     await page.goto("/login");
 
-    await page.getByLabel("Email").fill(adminEmail);
-    await page.getByLabel("Password").fill(adminPassword);
+    await page.getByLabel("Email").fill(staffTestUser.email);
+    await page.getByLabel("Password").fill(staffTestUser.password);
     await page.getByRole("button", { name: "Sign in with Email" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByRole("heading", { name: /Welcome back/i })).toBeVisible();
-    await expect(page.getByText(adminEmail)).toBeVisible();
-    await expect(page.getByText("admin", { exact: true })).toBeVisible();
+    await expect(page.getByText("Cats list")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
+    await expect(page.getByText(staffTestUser.fullName)).toBeVisible();
+
+    await expect(page.getByRole("link", { name: "Register users" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Edit shelter" })).toHaveCount(0);
   });
 
-  test("admin can register a user while the user list remains visible", async ({ page }) => {
-    const email = `ui-registration-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+  test("admin can register a test user and see it in the user list", async ({ page }) => {
+    const { adminTestUser } = getTestEnv();
+    const email = uniqueEmail("ui-registered");
+    const fullName = uniqueName("UI Registered User");
 
     await page.goto("/login?next=/admin/users");
-    await page.getByLabel("Email").fill(adminEmail);
-    await page.getByLabel("Password").fill(adminPassword);
+    await page.getByLabel("Email").fill(adminTestUser.email);
+    await page.getByLabel("Password").fill(adminTestUser.password);
     await page.getByRole("button", { name: "Sign in with Email" }).click();
 
     await expect(page).toHaveURL(/\/admin\/users$/);
@@ -30,15 +34,14 @@ test.describe("frontend auth flow", () => {
     await expect(page.getByRole("heading", { name: "User list" })).toBeVisible();
 
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Full name").fill("UI Registered User");
+    await page.getByLabel("Full name").fill(fullName);
     await page.getByLabel("Password").fill("Password123!");
-    await page.getByLabel("Test user").check();
+    await page.getByRole("radio", { name: "Test user", exact: true }).check();
     await page.getByRole("button", { name: "Register user" }).click();
 
     await expect(page.getByText(`${email} was registered successfully.`)).toBeVisible();
     await expect(page.getByRole("heading", { name: "User list" })).toBeVisible();
-    await expect(page.getByText("UI Registered User")).toBeVisible();
-    await expect(page.getByText(email).first()).toBeVisible();
-    await expect(page.getByText("Test user").last()).toBeVisible();
+    await expect(page.getByText(fullName, { exact: true })).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
   });
 });

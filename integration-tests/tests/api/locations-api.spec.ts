@@ -1,39 +1,26 @@
-import { expect, test } from "@playwright/test";
-
-const adminEmail = process.env.INTEGRATION_ADMIN_EMAIL ?? "admin@shelter.local";
-const adminPassword = process.env.INTEGRATION_ADMIN_PASSWORD ?? "admin12345";
+import { expect, request as playwrightRequest, test } from "@playwright/test";
+import { BACKEND_URL, getTestEnv, uniqueName } from "../support/env";
 
 test.describe("locations API", () => {
-  let authCookie: string;
+  test.beforeEach(async ({ request }) => {
+    const { staffTestUser } = getTestEnv();
 
-  test.beforeAll(async ({ request }) => {
-    // Login and get session cookie
     const loginResponse = await request.post("/auth/login", {
       data: {
-        email: adminEmail,
-        password: adminPassword,
+        email: staffTestUser.email,
+        password: staffTestUser.password,
       },
     });
 
-    expect(loginResponse.ok()).toBeTruthy();
-    
-    // Extract session cookie from response headers
-    const setCookieHeader = loginResponse.headers()["set-cookie"];
-    if (setCookieHeader) {
-      const cookieMatch = setCookieHeader.match(/connect\.sid=([^;]+)/);
-      if (cookieMatch) {
-        authCookie = cookieMatch[1];
-      }
-    }
+    expect(loginResponse.status()).toBe(201);
   });
 
-  test("should create a shelter location", async ({ request }) => {
-    const uniqueName = `Downtown Shelter ${Date.now()}`;
+  test("should create an active location owned by the test user", async ({ request }) => {
+    const name = uniqueName("Downtown Shelter");
+
     const response = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
       data: {
-        name: uniqueName,
-        type: "SHELTER",
+        name,
         description: "Main downtown shelter facility",
       },
     });
@@ -42,111 +29,86 @@ test.describe("locations API", () => {
     const body = (await response.json()) as {
       id?: string;
       name?: string;
-      type?: string;
       status?: string;
-      description?: string;
+      isTest?: boolean;
+      description?: string | null;
     };
     expect(body.id).toBeDefined();
-    expect(body.name).toBe(uniqueName);
-    expect(body.type).toBe("SHELTER");
+    expect(body.name).toBe(name);
     expect(body.status).toBe("ACTIVE");
+    expect(body.isTest).toBe(true);
     expect(body.description).toBe("Main downtown shelter facility");
   });
 
-  test("should create a clinic location", async ({ request }) => {
-    const uniqueName = `Emergency Vet Clinic ${Date.now()}`;
-    const response = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: uniqueName,
-        type: "CLINIC",
-        description: "24/7 emergency veterinary clinic",
-      },
-    });
-
-    expect(response.status()).toBe(201);
-    const body = (await response.json()) as { type?: string; name?: string };
-    expect(body.name).toBe(uniqueName);
-    expect(body.type).toBe("CLINIC");
-  });
-
-  test("should create a foster location with owner", async ({ request }) => {
-    // First get an admin user ID to use as owner
-    const meResponse = await request.get("/auth/me", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-    });
+  test("should create a location with a specified owner", async ({ request }) => {
+    const meResponse = await request.get("/auth/me");
     const meBody = (await meResponse.json()) as { id?: string };
     const userId = meBody.id;
 
-    const uniqueName = `Foster Home - Sarah ${Date.now()}`;
+    const name = uniqueName("Foster Home");
+
     const response = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
       data: {
-        name: uniqueName,
-        type: "FOSTER",
-        description: "Foster caregiver Sarah's home",
+        name,
+        description: "Foster caregiver's home",
         ownerId: userId,
       },
     });
 
     expect(response.status()).toBe(201);
-    const body = (await response.json()) as {
-      type?: string;
-      name?: string;
-      ownerId?: string;
-    };
-    expect(body.name).toBe(uniqueName);
-    expect(body.type).toBe("FOSTER");
+    const body = (await response.json()) as { name?: string; ownerId?: string | null };
+    expect(body.name).toBe(name);
     expect(body.ownerId).toBe(userId);
   });
 
   test("should reject duplicate location names", async ({ request }) => {
-    const uniqueName = `Unique Shelter ${Date.now()}`;
+    const name = uniqueName("Unique Shelter");
 
-    // Create first location
     const response1 = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: uniqueName,
-        type: "SHELTER",
-      },
+      data: { name },
     });
     expect(response1.status()).toBe(201);
 
-    // Try to create duplicate
     const response2 = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: uniqueName,
-        type: "CLINIC",
-      },
+      data: { name },
     });
-
     expect(response2.status()).toBe(409);
     const body = (await response2.json()) as { message?: string };
     expect(body.message).toBeDefined();
   });
 
-  test("should reject invalid location type", async ({ request }) => {
+  test("should reject an empty location name", async ({ request }) => {
     const response = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
       data: {
-        name: "Invalid Type Location",
-        type: "INVALID_TYPE",
+        name: "",
       },
     });
 
     expect(response.status()).toBe(400);
   });
 
-  test("should list locations with pagination", async ({ request }) => {
-    const response = await request.get("/api/locations?limit=10&skip=0", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
+  test("should reject an unknown owner", async ({ request }) => {
+    const response = await request.post("/api/locations", {
+      data: {
+        name: uniqueName("Bad Owner"),
+        ownerId: "00000000-0000-0000-0000-000000000000",
+      },
     });
 
+    expect(response.status()).toBe(400);
+  });
+
+  test("should list paginated locations and include the created location on the first page", async ({ request }) => {
+    const name = uniqueName("Searchable Shelter");
+    await request.post("/api/locations", {
+      data: { name },
+    });
+
+    const response = await request.get("/api/locations?limit=100&skip=0");
     expect(response.ok()).toBeTruthy();
+
     const body = (await response.json()) as {
-      data?: Array<{ id: string }>;
+      data?: Array<{ id: string; name: string }>;
       total?: number;
       skip?: number;
       limit?: number;
@@ -154,87 +116,91 @@ test.describe("locations API", () => {
     expect(Array.isArray(body.data)).toBeTruthy();
     expect(typeof body.total).toBe("number");
     expect(body.skip).toBe(0);
-    expect(body.limit).toBe(10);
-  });
+    expect(body.limit).toBe(100);
 
-  test("should filter locations by type", async ({ request }) => {
-    const response = await request.get("/api/locations?type=SHELTER", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-    });
-
-    expect(response.ok()).toBeTruthy();
-    const body = (await response.json()) as { data?: Array<{ type: string }> };
-    if (body.data && body.data.length > 0) {
-      for (const location of body.data) {
-        expect(location.type).toBe("SHELTER");
-      }
-    }
+    const names = body.data?.map((location) => location.name) ?? [];
+    expect(names).toContain(name);
   });
 
   test("should filter locations by status", async ({ request }) => {
-    const response = await request.get("/api/locations?status=ACTIVE", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
+    const activeName = uniqueName("Active Shelter");
+    const inactiveName = uniqueName("Inactive Shelter");
+
+    const active = await request.post("/api/locations", { data: { name: activeName } });
+    const inactive = await request.post("/api/locations", { data: { name: inactiveName } });
+
+    const inactiveId = ((await inactive.json()) as { id?: string }).id;
+    const activeId = ((await active.json()) as { id?: string }).id;
+
+    await request.patch(`/api/locations/${inactiveId}`, {
+      data: { status: "INACTIVE" },
     });
 
+    const response = await request.get("/api/locations?status=INACTIVE");
     expect(response.ok()).toBeTruthy();
-    const body = (await response.json()) as { data?: Array<{ status: string }> };
-    if (body.data && body.data.length > 0) {
-      for (const location of body.data) {
-        expect(location.status).toBe("ACTIVE");
-      }
-    }
+
+    const body = (await response.json()) as {
+      data?: Array<{ id: string; status: string; name: string }>;
+    };
+    const inactiveNames = body.data?.map((location) => location.name) ?? [];
+    expect(inactiveNames).toContain(inactiveName);
+    expect(inactiveNames).not.toContain(activeName);
+    expect(body.data?.every((location) => location.status === "INACTIVE")).toBe(true);
   });
 
-  test("should get single location by ID", async ({ request }) => {
-    // Create a location first
-    const createResponse = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Get Test Location ${Date.now()}`,
-        type: "SHELTER",
-      },
+  test("should filter locations by owner", async ({ request }) => {
+    const meResponse = await request.get("/auth/me");
+    const meBody = (await meResponse.json()) as { id?: string };
+    const userId = meBody.id;
+
+    const ownedName = uniqueName("Owned Location");
+    await request.post("/api/locations", {
+      data: { name: ownedName, ownerId: userId },
     });
 
+    const response = await request.get(`/api/locations?ownerId=${userId}`);
+    expect(response.ok()).toBeTruthy();
+
+    const body = (await response.json()) as { data?: Array<{ name: string }> };
+    const names = body.data?.map((location) => location.name) ?? [];
+    expect(names).toContain(ownedName);
+  });
+
+  test("should reject an invalid status filter", async ({ request }) => {
+    const response = await request.get("/api/locations?status=GONE");
+    expect(response.status()).toBe(400);
+  });
+
+  test("should get a single location by ID", async ({ request }) => {
+    const name = uniqueName("Get By Id");
+    const createResponse = await request.post("/api/locations", { data: { name } });
     const createBody = (await createResponse.json()) as { id?: string };
     const locationId = createBody.id;
 
-    // Get the location
-    const getResponse = await request.get(`/api/locations/${locationId}`, {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-    });
-
+    const getResponse = await request.get(`/api/locations/${locationId}`);
     expect(getResponse.ok()).toBeTruthy();
+
     const body = (await getResponse.json()) as { id?: string; name?: string };
     expect(body.id).toBe(locationId);
+    expect(body.name).toBe(name);
   });
 
-  test("should return 404 for non-existent location", async ({ request }) => {
-    const response = await request.get("/api/locations/non-existent-id", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-    });
-
+  test("should return 404 for a non-existent location", async ({ request }) => {
+    const response = await request.get("/api/locations/00000000-0000-0000-0000-000000000000");
     expect(response.status()).toBe(404);
   });
 
-  test("should update location name", async ({ request }) => {
-    // Create a location
+  test("should update location name and description", async ({ request }) => {
+    const originalName = uniqueName("Update Me");
     const createResponse = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Update Test ${Date.now()}`,
-        type: "SHELTER",
-        description: "Original description",
-      },
+      data: { name: originalName, description: "Original description" },
     });
-
     const createBody = (await createResponse.json()) as { id?: string };
-    const locationId = createBody.id;
 
-    // Update the location
-    const updateResponse = await request.patch(`/api/locations/${locationId}`, {
-      headers: { Cookie: `connect.sid=${authCookie}` },
+    const updatedName = uniqueName("Updated");
+    const updateResponse = await request.patch(`/api/locations/${createBody.id}`, {
       data: {
-        name: `Updated Name ${Date.now()}`,
+        name: updatedName,
         description: "Updated description",
       },
     });
@@ -243,105 +209,65 @@ test.describe("locations API", () => {
     const body = (await updateResponse.json()) as {
       id?: string;
       name?: string;
-      description?: string;
+      description?: string | null;
     };
-    expect(body.name).toContain("Updated Name");
+    expect(body.id).toBe(createBody.id);
+    expect(body.name).toBe(updatedName);
     expect(body.description).toBe("Updated description");
   });
 
   test("should update location status", async ({ request }) => {
-    // Create a location
-    const createResponse = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Status Test ${Date.now()}`,
-        type: "SHELTER",
-      },
-    });
-
+    const name = uniqueName("Status Test");
+    const createResponse = await request.post("/api/locations", { data: { name } });
     const createBody = (await createResponse.json()) as { id?: string };
-    const locationId = createBody.id;
 
-    // Update status to INACTIVE
-    const updateResponse = await request.patch(`/api/locations/${locationId}`, {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        status: "INACTIVE",
-      },
+    const updateResponse = await request.patch(`/api/locations/${createBody.id}`, {
+      data: { status: "INACTIVE" },
     });
-
     expect(updateResponse.ok()).toBeTruthy();
+
     const body = (await updateResponse.json()) as { status?: string };
     expect(body.status).toBe("INACTIVE");
   });
 
-  test("should reject update with duplicate name", async ({ request }) => {
-    const timestamp = Date.now();
+  test("should reject an update with a duplicate name", async ({ request }) => {
+    const name1 = uniqueName("Loc One");
+    const name2 = uniqueName("Loc Two");
 
-    // Create two locations
-    const loc1Response = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Loc 1 ${timestamp}`,
-        type: "SHELTER",
-      },
-    });
-    const loc1Body = (await loc1Response.json()) as { id?: string };
-    const loc1Id = loc1Body.id;
+    const loc1Response = await request.post("/api/locations", { data: { name: name1 } });
+    const loc2Response = await request.post("/api/locations", { data: { name: name2 } });
 
-    const loc2Response = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Loc 2 ${timestamp}`,
-        type: "CLINIC",
-      },
-    });
-    const loc2Body = (await loc2Response.json()) as { id?: string };
-    const loc2Id = loc2Body.id;
+    const loc2Id = ((await loc2Response.json()) as { id?: string }).id;
 
-    // Try to update loc2 with loc1's name
     const updateResponse = await request.patch(`/api/locations/${loc2Id}`, {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Loc 1 ${timestamp}`,
-      },
+      data: { name: name1 },
     });
-
     expect(updateResponse.status()).toBe(409);
   });
 
-  test("should archive location (soft delete)", async ({ request }) => {
-    // Create a location
-    const createResponse = await request.post("/api/locations", {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-      data: {
-        name: `Archive Test ${Date.now()}`,
-        type: "SHELTER",
-      },
-    });
-
+  test("should archive a location (soft delete)", async ({ request }) => {
+    const name = uniqueName("Archive Me");
+    const createResponse = await request.post("/api/locations", { data: { name } });
     const createBody = (await createResponse.json()) as { id?: string };
-    const locationId = createBody.id;
 
-    // Archive the location
-    const deleteResponse = await request.delete(`/api/locations/${locationId}`, {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-    });
-
+    const deleteResponse = await request.delete(`/api/locations/${createBody.id}`);
     expect(deleteResponse.status()).toBe(204);
 
-    // Verify it's archived (status changed to ARCHIVED)
-    const getResponse = await request.get(`/api/locations/${locationId}`, {
-      headers: { Cookie: `connect.sid=${authCookie}` },
-    });
-
+    const getResponse = await request.get(`/api/locations/${createBody.id}`);
     expect(getResponse.ok()).toBeTruthy();
+
     const body = (await getResponse.json()) as { status?: string };
     expect(body.status).toBe("ARCHIVED");
   });
 
-  test("should require authentication for location endpoints", async ({ request }) => {
-    const response = await request.get("/api/locations");
+  test("should require authentication for location endpoints", async () => {
+    const anonymous = await playwrightRequest.newContext({
+      baseURL: BACKEND_URL,
+    });
+
+    const response = await anonymous.get("/api/locations");
     expect(response.status()).toBe(401);
+
+    await anonymous.dispose();
   });
 });

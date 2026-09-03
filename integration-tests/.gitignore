@@ -42,3 +42,6 @@ Thumbs.db
 playwright-report/
 test-results/
 test-output.txt
+
+# Test runtime state (written by global setup, never committed)
+.test-runtime/
