@@ -65,6 +65,10 @@ describe('Cats endpoints', () => {
     expect(stored.createdByUserId).toBe(authUser.id);
     expect(response.body.isTest).toBe(false);
     expect(stored.isTest).toBe(false);
+    const history = await authAgent.get(`/api/cats/${response.body.id}/history`).expect(200);
+    expect(history.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'cat_created', actor: expect.objectContaining({ id: authUser.id }), oldValue: null, newValue: 'Mila' }),
+    ]));
   });
 
   it('isolates cats and locations by authenticated user test status', async () => {
@@ -246,6 +250,35 @@ describe('Cats endpoints', () => {
     expect(history.body.data[0].actor.id).toBe(otherAuth.user.id);
   });
 
+  it('lists all cat audit history and filters by user, cat, and date', async () => {
+    const cat = await createCat(prisma, { name: unique('audit-all') });
+    const otherAuth = await createAuthenticatedAgent(app, prisma);
+
+    await authAgent.patch(`/api/cats/${cat.id}`).send({ name: 'All history name' }).expect(200);
+    await otherAuth.agent.patch(`/api/cats/${cat.id}`).send({ status: 'ADOPTED' }).expect(200);
+
+    const all = await authAgent.get('/api/cats/history').query({ limit: 50 }).expect(200);
+    expect(all.body.total).toBeGreaterThanOrEqual(2);
+    expect(all.body.data[0]).toMatchObject({
+      catId: cat.id,
+      actor: expect.objectContaining({ id: otherAuth.user.id }),
+    });
+    expect(all.body.data[0].catName).toBe('All history name');
+    expect(all.body.data.some((event: any) => event.eventType === 'status_changed')).toBe(true);
+
+    const byCat = await authAgent.get('/api/cats/history').query({ catId: cat.id, limit: 50 }).expect(200);
+    expect(byCat.body.data.length).toBeGreaterThanOrEqual(2);
+    expect(byCat.body.data.every((event: any) => event.catId === cat.id)).toBe(true);
+
+    const byUser = await authAgent.get('/api/cats/history').query({ user: otherAuth.user.email, limit: 50 }).expect(200);
+    expect(byUser.body.data.length).toBeGreaterThanOrEqual(1);
+    expect(byUser.body.data.every((event: any) => event.actor.id === otherAuth.user.id)).toBe(true);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const byDate = await authAgent.get('/api/cats/history').query({ from: today, to: today, limit: 50 }).expect(200);
+    expect(byDate.body.total).toBeGreaterThanOrEqual(2);
+  });
+
   it('returns photo history links while excluding deleted photos from active gallery', async () => {
     const cat = await createCat(prisma, { name: unique('photo-history') });
 
@@ -287,6 +320,12 @@ describe('Cats endpoints', () => {
       .delete(`/api/cats/${cat.id}/weights/${created.body.id}`)
       .expect(204);
 
+    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(history.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'weight_created', actor: expect.objectContaining({ id: authUser.id }), oldValue: null, newValue: '3.80 kg' }),
+      expect.objectContaining({ eventType: 'weight_deleted', actor: expect.objectContaining({ id: authUser.id }), oldValue: '3.80 kg', newValue: null }),
+    ]));
+
     await authAgent
       .delete(`/api/cats/${cat.id}/weights/${created.body.id}`)
       .expect(404);
@@ -316,6 +355,17 @@ describe('Cats endpoints', () => {
 
     expect(taggedCat.body.tags).toEqual([{ id: createdTag.body.id, name: createdTag.body.name, color: '#ffd166' }]);
 
+    const audit = await authAgent.get('/api/cats/history').query({ user: authUser.email, limit: 50 }).expect(200);
+    expect(audit.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'tag_added_to_cat', catId: cat.id, actor: expect.objectContaining({ id: authUser.id }), newValue: createdTag.body.name }),
+      expect.objectContaining({ eventType: 'tag_create', catId: null, actor: expect.objectContaining({ id: authUser.id }) }),
+      expect.objectContaining({ eventType: 'tag_update', catId: null, actor: expect.objectContaining({ id: authUser.id }) }),
+    ]));
+    const tagAuditEvents = await (prisma as any).tagAuditEvent.findMany({ where: { tagId: createdTag.body.id }, orderBy: { createdAt: 'asc' } });
+    expect(tagAuditEvents.map((event: any) => event.action)).toContain('create');
+    expect(tagAuditEvents.map((event: any) => event.action)).toContain('update');
+    expect(tagAuditEvents.every((event: any) => event.actorUserId === authUser.id)).toBe(true);
+
     const list = await authAgent
       .get('/api/cats')
       .query({ tagId: createdTag.body.id })
@@ -325,15 +375,58 @@ describe('Cats endpoints', () => {
 
     await authAgent
       .delete(`/api/cats/tags/${createdTag.body.id}`)
-      .expect(409);
+      .expect(204);
+
+    const catAfterTagDeletion = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
+    expect(catAfterTagDeletion.body.tags).toEqual([]);
+
+    const catHistory = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(catHistory.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'tag_removed_from_cat', oldValue: createdTag.body.name, actor: expect.objectContaining({ id: authUser.id }) }),
+    ]));
+
+    const auditAfterDeletion = await authAgent.get('/api/cats/history').query({ user: authUser.email, limit: 50 }).expect(200);
+    expect(auditAfterDeletion.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'tag_delete', catId: null, actor: expect.objectContaining({ id: authUser.id }) }),
+    ]));
+  });
+
+  it('audits location mutations and soft deletes locations', async () => {
+    const created = await authAgent
+      .post('/api/locations')
+      .send({ name: unique('audited-location'), description: 'Before' })
+      .expect(201);
 
     await authAgent
-      .delete(`/api/cats/${cat.id}/tags/${createdTag.body.id}`)
+      .patch(`/api/locations/${created.body.id}`)
+      .send({ description: 'After' })
       .expect(200);
 
-    await authAgent
-      .delete(`/api/cats/tags/${createdTag.body.id}`)
-      .expect(204);
+    await authAgent.delete(`/api/locations/${created.body.id}`).expect(204);
+    await authAgent.get(`/api/locations/${created.body.id}`).expect(404);
+
+    const locations = await authAgent.get('/api/locations').expect(200);
+    expect(locations.body.data.map((location: { id: string }) => location.id)).not.toContain(created.body.id);
+
+    const audit = await authAgent.get('/api/cats/history').query({ user: authUser.email, limit: 100 }).expect(200);
+    expect(audit.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'location_create', catId: null, actor: expect.objectContaining({ id: authUser.id }) }),
+      expect.objectContaining({ eventType: 'location_update', catId: null, actor: expect.objectContaining({ id: authUser.id }) }),
+      expect.objectContaining({ eventType: 'location_delete', catId: null, actor: expect.objectContaining({ id: authUser.id }) }),
+    ]));
+  });
+
+  it('does not delete locations assigned to cats', async () => {
+    const location = await authAgent
+      .post('/api/locations')
+      .send({ name: unique('occupied-location') })
+      .expect(201);
+    await createCat(prisma, { name: unique('occupied-cat'), currentLocationId: location.body.id });
+
+    await authAgent.delete(`/api/locations/${location.body.id}`).expect(409);
+    await authAgent.get(`/api/locations/${location.body.id}`).expect(200);
   });
 
   it('returns validation and not found errors', async () => {

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CatHistory } from "./cat-history";
 import { CatHistoryEvent } from "@/lib/api";
@@ -13,6 +13,8 @@ const baseEvent = {
 describe("CatHistory", () => {
   it("renders loading, empty, and error states", () => {
     const { rerender } = render(<CatHistory events={[]} isLoading error={null} />);
+    expect(screen.queryByText("Loading cat history...")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Loading cat history...")).toBeVisible();
 
     rerender(<CatHistory events={[]} isLoading={false} error={null} />);
@@ -31,8 +33,9 @@ describe("CatHistory", () => {
       photo: null,
     } as CatHistoryEvent]} isLoading={false} error={null} />);
 
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Name changed")).toBeVisible();
-    expect(screen.getByText("By Staff Member")).toBeVisible();
+    expect(screen.getByText(/by Staff Member/)).toBeVisible();
     expect(screen.getByText(/Mila/)).toBeVisible();
     expect(screen.getByText(/Luna/)).toBeVisible();
   });
@@ -57,9 +60,35 @@ describe("CatHistory", () => {
       } as CatHistoryEvent,
     ]} isLoading={false} error={null} />);
 
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Photo added")).toBeVisible();
     expect(screen.getByText("Photo deleted")).toBeVisible();
     expect(screen.getByRole("link", { name: "Open photo link" })).toHaveAttribute("href", "https://example.test/photo-1");
     expect(screen.getByRole("link", { name: "Open historical deleted-photo link" })).toHaveAttribute("href", "https://example.test/photo-1");
+  });
+
+  it("renders tag assignment audit events with readable labels", () => {
+    render(<CatHistory events={[
+      {
+        ...baseEvent,
+        id: "tag-added",
+        eventType: "tag_added_to_cat",
+        oldValue: null,
+        newValue: "Needs foster",
+        photo: null,
+      } as CatHistoryEvent,
+      {
+        ...baseEvent,
+        id: "tag-removed",
+        eventType: "tag_removed_from_cat",
+        oldValue: "Needs foster",
+        newValue: null,
+        photo: null,
+      } as CatHistoryEvent,
+    ]} isLoading={false} error={null} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
+    expect(screen.getByText("Tag added")).toBeVisible();
+    expect(screen.getByText("Tag removed")).toBeVisible();
   });
 });

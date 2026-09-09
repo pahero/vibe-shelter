@@ -27,7 +27,7 @@ export class LocationsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createLocation(@Body() dto: CreateLocationDto, @CurrentUser() user: AuthenticatedUser) {
-    return await this.locationsService.createLocation(dto, user.isTest);
+    return await this.locationsService.createLocation(dto, user.isTest, user.id);
   }
 
   @Get()
@@ -57,12 +57,12 @@ export class LocationsController {
     @Body() dto: UpdateLocationDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return await this.locationsService.updateLocation(id, dto, user.isTest);
+    return await this.locationsService.updateLocation(id, dto, user.isTest, user.id);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteLocation(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.locationsService.archiveLocation(id, user.isTest);
+    await this.locationsService.archiveLocation(id, user.isTest, user.id);
   }
 }

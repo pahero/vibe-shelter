@@ -1,4 +1,5 @@
 export const CAT_AUDIT_EVENT_TYPES = {
+  catCreated: 'cat_created',
   name: 'name_changed',
   sex: 'sex_changed',
   color: 'color_changed',
@@ -12,6 +13,10 @@ export const CAT_AUDIT_EVENT_TYPES = {
   currentLocationId: 'current_location_changed',
   photoCreated: 'photo_created',
   photoDeleted: 'photo_deleted',
+weightCreated: 'weight_created',
+  weightDeleted: 'weight_deleted',
+  tagAddedToCat: 'tag_added_to_cat',
+  tagRemovedFromCat: 'tag_removed_from_cat',
 } as const;
 
 export type CatAuditEventType = (typeof CAT_AUDIT_EVENT_TYPES)[keyof typeof CAT_AUDIT_EVENT_TYPES];

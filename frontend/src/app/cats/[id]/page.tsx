@@ -7,7 +7,7 @@ import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatCard as CatCardType, CatHistoryEvent, CatPhoto, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
-import { tagChipStyle } from "@/lib/tag-colors";
+import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
 type CatEditForm = {
@@ -45,6 +45,10 @@ function dateInputValue(date: string | null): string {
   return date ? date.slice(0, 10) : "";
 }
 
+function todayInputValue(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function catToEditForm(cat: CatCardType): CatEditForm {
   return {
     name: cat.name,
@@ -57,6 +61,10 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     status: cat.status,
     currentLocationId: cat.currentLocationId ?? "",
   };
+}
+
+function randomTagColor(): string {
+  return TAG_COLOR_OPTIONS[Math.floor(Math.random() * TAG_COLOR_OPTIONS.length)];
 }
 
 export default function CatProfilePage() {
@@ -80,7 +88,7 @@ export default function CatProfilePage() {
   const [isAddingWeight, setIsAddingWeight] = useState(false);
   const [removingWeightId, setRemovingWeightId] = useState<string | null>(null);
   const [weightKg, setWeightKg] = useState("");
-  const [weightDate, setWeightDate] = useState("");
+  const [weightDate, setWeightDate] = useState(() => todayInputValue());
   const [weightError, setWeightError] = useState<string | null>(null);
   const [expandedPhotoId, setExpandedPhotoId] = useState<string | null>(null);
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
@@ -426,7 +434,8 @@ export default function CatProfilePage() {
       const created = await catsApi.addWeight(cat.id, { weightKg: parsedWeight, measuredAt: weightDate });
       setWeights((prev) => [created, ...prev].sort((a, b) => b.measuredAt.localeCompare(a.measuredAt)));
       setWeightKg("");
-      setWeightDate("");
+      setWeightDate(todayInputValue());
+      await refreshHistory();
     } catch (err) {
       setWeightError(ApiErrorHandler.handle(err));
     } finally {
@@ -442,6 +451,7 @@ export default function CatProfilePage() {
     try {
       await catsApi.removeWeight(cat.id, weightId);
       setWeights((prev) => prev.filter((weight) => weight.id !== weightId));
+      await refreshHistory();
     } catch (err) {
       setWeightError(ApiErrorHandler.handle(err));
     } finally {
@@ -462,10 +472,11 @@ export default function CatProfilePage() {
     setTagError(null);
     try {
       const existing = availableTags.find((tag) => tag.name.toLowerCase() === trimmedName.toLowerCase());
-      const tag = existing ?? (await catsApi.createTag(trimmedName));
+      const tag = existing ?? (await catsApi.createTag(trimmedName, randomTagColor()));
       const updated = await catsApi.addTag(cat.id, tag.id);
       setCat(updated);
       setAvailableTags((prev) => (prev.some((item) => item.id === tag.id) ? prev : [...prev, tag].sort((a, b) => a.name.localeCompare(b.name))));
+      await refreshHistory();
       setTagName("");
       setIsTagPickerOpen(false);
     } catch (err) {
@@ -487,6 +498,7 @@ export default function CatProfilePage() {
     setTagError(null);
     try {
       setCat(await catsApi.removeTag(cat.id, tagId));
+      await refreshHistory();
     } catch (err) {
       setTagError(ApiErrorHandler.handle(err));
     } finally {

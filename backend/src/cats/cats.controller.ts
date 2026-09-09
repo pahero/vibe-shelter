@@ -7,6 +7,7 @@ import { CatsService, PrimaryPhotoUpload } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
 import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { ListCatHistoryQuery } from './queries/list-cat-history.query';
+import { ListAllCatHistoryQuery } from './queries/list-all-cat-history.query';
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -17,6 +18,7 @@ export class CatsController {
     private catsService: CatsService,
     private createCatHandler: CreateCatHandler,
     private listCatHistoryQuery: ListCatHistoryQuery,
+    private listAllCatHistoryQuery: ListAllCatHistoryQuery,
   ) {}
 
   @Get()
@@ -42,6 +44,35 @@ export class CatsController {
   @Get('tags')
   async listTags() {
     return this.catsService.listTags();
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'List all cat audit history with filters' })
+  @ApiQuery({ name: 'user', required: false })
+  @ApiQuery({ name: 'catId', required: false })
+  @ApiQuery({ name: 'from', required: false })
+  @ApiQuery({ name: 'to', required: false })
+  @ApiQuery({ name: 'skip', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'All cat history entries, newest first' })
+  async listAllHistory(
+    @Query('user') user?: string,
+    @Query('catId') catId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('skip') skip?: string,
+    @Query('limit') limit?: string,
+    @CurrentUser() currentUser?: AuthenticatedUser,
+  ) {
+    return this.listAllCatHistoryQuery.execute({
+      user,
+      catId,
+      from,
+      to,
+      skip: skip === undefined ? undefined : Number(skip),
+      limit: limit === undefined ? undefined : Number(limit),
+      currentUserIsTest: currentUser?.isTest ?? false,
+    });
   }
 
   @Get(':id/card')
@@ -86,19 +117,19 @@ export class CatsController {
 
   @Post('tags')
   @HttpCode(HttpStatus.CREATED)
-  async createTag(@Body() dto: CreateCatTagDto) {
-    return this.catsService.createTag(dto);
+  async createTag(@Body() dto: CreateCatTagDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.catsService.createTag(dto, user.id);
   }
 
   @Patch('tags/:tagId')
-  async updateTag(@Param('tagId') tagId: string, @Body() dto: UpdateCatTagDto) {
-    return this.catsService.updateTag(tagId, dto);
+  async updateTag(@Param('tagId') tagId: string, @Body() dto: UpdateCatTagDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.catsService.updateTag(tagId, dto, user.id);
   }
 
   @Delete('tags/:tagId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTag(@Param('tagId') tagId: string) {
-    await this.catsService.deleteTag(tagId);
+  async deleteTag(@Param('tagId') tagId: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.catsService.deleteTag(tagId, user.id);
   }
 
   @Patch(':id')
@@ -108,18 +139,18 @@ export class CatsController {
 
   @Post(':id/tags/:tagId')
   async addTag(@Param('id') id: string, @Param('tagId') tagId: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.addTag(id, tagId, user.isTest);
+    return this.catsService.addTag(id, tagId, user.id, user.isTest);
   }
 
   @Delete(':id/tags/:tagId')
   async removeTag(@Param('id') id: string, @Param('tagId') tagId: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.removeTag(id, tagId, user.isTest);
+    return this.catsService.removeTag(id, tagId, user.id, user.isTest);
   }
 
   @Post(':id/weights')
   @HttpCode(HttpStatus.CREATED)
   async addWeight(@Param('id') id: string, @Body() dto: CreateCatWeightDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.addWeight(id, dto, user.isTest);
+    return this.catsService.addWeight(id, dto, user.id, user.isTest);
   }
 
   @Post(':id/photos')
@@ -142,7 +173,7 @@ export class CatsController {
   @Delete(':id/weights/:weightId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeWeight(@Param('id') id: string, @Param('weightId') weightId: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.catsService.removeWeight(id, weightId, user.isTest);
+    await this.catsService.removeWeight(id, weightId, user.id, user.isTest);
   }
 
   @Put(':id/primary-photo')

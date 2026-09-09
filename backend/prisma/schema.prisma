@@ -24,6 +24,8 @@ model User {
   createdPhotos  CatPhoto[] @relation("createdPhotos")
   deletedPhotos  CatPhoto[] @relation("deletedPhotos")
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
+  tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
+  locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
 
   @@index([status])
   @@index([role])
@@ -82,6 +84,7 @@ enum CatStatus {
 }
 
 enum CatAuditEventType {
+  cat_created
   name_changed
   sex_changed
   color_changed
@@ -93,25 +96,48 @@ enum CatAuditEventType {
   sterilization_status_changed
   status_changed
   current_location_changed
-  photo_created
+photo_created
   photo_deleted
+  weight_created
+  weight_deleted
+  tag_added_to_cat
+  tag_removed_from_cat
 }
 
 model Location {
   id          String         @id @default(cuid())
-  name        String         @unique
+  name        String
   description String?
   ownerId     String?
   owner       User?          @relation("ownedLocations", fields: [ownerId], references: [id], onDelete: SetNull)
   isTest      Boolean        @default(false)
   status      LocationStatus @default(ACTIVE)
+  deletedAt   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
+  auditEvents LocationAuditEvent[]
 
   @@index([ownerId])
   @@index([isTest])
   @@index([status])
+  @@index([deletedAt])
+}
+
+model LocationAuditEvent {
+  id          String   @id @default(cuid())
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  actorUserId String
+  actorUser   User     @relation("locationAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([locationId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model Cat {
@@ -188,12 +214,31 @@ model CatAuditEvent {
 
 model CatTag {
   id        String        @id @default(cuid())
-  name      String        @unique
+  name      String
   color     String        @default("#ffb38a")
+  deletedAt DateTime?
   createdAt DateTime      @default(now())
   cats      CatTagOnCat[]
+  auditEvents TagAuditEvent[]
 
   @@index([name])
+  @@index([deletedAt])
+}
+
+model TagAuditEvent {
+  id          String   @id @default(cuid())
+  tagId       String?
+  tag         CatTag?  @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  actorUserId String
+  actorUser   User     @relation("tagAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([tagId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model CatTagOnCat {

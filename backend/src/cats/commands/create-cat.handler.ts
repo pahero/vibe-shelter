@@ -6,8 +6,10 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CatPhotoUrlService } from '../cat-photo-url.service';
+import { CAT_AUDIT_EVENT_TYPES } from '../cat-audit-event-types';
 import { CatCard } from '../cats.service';
 import { CreateCatCommand } from './create-cat.command';
+import { WriteCatAuditEventCommand } from './write-cat-audit-event.command';
 
 const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
@@ -18,6 +20,7 @@ export class CreateCatHandler {
   constructor(
     private readonly prisma: PrismaService,
     private readonly photoUrls: CatPhotoUrlService,
+    private readonly auditWriter: WriteCatAuditEventCommand,
   ) {}
 
   async execute(command: CreateCatCommand): Promise<CatCard> {
@@ -68,6 +71,13 @@ export class CreateCatHandler {
             isTest: command.isTest,
           },
           include: CAT_CARD_INCLUDE,
+        });
+        await this.auditWriter.execute(transaction, {
+          catId: created.id,
+          actorUserId: command.createdByUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.catCreated,
+          oldValue: null,
+          newValue: created.name,
         });
         return created;
     });

@@ -51,6 +51,16 @@ describe('LocationsService', () => {
       await expect(prisma.location.findUniqueOrThrow({ where: { id: regular.id } })).resolves.toMatchObject({ isTest: false });
       await expect(prisma.location.findUniqueOrThrow({ where: { id: test.id } })).resolves.toMatchObject({ isTest: true });
     });
+
+    it('allows reusing a soft-deleted location name', async () => {
+      const name = `Reusable ${unique()}`;
+      const deleted = await service.createLocation({ name });
+      await service.archiveLocation(deleted.id);
+
+      const recreated = await service.createLocation({ name });
+      expect(recreated.id).not.toBe(deleted.id);
+      expect(recreated.deletedAt).toBeNull();
+    });
   });
 
   describe('findById', () => {
@@ -125,6 +135,38 @@ describe('LocationsService', () => {
       await expect(service.archiveLocation(location.id, false)).rejects.toThrow(NotFoundException);
       await service.archiveLocation(location.id, true);
       await expect(prisma.location.findUniqueOrThrow({ where: { id: location.id } })).resolves.toMatchObject({ status: 'ARCHIVED' });
+    });
+
+    it('audits location changes and soft deletes locations', async () => {
+      const actor = await prisma.user.create({
+        data: { email: `${unique()}@example.com`, status: 'ACTIVE' },
+      });
+      const location = await service.createLocation({ name: `Audited ${unique()}`, description: 'Before' }, false, actor.id);
+      await service.updateLocation(location.id, { description: 'After' }, false, actor.id);
+      await service.archiveLocation(location.id, false, actor.id);
+
+      const stored = await prisma.location.findUniqueOrThrow({ where: { id: location.id } });
+      expect(stored).toMatchObject({ status: 'ARCHIVED' });
+      expect(stored.deletedAt).toBeInstanceOf(Date);
+      await expect(service.findById(location.id)).rejects.toThrow(NotFoundException);
+      expect((await service.findAll()).data.map((item: { id: string }) => item.id)).not.toContain(location.id);
+
+      const events = await (prisma as any).locationAuditEvent.findMany({
+        where: { locationId: location.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(events.map((event: any) => event.action)).toEqual(['create', 'update', 'delete']);
+      expect(events.every((event: any) => event.actorUserId === actor.id)).toBe(true);
+    });
+
+    it('blocks deletion while cats are assigned to the location', async () => {
+      const location = await service.createLocation({ name: `Assigned ${unique()}` });
+      await prisma.cat.create({
+        data: { name: `Located cat ${unique()}`, currentLocationId: location.id },
+      });
+
+      await expect(service.archiveLocation(location.id)).rejects.toThrow(ConflictException);
+      await expect(service.findById(location.id)).resolves.toMatchObject({ id: location.id });
     });
   });
 

@@ -3,7 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatTag, Location, catsApi, locationsApi } from "@/lib/api";
+import { CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
+import { eventLabels, historyValueText } from "@/components/cat-history";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
 
 type LocationDraft = {
@@ -24,7 +25,16 @@ type EditingTag = {
   color: string;
 };
 
+type CatCardOptions = {
+  id: string;
+  name: string;
+};
+
 const emptyLocation: LocationDraft = { name: "", description: "" };
+
+function auditDateLabel(value: string): string {
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
 
 export function EditShelterClient() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -42,9 +52,68 @@ export function EditShelterClient() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [auditEvents, setAuditEvents] = useState<CatHistoryEvent[]>([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditUser, setAuditUser] = useState("");
+  const [auditFrom, setAuditFrom] = useState("");
+  const [auditTo, setAuditTo] = useState("");
+  const [auditCatId, setAuditCatId] = useState("");
+  const [auditCats, setAuditCats] = useState<CatCardOptions[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(true);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [isAuditOpen, setIsAuditOpen] = useState(false);
 
   useEffect(() => {
     void loadEditors();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAuditCats() {
+      try {
+        const response = await catsApi.listCats({ status: "ACTIVE", limit: 100 });
+        if (!cancelled) {
+          setAuditCats(response.data.map((cat) => ({ id: cat.id, name: cat.name })));
+        }
+      } catch {
+        if (!cancelled) setAuditCats([]);
+      }
+    }
+
+    void loadAuditCats();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInitialAudit() {
+      setIsLoadingAudit(true);
+      setAuditError(null);
+      try {
+        const response = await catsApi.listAllHistory({ limit: 100 });
+        if (!cancelled) {
+          setAuditEvents(response.data);
+          setAuditTotal(response.total);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAuditError(ApiErrorHandler.handle(err));
+          setAuditEvents([]);
+          setAuditTotal(0);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingAudit(false);
+      }
+    }
+
+    void loadInitialAudit();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function loadEditors() {
@@ -61,6 +130,53 @@ export function EditShelterClient() {
       setError(ApiErrorHandler.handle(err));
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function loadAudit() {
+    setIsLoadingAudit(true);
+    setAuditError(null);
+    try {
+      const response = await catsApi.listAllHistory({
+        user: auditUser.trim() || undefined,
+        catId: auditCatId || undefined,
+        from: auditFrom || undefined,
+        to: auditTo || undefined,
+        limit: 100,
+      });
+      setAuditEvents(response.data);
+      setAuditTotal(response.total);
+    } catch (err) {
+      setAuditError(ApiErrorHandler.handle(err));
+      setAuditEvents([]);
+      setAuditTotal(0);
+    } finally {
+      setIsLoadingAudit(false);
+    }
+  }
+
+  async function filterAudit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await loadAudit();
+  }
+
+  async function clearAuditFilters() {
+    setAuditUser("");
+    setAuditCatId("");
+    setAuditFrom("");
+    setAuditTo("");
+    setIsLoadingAudit(true);
+    setAuditError(null);
+    try {
+      const response = await catsApi.listAllHistory({ limit: 100 });
+      setAuditEvents(response.data);
+      setAuditTotal(response.total);
+    } catch (err) {
+      setAuditError(ApiErrorHandler.handle(err));
+      setAuditEvents([]);
+      setAuditTotal(0);
+    } finally {
+      setIsLoadingAudit(false);
     }
   }
 
@@ -84,6 +200,7 @@ export function EditShelterClient() {
       setIsAddingLocation(false);
       setMessage("Location added.");
       await loadEditors();
+      await loadAudit();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -110,6 +227,7 @@ export function EditShelterClient() {
       setEditingLocation(null);
       setMessage("Location updated.");
       await loadEditors();
+      await loadAudit();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -125,6 +243,7 @@ export function EditShelterClient() {
       await locationsApi.archiveLocation(location.id);
       setMessage("Location removed.");
       await loadEditors();
+      await loadAudit();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -151,6 +270,7 @@ export function EditShelterClient() {
       setIsAddingTag(false);
       setShowAllNewTagColors(false);
       await loadEditors();
+      await loadAudit();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -174,6 +294,7 @@ export function EditShelterClient() {
       setShowAllEditTagColors(false);
       setMessage("Tag updated.");
       await loadEditors();
+      await loadAudit();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -189,6 +310,7 @@ export function EditShelterClient() {
       await catsApi.deleteTag(tag.id);
       setMessage("Tag removed.");
       await loadEditors();
+      await loadAudit();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -398,6 +520,73 @@ export function EditShelterClient() {
           </section>
         </div>
       )}
+
+      <section className="mt-6 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
+        <button
+          type="button"
+          onClick={() => setIsAuditOpen((open) => !open)}
+          aria-expanded={isAuditOpen}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Audit</span>
+          <span className="text-sm font-semibold text-[#b24a20]">{isAuditOpen ? "Hide" : "Show"}</span>
+        </button>
+
+        {isAuditOpen && (
+          <>
+            <form onSubmit={filterAudit} className="mt-4 grid gap-2 sm:grid-cols-[minmax(160px,1fr)_minmax(180px,1fr)_auto_auto_auto_auto]">
+              <input value={auditUser} onChange={(event) => setAuditUser(event.target.value)} placeholder="User name or email" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" aria-label="Filter by user" />
+              <select value={auditCatId} onChange={(event) => setAuditCatId(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" aria-label="Filter by cat">
+                <option value="">All cats</option>
+                {auditCats.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              <input type="date" value={auditFrom} onChange={(event) => setAuditFrom(event.target.value)} aria-label="From date" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <input type="date" value={auditTo} onChange={(event) => setAuditTo(event.target.value)} aria-label="To date" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <button type="submit" disabled={isLoadingAudit} className="rounded-lg bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Filter</button>
+              <button type="button" onClick={clearAuditFilters} disabled={isLoadingAudit} className="rounded-lg border border-[#d4c7b4] bg-white px-4 py-2 text-sm font-semibold text-[#6d6a66] disabled:opacity-60">Clear filters</button>
+            </form>
+
+            {auditError && <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">{auditError}</p>}
+            {isLoadingAudit && <p className="py-8 text-center text-sm text-[#6d6a66]">Loading audit history...</p>}
+
+            {!isLoadingAudit && !auditError && auditEvents.length === 0 && (
+              <div className="mt-4 rounded-lg border border-dashed border-[#d4c7b4] bg-[#fff8ee]/50 p-6 text-center">
+                <p className="text-sm text-[#6d6a66]">No audit records found.</p>
+              </div>
+            )}
+
+            {!isLoadingAudit && !auditError && auditEvents.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-[#6d6a66]">Showing {auditEvents.length} of {auditTotal}</p>
+                <ol className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
+                  {auditEvents.map((event) => (
+                    <li key={event.id} className="py-2.5">
+                      <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+                        <p className="min-w-0 text-gray-800">
+                          <span className="font-semibold text-gray-900">{eventLabels[event.eventType] ?? event.eventType}</span>
+                          <span className="text-[#6d6a66]">{event.catName ? ` on ${event.catName}` : ""} by {event.actor.displayName || event.actor.email}</span>
+                        </p>
+                        <time className="shrink-0 text-xs font-medium text-[#6d6a66]">{auditDateLabel(event.occurredAt)}</time>
+                      </div>
+                      {event.photo ? (
+                        <p className="mt-1 text-xs">
+                          <a className="font-semibold text-[#b24a20] underline-offset-2 hover:underline" href={event.photo.link ?? "#"} target="_blank" rel="noreferrer">
+                            {event.photo.status === "DELETED" ? "Open historical deleted-photo link" : "Open photo link"}
+                          </a>
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-[#6d6a66]">{historyValueText(event.oldValue)} -&gt; {historyValueText(event.newValue)}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </>
+        )}
+      </section>
     </section>
   );
 }

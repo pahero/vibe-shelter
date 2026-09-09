@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient, Prisma } from '@prisma/client';
 import {
@@ -248,10 +248,10 @@ describe('CatsService', () => {
 
       await expect(service.addPhoto(regularCat.id, { originalname: 'blocked.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('x') }, actor.id, true)).rejects.toThrow(NotFoundException);
       await expect(service.listPhotos(regularCat.id, true)).rejects.toThrow(NotFoundException);
-      await expect(service.addWeight(regularCat.id, { weightKg: 4, measuredAt: '2026-07-30' }, true)).rejects.toThrow(NotFoundException);
+      await expect(service.addWeight(regularCat.id, { weightKg: 4, measuredAt: '2026-07-30' }, undefined, true)).rejects.toThrow(NotFoundException);
       await expect(service.listWeights(regularCat.id, true)).rejects.toThrow(NotFoundException);
-      await expect(service.addTag(regularCat.id, tag.id, true)).rejects.toThrow(NotFoundException);
-      await expect(service.removeTag(regularCat.id, tag.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.addTag(regularCat.id, tag.id, undefined, true)).rejects.toThrow(NotFoundException);
+      await expect(service.removeTag(regularCat.id, tag.id, undefined, true)).rejects.toThrow(NotFoundException);
 
       await expect(service.addPhoto(testCat.id, { originalname: 'allowed.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('x') }, actor.id, true)).resolves.toMatchObject({ catId: testCat.id });
     });
@@ -279,6 +279,67 @@ describe('CatsService', () => {
     });
   });
 
+  it('writes weight-created and weight-deleted audit events', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'weight-auditor');
+      const card = await createCatFixture(tx, { name: 'Weight Audit Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      const weight = await service.addWeight(card.id, { weightKg: 4.25, measuredAt: '2026-07-30' }, actor.id);
+      await service.removeWeight(card.id, weight.id, actor.id);
+
+      const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
+      expect(events.map((event: any) => event.eventType)).toEqual(['weight_created', 'weight_deleted']);
+      expect(events).toEqual(expect.arrayContaining([
+        expect.objectContaining({ actorUserId: actor.id, oldValue: null, newValue: '4.25 kg' }),
+        expect.objectContaining({ actorUserId: actor.id, oldValue: '4.25 kg', newValue: null }),
+      ]));
+    });
+  });
+
+  it('audits tag creation, update, deletion, and cat tag assignment', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'tag-auditor');
+      const cat = await createCatFixture(tx, { name: unique('tag-audit-cat'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      const tag = await service.createTag({ name: unique('audit-tag'), color: '#8ecaff' }, actor.id);
+      await service.updateTag(tag.id, { color: '#ffd166' }, actor.id);
+      await service.addTag(cat.id, tag.id, actor.id);
+      await service.removeTag(cat.id, tag.id, actor.id);
+      await service.deleteTag(tag.id, actor.id);
+
+      const tagEvents = await (tx as any).tagAuditEvent.findMany({ where: { actorUserId: actor.id }, orderBy: { createdAt: 'asc' } });
+      expect(tagEvents.map((event: any) => event.action)).toEqual(['create', 'update', 'delete']);
+      expect(tagEvents.every((event: any) => event.actorUserId === actor.id)).toBe(true);
+
+      const catEvents = await (tx as any).catAuditEvent.findMany({ where: { catId: cat.id }, orderBy: { occurredAt: 'asc' } });
+      expect(catEvents.map((event: any) => event.eventType)).toEqual(['tag_added_to_cat', 'tag_removed_from_cat']);
+      expect(catEvents.every((event: any) => event.actorUserId === actor.id)).toBe(true);
+    });
+  });
+
+  it('soft deletes tags and allows reusing a deleted tag name', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'tag-soft-delete');
+      const service = createService(tx);
+
+      const tag = await service.createTag({ name: unique('soft-deleted'), color: '#8ecaff' }, actor.id);
+      await service.deleteTag(tag.id, actor.id);
+
+      const stored = await (tx as any).catTag.findUnique({ where: { id: tag.id } });
+      expect(stored.deletedAt).toBeInstanceOf(Date);
+
+      const list = await service.listTags();
+      expect(list.map((item) => item.id)).not.toContain(tag.id);
+
+      const recreated = await service.createTag({ name: stored.name }, actor.id);
+      expect(recreated.id).not.toBe(tag.id);
+
+      await expect(service.deleteTag(tag.id, actor.id)).rejects.toThrow(NotFoundException);
+    });
+  });
+
   it('creates reusable tags, attaches them to cats, and filters by tag', async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await createCatFixture(tx, { name: unique('tagged'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
@@ -302,9 +363,10 @@ describe('CatsService', () => {
     });
   });
 
-  it('updates tag color and blocks deleting tags that are used by cats', async () => {
+  it('updates tag color and soft deletes used tags from all cats', async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await createCatFixture(tx, { name: unique('tagged-delete'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const actor = await createUser(tx, 'tag-delete');
       const service = createService(tx);
       const tag = await service.createTag({ name: unique('editable-tag'), color: '#9ee6a8' });
 
@@ -314,10 +376,16 @@ describe('CatsService', () => {
       await expect(service.updateTag(tag.id, { color: '#123456' })).rejects.toThrow(BadRequestException);
 
       await service.addTag(cat.id, tag.id);
-      await expect(service.deleteTag(tag.id)).rejects.toThrow(ConflictException);
+      await expect(service.deleteTag(tag.id, actor.id)).resolves.toBeUndefined();
 
-      await service.removeTag(cat.id, tag.id);
-      await expect(service.deleteTag(tag.id)).resolves.toBeUndefined();
+      const updatedCat = await service.findCardById(cat.id);
+      expect(updatedCat.tags).toHaveLength(0);
+      expect((await service.listTags()).map((item) => item.id)).not.toContain(tag.id);
+
+      const history = await (tx as any).catAuditEvent.findMany({ where: { catId: cat.id } });
+      expect(history).toEqual(expect.arrayContaining([
+        expect.objectContaining({ eventType: 'tag_removed_from_cat', oldValue: updated.name, actorUserId: actor.id }),
+      ]));
     });
   });
 

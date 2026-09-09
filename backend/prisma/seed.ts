@@ -17,16 +17,16 @@ async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'admin12345';
   const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
 
-  const existingAdmin = await prisma.user.findUnique({
+  const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-  });
-
-  if (existingAdmin) {
-    await prisma.user.delete({ where: { email: adminEmail } });
-  }
-
-  const admin = await prisma.user.create({
-    data: {
+    update: {
+      fullName: 'Administrator',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      passwordHash: adminPasswordHash,
+      isTest: false,
+    },
+    create: {
       email: adminEmail,
       fullName: 'Administrator',
       role: 'ADMIN',

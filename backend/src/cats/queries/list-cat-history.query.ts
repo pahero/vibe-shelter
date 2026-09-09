@@ -36,6 +36,7 @@ export class ListCatHistoryQuery {
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
           photo: { select: { id: true, key: true, deletedAt: true } },
+          cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
         skip,
@@ -56,6 +57,7 @@ export class ListCatHistoryQuery {
     return {
       id: event.id,
       catId: event.catId,
+      catName: event.cat?.name ?? null,
       eventType: event.eventType,
       occurredAt: event.occurredAt.toISOString(),
       actor: {

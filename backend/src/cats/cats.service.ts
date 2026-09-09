@@ -316,25 +316,53 @@ export class CatsService {
 
   async listTags(): Promise<CatTag[]> {
     const tags = await (this.prisma as any).catTag.findMany({
+      where: { deletedAt: null },
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
     });
     return tags.map((tag: any) => this.toCatTag(tag));
   }
 
-  async createTag(data: CreateCatTagDto): Promise<CatTag> {
+  async createTag(data: CreateCatTagDto, actorUserId?: string): Promise<CatTag> {
     const name = this.validateTagName(data.name);
     const color = this.validateTagColor(data.color);
 
-    const existing = await (this.prisma as any).catTag.findUnique({ where: { name } });
+    const existing = await (this.prisma as any).catTag.findFirst({ where: { name, deletedAt: null } });
     if (existing) {
       return this.toCatTag(existing);
+    }
+
+    const create = async (transaction: any) => {
+      const created = await transaction.catTag.create({ data: { name, color } });
+      await transaction.tagAuditEvent.create({
+        data: {
+          tagId: created.id,
+          actorUserId,
+          action: 'create',
+          oldValue: null,
+          newValue: `${created.name} (${created.color})`,
+        },
+      });
+      return created;
+    };
+
+    if (actorUserId) {
+      try {
+        const created = await this.runWithTransaction(create);
+        return this.toCatTag(created);
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          const existingDuplicate = await (this.prisma as any).catTag.findFirst({ where: { name, deletedAt: null } });
+          if (existingDuplicate) return this.toCatTag(existingDuplicate);
+        }
+        throw error;
+      }
     }
 
     const tag = await (this.prisma as any).catTag.create({ data: { name, color } });
     return this.toCatTag(tag);
   }
 
-  async updateTag(id: string, data: UpdateCatTagDto): Promise<CatTag> {
+  async updateTag(id: string, data: UpdateCatTagDto, actorUserId?: string): Promise<CatTag> {
     this.validateId(id);
     if (data.name === undefined && data.color === undefined) {
       throw new BadRequestException('Tag name or color is required');
@@ -345,8 +373,22 @@ export class CatsService {
     if (data.color !== undefined) updateData.color = this.validateTagColor(data.color);
 
     try {
-      await this.findExistingTag(id);
-      const tag = await (this.prisma as any).catTag.update({ where: { id }, data: updateData });
+      const existing = await this.findExistingTag(id);
+      const tag = actorUserId
+        ? await this.runWithTransaction(async (transaction: any) => {
+            const updated = await transaction.catTag.update({ where: { id }, data: updateData });
+            await transaction.tagAuditEvent.create({
+              data: {
+                tagId: id,
+                actorUserId,
+                action: 'update',
+                oldValue: this.tagAuditValue(existing),
+                newValue: this.tagAuditValue(updated),
+              },
+            });
+            return updated;
+          })
+        : await (this.prisma as any).catTag.update({ where: { id }, data: updateData });
       return this.toCatTag(tag);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -359,23 +401,69 @@ export class CatsService {
     }
   }
 
-  async deleteTag(id: string): Promise<void> {
+  async deleteTag(id: string, actorUserId?: string): Promise<void> {
     this.validateId(id);
-    await this.findExistingTag(id);
+    const existing = await this.findExistingTag(id);
 
-    const usedCount = await (this.prisma as any).catTagOnCat.count({ where: { tagId: id } });
-    if (usedCount > 0) {
-      throw new ConflictException('Cannot remove a tag that is used by cats');
+    const softDelete = async (transaction: any) => {
+      const assignments = await transaction.catTagOnCat.findMany({
+        where: { tagId: id },
+        select: { catId: true },
+      });
+      await transaction.tagAuditEvent.create({
+        data: {
+          tagId: id,
+          actorUserId,
+          action: 'delete',
+          oldValue: this.tagAuditValue(existing),
+          newValue: null,
+        },
+      });
+      await transaction.catTagOnCat.deleteMany({ where: { tagId: id } });
+      await Promise.all(assignments.map(({ catId }: { catId: string }) => this.auditWriter.execute(transaction, {
+        catId,
+        actorUserId: actorUserId!,
+        eventType: CAT_AUDIT_EVENT_TYPES.tagRemovedFromCat,
+        oldValue: existing.name,
+        newValue: null,
+      })));
+      await transaction.catTag.update({ where: { id }, data: { deletedAt: new Date() } });
+    };
+
+    if (actorUserId) {
+      await this.runWithTransaction(softDelete);
+      return;
     }
 
-    await (this.prisma as any).catTag.delete({ where: { id } });
+    await this.runWithTransaction(async (transaction: any) => {
+      await transaction.catTagOnCat.deleteMany({ where: { tagId: id } });
+      await transaction.catTag.update({ where: { id }, data: { deletedAt: new Date() } });
+    });
   }
 
-  async addTag(catId: string, tagId: string, currentUserIsTest = false): Promise<CatCard> {
+  async addTag(catId: string, tagId: string, actorUserId?: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(tagId);
-    await this.findExistingCat(catId, currentUserIsTest);
-    await this.findExistingTag(tagId);
+    const cat = await this.findExistingCat(catId, currentUserIsTest);
+    const tag = await this.findExistingTag(tagId);
+
+    if (actorUserId) {
+      await this.runWithTransaction(async (transaction: any) => {
+        await transaction.catTagOnCat.upsert({
+          where: { catId_tagId: { catId, tagId } },
+          create: { catId, tagId },
+          update: {},
+        });
+        await this.auditWriter.execute(transaction, {
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.tagAddedToCat,
+          oldValue: null,
+          newValue: tag.name,
+        });
+      });
+      return this.findCardById(catId, currentUserIsTest);
+    }
 
     await (this.prisma as any).catTagOnCat.upsert({
       where: { catId_tagId: { catId, tagId } },
@@ -386,11 +474,26 @@ export class CatsService {
     return this.findCardById(catId, currentUserIsTest);
   }
 
-  async removeTag(catId: string, tagId: string, currentUserIsTest = false): Promise<CatCard> {
+  async removeTag(catId: string, tagId: string, actorUserId?: string, currentUserIsTest = false): Promise<CatCard> {
     this.validateId(catId);
     this.validateId(tagId);
-    await this.findExistingCat(catId, currentUserIsTest);
-    await this.findExistingTag(tagId);
+    const cat = await this.findExistingCat(catId, currentUserIsTest);
+    const tag = await this.findExistingTag(tagId);
+
+    if (actorUserId) {
+      await this.runWithTransaction(async (transaction: any) => {
+        await transaction.catTagOnCat.deleteMany({ where: { catId, tagId } });
+        await this.auditWriter.execute(transaction, {
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.tagRemovedFromCat,
+          oldValue: tag.name,
+          newValue: null,
+        });
+      });
+      return this.findCardById(catId, currentUserIsTest);
+    }
+
     await (this.prisma as any).catTagOnCat.deleteMany({ where: { catId, tagId } });
     return this.findCardById(catId, currentUserIsTest);
   }
@@ -407,24 +510,42 @@ export class CatsService {
     return weights.map((weight: any) => this.toCatWeight(weight));
   }
 
-  async addWeight(catId: string, data: CreateCatWeightDto, currentUserIsTest = false): Promise<CatWeight> {
+  async addWeight(catId: string, data: CreateCatWeightDto, actorUserId?: string, currentUserIsTest = false): Promise<CatWeight> {
     this.validateId(catId);
     await this.findExistingCat(catId, currentUserIsTest);
     const measuredAt = this.parseRequiredDate(data.measuredAt, 'measuredAt');
     this.validateWeightKg(data.weightKg);
 
-    const weight = await (this.prisma as any).catWeight.create({
-      data: {
-        catId,
-        weightKg: data.weightKg,
-        measuredAt,
-      },
-    });
+    const weight = actorUserId
+      ? await this.runWithTransaction(async (transaction: any) => {
+          const created = await transaction.catWeight.create({
+            data: {
+              catId,
+              weightKg: data.weightKg,
+              measuredAt,
+            },
+          });
+          await this.auditWriter.execute(transaction, {
+            catId,
+            actorUserId,
+            eventType: CAT_AUDIT_EVENT_TYPES.weightCreated,
+            oldValue: null,
+            newValue: `${created.weightKg.toFixed(2)} kg`,
+          });
+          return created;
+        })
+      : await (this.prisma as any).catWeight.create({
+          data: {
+            catId,
+            weightKg: data.weightKg,
+            measuredAt,
+          },
+        });
 
     return this.toCatWeight(weight);
   }
 
-  async removeWeight(catId: string, weightId: string, currentUserIsTest = false): Promise<void> {
+  async removeWeight(catId: string, weightId: string, actorUserId?: string, currentUserIsTest = false): Promise<void> {
     this.validateId(catId);
     this.validateId(weightId);
     await this.findExistingCat(catId, currentUserIsTest);
@@ -436,7 +557,29 @@ export class CatsService {
       throw new NotFoundException('Weight entry not found');
     }
 
+    if (actorUserId) {
+      await this.runWithTransaction(async (transaction: any) => {
+        await transaction.catWeight.delete({ where: { id: weightId } });
+        await this.auditWriter.execute(transaction, {
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.weightDeleted,
+          oldValue: `${weight.weightKg.toFixed(2)} kg`,
+          newValue: null,
+        });
+      });
+      return;
+    }
+
     await (this.prisma as any).catWeight.delete({ where: { id: weightId } });
+  }
+
+  private async runWithTransaction<T>(callback: (transaction: any) => Promise<T>): Promise<T> {
+    const prisma = this.prisma as any;
+    if (typeof prisma.$transaction === 'function') {
+      return prisma.$transaction(callback);
+    }
+    return callback(prisma);
   }
 
   private async findExistingCat(id: string, currentUserIsTest = false): Promise<CatWithLocation> {
@@ -586,11 +729,15 @@ export class CatsService {
   }
 
   private async findExistingTag(id: string): Promise<CatTag> {
-    const tag = await (this.prisma as any).catTag.findUnique({ where: { id } });
+    const tag = await (this.prisma as any).catTag.findFirst({ where: { id, deletedAt: null } });
     if (!tag) {
       throw new NotFoundException('Tag not found');
     }
     return this.toCatTag(tag);
+  }
+
+  private tagAuditValue(tag: CatTag): string {
+    return `${tag.name} (${tag.color})`;
   }
 
   private async findExistingPhoto(catId: string, photoId: string): Promise<{ id: string; key: string; createdAt: Date }> {

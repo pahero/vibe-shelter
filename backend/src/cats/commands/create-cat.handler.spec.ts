@@ -11,6 +11,7 @@ import {
 import { CatPhotoUrlService } from '../cat-photo-url.service';
 import { CreateCatCommand } from './create-cat.command';
 import { CreateCatHandler } from './create-cat.handler';
+import { WriteCatAuditEventCommand } from './write-cat-audit-event.command';
 
 describe('CreateCatHandler', () => {
   let handler: CreateCatHandler;
@@ -23,6 +24,7 @@ describe('CreateCatHandler', () => {
     handler = new CreateCatHandler(
       prisma,
       new CatPhotoUrlService(new ConfigService(), s3Client),
+      new WriteCatAuditEventCommand(),
     );
   });
 
@@ -58,6 +60,12 @@ describe('CreateCatHandler', () => {
 
     expect(card.name).toBe('Mila');
     expect(card.primaryPhotoUrl).toBeNull();
+    await expect(prisma.catAuditEvent.findFirstOrThrow({ where: { catId: card.id } })).resolves.toMatchObject({
+      eventType: 'cat_created',
+      actorUserId,
+      oldValue: null,
+      newValue: 'Mila',
+    });
   });
 
   it('persists every command field and returns the active location', async () => {

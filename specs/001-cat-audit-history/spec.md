@@ -155,12 +155,18 @@ each action and that the deleted photo link remains available.
 - **FR-017**: Tests for this feature MUST cover photo creation audit events, photo deletion audit
   events, photo links for all photo audit events, deleted-photo links derived from photo identity,
   and granular event type separation.
+- **FR-018**: System MUST automatically audit every successful user action that changes cat-owned
+  data, including profile fields, photos, tags, and weight history. New mutating cat workflows MUST
+  write audit events as part of the same implementation rather than relying on manual follow-up work.
+- **FR-019**: System MUST record weight history additions and removals in the selected cat's history
+  with the authenticated actor, timestamp, weight value, and measured date.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Cat**: A shelter animal record. Key attributes for this feature include its unique identity,
   editable profile fields, and the identifier of the user who created it.
-- **Cat Audit Event**: A historical record of one successful cat field change or cat photo action.
+- **Cat Audit Event**: A historical record of one successful user action that changes cat-owned data,
+  including cat field changes, photo actions, tag actions, and weight history actions.
   It belongs to one cat and records the actor, granular event type, event time, and event-specific
   details, including old and new values for field-change events.
 - **Cat Photo**: A photo associated with a cat. Key attributes for this feature include its unique
@@ -185,6 +191,8 @@ each action and that the deleted photo link remains available.
   with the correct event type and actor.
 - **SC-007**: Staff can open the deleted photo link from a photo-deleted history entry during
   acceptance testing.
+- **SC-008**: 100% of successful cat weight additions and removals produce visible history entries
+  with the correct actor, weight value, and measured date.
 
 ## Assumptions
 
@@ -198,3 +206,5 @@ each action and that the deleted photo link remains available.
   defined later.
 - Deleting a photo removes it from the active gallery but does not remove the historical evidence
   required to display the deleted photo link in audit history.
+- Audit coverage is a default engineering requirement: when adding any new successful user mutation,
+  implement audit writing and tests in the same change unless the action is explicitly read-only.

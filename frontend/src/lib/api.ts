@@ -56,7 +56,7 @@ export type CatTag = {
 
 export type CatWeight = {
   id: string;
-  catId: string;
+  catId: string | null;
   weightKg: number;
   measuredAt: string;
   createdAt: string;
@@ -73,6 +73,7 @@ export type CatPhoto = {
 export type CatHistoryEvent = {
   id: string;
   catId: string;
+  catName: string | null;
   eventType: string;
   occurredAt: string;
   actor: {
@@ -259,6 +260,30 @@ export const catsApi = {
 
   async listHistory(id: string): Promise<CatHistoryResponse> {
     const response = await fetch(`${BACKEND_URL}/api/cats/${id}/history`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatHistoryResponse>(response);
+  },
+
+  async listAllHistory(params?: {
+    user?: string;
+    catId?: string;
+    from?: string;
+    to?: string;
+    skip?: number;
+    limit?: number;
+  }): Promise<CatHistoryResponse> {
+    const query = new URLSearchParams();
+    if (params?.user) query.append("user", params.user);
+    if (params?.catId) query.append("catId", params.catId);
+    if (params?.from) query.append("from", params.from);
+    if (params?.to) query.append("to", params.to);
+    if (params?.skip !== undefined) query.append("skip", params.skip.toString());
+    if (params?.limit !== undefined) query.append("limit", params.limit.toString());
+
+    const url = query.toString() ? `/api/cats/history?${query.toString()}` : "/api/cats/history";
+    const response = await fetch(`${BACKEND_URL}${url}`, {
       method: "GET",
       credentials: "include",
     });
