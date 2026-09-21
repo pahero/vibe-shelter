@@ -1,5 +1,6 @@
 export const CAT_AUDIT_EVENT_TYPES = {
   catCreated: 'cat_created',
+  catArchived: 'cat_archived',
   name: 'name_changed',
   sex: 'sex_changed',
   color: 'color_changed',

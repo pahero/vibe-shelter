@@ -59,6 +59,9 @@ type CatWithLocation = {
   passportNumber: string | null;
   rescueSource: string | null;
   updatedAt: Date;
+  archivedAt: Date | null;
+  archivationReasonId: string | null;
+  archivationReason: { name: string } | null;
   tags?: Array<{ tag: CatTag }>;
 };
 
@@ -85,6 +88,9 @@ export type CatCard = {
   isTest: boolean;
   updatedAt: string;
   tags: CatTag[];
+  archivedAt: string | null;
+  archivationReasonId: string | null;
+  archivationReasonName: string | null;
 };
 
 export type CatFilters = {
@@ -94,6 +100,7 @@ export type CatFilters = {
   tagId?: string;
   skip?: number;
   limit?: number;
+  archived?: boolean;
 };
 
 export type CatWeight = {
@@ -270,7 +277,7 @@ export class CatsService {
 
   async findAll(filters: CatFilters = {}, currentUserIsTest = false) {
     const { skip, limit } = this.validatePagination(filters.skip, filters.limit);
-    const status = filters.status ?? 'ACTIVE';
+    const status = filters.archived ? 'ARCHIVED' : filters.status ?? 'ACTIVE';
     this.validateEnum(status, VALID_CAT_STATUSES, 'status');
 
     const where: any = { status, isTest: currentUserIsTest };
@@ -621,6 +628,7 @@ export class CatsService {
       );
     }
     if (data.status !== undefined) {
+      if (data.status === 'ARCHIVED') throw new BadRequestException('Use the archive endpoint to archive a cat');
       this.validateEnum(data.status, VALID_CAT_STATUSES, 'status');
     }
     this.validateOptionalDates(data);
@@ -757,6 +765,7 @@ export class CatsService {
   private catCardInclude(): any {
     return {
       currentLocation: { select: { name: true } },
+      archivationReason: { select: { name: true } },
       tags: { include: { tag: true }, orderBy: { tag: { name: 'asc' } } },
     };
   }
@@ -822,6 +831,9 @@ export class CatsService {
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,
       intakeDate: cat.intakeDate?.toISOString() ?? null,
       status: cat.status,
+      archivedAt: cat.archivedAt?.toISOString() ?? null,
+      archivationReasonId: cat.archivationReasonId,
+      archivationReasonName: cat.archivationReason?.name ?? null,
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
@@ -841,6 +853,7 @@ export class CatsService {
       color: tag.color,
     };
   }
+
 
   private async toCatPhoto(photo: any, primaryPhotoKey: string | null): Promise<CatPhoto> {
     return {

@@ -120,7 +120,7 @@ describe('CatsService', () => {
       await createCatFixture(tx, { name: `${prefix} Boris`, sex: 'MALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, passportNumber: `${prefix}-P` });
       const archived = await createCatFixture(tx, { name: `${prefix} Old`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
       const service = createService(tx);
-      await service.updateCat(archived.id, { status: 'ARCHIVED' });
+      await tx.cat.update({ where: { id: archived.id }, data: { status: 'ARCHIVED' } });
       await createCatFixture(tx, { name: `${prefix} Elsewhere`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: otherLocation.id });
 
       const page = await service.findAll({ locationId: location.id, search: prefix, skip: 1, limit: 1 });

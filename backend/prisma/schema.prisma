@@ -26,6 +26,7 @@ model User {
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
   tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
   locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
+  archivationReasonAuditEvents CatArchivationReasonAuditEvent[] @relation("archivationReasonAuditActors")
 
   @@index([status])
   @@index([role])
@@ -85,6 +86,7 @@ enum CatStatus {
 
 enum CatAuditEventType {
   cat_created
+  cat_archived
   name_changed
   sex_changed
   color_changed
@@ -152,6 +154,9 @@ model Cat {
   passportNumber      String?             @unique
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   status              CatStatus           @default(ACTIVE)
+  archivedAt          DateTime?
+  archivationReasonId String?
+  archivationReason   CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: Restrict)
   isTest              Boolean             @default(false)
   currentLocationId   String?
   currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
@@ -169,8 +174,38 @@ model Cat {
   @@index([currentLocationId])
   @@index([isTest])
   @@index([status])
+  @@index([archivedAt])
+  @@index([archivationReasonId])
   @@index([name])
   @@index([intakeDate])
+}
+
+model CatArchivationReason {
+  id          String   @id @default(cuid())
+  name        String
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  cats        Cat[]
+  auditEvents CatArchivationReasonAuditEvent[]
+
+  @@index([deletedAt])
+}
+
+model CatArchivationReasonAuditEvent {
+  id          String   @id @default(cuid())
+  reasonId    String?
+  reason      CatArchivationReason? @relation(fields: [reasonId], references: [id], onDelete: SetNull)
+  actorUserId String
+  actorUser   User     @relation("archivationReasonAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([reasonId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model CatPhoto {

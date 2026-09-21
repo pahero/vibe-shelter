@@ -46,7 +46,7 @@ The backend should be accessible at `http://localhost:4000` after initialization
 
 ## Architecture Rules
 
-- TypeScript `any` is prohibited, both explicit and implicit. Use precise types or `unknown` with proper narrowing.
+- TypeScript `any` is prohibited, both explicit and implicit, including `as any` casts. Use generated Prisma types, domain types, generics, or `unknown` with proper narrowing instead.
 - Maintain a strict separation of concerns between controllers, command/query handlers, and shared services.
 - Controllers only transform requests into commands or queries, invoke the appropriate handler, and transform results into responses. Do not put business logic or persistence in controllers.
 - Use command handlers for state-changing operations and query handlers for read operations instead of application service classes.
@@ -62,12 +62,18 @@ The backend should be accessible at `http://localhost:4000` after initialization
   2. Integration tests of endpoints
 - All business logic and command/query handlers must be covered with unit tests. Controllers are not unit tested; cover their request/response wiring through endpoint integration tests.
 - Unit tests with DB should use real PostgreSQL via Testcontainers where applicable.
-- All unit tests are isolated by transactions.
+- All DB unit tests must use `runInTestTransaction`; never use `beginTestTransaction` or `rollbackTestTransaction`.
+- Handlers inject `PrismaService`. Whenever a command performs multiple database mutations, wrap them in `runInNewTransaction`; it creates a transaction for the injected `PrismaService` and reuses a test transaction client.
+- In DB unit tests, construct PrismaService-dependent handlers with `tx as PrismaService` inside `runInTestTransaction`.
+- Do not translate Prisma unique-constraint errors into domain conflicts. Check for conflicting active records before insert or update and throw the domain conflict explicitly.
+- Do not make incoming DTO fields nullable or optional unless the API contract explicitly supports omission. Require update values that are necessary for deterministic behavior and avoid `undefined`-driven behavior.
+- Mutation APIs must return only `{ id }` plus a concurrency token when the model has one. Only GET APIs may return full read models.
 - Do not mock database, S3, config, file systems, or similar dependencies unless there is no viable alternative.
 - Do not inject dependencies into shared services or introduce service-to-service constructor dependencies. Extract shared logic into stateless, dependency-free services or utilities instead.
 - Every endpoint must have at least one test, and usually exactly/at least one endpoint integration test where appropriate.
 - Integration tests of endpoints are not transaction-isolated and must avoid interfering with global state using practical techniques. Example: use random prefixes when testing list endpoints or other globally visible data.
 - Unit tests use `<feature>.<command-or-query>.handler.spec.ts` naming near the implementation. Shared service tests use `<module>.service.spec.ts`.
+- Each command and query handler must have its own dedicated test file; do not combine coverage for multiple handlers in one spec.
 - Integration tests use `<feature>.integration.spec.ts` under `test/integration/`.
 
 ## API Validation Strategy

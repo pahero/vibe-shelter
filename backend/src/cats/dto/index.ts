@@ -2,3 +2,4 @@ export * from './create-cat.dto';
 export * from './update-cat.dto';
 export * from './create-cat-weight.dto';
 export * from './create-cat-tag.dto';
+export * from './create-cat-archivation-reason.dto';

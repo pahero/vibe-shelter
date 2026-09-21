@@ -5,7 +5,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
-import { CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
+import { ArchiveCatHandler } from './commands/archive-cat.handler';
+import { ArchiveCatDto, CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { ListCatHistoryQuery } from './queries/list-cat-history.query';
 import { ListAllCatHistoryQuery } from './queries/list-all-cat-history.query';
 
@@ -17,6 +18,7 @@ export class CatsController {
   constructor(
     private catsService: CatsService,
     private createCatHandler: CreateCatHandler,
+    private archiveCatHandler: ArchiveCatHandler,
     private listCatHistoryQuery: ListCatHistoryQuery,
     private listAllCatHistoryQuery: ListAllCatHistoryQuery,
   ) {}
@@ -27,6 +29,7 @@ export class CatsController {
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('tagId') tagId?: string,
+    @Query('archived') archived?: string,
     @Query('skip') skip?: string,
     @Query('limit') limit?: string,
     @CurrentUser() user?: AuthenticatedUser,
@@ -36,6 +39,7 @@ export class CatsController {
       status,
       search,
       tagId,
+      archived: archived === 'true',
       skip: skip === undefined ? undefined : Number(skip),
       limit: limit === undefined ? undefined : Number(limit),
     }, user?.isTest ?? false);
@@ -113,6 +117,11 @@ export class CatsController {
   @HttpCode(HttpStatus.CREATED)
   async createCat(@Body() dto: CreateCatDto, @CurrentUser() user: AuthenticatedUser) {
     return this.createCatHandler.execute(dto.toCommand(user.id, user.isTest));
+  }
+
+  @Post(':id/archive')
+  async archiveCat(@Param('id') id: string, @Body() dto: ArchiveCatDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.archiveCatHandler.execute({ catId: id, reasonId: dto.reasonId, actorUserId: user.id, currentUserIsTest: user.isTest });
   }
 
   @Post('tags')

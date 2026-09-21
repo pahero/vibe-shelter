@@ -68,7 +68,7 @@ export class ListAllCatHistoryQuery {
     if (input.to) tagCreatedAt.lte = this.parseDate(input.to, 'to', true);
     if (Object.keys(tagCreatedAt).length > 0) tagWhere.createdAt = tagCreatedAt;
 
-    const [catEvents, tagEvents, locationEvents] = await Promise.all([
+    const [catEvents, tagEvents, locationEvents, archivationReasonEvents] = await Promise.all([
       (this.prisma as any).catAuditEvent.findMany({
         where,
         include: {
@@ -94,19 +94,29 @@ export class ListAllCatHistoryQuery {
               actorUser: { select: { id: true, fullName: true, email: true } },
             },
           }),
+      input.catId?.trim()
+        ? []
+        : this.prisma.catArchivationReasonAuditEvent.findMany({
+            where: tagWhere,
+            include: {
+              actorUser: { select: { id: true, fullName: true, email: true } },
+            },
+          }),
     ]);
 
     const events = [
       ...catEvents.map((event: any) => ({ source: 'cat' as const, event, occurredAt: event.occurredAt })),
       ...tagEvents.map((event: any) => ({ source: 'tag' as const, event, occurredAt: event.createdAt })),
       ...locationEvents.map((event: any) => ({ source: 'location' as const, event, occurredAt: event.createdAt })),
+      ...archivationReasonEvents.map((event: any) => ({ source: 'archivationReason' as const, event, occurredAt: event.createdAt })),
     ].sort((left, right) => right.occurredAt.getTime() - left.occurredAt.getTime() || right.event.id.localeCompare(left.event.id));
 
     return {
       data: await Promise.all(events.slice(skip, skip + limit).map(({ source, event }) => {
         if (source === 'cat') return this.toDto(event);
         if (source === 'tag') return this.toTagDto(event);
-        return this.toLocationDto(event);
+        if (source === 'location') return this.toLocationDto(event);
+        return this.toArchivationReasonDto(event);
       })),
       total: events.length,
       skip,
@@ -162,6 +172,24 @@ export class ListAllCatHistoryQuery {
       catId: null,
       catName: null,
       eventType: `location_${event.action}`,
+      occurredAt: event.createdAt.toISOString(),
+      actor: {
+        id: event.actorUser.id,
+        displayName: event.actorUser.fullName || event.actorUser.email,
+        email: event.actorUser.email,
+      },
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      photo: null,
+    };
+  }
+
+  private toArchivationReasonDto(event: any): CatHistoryEventDto {
+    return {
+      id: `archivation-reason-${event.id}`,
+      catId: null,
+      catName: null,
+      eventType: `archivation_reason_${event.action}`,
       occurredAt: event.createdAt.toISOString(),
       actor: {
         id: event.actorUser.id,

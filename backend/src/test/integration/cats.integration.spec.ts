@@ -110,8 +110,8 @@ describe('Cats endpoints', () => {
     expect(testLocations.body.data.map((location: { id: string }) => location.id)).toContain(testLocation.body.id);
     expect(testLocations.body.data.map((location: { id: string }) => location.id)).not.toContain(regularLocation.body.id);
 
-    const regularCats = await regularAuth.agent.get('/api/cats').query({ search: 'regular-cat' }).expect(200);
-    const testCats = await testAuth.agent.get('/api/cats').query({ search: 'test-cat' }).expect(200);
+    const regularCats = await regularAuth.agent.get('/api/cats').query({ search: regularCat.body.name }).expect(200);
+    const testCats = await testAuth.agent.get('/api/cats').query({ search: testCat.body.name }).expect(200);
     expect(regularCats.body.data.map((cat: { id: string }) => cat.id)).toContain(regularCat.body.id);
     expect(regularCats.body.data.map((cat: { id: string }) => cat.id)).not.toContain(testCat.body.id);
     expect(testCats.body.data.map((cat: { id: string }) => cat.id)).toContain(testCat.body.id);
@@ -427,6 +427,65 @@ describe('Cats endpoints', () => {
 
     await authAgent.delete(`/api/locations/${location.body.id}`).expect(409);
     await authAgent.get(`/api/locations/${location.body.id}`).expect(200);
+  });
+
+  it('archives cats with audited archivation reasons and filters archived cats', async () => {
+    const cat = await createCat(prisma, { name: unique('archived-cat') });
+    const reasonName = unique('adopted-cy');
+    const createdReason = await authAgent
+      .post('/api/cats/archivation-reasons')
+      .send({ name: reasonName })
+      .expect(201);
+    expect(createdReason.body).toEqual({ id: expect.any(String) });
+    const updatedReasonName = `${reasonName} updated`;
+    const updatedReason = await authAgent
+      .patch(`/api/cats/archivation-reasons/${createdReason.body.id}`)
+      .send({ name: updatedReasonName })
+      .expect(200);
+    expect(updatedReason.body).toEqual({ id: createdReason.body.id });
+
+    const archived = await authAgent
+      .post(`/api/cats/${cat.id}/archive`)
+      .send({ reasonId: updatedReason.body.id })
+      .expect(201);
+    expect(archived.body).toEqual({ id: cat.id });
+
+    const archivedCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    expect(archivedCard.body).toMatchObject({
+      status: 'ARCHIVED',
+      archivationReasonId: updatedReason.body.id,
+      archivationReasonName: updatedReasonName,
+      archivedAt: expect.any(String),
+    });
+
+    const archivedSearch = await authAgent.get('/api/cats').query({ archived: true }).expect(200);
+    expect(archivedSearch.body.data.map((item: { id: string }) => item.id)).toContain(cat.id);
+
+    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(history.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'cat_archived', actor: expect.objectContaining({ id: authUser.id }), newValue: updatedReasonName }),
+    ]));
+
+    const reasonEvents = await (prisma as any).catArchivationReasonAuditEvent.findMany({
+      where: { reasonId: updatedReason.body.id }, orderBy: { createdAt: 'asc' },
+    });
+    expect(reasonEvents.map((event: any) => event.action)).toEqual(['create', 'update']);
+    await authAgent.delete(`/api/cats/archivation-reasons/${updatedReason.body.id}`).expect(409);
+
+    const unusedReason = await authAgent
+      .post('/api/cats/archivation-reasons')
+      .send({ name: unique('unused-reason') })
+      .expect(201);
+    await authAgent.delete(`/api/cats/archivation-reasons/${unusedReason.body.id}`).expect(204);
+    const reasons = await authAgent.get('/api/cats/archivation-reasons').expect(200);
+    expect(reasons.body.map((reason: { id: string }) => reason.id)).not.toContain(unusedReason.body.id);
+
+    const globalAudit = await authAgent.get('/api/cats/history').query({ user: authUser.email, limit: 100 }).expect(200);
+    expect(globalAudit.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: 'archivation_reason_create', actor: expect.objectContaining({ id: authUser.id }) }),
+      expect.objectContaining({ eventType: 'archivation_reason_update', actor: expect.objectContaining({ id: authUser.id }) }),
+      expect.objectContaining({ eventType: 'archivation_reason_delete', actor: expect.objectContaining({ id: authUser.id }) }),
+    ]));
   });
 
   it('returns validation and not found errors', async () => {
