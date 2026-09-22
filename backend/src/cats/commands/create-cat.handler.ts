@@ -89,7 +89,6 @@ export class CreateCatHandler {
       color: cat.color,
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,
       intakeDate: cat.intakeDate?.toISOString() ?? null,
-      status: cat.status,
       archivedAt: null,
       archivationReasonId: null,
       archivationReasonName: null,

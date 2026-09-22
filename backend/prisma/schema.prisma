@@ -26,7 +26,6 @@ model User {
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
   tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
   locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
-  archivationReasonAuditEvents CatArchivationReasonAuditEvent[] @relation("archivationReasonAuditActors")
 
   @@index([status])
   @@index([role])
@@ -77,16 +76,13 @@ enum SterilizationStatus {
   UNKNOWN
 }
 
-enum CatStatus {
-  ACTIVE
-  ADOPTED
-  DECEASED
-  ARCHIVED
-}
-
 enum CatAuditEventType {
   cat_created
   cat_archived
+  cat_dearchived
+  archivation_reason_create
+  archivation_reason_update
+  archivation_reason_delete
   name_changed
   sex_changed
   color_changed
@@ -153,7 +149,6 @@ model Cat {
   microchipNumber     String?             @unique
   passportNumber      String?             @unique
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
-  status              CatStatus           @default(ACTIVE)
   archivedAt          DateTime?
   archivationReasonId String?
   archivationReason   CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: Restrict)
@@ -173,7 +168,6 @@ model Cat {
   @@index([createdByUserId])
   @@index([currentLocationId])
   @@index([isTest])
-  @@index([status])
   @@index([archivedAt])
   @@index([archivationReasonId])
   @@index([name])
@@ -187,25 +181,9 @@ model CatArchivationReason {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   cats        Cat[]
-  auditEvents CatArchivationReasonAuditEvent[]
+  auditEvents CatAuditEvent[]
 
   @@index([deletedAt])
-}
-
-model CatArchivationReasonAuditEvent {
-  id          String   @id @default(cuid())
-  reasonId    String?
-  reason      CatArchivationReason? @relation(fields: [reasonId], references: [id], onDelete: SetNull)
-  actorUserId String
-  actorUser   User     @relation("archivationReasonAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
-  action      String
-  oldValue    String?
-  newValue    String?
-  createdAt   DateTime @default(now())
-
-  @@index([reasonId])
-  @@index([actorUserId])
-  @@index([createdAt])
 }
 
 model CatPhoto {
@@ -230,8 +208,10 @@ model CatPhoto {
 
 model CatAuditEvent {
   id          String            @id @default(cuid())
-  catId       String
-  cat         Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
+  catId       String?
+  cat         Cat?              @relation(fields: [catId], references: [id], onDelete: Cascade)
+  archivationReasonId String?
+  archivationReason CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: SetNull)
   actorUserId String
   actorUser   User              @relation("catAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
   eventType   CatAuditEventType
@@ -242,6 +222,7 @@ model CatAuditEvent {
   photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
 
   @@index([catId, occurredAt])
+  @@index([archivationReasonId, occurredAt])
   @@index([actorUserId])
   @@index([photoId])
   @@index([eventType])

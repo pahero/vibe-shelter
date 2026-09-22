@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
+import { CatArchivationReason, CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
 import { eventLabels, historyValueText } from "@/components/cat-history";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
 
@@ -39,6 +39,11 @@ function auditDateLabel(value: string): string {
 export function EditShelterClient() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
+  const [archivationReasons, setArchivationReasons] = useState<CatArchivationReason[]>([]);
+  const [newReasonName, setNewReasonName] = useState("");
+  const [editingReason, setEditingReason] = useState<CatArchivationReason | null>(null);
+  const [reasonToDelete, setReasonToDelete] = useState<CatArchivationReason | null>(null);
+  const [replacementReasonId, setReplacementReasonId] = useState("");
   const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [locationDraft, setLocationDraft] = useState<LocationDraft>(emptyLocation);
   const [editingLocation, setEditingLocation] = useState<EditingLocation | null>(null);
@@ -72,7 +77,7 @@ export function EditShelterClient() {
 
     async function loadAuditCats() {
       try {
-        const response = await catsApi.listCats({ status: "ACTIVE", limit: 100 });
+        const response = await catsApi.listCats({ limit: 100 });
         if (!cancelled) {
           setAuditCats(response.data.map((cat) => ({ id: cat.id, name: cat.name })));
         }
@@ -120,12 +125,14 @@ export function EditShelterClient() {
     setIsLoading(true);
     setError(null);
     try {
-      const [locationsResponse, tagsResponse] = await Promise.all([
+      const [locationsResponse, tagsResponse, reasonsResponse] = await Promise.all([
         locationsApi.listLocations({ limit: 100 }),
         catsApi.listTags(),
+        catsApi.listArchivationReasons(),
       ]);
       setLocations(locationsResponse.data.filter((location) => location.status !== "ARCHIVED"));
       setTags(tagsResponse);
+      setArchivationReasons(reasonsResponse);
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -316,6 +323,51 @@ export function EditShelterClient() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function saveReason() {
+    const name = (editingReason?.name ?? newReasonName).trim();
+    if (!name) {
+      setError("Archivation reason name is required.");
+      return;
+    }
+    setIsSaving(true);
+    setError(null);
+    try {
+      if (editingReason) await catsApi.updateArchivationReason(editingReason.id, name);
+      else await catsApi.createArchivationReason(name);
+      setEditingReason(null);
+      setNewReasonName("");
+      setMessage(editingReason ? "Archivation reason updated." : "Archivation reason added.");
+      await Promise.all([loadEditors(), loadAudit()]);
+    } catch (err) {
+      setError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function removeReason(reason: CatArchivationReason, replacementId?: string) {
+    setIsSaving(true);
+    setError(null);
+    try {
+      await catsApi.deleteArchivationReason(reason.id, replacementId);
+      setReasonToDelete(null);
+      setReplacementReasonId("");
+      setMessage("Archivation reason removed.");
+      await Promise.all([loadEditors(), loadAudit()]);
+    } catch (err) {
+      setError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function startRemovingReason(reason: CatArchivationReason) {
+    const replacement = archivationReasons.find((candidate) => candidate.id !== reason.id);
+    setReasonToDelete(reason);
+    setReplacementReasonId(replacement?.id ?? "");
+    setError(null);
   }
 
   return (
@@ -517,6 +569,49 @@ export function EditShelterClient() {
                 );
               })}
             </div>
+          </section>
+
+          <section className="space-y-4 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
+            <div>
+              <h2 className="text-3xl font-semibold text-gray-900">Archivation reasons</h2>
+              <p className="mt-1 text-sm text-gray-600">Required when archiving a cat.</p>
+            </div>
+            <div className="flex gap-2">
+              <input value={newReasonName} onChange={(event) => setNewReasonName(event.target.value)} placeholder="New reason" className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm" />
+              <button type="button" onClick={saveReason} disabled={isSaving} className="rounded-lg bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Add</button>
+            </div>
+            {archivationReasons.length === 0 && <p className="text-sm text-gray-600">No archivation reasons found.</p>}
+            <div className="grid gap-2">
+              {archivationReasons.map((reason) => (
+                <div key={reason.id} className="flex items-center gap-2 rounded-lg border border-[#d4c7b4] bg-white/75 p-3">
+                  {editingReason?.id === reason.id ? (
+                    <input value={editingReason.name} onChange={(event) => setEditingReason({ ...editingReason, name: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm" />
+                  ) : <span className="min-w-0 flex-1 text-sm font-medium text-gray-900">{reason.name}</span>}
+                  {editingReason?.id === reason.id ? <>
+                    <button type="button" onClick={saveReason} disabled={isSaving} className="text-sm font-semibold text-[#b24a20]">Save</button>
+                    <button type="button" onClick={() => setEditingReason(null)} className="text-sm font-semibold text-gray-600">Cancel</button>
+                  </> : <>
+                    <button type="button" onClick={() => setEditingReason(reason)} className="text-sm font-semibold text-amber-700">Edit</button>
+                    <button type="button" onClick={() => startRemovingReason(reason)} disabled={isSaving} className="text-sm font-semibold text-red-700 disabled:opacity-60">Remove</button>
+                  </>}
+                </div>
+              ))}
+            </div>
+            {reasonToDelete && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm font-medium text-gray-900">Remove &quot;{reasonToDelete.name}&quot;</p>
+                <label className="mt-2 grid gap-1 text-sm text-gray-700">Replacement for assigned cats
+                  <select value={replacementReasonId} onChange={(event) => setReplacementReasonId(event.target.value)} disabled={archivationReasons.length < 2} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 disabled:opacity-60">
+                    {archivationReasons.filter((reason) => reason.id !== reasonToDelete.id).map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
+                  </select>
+                </label>
+                {archivationReasons.length < 2 && <p className="mt-2 text-sm text-red-700">Add another reason before removing one assigned to cats.</p>}
+                <div className="mt-3 flex gap-2">
+                  <button type="button" onClick={() => removeReason(reasonToDelete, replacementReasonId || undefined)} disabled={isSaving} className="rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? "Removing..." : "Confirm removal"}</button>
+                  <button type="button" onClick={() => { setReasonToDelete(null); setReplacementReasonId(""); }} className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold">Cancel</button>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       )}

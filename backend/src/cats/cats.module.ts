@@ -8,6 +8,7 @@ import { CatsController } from './cats.controller';
 import { CatsService } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
 import { ArchiveCatHandler } from './commands/archive-cat.handler';
+import { DearchiveCatHandler } from './commands/dearchive-cat.handler';
 import { WriteCatAuditEventCommand } from './commands/write-cat-audit-event.command';
 import { ListCatHistoryQuery } from './queries/list-cat-history.query';
 import { ListAllCatHistoryQuery } from './queries/list-all-cat-history.query';
@@ -19,8 +20,8 @@ import { UpdateArchivationReasonCommand } from './archivation-reasons/update-arc
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
-  controllers: [CatsController, ArchivationReasonsController],
-  providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService, CreateCatHandler, ArchiveCatHandler, WriteCatAuditEventCommand, ListCatHistoryQuery, ListAllCatHistoryQuery, ListArchivationReasonsQuery, CreateArchivationReasonCommand, UpdateArchivationReasonCommand, DeleteArchivationReasonCommand],
+  controllers: [ArchivationReasonsController, CatsController],
+  providers: [CatsService, CatPhotoUrlService, CatPhotoCleanupService, CreateCatHandler, ArchiveCatHandler, DearchiveCatHandler, WriteCatAuditEventCommand, ListCatHistoryQuery, ListAllCatHistoryQuery, ListArchivationReasonsQuery, CreateArchivationReasonCommand, UpdateArchivationReasonCommand, DeleteArchivationReasonCommand],
   exports: [CatsService],
 })
 export class CatsModule {}

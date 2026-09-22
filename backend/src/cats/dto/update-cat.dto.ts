@@ -37,10 +37,6 @@ export class UpdateCatDto {
   @IsOptional()
   sterilizationStatus?: string | null;
 
-  @IsIn(['ACTIVE', 'ADOPTED', 'DECEASED', 'ARCHIVED'])
-  @IsOptional()
-  status?: string;
-
   @IsString()
   @IsOptional()
   currentLocationId?: string | null;

@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateCatArchivationReasonDto {
   @IsString()
@@ -13,4 +13,10 @@ export class UpdateCatArchivationReasonDto {
 export class ArchiveCatDto {
   @IsString()
   reasonId!: string;
+}
+
+export class DeleteCatArchivationReasonDto {
+  @IsOptional()
+  @IsString()
+  replacementReasonId?: string;
 }

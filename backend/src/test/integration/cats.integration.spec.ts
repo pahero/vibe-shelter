@@ -179,7 +179,6 @@ describe('Cats endpoints', () => {
     const location = await createLocation(prisma, 'list');
     const prefix = unique('list');
     await createCat(prisma, { name: `${prefix} Mila`, currentLocationId: location.id, microchipNumber: `${prefix}-chip` });
-    await createCat(prisma, { name: `${prefix} Archive`, currentLocationId: location.id, status: 'ARCHIVED' });
 
     const response = await authAgent
       .get('/api/cats')
@@ -206,16 +205,14 @@ describe('Cats endpoints', () => {
 
     const response = await authAgent
       .patch(`/api/cats/${cat.id}`)
-      .send({ name: 'Updated cat', status: 'ADOPTED' })
+      .send({ name: 'Updated cat' })
       .expect(200);
 
     expect(response.body.name).toBe('Updated cat');
-    expect(response.body.status).toBe('ADOPTED');
 
     const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
     expect(history.body.data).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventType: 'name_changed', oldValue: cat.name, newValue: 'Updated cat' }),
-      expect.objectContaining({ eventType: 'status_changed', oldValue: 'ACTIVE', newValue: 'ADOPTED' }),
     ]));
     expect(history.body.data[0].actor).toMatchObject({ id: authUser.id, email: authUser.email });
   });
@@ -255,7 +252,7 @@ describe('Cats endpoints', () => {
     const otherAuth = await createAuthenticatedAgent(app, prisma);
 
     await authAgent.patch(`/api/cats/${cat.id}`).send({ name: 'All history name' }).expect(200);
-    await otherAuth.agent.patch(`/api/cats/${cat.id}`).send({ status: 'ADOPTED' }).expect(200);
+    await otherAuth.agent.patch(`/api/cats/${cat.id}`).send({ name: 'Updated by other user' }).expect(200);
 
     const all = await authAgent.get('/api/cats/history').query({ limit: 50 }).expect(200);
     expect(all.body.total).toBeGreaterThanOrEqual(2);
@@ -263,8 +260,8 @@ describe('Cats endpoints', () => {
       catId: cat.id,
       actor: expect.objectContaining({ id: otherAuth.user.id }),
     });
-    expect(all.body.data[0].catName).toBe('All history name');
-    expect(all.body.data.some((event: any) => event.eventType === 'status_changed')).toBe(true);
+    expect(all.body.data[0].catName).toBe('Updated by other user');
+    expect(all.body.data.some((event: any) => event.eventType === 'name_changed')).toBe(true);
 
     const byCat = await authAgent.get('/api/cats/history').query({ catId: cat.id, limit: 50 }).expect(200);
     expect(byCat.body.data.length).toBeGreaterThanOrEqual(2);
@@ -452,7 +449,6 @@ describe('Cats endpoints', () => {
 
     const archivedCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
     expect(archivedCard.body).toMatchObject({
-      status: 'ARCHIVED',
       archivationReasonId: updatedReason.body.id,
       archivationReasonName: updatedReasonName,
       archivedAt: expect.any(String),
@@ -461,16 +457,20 @@ describe('Cats endpoints', () => {
     const archivedSearch = await authAgent.get('/api/cats').query({ archived: true }).expect(200);
     expect(archivedSearch.body.data.map((item: { id: string }) => item.id)).toContain(cat.id);
 
+    const reasonEvents = await prisma.catAuditEvent.findMany({
+      where: { archivationReasonId: updatedReason.body.id }, orderBy: { occurredAt: 'asc' },
+    });
+    expect(reasonEvents.map((event) => event.eventType)).toEqual(['archivation_reason_create', 'archivation_reason_update']);
+    const dearchived = await authAgent.post(`/api/cats/${cat.id}/dearchive`).expect(201);
+    expect(dearchived.body).toEqual({ id: cat.id });
+    const restoredCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    expect(restoredCard.body).toMatchObject({ archivedAt: null, archivationReasonId: null, archivationReasonName: null });
     const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
     expect(history.body.data).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventType: 'cat_archived', actor: expect.objectContaining({ id: authUser.id }), newValue: updatedReasonName }),
+      expect.objectContaining({ eventType: 'cat_dearchived', actor: expect.objectContaining({ id: authUser.id }), oldValue: 'ARCHIVED', newValue: 'ACTIVE' }),
     ]));
-
-    const reasonEvents = await (prisma as any).catArchivationReasonAuditEvent.findMany({
-      where: { reasonId: updatedReason.body.id }, orderBy: { createdAt: 'asc' },
-    });
-    expect(reasonEvents.map((event: any) => event.action)).toEqual(['create', 'update']);
-    await authAgent.delete(`/api/cats/archivation-reasons/${updatedReason.body.id}`).expect(409);
+    await authAgent.delete(`/api/cats/archivation-reasons/${updatedReason.body.id}`).expect(204);
 
     const unusedReason = await authAgent
       .post('/api/cats/archivation-reasons')
@@ -486,6 +486,29 @@ describe('Cats endpoints', () => {
       expect.objectContaining({ eventType: 'archivation_reason_update', actor: expect.objectContaining({ id: authUser.id }) }),
       expect.objectContaining({ eventType: 'archivation_reason_delete', actor: expect.objectContaining({ id: authUser.id }) }),
     ]));
+  });
+
+  it('reassigns cats when deleting an assigned archivation reason', async () => {
+    const source = await authAgent
+      .post('/api/cats/archivation-reasons')
+      .send({ name: unique('replace-source') })
+      .expect(201);
+    const replacement = await authAgent
+      .post('/api/cats/archivation-reasons')
+      .send({ name: unique('replace-target') })
+      .expect(201);
+    const cat = await createCat(prisma, { name: unique('replace-cat') });
+    await prisma.cat.update({ where: { id: cat.id }, data: { archivationReasonId: source.body.id } });
+
+    await authAgent
+      .delete(`/api/cats/archivation-reasons/${source.body.id}`)
+      .send({ replacementReasonId: replacement.body.id })
+      .expect(204);
+
+    const updatedCat = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    expect(updatedCat.body.archivationReasonId).toBe(replacement.body.id);
+    const reasons = await authAgent.get('/api/cats/archivation-reasons').expect(200);
+    expect(reasons.body.map((reason: { id: string }) => reason.id)).not.toContain(source.body.id);
   });
 
   it('returns validation and not found errors', async () => {
@@ -539,7 +562,7 @@ async function createLocation(prisma: PrismaClient, prefix: string) {
 
 async function createCat(
   prisma: PrismaClient,
-  data: { name: string; currentLocationId?: string; microchipNumber?: string; status?: string },
+  data: { name: string; currentLocationId?: string; microchipNumber?: string },
 ) {
   return (prisma as any).cat.create({
     data: {
@@ -548,7 +571,6 @@ async function createCat(
       sterilizationStatus: 'UNKNOWN',
       currentLocationId: data.currentLocationId ?? null,
       microchipNumber: data.microchipNumber ?? null,
-      status: data.status ?? 'ACTIVE',
     },
   });
 }

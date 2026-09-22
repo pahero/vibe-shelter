@@ -1,13 +1,13 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { SessionAuthGuard } from '../../auth/guards/session-auth.guard';
-import { CreateCatArchivationReasonDto, UpdateCatArchivationReasonDto } from '../dto';
+import { CreateCatArchivationReasonDto, DeleteCatArchivationReasonDto, UpdateCatArchivationReasonDto } from '../dto';
 import { CreateArchivationReasonCommand } from './create-archivation-reason.command';
 import { DeleteArchivationReasonCommand } from './delete-archivation-reason.command';
 import { ListArchivationReasonsQuery } from './list-archivation-reasons.query';
 import { UpdateArchivationReasonCommand } from './update-archivation-reason.command';
 
-type AuthenticatedUser = { id: string };
+type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller('api/cats/archivation-reasons')
 @UseGuards(SessionAuthGuard)
@@ -36,7 +36,7 @@ export class ArchivationReasonsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.deleteReasonCommand.execute(id, user.id);
+  async delete(@Param('id') id: string, @Body() dto: DeleteCatArchivationReasonDto, @CurrentUser() user: AuthenticatedUser) {
+    await this.deleteReasonCommand.execute(id, user.id, dto.replacementReasonId);
   }
 }

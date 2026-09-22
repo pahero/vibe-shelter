@@ -68,6 +68,12 @@ export class ListAllCatHistoryQuery {
     if (input.to) tagCreatedAt.lte = this.parseDate(input.to, 'to', true);
     if (Object.keys(tagCreatedAt).length > 0) tagWhere.createdAt = tagCreatedAt;
 
+    const reasonWhere: any = { ...tagWhere, archivationReasonId: { not: null } };
+    if (reasonWhere.createdAt) {
+      reasonWhere.occurredAt = reasonWhere.createdAt;
+      delete reasonWhere.createdAt;
+    }
+
     const [catEvents, tagEvents, locationEvents, archivationReasonEvents] = await Promise.all([
       (this.prisma as any).catAuditEvent.findMany({
         where,
@@ -96,8 +102,8 @@ export class ListAllCatHistoryQuery {
           }),
       input.catId?.trim()
         ? []
-        : this.prisma.catArchivationReasonAuditEvent.findMany({
-            where: tagWhere,
+        : this.prisma.catAuditEvent.findMany({
+            where: reasonWhere,
             include: {
               actorUser: { select: { id: true, fullName: true, email: true } },
             },
@@ -108,7 +114,7 @@ export class ListAllCatHistoryQuery {
       ...catEvents.map((event: any) => ({ source: 'cat' as const, event, occurredAt: event.occurredAt })),
       ...tagEvents.map((event: any) => ({ source: 'tag' as const, event, occurredAt: event.createdAt })),
       ...locationEvents.map((event: any) => ({ source: 'location' as const, event, occurredAt: event.createdAt })),
-      ...archivationReasonEvents.map((event: any) => ({ source: 'archivationReason' as const, event, occurredAt: event.createdAt })),
+      ...archivationReasonEvents.map((event: any) => ({ source: 'archivationReason' as const, event, occurredAt: event.occurredAt })),
     ].sort((left, right) => right.occurredAt.getTime() - left.occurredAt.getTime() || right.event.id.localeCompare(left.event.id));
 
     return {
@@ -189,8 +195,8 @@ export class ListAllCatHistoryQuery {
       id: `archivation-reason-${event.id}`,
       catId: null,
       catName: null,
-      eventType: `archivation_reason_${event.action}`,
-      occurredAt: event.createdAt.toISOString(),
+      eventType: event.eventType,
+      occurredAt: event.occurredAt.toISOString(),
       actor: {
         id: event.actorUser.id,
         displayName: event.actorUser.fullName || event.actorUser.email,

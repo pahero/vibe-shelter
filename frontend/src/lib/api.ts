@@ -26,7 +26,6 @@ export type ListLocationsResponse = {
 };
 
 export type CatSex = "FEMALE" | "MALE" | "UNKNOWN";
-export type CatStatus = "ACTIVE" | "ADOPTED" | "DECEASED" | "ARCHIVED";
 export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
 
 export type CatCard = {
@@ -36,7 +35,9 @@ export type CatCard = {
   color: string | null;
   estimatedBirthDate: string | null;
   intakeDate: string | null;
-  status: CatStatus;
+  archivedAt?: string | null;
+  archivationReasonId?: string | null;
+  archivationReasonName?: string | null;
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string | null;
   currentLocationName: string | null;
@@ -52,6 +53,15 @@ export type CatTag = {
   id: string;
   name: string;
   color: string;
+};
+
+export type CatArchivationReason = {
+  id: string;
+  name: string;
+};
+
+export type MutationResult = {
+  id: string;
 };
 
 export type CatWeight = {
@@ -99,9 +109,9 @@ export type CatHistoryResponse = {
 
 export type ListCatsParams = {
   locationId?: string;
-  status?: CatStatus;
   search?: string;
   tagId?: string;
+  archived?: boolean;
   skip?: number;
   limit?: number;
 };
@@ -126,9 +136,7 @@ export type CreateCatDto = {
   currentLocationId?: string | null;
 };
 
-export type UpdateCatDto = Partial<CreateCatDto> & {
-  status?: CatStatus;
-};
+export type UpdateCatDto = Partial<CreateCatDto>;
 
 export type CreateLocationDto = {
   name: string;
@@ -173,7 +181,6 @@ export const locationsApi = {
   async listLocations(params?: ListLocationsParams): Promise<ListLocationsResponse> {
     const query = new URLSearchParams();
     if (params?.ownerId) query.append("ownerId", params.ownerId);
-    if (params?.status) query.append("status", params.status);
     if (params?.skip !== undefined) query.append("skip", params.skip.toString());
     if (params?.limit !== undefined) query.append("limit", params.limit.toString());
 
@@ -233,9 +240,9 @@ export const catsApi = {
   async listCats(params?: ListCatsParams): Promise<ListCatsResponse> {
     const query = new URLSearchParams();
     if (params?.locationId) query.append("locationId", params.locationId);
-    if (params?.status) query.append("status", params.status);
     if (params?.search) query.append("search", params.search);
     if (params?.tagId) query.append("tagId", params.tagId);
+    if (params?.archived) query.append("archived", "true");
     if (params?.skip !== undefined) query.append("skip", params.skip.toString());
     if (params?.limit !== undefined) query.append("limit", params.limit.toString());
 
@@ -296,6 +303,47 @@ export const catsApi = {
       credentials: "include",
     });
     return handleResponse<CatTag[]>(response);
+  },
+
+  async listArchivationReasons(): Promise<CatArchivationReason[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons`, { method: "GET", credentials: "include" });
+    return handleResponse<CatArchivationReason[]>(response);
+  },
+
+  async createArchivationReason(name: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async updateArchivationReason(id: string, name: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons/${id}`, {
+      method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async deleteArchivationReason(id: string, replacementReasonId?: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons/${id}`, {
+      method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(replacementReasonId ? { replacementReasonId } : {}),
+    });
+    return handleResponse<void>(response);
+  },
+
+  async archiveCat(id: string, reasonId: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/archive`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reasonId }),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async dearchiveCat(id: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/dearchive`, {
+      method: "POST", credentials: "include",
+    });
+    return handleResponse<MutationResult>(response);
   },
 
   async createTag(name: string, color?: string): Promise<CatTag> {

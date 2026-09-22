@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
-import { CatCard as CatCardType, CatHistoryEvent, CatPhoto, CatSex, CatStatus, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatArchivationReason, CatCard as CatCardType, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -18,7 +18,6 @@ type CatEditForm = {
   intakeDate: string;
   microchipNumber: string;
   sterilizationStatus: SterilizationStatus;
-  status: CatStatus;
   currentLocationId: string;
 };
 
@@ -32,13 +31,6 @@ const sterilizationLabels: Record<SterilizationStatus, string> = {
   STERILIZED: "Neutered",
   NOT_STERILIZED: "Not neutered",
   UNKNOWN: "Unknown",
-};
-
-const statusLabels: Record<CatStatus, string> = {
-  ACTIVE: "Active",
-  ADOPTED: "Adopted",
-  DECEASED: "Deceased",
-  ARCHIVED: "Archived",
 };
 
 function dateInputValue(date: string | null): string {
@@ -58,7 +50,6 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     intakeDate: dateInputValue(cat.intakeDate),
     microchipNumber: cat.microchipNumber ?? "",
     sterilizationStatus: cat.sterilizationStatus,
-    status: cat.status,
     currentLocationId: cat.currentLocationId ?? "",
   };
 }
@@ -105,6 +96,11 @@ export default function CatProfilePage() {
   const [isSavingTag, setIsSavingTag] = useState(false);
   const [removingTagId, setRemovingTagId] = useState<string | null>(null);
   const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
+  const [isArchiveFormOpen, setIsArchiveFormOpen] = useState(false);
+  const [archivationReasons, setArchivationReasons] = useState<CatArchivationReason[]>([]);
+  const [archivationReasonId, setArchivationReasonId] = useState("");
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!catId) return;
@@ -372,6 +368,53 @@ export default function CatProfilePage() {
     setDetailsError(null);
   };
 
+  const openArchiveForm = async () => {
+    setArchiveError(null);
+    try {
+      const reasons = await catsApi.listArchivationReasons();
+      setArchivationReasons(reasons);
+      setArchivationReasonId(reasons[0]?.id ?? "");
+      setIsArchiveFormOpen(true);
+    } catch (err) {
+      setArchiveError(ApiErrorHandler.handle(err));
+    }
+  };
+
+  const archiveCat = async () => {
+    if (!cat || !archivationReasonId) {
+      setArchiveError("Choose an archivation reason.");
+      return;
+    }
+    setIsArchiving(true);
+    setArchiveError(null);
+    try {
+      await catsApi.archiveCat(cat.id, archivationReasonId);
+      const updated = await catsApi.getCatCard(cat.id);
+      setCat(updated);
+      setIsArchiveFormOpen(false);
+      await refreshHistory();
+    } catch (err) {
+      setArchiveError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const dearchiveCat = async () => {
+    if (!cat) return;
+    setIsArchiving(true);
+    setArchiveError(null);
+    try {
+      await catsApi.dearchiveCat(cat.id);
+      setCat(await catsApi.getCatCard(cat.id));
+      await refreshHistory();
+    } catch (err) {
+      setArchiveError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   const handleDetailsSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!cat || !editForm) return;
@@ -399,7 +442,6 @@ export default function CatProfilePage() {
         intakeDate: editForm.intakeDate || null,
         microchipNumber: editForm.microchipNumber.trim() || null,
         sterilizationStatus: editForm.sterilizationStatus,
-        status: editForm.status,
         currentLocationId: editForm.currentLocationId || null,
       });
       setCat(updated);
@@ -586,16 +628,40 @@ export default function CatProfilePage() {
                   <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</p>
                   <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name}</h1>
                 </div>
-                {!isEditingDetails && (
-                  <button
-                    type="button"
-                    onClick={startEditingDetails}
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
-                  >
-                    Edit details
+                {!isEditingDetails && !cat.archivationReasonId && (
+                  <div className="flex gap-2">
+                    <button type="button" onClick={openArchiveForm} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-700 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50">
+                      Archive
+                    </button>
+                    <button type="button" onClick={startEditingDetails} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]">
+                      Edit details
+                    </button>
+                  </div>
+                )}
+                {!isEditingDetails && cat.archivationReasonId && (
+                  <button type="button" onClick={dearchiveCat} disabled={isArchiving} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#31734b] bg-[#31734b] px-5 text-sm font-semibold text-white transition hover:bg-[#255a3a] disabled:opacity-50">
+                    {isArchiving ? "Restoring..." : "Restore cat"}
                   </button>
                 )}
               </div>
+
+              {!isArchiveFormOpen && archiveError && <p className="mt-3 text-sm text-red-700">{archiveError}</p>}
+
+              {isArchiveFormOpen && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+                  <label className="grid gap-1 text-sm font-medium text-gray-800">Archivation reason
+                    <select value={archivationReasonId} onChange={(event) => setArchivationReasonId(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2">
+                      {archivationReasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
+                    </select>
+                  </label>
+                  {archivationReasons.length === 0 && <p className="mt-2 text-sm text-red-700">Create an archivation reason in shelter settings first.</p>}
+                  {archiveError && <p className="mt-2 text-sm text-red-700">{archiveError}</p>}
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={archiveCat} disabled={isArchiving || !archivationReasonId} className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isArchiving ? "Archiving..." : "Confirm archive"}</button>
+                    <button type="button" onClick={() => setIsArchiveFormOpen(false)} className="rounded-lg border border-[#d4c7b4] px-4 py-2 text-sm font-semibold">Cancel</button>
+                  </div>
+                </div>
+              )}
 
               <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
                 {cat.tags.map((tag) => (
@@ -727,19 +793,6 @@ export default function CatProfilePage() {
                       </select>
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Status
-                      <select
-                        value={editForm.status}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, status: event.target.value as CatStatus })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      >
-                        <option value="ACTIVE">Active</option>
-                        <option value="ADOPTED">Adopted</option>
-                        <option value="DECEASED">Deceased</option>
-                        <option value="ARCHIVED">Archived</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Neutering
                       <select
                         value={editForm.sterilizationStatus}
@@ -801,7 +854,7 @@ export default function CatProfilePage() {
                   {[
                     ["Current location", cat.currentLocationName || "Not assigned"],
                     ["Sex", sexLabels[cat.sex]],
-                    ["Status", statusLabels[cat.status]],
+                    ...(cat.archivationReasonName ? [["Archivation reason", cat.archivationReasonName] as const] : []),
                     ["Neutering", sterilizationLabels[cat.sterilizationStatus]],
                     ["Color", cat.color || "Not set"],
                     ["Microchip number", cat.microchipNumber || "Not set"],

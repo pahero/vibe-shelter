@@ -19,7 +19,7 @@ describe('ArchiveCatHandler', () => {
 
       expect(archived).toEqual({ id: cat.id });
       await expect(tx.cat.findUniqueOrThrow({ where: { id: cat.id } })).resolves.toMatchObject({
-        status: 'ARCHIVED', archivationReasonId: reason.id, archivedAt: expect.any(Date),
+        archivationReasonId: reason.id, archivedAt: expect.any(Date),
       });
       await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } })).resolves.toMatchObject({
         eventType: 'cat_archived', actorUserId: actor.id, newValue: reason.name,

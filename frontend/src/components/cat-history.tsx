@@ -4,6 +4,8 @@ import { useState } from "react";
 
 export const eventLabels: Record<string, string> = {
   cat_created: "Cat created",
+  cat_archived: "Cat archived",
+  cat_dearchived: "Cat restored",
   name_changed: "Name changed",
   sex_changed: "Sex changed",
   color_changed: "Color changed",
@@ -27,6 +29,9 @@ export const eventLabels: Record<string, string> = {
   location_create: "Location created",
   location_update: "Location updated",
   location_delete: "Location deleted",
+  archivation_reason_create: "Archivation reason created",
+  archivation_reason_update: "Archivation reason updated",
+  archivation_reason_delete: "Archivation reason deleted",
 };
 
 type CatHistoryProps = {

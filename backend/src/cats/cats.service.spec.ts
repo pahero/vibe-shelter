@@ -111,7 +111,7 @@ describe('CatsService', () => {
     });
   });
 
-  it('filters by default active status, location, search, and pagination', async () => {
+  it('filters active and archived cats by archivation reason, location, search, and pagination', async () => {
     await runInTestTransaction(async (tx) => {
       const location = await createLocation(tx, 'filter');
       const otherLocation = await createLocation(tx, 'other');
@@ -120,15 +120,15 @@ describe('CatsService', () => {
       await createCatFixture(tx, { name: `${prefix} Boris`, sex: 'MALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, passportNumber: `${prefix}-P` });
       const archived = await createCatFixture(tx, { name: `${prefix} Old`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
       const service = createService(tx);
-      await tx.cat.update({ where: { id: archived.id }, data: { status: 'ARCHIVED' } });
+      const reason = await tx.catArchivationReason.create({ data: { name: unique('filter-reason') } });
+      await tx.cat.update({ where: { id: archived.id }, data: { archivationReasonId: reason.id } });
       await createCatFixture(tx, { name: `${prefix} Elsewhere`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: otherLocation.id });
 
       const page = await service.findAll({ locationId: location.id, search: prefix, skip: 1, limit: 1 });
       expect(page.total).toBe(2);
       expect(page.data).toHaveLength(1);
-      expect(page.data[0].status).toBe('ACTIVE');
 
-      const archivedPage = await service.findAll({ status: 'ARCHIVED', search: prefix });
+      const archivedPage = await service.findAll({ archived: true, search: prefix });
       expect(archivedPage.data).toHaveLength(1);
       expect(archivedPage.data[0].name).toContain('Old');
     });
@@ -191,13 +191,12 @@ describe('CatsService', () => {
       const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN' });
       const service = createService(tx);
 
-      await service.updateCat(card.id, { name: 'Luna', color: 'Calico', status: 'ADOPTED' }, actor.id);
+      await service.updateCat(card.id, { name: 'Luna', color: 'Calico' }, actor.id);
 
       const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { eventType: 'asc' } });
-      expect(events.map((event: any) => event.eventType)).toEqual(['name_changed', 'status_changed']);
+      expect(events.map((event: any) => event.eventType)).toEqual(['name_changed']);
       expect(events).toEqual(expect.arrayContaining([
         expect.objectContaining({ actorUserId: actor.id, oldValue: 'Mila', newValue: 'Luna' }),
-        expect.objectContaining({ actorUserId: actor.id, oldValue: 'ACTIVE', newValue: 'ADOPTED' }),
       ]));
     });
   });
@@ -398,7 +397,7 @@ describe('CatsService', () => {
     });
   });
 
-  it('has migration-backed indexes, unique constraints, enum defaults, and nullable location on delete', async () => {
+  it('has migration-backed indexes, enum defaults, and nullable location on delete', async () => {
     await runInTestTransaction(async (tx) => {
       const indexes: Array<{ indexname: string }> = await tx.$queryRaw`
         SELECT indexname FROM pg_indexes WHERE tablename = 'Cat'
@@ -407,7 +406,6 @@ describe('CatsService', () => {
         expect.arrayContaining([
           'Cat_currentLocationId_idx',
           'Cat_isTest_idx',
-          'Cat_status_idx',
           'Cat_name_idx',
           'Cat_intakeDate_idx',
           'Cat_microchipNumber_key',
@@ -415,16 +413,14 @@ describe('CatsService', () => {
         ]),
       );
 
-      const defaults = await tx.$queryRaw<Array<{ sex_default: string; status_default: string; sterilization_default: string }>>`
+      const defaults = await tx.$queryRaw<Array<{ sex_default: string; sterilization_default: string }>>`
         SELECT
           column_default AS sex_default,
-          (SELECT column_default FROM information_schema.columns WHERE table_name = 'Cat' AND column_name = 'status') AS status_default,
           (SELECT column_default FROM information_schema.columns WHERE table_name = 'Cat' AND column_name = 'sterilizationStatus') AS sterilization_default
         FROM information_schema.columns
         WHERE table_name = 'Cat' AND column_name = 'sex'
       `;
       expect(defaults[0].sex_default).toContain('UNKNOWN');
-      expect(defaults[0].status_default).toContain('ACTIVE');
       expect(defaults[0].sterilization_default).toContain('UNKNOWN');
 
       const foreignKeys = await tx.$queryRaw<Array<{ delete_rule: string }>>`

@@ -25,7 +25,7 @@ export class ArchiveCatHandler {
       where: { id: input.catId, isTest: input.currentUserIsTest },
     });
     if (!cat) throw new NotFoundException('Cat not found');
-    if (cat.status === 'ARCHIVED') throw new ConflictException('Cat is already archived');
+    if (cat.archivationReasonId) throw new ConflictException('Cat is already archived');
 
     const reason = await this.prisma.catArchivationReason.findFirst({ where: { id: input.reasonId, deletedAt: null } });
     if (!reason) throw new NotFoundException('Archivation reason not found');
@@ -33,7 +33,7 @@ export class ArchiveCatHandler {
     await runInNewTransaction(this.prisma, async (transaction) => {
       await transaction.cat.update({
         where: { id: cat.id },
-        data: { status: 'ARCHIVED', archivedAt: new Date(), archivationReasonId: reason.id },
+        data: { archivedAt: new Date(), archivationReasonId: reason.id },
       });
       await transaction.catAuditEvent.create({
         data: {

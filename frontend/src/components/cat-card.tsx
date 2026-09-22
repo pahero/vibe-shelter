@@ -87,6 +87,12 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
         </div>
 
         <dl className="grid gap-1 text-sm text-gray-700">
+          {cat.archivationReasonName && (
+            <div className="flex justify-between gap-3">
+              <dt className="text-[#6d6a66]">Archived</dt>
+              <dd className="text-right font-medium text-red-700">{cat.archivationReasonName}</dd>
+            </div>
+          )}
           <div className="flex justify-between gap-3">
             <dt className="text-[#6d6a66]">Location</dt>
             <dd className="text-right font-medium">{cat.currentLocationName || "Not set"}</dd>

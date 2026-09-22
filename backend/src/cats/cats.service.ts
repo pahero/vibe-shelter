@@ -17,7 +17,6 @@ const VALID_STERILIZATION_STATUSES = [
   'NOT_STERILIZED',
   'UNKNOWN',
 ] as const;
-const VALID_CAT_STATUSES = ['ACTIVE', 'ADOPTED', 'DECEASED', 'ARCHIVED'] as const;
 const VALID_TAG_COLORS = [
   '#ffb38a',
   '#f5a3ad',
@@ -48,7 +47,6 @@ type CatWithLocation = {
   color: string | null;
   estimatedBirthDate: Date | null;
   intakeDate: Date | null;
-  status: string;
   sterilizationStatus: string;
   currentLocationId: string | null;
   currentLocation: { name: string } | null;
@@ -78,7 +76,6 @@ export type CatCard = {
   color: string | null;
   estimatedBirthDate: string | null;
   intakeDate: string | null;
-  status: string;
   sterilizationStatus: string;
   currentLocationId: string | null;
   currentLocationName: string | null;
@@ -95,7 +92,6 @@ export type CatCard = {
 
 export type CatFilters = {
   locationId?: string;
-  status?: string;
   search?: string;
   tagId?: string;
   skip?: number;
@@ -277,10 +273,7 @@ export class CatsService {
 
   async findAll(filters: CatFilters = {}, currentUserIsTest = false) {
     const { skip, limit } = this.validatePagination(filters.skip, filters.limit);
-    const status = filters.archived ? 'ARCHIVED' : filters.status ?? 'ACTIVE';
-    this.validateEnum(status, VALID_CAT_STATUSES, 'status');
-
-    const where: any = { status, isTest: currentUserIsTest };
+    const where: any = { isTest: currentUserIsTest, archivationReasonId: filters.archived ? { not: null } : null };
     if (filters.locationId) {
       where.currentLocationId = filters.locationId;
     }
@@ -627,10 +620,6 @@ export class CatsService {
         'sterilizationStatus',
       );
     }
-    if (data.status !== undefined) {
-      if (data.status === 'ARCHIVED') throw new BadRequestException('Use the archive endpoint to archive a cat');
-      this.validateEnum(data.status, VALID_CAT_STATUSES, 'status');
-    }
     this.validateOptionalDates(data);
   }
 
@@ -781,7 +770,6 @@ export class CatsService {
     if (data.microchipNumber !== undefined) updateData.microchipNumber = this.optionalTrim(data.microchipNumber);
     if (data.passportNumber !== undefined) updateData.passportNumber = this.optionalTrim(data.passportNumber);
     if (data.sterilizationStatus !== undefined) updateData.sterilizationStatus = data.sterilizationStatus;
-    if (data.status !== undefined) updateData.status = data.status;
     if (data.currentLocationId !== undefined) updateData.currentLocationId = data.currentLocationId || null;
     return updateData;
   }
@@ -830,7 +818,6 @@ export class CatsService {
       color: cat.color,
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,
       intakeDate: cat.intakeDate?.toISOString() ?? null,
-      status: cat.status,
       archivedAt: cat.archivedAt?.toISOString() ?? null,
       archivationReasonId: cat.archivationReasonId,
       archivationReasonName: cat.archivationReason?.name ?? null,

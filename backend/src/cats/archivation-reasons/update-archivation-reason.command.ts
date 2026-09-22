@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../../database/prisma.service';
 import { runInNewTransaction } from '../../database/helpers';
 import { MutationResultDto, validateArchivationReasonName } from './archivation-reason.types';
+import { CAT_AUDIT_EVENT_TYPES } from '../cat-audit-event-types';
 
 @Injectable()
 export class UpdateArchivationReasonCommand {
@@ -18,8 +19,8 @@ export class UpdateArchivationReasonCommand {
 
     const reason = await runInNewTransaction(this.prisma, async (transaction) => {
       const updated = await transaction.catArchivationReason.update({ where: { id }, data: { name } });
-      await transaction.catArchivationReasonAuditEvent.create({
-        data: { reasonId: id, actorUserId, action: 'update', oldValue: existing.name, newValue: updated.name },
+      await transaction.catAuditEvent.create({
+        data: { archivationReasonId: id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.archivationReasonUpdate, oldValue: existing.name, newValue: updated.name },
       });
       return updated;
     });

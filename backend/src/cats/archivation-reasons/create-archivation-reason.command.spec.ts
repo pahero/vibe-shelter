@@ -12,8 +12,8 @@ describe('CreateArchivationReasonCommand', () => {
       const reason = await command.execute(name, actor.id);
 
       expect(reason).toEqual({ id: expect.any(String) });
-      await expect(tx.catArchivationReasonAuditEvent.findFirstOrThrow({ where: { reasonId: reason.id } })).resolves.toMatchObject({
-        action: 'create', actorUserId: actor.id, oldValue: null, newValue: name,
+      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { archivationReasonId: reason.id } })).resolves.toMatchObject({
+        eventType: 'archivation_reason_create', actorUserId: actor.id, oldValue: null, newValue: name,
       });
     });
   });

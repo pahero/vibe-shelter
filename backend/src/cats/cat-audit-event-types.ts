@@ -1,6 +1,10 @@
 export const CAT_AUDIT_EVENT_TYPES = {
   catCreated: 'cat_created',
   catArchived: 'cat_archived',
+  catDearchived: 'cat_dearchived',
+  archivationReasonCreate: 'archivation_reason_create',
+  archivationReasonUpdate: 'archivation_reason_update',
+  archivationReasonDelete: 'archivation_reason_delete',
   name: 'name_changed',
   sex: 'sex_changed',
   color: 'color_changed',
@@ -10,7 +14,6 @@ export const CAT_AUDIT_EVENT_TYPES = {
   microchipNumber: 'microchip_number_changed',
   passportNumber: 'passport_number_changed',
   sterilizationStatus: 'sterilization_status_changed',
-  status: 'status_changed',
   currentLocationId: 'current_location_changed',
   photoCreated: 'photo_created',
   photoDeleted: 'photo_deleted',
@@ -32,7 +35,6 @@ export const CAT_AUDIT_EDITABLE_FIELDS = [
   'microchipNumber',
   'passportNumber',
   'sterilizationStatus',
-  'status',
   'currentLocationId',
 ] as const;
 
@@ -48,6 +50,5 @@ export const CAT_AUDIT_FIELD_EVENT_TYPES: Record<CatAuditEditableField, CatAudit
   microchipNumber: CAT_AUDIT_EVENT_TYPES.microchipNumber,
   passportNumber: CAT_AUDIT_EVENT_TYPES.passportNumber,
   sterilizationStatus: CAT_AUDIT_EVENT_TYPES.sterilizationStatus,
-  status: CAT_AUDIT_EVENT_TYPES.status,
   currentLocationId: CAT_AUDIT_EVENT_TYPES.currentLocationId,
 };

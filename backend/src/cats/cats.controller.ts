@@ -6,6 +6,7 @@ import { SessionAuthGuard } from '../auth/guards/session-auth.guard';
 import { CatsService, PrimaryPhotoUpload } from './cats.service';
 import { CreateCatHandler } from './commands/create-cat.handler';
 import { ArchiveCatHandler } from './commands/archive-cat.handler';
+import { DearchiveCatHandler } from './commands/dearchive-cat.handler';
 import { ArchiveCatDto, CreateCatDto, CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { ListCatHistoryQuery } from './queries/list-cat-history.query';
 import { ListAllCatHistoryQuery } from './queries/list-all-cat-history.query';
@@ -19,6 +20,7 @@ export class CatsController {
     private catsService: CatsService,
     private createCatHandler: CreateCatHandler,
     private archiveCatHandler: ArchiveCatHandler,
+    private dearchiveCatHandler: DearchiveCatHandler,
     private listCatHistoryQuery: ListCatHistoryQuery,
     private listAllCatHistoryQuery: ListAllCatHistoryQuery,
   ) {}
@@ -26,7 +28,6 @@ export class CatsController {
   @Get()
   async listCats(
     @Query('locationId') locationId?: string,
-    @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('tagId') tagId?: string,
     @Query('archived') archived?: string,
@@ -36,7 +37,6 @@ export class CatsController {
   ) {
     return this.catsService.findAll({
       locationId,
-      status,
       search,
       tagId,
       archived: archived === 'true',
@@ -122,6 +122,11 @@ export class CatsController {
   @Post(':id/archive')
   async archiveCat(@Param('id') id: string, @Body() dto: ArchiveCatDto, @CurrentUser() user: AuthenticatedUser) {
     return this.archiveCatHandler.execute({ catId: id, reasonId: dto.reasonId, actorUserId: user.id, currentUserIsTest: user.isTest });
+  }
+
+  @Post(':id/dearchive')
+  async dearchiveCat(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.dearchiveCatHandler.execute({ catId: id, actorUserId: user.id, currentUserIsTest: user.isTest });
   }
 
   @Post('tags')
