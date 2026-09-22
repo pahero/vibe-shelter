@@ -7,6 +7,7 @@ import {
 import { Prisma, PrismaClient } from '@prisma/client';
 import { CreateCatTagDto, CreateCatWeightDto, UpdateCatDto, UpdateCatTagDto } from './dto';
 import { CatPhotoUrlService } from './cat-photo-url.service';
+import { CatPhotoCompressionService } from './cat-photo-compression.service';
 import { CAT_AUDIT_EDITABLE_FIELDS, CAT_AUDIT_EVENT_TYPES, CAT_AUDIT_FIELD_EVENT_TYPES, CatAuditEditableField } from './cat-audit-event-types';
 import { formatCatAuditValue } from './cat-audit-values';
 import { WriteCatAuditEventCommand } from './commands/write-cat-audit-event.command';
@@ -111,6 +112,7 @@ export type CatPhoto = {
   id: string;
   catId: string;
   url: string | null;
+  fullUrl: string | null;
   isPrimary: boolean;
   createdAt: string;
 };
@@ -196,14 +198,16 @@ export class CatsService {
       throw new BadRequestException('Photo file is required');
     }
 
-    const key = await this.photoUrls.uploadPrimaryPhoto({
+    const compressedPhoto = await CatPhotoCompressionService.compress(photo);
+    const { key, previewKey } = await this.photoUrls.uploadPhotoVariants({
       catId,
-      originalName: photo.originalname,
-      contentType: photo.mimetype,
-      body: photo.buffer,
+      originalName: compressedPhoto.full.originalname,
+      contentType: compressedPhoto.full.mimetype,
+      fullBody: compressedPhoto.full.buffer,
+      previewBody: compressedPhoto.preview.buffer,
     });
     const created = await this.runWrite(async (transaction) => {
-      const catPhoto = await transaction.catPhoto.create({ data: { catId, key, createdByUserId: actorUserId ?? null } });
+      const catPhoto = await transaction.catPhoto.create({ data: { catId, key, previewKey, createdByUserId: actorUserId ?? null } });
 
       if (!cat.primaryPhotoKey) {
         await transaction.cat.update({ where: { id: catId }, data: { primaryPhotoKey: key } });
@@ -826,7 +830,7 @@ export class CatsService {
       currentLocationName: cat.currentLocation?.name ?? null,
       createdByUserId: cat.createdByUserId,
       isTest: cat.isTest,
-      primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
+      primaryPhotoUrl: await this.photoUrls.getPreviewPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
       updatedAt: cat.updatedAt.toISOString(),
       tags: cat.tags?.map((item) => this.toCatTag(item.tag)) ?? [],
@@ -846,7 +850,8 @@ export class CatsService {
     return {
       id: photo.id,
       catId: photo.catId,
-      url: await this.photoUrls.getPhotoUrl(photo.key),
+      url: await this.photoUrls.getPhotoUrl(photo.previewKey ?? photo.key),
+      fullUrl: await this.photoUrls.getPhotoUrl(photo.key),
       isPrimary: photo.key === primaryPhotoKey,
       createdAt: photo.createdAt.toISOString(),
     };

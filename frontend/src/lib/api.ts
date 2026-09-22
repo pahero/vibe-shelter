@@ -76,6 +76,7 @@ export type CatPhoto = {
   id: string;
   catId: string;
   url: string | null;
+  fullUrl: string | null;
   isPrimary: boolean;
   createdAt: string;
 };

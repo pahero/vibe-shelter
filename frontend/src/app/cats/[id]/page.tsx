@@ -1030,7 +1030,7 @@ export default function CatProfilePage() {
               <div
                 aria-label={`Photo of ${cat.name}`}
                 className="h-[88dvh] w-full rounded-2xl bg-contain bg-center bg-no-repeat shadow-2xl"
-                style={expandedPhoto.url ? { backgroundImage: `url(${expandedPhoto.url})` } : undefined}
+                style={(expandedPhoto.fullUrl ?? expandedPhoto.url) ? { backgroundImage: `url(${expandedPhoto.fullUrl ?? expandedPhoto.url})` } : undefined}
               />
               <p className="text-xs font-medium text-white/75">Added {formatDate(expandedPhoto.createdAt)}</p>
             </div>

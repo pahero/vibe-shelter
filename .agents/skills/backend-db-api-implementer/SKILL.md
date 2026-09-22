@@ -40,7 +40,7 @@ The backend should be accessible at `http://localhost:4000` after initialization
 1. Inspect current backend architecture, Prisma schema/migrations, and API modules.
 2. Convert the request into concrete backend requirements and acceptance checks.
 3. Implement database updates first, then command/query handlers and API code.
-4. Add or update backend unit/module tests for affected behavior.
+4. Add or update backend unit/module tests for affected behavior. Every change must be covered by unit tests, and every endpoint must have at least one integration test.
 5. Run backend validation commands and report what passed or failed.
 6. Before requesting downstream testing, ensure Docker services and the NestJS backend are running and healthy.
 

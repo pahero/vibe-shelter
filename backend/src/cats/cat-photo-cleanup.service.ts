@@ -43,12 +43,13 @@ export class CatPhotoCleanupService implements OnApplicationBootstrap, OnApplica
       const graceMs = this.getNumber('S3_DANGLING_PHOTO_CLEANUP_GRACE_MS', 24 * 60 * 60 * 1000);
       const cutoff = Date.now() - graceMs;
       const [photoRows, catRows, objects] = await Promise.all([
-        this.prisma.catPhoto.findMany({ select: { key: true } }),
+        this.prisma.catPhoto.findMany({ select: { key: true, previewKey: true } }),
         this.prisma.cat.findMany({ where: { primaryPhotoKey: { not: null } }, select: { primaryPhotoKey: true } }),
         this.photoUrls.listPhotoObjects(this.config.get<string>('S3_DANGLING_PHOTO_CLEANUP_PREFIX') ?? 'cats/'),
       ]);
       const referencedKeys = new Set<string>([
         ...photoRows.map(row => row.key),
+        ...photoRows.map(row => row.previewKey).filter((key): key is string => key !== null),
         ...catRows.map(row => row.primaryPhotoKey).filter(x => x !== null),
       ]);
 

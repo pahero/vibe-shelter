@@ -10,6 +10,7 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 - Write scripts in PowerShell unless the project explicitly requires another language.
 - Use semicolons or PowerShell conditionals to chain commands; do not use `&&`.
 - Start servers, dev environments, and other long-running processes in the visible integrated terminal when available so the user and other agents can inspect output.
+- When a class has no external dependencies, prefer static methods instead of registering or injecting an instance.
 
 ## Examples
 
