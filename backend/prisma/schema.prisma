@@ -26,6 +26,9 @@ model User {
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
   tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
   locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
+  taskReceivers      CatTaskReceiver[]    @relation("taskReceivers")
+  completedTasks     CatTask[]            @relation("completedTasks")
+  taskNotifications  TaskNotification[]
 
   @@index([status])
   @@index([role])
@@ -100,6 +103,13 @@ photo_created
   weight_deleted
   tag_added_to_cat
   tag_removed_from_cat
+  task_created
+  task_updated
+  task_comment_changed
+  task_due_date_changed
+  task_receivers_changed
+  task_deleted
+  task_completed
 }
 
 model Location {
@@ -164,6 +174,7 @@ model Cat {
   tags                CatTagOnCat[]
   photos              CatPhoto[]
   auditEvents         CatAuditEvent[]
+  tasks               CatTask[]
 
   @@index([createdByUserId])
   @@index([currentLocationId])
@@ -278,5 +289,49 @@ model CatWeight {
 
   @@index([catId])
   @@index([measuredAt])
+}
+
+model CatTask {
+  id                String            @id @default(cuid())
+  catId             String
+  cat               Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
+  comment           String
+  dueDate           DateTime
+  deletedAt         DateTime?
+  concurrencyToken  String            @default(cuid())
+  completedAt       DateTime?
+  completedByUserId String?
+  completedByUser   User?             @relation("completedTasks", fields: [completedByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  receivers         CatTaskReceiver[]
+  notifications     TaskNotification[]
+
+  @@index([catId, dueDate])
+  @@index([deletedAt, completedAt, dueDate])
+  @@index([completedByUserId])
+  @@index([deletedAt])
+}
+
+model CatTaskReceiver {
+  taskId String
+  userId String
+  task   CatTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User    @relation("taskReceivers", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([taskId, userId])
+  @@index([userId])
+}
+
+model TaskNotification {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  task      CatTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([taskId, userId])
+  @@index([userId, createdAt])
 }
 

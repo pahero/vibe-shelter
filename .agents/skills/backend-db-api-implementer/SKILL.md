@@ -16,7 +16,6 @@ You are a specialist at implementing backend application changes. Your job is to
 
 ## Handoff Guidance
 
-- If requirements are unclear, ask the user to use `requirements-writer` or produce the missing requirement details.
 - If frontend changes are needed, ask the user to use `frontend-implementer` with the required API/UI coordination details.
 - If integration validation is needed, ask the user to use `integration-testing-specialist` after backend validation passes and the backend remains running.
 
@@ -30,7 +29,7 @@ All commands should run from `backend/`.
 - Generate Prisma client when needed: `npx prisma generate`
 - Seed database: `npm run db:seed`
 - Start dev server: `npm run start:dev`
-- Run tests: `npm test`
+- Run tests: `npm test` (never add `--runInBand`; backend tests must remain isolated and safe for parallel execution). Do not run a build before tests; run build validation separately, after tests if needed.
 - Run e2e tests: `npm run test:e2e`
 
 The backend should be accessible at `http://localhost:4000` after initialization. Use web-fetch tooling to verify `http://localhost:4000/api/docs` when available instead of shell HTTP commands.
@@ -52,10 +51,17 @@ The backend should be accessible at `http://localhost:4000` after initialization
 - Perform all request parsing and normalization in the DTO conversion method, including trimming, enum narrowing, date conversion, empty-to-null conversion, and request-user projection. Handlers receive already parsed values.
 - Commands and queries are plain, transport-independent classes. Keep their fields flat; do not store DTOs, request objects, actor/user objects, or nested `data` payloads in them.
 - Controllers only invoke DTO conversion, call the appropriate handler, and transform results into responses. Do not put parsing, business logic, or persistence in controllers.
+- State-changing endpoints must return only the minimal mutation result—normally `{ id }`, or `204 No Content` for deletion. Never return a full entity/model from a create, update, or action handler. Clients must use query endpoints to retrieve current entity state.
+- Audit-event `oldValue` and `newValue` must each contain one human-readable scalar string only; never serialize JSON into audit values. When one mutation changes multiple fields, write a separate, field-specific audit event for each changed field.
 - Use command handlers for state-changing operations and query handlers for read operations instead of application service classes.
 - Do not create interfaces for command/query handlers. Handlers must never call other handlers and are invoked primarily by controllers.
+- Each handler class must be in its own file and expose exactly one method: `handle()`.
+- Inline Prisma `select`/`include` objects when they are used by only one handler method. Extract shared Prisma shapes only when they are genuinely reused.
+- Do not introduce aliases for inferred Prisma payload/transaction types unless they eliminate meaningful repeated complexity. Injected handlers should use `PrismaService`; use a transaction-client type only when a reusable complex helper truly requires it.
+- Inline simple record lookups and not-found checks in their handler. Extract only complex reusable domain logic; do not create helpers merely to search by ID.
 - All database reads and writes must happen in command/query handlers.
-- When a command handler performs more than one Prisma create, update, or delete operation, wrap those operations in a transaction.
+- Wrap a handler in an explicit transaction only when it performs multiple mutating actions that must succeed or fail together. Do not start a transaction for reads plus one mutation, or for a single atomic Prisma mutation.
+- When a handler requires an explicit transaction, use `runInNewTransaction` from `backend/src/database/helpers.ts` rather than calling `prisma.$transaction` directly.
 - Never catch or translate database-vendor or ORM-specific exceptions. Check expected domain conflicts and required records explicitly before writing, inside the same transaction, and throw domain-appropriate HTTP exceptions from those checks.
 - Keep database constraints as integrity backstops, but do not use constraint exceptions as application control flow.
 - Shared service classes are allowed only for reusable domain logic. They must be stateless, have no injected dependencies, and perform no database access or persistence so they can be safely used by multiple handlers.
@@ -69,9 +75,12 @@ The backend should be accessible at `http://localhost:4000` after initialization
 - All business logic and command/query handlers must be covered with unit tests. Controllers are not unit tested; cover their request/response wiring through endpoint integration tests.
 - Tests for DTO conversion must cover every input field and every parsing branch: populated values, optional or null values, normalization, valid enums/dates, invalid enums/dates, and actor/user projection where applicable.
 - Tests for handlers must cover every command/query field reaching persistence or output and every control-flow branch, including successful optional relationships, missing/inactive relationships, persistence conflicts, and non-translated error propagation.
+- Each handler unit test must invoke `handle()` exactly once. Set up state and assert persisted results around that single invocation; use separate tests for separate branches.
 - Require 100% statement, branch, and function coverage for each newly added DTO conversion and command/query handler. Remove genuinely unreachable code instead of manufacturing impossible mocked states solely for coverage.
 - Unit tests with DB should use real PostgreSQL via Testcontainers where applicable.
 - All unit tests are isolated by transactions.
+- Do not run backend tests with `--runInBand`. Tests must preserve isolation and support parallel Jest execution.
+- Do not run `npm run build` before backend tests. Run tests directly; run a separate build only after test validation when needed.
 - Enforce full unit-test isolation: `beforeAll` may perform only stateless setup, while `beforeEach` and `afterEach` must use only unique per-test resources.
 - Never create Nest test modules (`Test.createTestingModule`) in unit tests for handlers/services; wire dependencies through native constructor-based DI with real collaborators.
 - Use `backend/src/cats/cats.service.spec.ts` as the canonical initialization pattern for unit tests that need database and storage setup/teardown.

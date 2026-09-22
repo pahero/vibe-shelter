@@ -12,6 +12,12 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 - Start servers, dev environments, and other long-running processes in the visible integrated terminal when available so the user and other agents can inspect output.
 - When a class has no external dependencies, prefer static methods instead of registering or injecting an instance.
 
+## Soft-deletable entities
+
+- Soft-deletable entities must have a concurrency token.
+- When creating an item that references a soft-deletable entity, update that entity's concurrency token in the same transaction. This verifies that it still exists and has not been removed.
+- Soft deletion must always update the entity's concurrency token in the same write.
+
 ## Examples
 
 | Bash | PowerShell |
