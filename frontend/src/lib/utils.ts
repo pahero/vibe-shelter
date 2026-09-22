@@ -4,14 +4,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "UTC",
 });
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "short",
   day: "numeric",
-  timeZone: "UTC",
 });
 
 export function formatDate(dateString: string): string {

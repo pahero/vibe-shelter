@@ -73,6 +73,7 @@ The backend should be accessible at `http://localhost:4000` after initialization
   1. Unit tests with DB
   2. Integration tests of endpoints
 - All business logic and command/query handlers must be covered with unit tests. Controllers are not unit tested; cover their request/response wiring through endpoint integration tests.
+- Automatically add or update unit tests for every backend behavior change. Do not wait for the user to request tests; include success, validation, authorization/partitioning, optional-data, and failure branches as applicable.
 - Tests for DTO conversion must cover every input field and every parsing branch: populated values, optional or null values, normalization, valid enums/dates, invalid enums/dates, and actor/user projection where applicable.
 - Tests for handlers must cover every command/query field reaching persistence or output and every control-flow branch, including successful optional relationships, missing/inactive relationships, persistence conflicts, and non-translated error propagation.
 - Each handler unit test must invoke `handle()` exactly once. Set up state and assert persisted results around that single invocation; use separate tests for separate branches.

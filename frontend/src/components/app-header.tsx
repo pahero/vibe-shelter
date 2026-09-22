@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { AuthUser } from "@/lib/backend";
+import { NotificationCenter } from "@/components/notification-center";
 
 type AppHeaderProps = {
   user: AuthUser | null;
@@ -17,7 +18,7 @@ export function AppHeader({ user, hideEditShelterLink = false }: AppHeaderProps)
       : [];
 
   return (
-    <header className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 px-5 py-4 shadow-panel backdrop-blur-sm md:px-6">
+    <header className="relative z-50 w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 px-5 py-4 shadow-panel backdrop-blur-sm md:px-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Link
           href="/"
@@ -41,6 +42,7 @@ export function AppHeader({ user, hideEditShelterLink = false }: AppHeaderProps)
 
           {user ? (
             <div className="flex flex-wrap items-center gap-2 border-[#d4c7b4] sm:border-l sm:pl-3">
+              <NotificationCenter />
               <span className="max-w-48 truncate text-sm text-[#6d6a66]" title={user.fullName || user.email}>
                 {user.fullName || user.email}
               </span>

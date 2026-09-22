@@ -173,4 +173,54 @@ const location = await createLocationViaApi(page, locationName);
 
     await expect(page.getByText("Cat name is required.")).toBeVisible();
   });
+
+  test("user can create, edit, complete, and delete a cat task", async ({ page }) => {
+    const catName = uniqueName("Task Cat");
+    const initialComment = uniqueName("Give medication");
+    const updatedComment = uniqueName("Give evening medication");
+    const { staffTestUser } = getTestEnv();
+
+    await authenticateAsStaff(page);
+    const cat = await createCatViaApi(page, { name: catName });
+    await page.goto(`/cats/${cat.id}`);
+    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+
+    const taskForm = page.locator("form").filter({ has: page.getByText("Notification receivers", { exact: true }) });
+    await taskForm.getByLabel("Comment").fill(initialComment);
+    await taskForm.getByLabel("Due date").fill("2030-01-02T10:00");
+    await taskForm.getByLabel("Search notification receivers").fill(staffTestUser.fullName);
+    await taskForm.getByRole("option", { name: new RegExp(staffTestUser.fullName) }).click();
+
+    const createTask = page.waitForResponse(
+      (response) => response.url().includes(`/api/cats/${cat.id}/tasks`) && response.request().method() === "POST",
+    );
+    await taskForm.getByRole("button", { name: "Add task" }).click();
+    expect((await createTask).status()).toBe(201);
+    await expect(page.getByText(initialComment, { exact: true })).toBeVisible();
+
+    const taskCard = page.locator("li").filter({ hasText: initialComment });
+    await taskCard.getByRole("button", { name: "Edit" }).click();
+    await taskForm.getByLabel("Comment").fill(updatedComment);
+    const updateTask = page.waitForResponse(
+      (response) => response.url().includes("/api/cats/tasks/") && response.request().method() === "PATCH",
+    );
+    await taskForm.getByRole("button", { name: "Save task" }).click();
+    expect((await updateTask).status()).toBe(200);
+    await expect(page.getByText(updatedComment, { exact: true })).toBeVisible();
+
+    const updatedTaskCard = page.locator("li").filter({ hasText: updatedComment });
+    const completeTask = page.waitForResponse(
+      (response) => response.url().includes("/complete") && response.request().method() === "POST",
+    );
+    await updatedTaskCard.getByRole("button", { name: "Complete" }).click();
+    expect((await completeTask).status()).toBe(201);
+    await expect(updatedTaskCard.getByText(/Completed/)).toBeVisible();
+
+    const deleteTask = page.waitForResponse(
+      (response) => response.url().includes("/api/cats/tasks/") && response.request().method() === "DELETE",
+    );
+    await updatedTaskCard.getByRole("button", { name: "Delete" }).click();
+    expect((await deleteTask).status()).toBe(204);
+    await expect(page.getByText(updatedComment, { exact: true })).toHaveCount(0);
+  });
 });

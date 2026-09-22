@@ -299,6 +299,7 @@ model CatTask {
   dueDate           DateTime
   deletedAt         DateTime?
   concurrencyToken  String            @default(cuid())
+  notificationSentAt DateTime?
   completedAt       DateTime?
   completedByUserId String?
   completedByUser   User?             @relation("completedTasks", fields: [completedByUserId], references: [id], onDelete: SetNull)
@@ -311,6 +312,7 @@ model CatTask {
   @@index([deletedAt, completedAt, dueDate])
   @@index([completedByUserId])
   @@index([deletedAt])
+  @@index([notificationSentAt])
 }
 
 model CatTaskReceiver {

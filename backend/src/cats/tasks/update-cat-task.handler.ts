@@ -26,6 +26,8 @@ export class UpdateCatTaskHandler {
         },
       });
       if (!task) throw new NotFoundException("Task not found");
+      const dueDateChanged =
+        payload.dueDate !== undefined && payload.dueDate.getTime() !== task.dueDate.getTime();
 
       if (payload.receiverIds) {
         const receivers = await transaction.user.findMany({
@@ -45,13 +47,18 @@ export class UpdateCatTaskHandler {
           ...(payload.receiverIds
             ? {
                 concurrencyToken: crypto.randomUUID(),
+                notificationSentAt: null,
                 receivers: {
                   deleteMany: {},
                   createMany: { data: payload.receiverIds.map((userId) => ({ userId })) },
                 },
-                notifications: { deleteMany: {} },
+                notifications: {
+                  deleteMany: dueDateChanged ? {} : { userId: { notIn: payload.receiverIds } },
+                },
               }
-            : {}),
+            : dueDateChanged
+              ? { notificationSentAt: null, notifications: { deleteMany: {} } }
+              : {}),
         },
       });
       if (payload.comment !== undefined && payload.comment !== task.comment) {
@@ -65,7 +72,7 @@ export class UpdateCatTaskHandler {
           },
         });
       }
-      if (payload.dueDate !== undefined && payload.dueDate.getTime() !== task.dueDate.getTime()) {
+      if (payload.dueDate !== undefined && dueDateChanged) {
         await transaction.catAuditEvent.create({
           data: {
             catId: task.catId,

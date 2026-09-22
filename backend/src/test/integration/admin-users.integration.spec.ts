@@ -115,7 +115,7 @@ describe('Admin user registration endpoints', () => {
     expect(detail.body).toMatchObject({ email, isTest: true });
 
     const userList = await adminAgent.get('/users').expect(200);
-    expect(userList.body).toEqual(expect.arrayContaining([expect.objectContaining({ email, isTest: true })]));
+    expect(userList.body).not.toEqual(expect.arrayContaining([expect.objectContaining({ email, isTest: true })]));
 
     const userDetail = await adminAgent.get(`/users/${created.id}`).expect(200);
     expect(userDetail.body).toMatchObject({ email, isTest: true });

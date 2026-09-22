@@ -16,7 +16,11 @@ export class DeleteCatTaskHandler {
       if (!task) throw new NotFoundException("Task not found");
       await transaction.catTask.update({
         where: { id: task.id },
-        data: { deletedAt: new Date(), concurrencyToken: crypto.randomUUID() },
+        data: {
+          deletedAt: new Date(),
+          concurrencyToken: crypto.randomUUID(),
+          notifications: { deleteMany: {} },
+        },
       });
       await transaction.catAuditEvent.create({
         data: {

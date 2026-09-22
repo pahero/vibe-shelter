@@ -24,7 +24,11 @@ export class CompleteCatTaskHandler {
 
       await transaction.catTask.update({
         where: { id: task.id },
-        data: { completedAt: new Date(), completedByUserId: userId },
+        data: {
+          completedAt: new Date(),
+          completedByUserId: userId,
+          notifications: { deleteMany: {} },
+        },
       });
       await transaction.catAuditEvent.create({
         data: {

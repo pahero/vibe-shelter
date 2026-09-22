@@ -3,6 +3,7 @@ import { ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@n
 import { UsersService } from './users.service';
 import { UserResponseDto } from '@/auth/dto';
 import { SessionAuthGuard } from '@/auth/guards/session-auth.guard';
+import { CurrentUser } from '@/auth/decorators/current-user.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -19,8 +20,9 @@ export class UsersController {
   async getAll(
     @Query('status') status?: string,
     @Query('role') role?: string,
+    @CurrentUser() user?: { isTest: boolean },
   ): Promise<UserResponseDto[]> {
-    const users = await this.usersService.getAll({ status, role });
+    const users = await this.usersService.getAll({ status, role, isTest: user?.isTest ?? false });
     return users.map((user) => ({
       id: user.id,
       email: user.email,

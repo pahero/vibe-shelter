@@ -12,7 +12,7 @@ import {
   getIntegrationTestDatabaseUrl,
   getIntegrationTestS3Bucket,
 } from "@/test-utils/test-db-env";
-import { TaskNotificationService } from "@/cats/tasks/task-notification.service";
+import { SendDueTaskNotificationsHandler } from "@/cats/tasks/send-due-task-notifications.handler";
 
 describe("Cats endpoints", () => {
   let app: INestApplication;
@@ -808,7 +808,7 @@ describe("Cats endpoints", () => {
 
   it("creates receiver notifications only after the due date", async () => {
     const cat = await createCat(prisma, { name: unique("overdue-task-cat") });
-    const dueDate = new Date(Date.now() + 86_400_000);
+    const dueDate = new Date(Date.now() - 60_000);
     const created = await authAgent
       .post(`/api/cats/${cat.id}/tasks`)
       .send({
@@ -817,15 +817,26 @@ describe("Cats endpoints", () => {
         receiverIds: [authUser.id],
       })
       .expect(201);
-    const notifications = moduleRef.get(TaskNotificationService);
-    await notifications.createDueNotifications(new Date(dueDate.getTime() - 1));
+    const notifications = moduleRef.get(SendDueTaskNotificationsHandler);
+    await notifications.handle(new Date(dueDate.getTime() - 1));
     expect(await prisma.taskNotification.count({ where: { taskId: created.body.id } })).toBe(0);
-    await notifications.createDueNotifications(dueDate);
+    await notifications.handle(dueDate);
     expect(
       await prisma.taskNotification.count({
         where: { taskId: created.body.id, userId: authUser.id },
       }),
     ).toBe(1);
+    const response = await authAgent
+      .get("/api/notifications")
+      .query({ skip: 0, limit: 10 })
+      .expect(200);
+    expect(response.body).toMatchObject({
+      data: expect.arrayContaining([
+        expect.objectContaining({ taskId: created.body.id, catId: cat.id, comment: "Check wound" }),
+      ]),
+      skip: 0,
+      limit: 10,
+    });
   });
 });
 

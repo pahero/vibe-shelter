@@ -31,6 +31,36 @@ describe("UpdateCatTaskHandler", () => {
     });
   });
 
+  it("removes notifications and resets sent status when the due date changes", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const actor = await transaction.user.create({
+        data: { email: `${Date.now()}-actor@example.com` },
+      });
+      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const task = await transaction.catTask.create({
+        data: {
+          catId: cat.id,
+          comment: "Before",
+          dueDate: new Date("2020-01-01"),
+          notificationSentAt: new Date(),
+        },
+      });
+      await transaction.taskNotification.create({ data: { taskId: task.id, userId: actor.id } });
+      const handler = new UpdateCatTaskHandler(transaction as PrismaService);
+
+      await expect(
+        handler.handle(task.id, { dueDate: new Date("2030-01-01") }, actor.id, false),
+      ).resolves.toEqual({ id: task.id });
+
+      await expect(
+        transaction.taskNotification.count({ where: { taskId: task.id } }),
+      ).resolves.toBe(0);
+      await expect(
+        transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
+      ).resolves.toMatchObject({ notificationSentAt: null });
+    });
+  });
+
   it("replaces receivers and invalidates notifications", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({

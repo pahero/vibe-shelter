@@ -22,12 +22,20 @@ import { CreateCatTaskHandler } from "./tasks/create-cat-task.handler";
 import { DeleteCatTaskHandler } from "./tasks/delete-cat-task.handler";
 import { ListCatTasksHandler } from "./tasks/list-cat-tasks.handler";
 import { UpdateCatTaskHandler } from "./tasks/update-cat-task.handler";
-import { TaskNotificationService } from "./tasks/task-notification.service";
+import { SendDueTaskNotificationsHandler } from "./tasks/send-due-task-notifications.handler";
+import { TaskNotificationCronService } from "./tasks/task-notification-cron.service";
+import { ListCurrentUserNotificationsQuery } from "./tasks/list-current-user-notifications.query";
+import { TaskNotificationsController } from "./tasks/task-notifications.controller";
 import { CatTasksController } from "./tasks/cat-tasks.controller";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
-  controllers: [ArchivationReasonsController, CatsController, CatTasksController],
+  controllers: [
+    ArchivationReasonsController,
+    CatsController,
+    CatTasksController,
+    TaskNotificationsController,
+  ],
   providers: [
     CatsService,
     CatPhotoUrlService,
@@ -47,7 +55,9 @@ import { CatTasksController } from "./tasks/cat-tasks.controller";
     UpdateCatTaskHandler,
     DeleteCatTaskHandler,
     CompleteCatTaskHandler,
-    TaskNotificationService,
+    SendDueTaskNotificationsHandler,
+    TaskNotificationCronService,
+    ListCurrentUserNotificationsQuery,
   ],
   exports: [CatsService],
 })

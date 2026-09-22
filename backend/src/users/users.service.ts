@@ -56,8 +56,8 @@ export class UsersService {
     });
   }
 
-  async getAll(filters?: { status?: string; role?: string }) {
-    const where: Prisma.UserWhereInput = {};
+  async getAll(filters?: { status?: string; role?: string; isTest?: boolean }) {
+    const where: Prisma.UserWhereInput = { isTest: filters?.isTest };
 
     if (filters?.status) {
       where.status = filters.status.toUpperCase() as UserStatus;

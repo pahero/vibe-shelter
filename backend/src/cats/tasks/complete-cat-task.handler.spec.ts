@@ -53,6 +53,7 @@ describe("CompleteCatTaskHandler", () => {
         data: { catId: cat.id, comment: "Complete", dueDate: new Date() },
       });
       await transaction.catTaskReceiver.create({ data: { taskId: task.id, userId: receiver.id } });
+      await transaction.taskNotification.create({ data: { taskId: task.id, userId: receiver.id } });
       const handler = new CompleteCatTaskHandler(transaction as PrismaService);
 
       await expect(handler.handle(task.id, receiver.id, false)).resolves.toEqual({ id: task.id });
@@ -64,6 +65,9 @@ describe("CompleteCatTaskHandler", () => {
           where: { catId: cat.id, eventType: "task_completed" },
         }),
       ).resolves.toMatchObject({ actorUserId: receiver.id });
+      await expect(
+        transaction.taskNotification.count({ where: { taskId: task.id } }),
+      ).resolves.toBe(0);
     });
   });
 });

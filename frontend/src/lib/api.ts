@@ -64,6 +64,48 @@ export type MutationResult = {
   id: string;
 };
 
+export type User = {
+  id: string;
+  email: string;
+  fullName: string | null;
+  status: "active" | "inactive";
+  isTest: boolean;
+};
+
+export type CatTask = {
+  id: string;
+  catId: string;
+  comment: string;
+  dueDate: string;
+  receiverIds: string[];
+  completedAt: string | null;
+  completedBy: { id: string; fullName: string | null } | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TaskInput = {
+  comment: string;
+  dueDate: string;
+  receiverIds: string[];
+};
+
+export type TaskNotification = {
+  id: string;
+  taskId: string;
+  catId: string;
+  comment: string;
+  dueDate: string;
+  createdAt: string;
+};
+
+export type ListNotificationsResponse = {
+  data: TaskNotification[];
+  total: number;
+  skip: number;
+  limit: number;
+};
+
 export type CatWeight = {
   id: string;
   catId: string | null;
@@ -237,7 +279,54 @@ export const locationsApi = {
   },
 };
 
+export const usersApi = {
+  async listUsers(): Promise<User[]> {
+    const response = await fetch(`${BACKEND_URL}/users`, { method: "GET", credentials: "include" });
+    return handleResponse<User[]>(response);
+  },
+};
+
+export const notificationsApi = {
+  async list(skip = 0, limit = 20): Promise<ListNotificationsResponse> {
+    const query = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() });
+    const response = await fetch(`${BACKEND_URL}/api/notifications?${query.toString()}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<ListNotificationsResponse>(response);
+  },
+};
+
 export const catsApi = {
+  async listTasks(catId: string): Promise<CatTask[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/tasks`, { method: "GET", credentials: "include" });
+    return handleResponse<CatTask[]>(response);
+  },
+
+  async createTask(catId: string, data: TaskInput): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/tasks`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async updateTask(taskId: string, data: Partial<TaskInput>): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tasks/${taskId}`, {
+      method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async deleteTask(taskId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tasks/${taskId}`, { method: "DELETE", credentials: "include" });
+    return handleResponse<void>(response);
+  },
+
+  async completeTask(taskId: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/tasks/${taskId}/complete`, { method: "POST", credentials: "include" });
+    return handleResponse<MutationResult>(response);
+  },
+
   async listCats(params?: ListCatsParams): Promise<ListCatsResponse> {
     const query = new URLSearchParams();
     if (params?.locationId) query.append("locationId", params.locationId);

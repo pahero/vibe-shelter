@@ -22,6 +22,7 @@ describe("DeleteCatTaskHandler", () => {
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Delete", dueDate: new Date() },
       });
+      await transaction.taskNotification.create({ data: { taskId: task.id, userId: actor.id } });
       const handler = new DeleteCatTaskHandler(transaction as PrismaService);
 
       await handler.handle(task.id, actor.id, false);
@@ -34,6 +35,9 @@ describe("DeleteCatTaskHandler", () => {
           where: { catId: cat.id, eventType: "task_deleted" },
         }),
       ).resolves.toMatchObject({ actorUserId: actor.id });
+      await expect(
+        transaction.taskNotification.count({ where: { taskId: task.id } }),
+      ).resolves.toBe(0);
     });
   });
 });

@@ -32,6 +32,12 @@ export const eventLabels: Record<string, string> = {
   archivation_reason_create: "Archivation reason created",
   archivation_reason_update: "Archivation reason updated",
   archivation_reason_delete: "Archivation reason deleted",
+  task_created: "Task created",
+  task_comment_changed: "Task comment changed",
+  task_due_date_changed: "Task due date changed",
+  task_receivers_changed: "Task receivers changed",
+  task_completed: "Task completed",
+  task_deleted: "Task deleted",
 };
 
 type CatHistoryProps = {
