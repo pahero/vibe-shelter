@@ -28,9 +28,9 @@ test.describe("locations UI", () => {
     const locationName = uniqueName("Editor Created Location");
 
     await authenticateAsAdmin(page);
-    await page.goto("/edit-shelter");
+    await page.goto("/shelter-management");
 
-    await expect(page.getByRole("heading", { name: "Edit shelter" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
     await page.getByRole("button", { name: "+ New Location" }).click();
 
     const newLocationForm = page.locator("#new-location-form");
@@ -50,7 +50,7 @@ test.describe("locations UI", () => {
 
     await createLocationViaApi(page, originalName, "Seeded from API");
 
-    await page.goto("/edit-shelter");
+    await page.goto("/shelter-management");
 
     const row = page.locator("div.rounded-lg").filter({ hasText: originalName });
     await expect(row).toBeVisible();
@@ -71,7 +71,7 @@ test.describe("locations UI", () => {
 
     await createLocationViaApi(page, locationName, "Seeded from API");
 
-    await page.goto("/edit-shelter");
+    await page.goto("/shelter-management");
 
     const row = page.locator("div.rounded-lg").filter({ hasText: locationName });
     await expect(row).toBeVisible();

@@ -6,6 +6,7 @@ export type AuthUser = {
   email: string;
   fullName: string | null;
   role: "admin" | "staff";
+  passwordChangeRequired?: boolean;
 };
 
 export type AdminUser = {
@@ -15,6 +16,7 @@ export type AdminUser = {
   status: "active" | "inactive";
   role: "admin" | "staff";
   isTest: boolean;
+  passwordChangeRequired: boolean;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -27,6 +29,12 @@ export type CreateAdminUserInput = {
   status: "active" | "inactive";
   password: string;
   isTest: boolean;
+};
+
+export type ChangePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirmation: string;
 };
 
 export async function fetchCurrentUser(cookieHeader: string): Promise<AuthUser | null> {
@@ -85,6 +93,47 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Admi
   }
 
   return (await response.json()) as AdminUser;
+}
+
+export async function setAdminUserTemporaryPassword(userId: string, password: string): Promise<AdminUser> {
+  const response = await fetch(`${BACKEND_URL}/admin/users/${userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ password }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return (await response.json()) as AdminUser;
+}
+
+export async function changePassword(input: ChangePasswordInput): Promise<void> {
+  const response = await fetch(`${BACKEND_URL}/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+}
+
+export async function replaceTemporaryPassword(input: Pick<ChangePasswordInput, "newPassword" | "newPasswordConfirmation">): Promise<void> {
+  const response = await fetch(`${BACKEND_URL}/auth/replace-temporary-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
 }
 
 async function readErrorMessage(response: Response): Promise<string> {

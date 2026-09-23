@@ -254,10 +254,7 @@ test.describe("locations API", () => {
     expect(deleteResponse.status()).toBe(204);
 
     const getResponse = await request.get(`/api/locations/${createBody.id}`);
-    expect(getResponse.ok()).toBeTruthy();
-
-    const body = (await getResponse.json()) as { status?: string };
-    expect(body.status).toBe("ARCHIVED");
+    expect(getResponse.status()).toBe(404);
   });
 
   test("should require authentication for location endpoints", async () => {

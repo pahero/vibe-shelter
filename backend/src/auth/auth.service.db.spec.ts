@@ -123,6 +123,37 @@ describe('AuthService (db)', () => {
     const updatedUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(updatedUser.lastLoginAt).toBeTruthy();
   });
+
+  it('changes a password after verifying the current password', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `${unique('password-change')}@example.com`,
+        role: 'STAFF',
+        status: 'ACTIVE',
+        passwordHash: await bcrypt.hash('CurrentPass123!', 10),
+      },
+    });
+
+    await authService.changePassword(user.id, 'CurrentPass123!', 'NewPass123!');
+
+    const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(await bcrypt.compare('NewPass123!', updated.passwordHash!)).toBe(true);
+  });
+
+  it('rejects a password change with an incorrect current password', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `${unique('password-change-invalid')}@example.com`,
+        role: 'STAFF',
+        status: 'ACTIVE',
+        passwordHash: await bcrypt.hash('CurrentPass123!', 10),
+      },
+    });
+
+    await expect(authService.changePassword(user.id, 'WrongPass123!', 'NewPass123!')).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
 });
 
 function unique(prefix: string): string {

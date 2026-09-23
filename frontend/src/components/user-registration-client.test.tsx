@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AdminUser, createAdminUser } from "@/lib/backend";
+import { AdminUser, createAdminUser, fetchAdminUsers } from "@/lib/backend";
 import { UserRegistrationClient } from "./user-registration-client";
 
 vi.mock("@/lib/backend", async () => {
@@ -8,10 +8,12 @@ vi.mock("@/lib/backend", async () => {
   return {
     ...actual,
     createAdminUser: vi.fn(),
+    fetchAdminUsers: vi.fn(),
   };
 });
 
 const createAdminUserMock = vi.mocked(createAdminUser);
+const fetchAdminUsersMock = vi.mocked(fetchAdminUsers);
 
 const existingUsers: AdminUser[] = [
   {
@@ -21,6 +23,7 @@ const existingUsers: AdminUser[] = [
     role: "staff",
     status: "active",
     isTest: true,
+      passwordChangeRequired: false,
     lastLoginAt: null,
     createdAt: "2026-08-17T10:00:00.000Z",
     updatedAt: "2026-08-17T10:00:00.000Z",
@@ -32,6 +35,7 @@ const existingUsers: AdminUser[] = [
     role: "admin",
     status: "inactive",
     isTest: false,
+      passwordChangeRequired: false,
     lastLoginAt: null,
     createdAt: "2026-08-17T11:00:00.000Z",
     updatedAt: "2026-08-17T11:00:00.000Z",
@@ -41,17 +45,32 @@ const existingUsers: AdminUser[] = [
 describe("UserRegistrationClient", () => {
   beforeEach(() => {
     createAdminUserMock.mockReset();
+    fetchAdminUsersMock.mockReset();
   });
 
-  it("renders the registration form and current user list together", () => {
+  it("loads users when mounted without server-provided users", async () => {
+    fetchAdminUsersMock.mockResolvedValue(existingUsers);
+
+    render(<UserRegistrationClient />);
+
+    expect(screen.getByText("Loading users...")).toBeVisible();
+    expect(await screen.findByText("Test Existing")).toBeVisible();
+    expect(fetchAdminUsersMock).toHaveBeenCalledOnce();
+  });
+  it("opens and closes the registration form from the current users block", () => {
     render(<UserRegistrationClient initialUsers={existingUsers} />);
 
-    expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Register a user" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "User list" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Register user" }));
+    expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
     expect(screen.getByLabelText("Email")).toBeVisible();
     expect(screen.getByLabelText("Password")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "User list" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Test Existing")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("heading", { name: "Register a user" })).not.toBeInTheDocument();
     expect(screen.getByText("Test Existing")).toBeVisible();
-    expect(screen.getAllByText("real@example.com").length).toBeGreaterThanOrEqual(1);
   });
 
   it("submits isTest and updates the colocated user list after successful registration", async () => {
@@ -62,6 +81,7 @@ describe("UserRegistrationClient", () => {
       role: "staff",
       status: "active",
       isTest: true,
+      passwordChangeRequired: false,
       lastLoginAt: null,
       createdAt: "2026-08-17T12:00:00.000Z",
       updatedAt: "2026-08-17T12:00:00.000Z",
@@ -69,6 +89,7 @@ describe("UserRegistrationClient", () => {
     createAdminUserMock.mockResolvedValue(createdUser);
 
     render(<UserRegistrationClient initialUsers={existingUsers} />);
+    fireEvent.click(screen.getByRole("button", { name: "Register user" }));
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "New User" } });
@@ -93,6 +114,7 @@ describe("UserRegistrationClient", () => {
 
   it("shows password validation and does not call creation API for blank passwords", () => {
     render(<UserRegistrationClient initialUsers={existingUsers} />);
+    fireEvent.click(screen.getByRole("button", { name: "Register user" }));
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "missing-password@example.com" } });
     fireEvent.click(screen.getByLabelText("Not a test user"));

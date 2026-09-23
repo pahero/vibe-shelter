@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -62,6 +62,7 @@ describe("AdminUsersPage", () => {
         role: "staff",
         status: "active",
         isTest: false,
+      passwordChangeRequired: false,
         lastLoginAt: null,
         createdAt: "2026-08-17T10:00:00.000Z",
         updatedAt: "2026-08-17T10:00:00.000Z",
@@ -70,8 +71,10 @@ describe("AdminUsersPage", () => {
 
     render(await AdminUsersPage());
 
-    expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
     expect(screen.getByText("Listed User")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Register user" }));
+    expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
+    expect(screen.queryByText("Listed User")).not.toBeInTheDocument();
     expect(fetchAdminUsersMock).toHaveBeenCalledWith("shelter_session=abc");
   });
 });

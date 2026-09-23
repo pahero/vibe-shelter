@@ -24,14 +24,16 @@ test.describe("frontend auth flow", () => {
     const email = uniqueEmail("ui-registered");
     const fullName = uniqueName("UI Registered User");
 
-    await page.goto("/login?next=/admin/users");
+    await page.goto("/login?next=/shelter-management");
     await page.getByLabel("Email").fill(adminTestUser.email);
     await page.getByLabel("Password").fill(adminTestUser.password);
     await page.getByRole("button", { name: "Sign in with Email" }).click();
 
-    await expect(page).toHaveURL(/\/admin\/users$/);
-    await expect(page.getByRole("heading", { name: "Register a user" })).toBeVisible();
+    await expect(page).toHaveURL(/\/shelter-management$/);
+    await page.getByRole("button", { name: "Users" }).click();
     await expect(page.getByRole("heading", { name: "User list" })).toBeVisible();
+    await page.getByRole("button", { name: "Register user" }).click();
+    await expect(page.getByRole("heading", { name: "Register a user" })).toBeVisible();
 
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Full name").fill(fullName);
@@ -43,5 +45,6 @@ test.describe("frontend auth flow", () => {
     await expect(page.getByRole("heading", { name: "User list" })).toBeVisible();
     await expect(page.getByText(fullName, { exact: true })).toBeVisible();
     await expect(page.getByText(email, { exact: true })).toBeVisible();
+    await expect(page.getByText("Temporary password", { exact: true })).toBeVisible();
   });
 });

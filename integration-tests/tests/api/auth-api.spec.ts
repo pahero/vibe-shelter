@@ -30,11 +30,13 @@ test.describe("backend auth API", () => {
       email?: string;
       role?: string;
       isTest?: boolean;
+      passwordChangeRequired?: boolean;
     };
     expect(meBody.id).toBeDefined();
     expect(meBody.email).toBe(staffTestUser.email);
     expect(meBody.role).toBe("staff");
     expect(meBody.isTest).toBe(true);
+    expect(meBody.passwordChangeRequired).toBe(false);
 
     const logoutResponse = await request.post("/auth/logout");
     expect(logoutResponse.ok()).toBeTruthy();

@@ -5,7 +5,7 @@ import { EditShelterClient } from "@/components/edit-shelter-client";
 import { fetchCurrentUser } from "@/lib/backend";
 
 export const metadata = {
-  title: "Edit shelter | Shelter",
+  title: "Shelter management | Shelter",
 };
 
 export default async function EditShelterPage() {
@@ -14,7 +14,7 @@ export default async function EditShelterPage() {
   const user = await fetchCurrentUser(cookieHeader);
 
   if (!user) {
-    redirect("/login?next=/edit-shelter");
+    redirect("/login?next=/shelter-management");
   }
 
   if (user.role !== "admin") {

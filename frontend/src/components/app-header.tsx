@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { AuthUser } from "@/lib/backend";
 import { NotificationCenter } from "@/components/notification-center";
@@ -9,11 +10,14 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ user, hideEditShelterLink = false }: AppHeaderProps) {
+  if (user?.passwordChangeRequired) {
+    redirect("/replace-temporary-password");
+  }
+
   const navLinks =
     user?.role === "admin"
       ? [
-          ...(hideEditShelterLink ? [] : [{ href: "/edit-shelter", label: "Edit shelter" }]),
-          { href: "/admin/users", label: "Register users" },
+           ...(hideEditShelterLink ? [] : [{ href: "/shelter-management", label: "Shelter management" }]),
         ]
       : [];
 
@@ -43,9 +47,9 @@ export function AppHeader({ user, hideEditShelterLink = false }: AppHeaderProps)
           {user ? (
             <div className="flex flex-wrap items-center gap-2 border-[#d4c7b4] sm:border-l sm:pl-3">
               <NotificationCenter />
-              <span className="max-w-48 truncate text-sm text-[#6d6a66]" title={user.fullName || user.email}>
+              <Link href="/my-user" className="max-w-48 truncate text-sm text-[#6d6a66] hover:text-[#b24a20]" title={user.fullName || user.email}>
                 {user.fullName || user.email}
-              </span>
+              </Link>
               <LogoutButton />
             </div>
           ) : (

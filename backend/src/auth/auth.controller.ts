@@ -17,7 +17,7 @@ import { UsersService } from '@/users/users.service';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ConfigService } from '@nestjs/config';
-import { AuthMeDto, PasswordLoginDto } from './dto';
+import { AuthMeDto, ChangePasswordDto, PasswordLoginDto, ReplaceTemporaryPasswordDto } from './dto';
 
 @Controller('auth')
 export class AuthController {
@@ -86,6 +86,7 @@ export class AuthController {
       fullName: user.fullName,
       role: user.role.toLowerCase() as 'admin' | 'staff',
       isTest: user.isTest,
+      passwordChangeRequired: user.passwordChangeRequired,
     };
   }
 
@@ -106,9 +107,37 @@ export class AuthController {
       fullName: user.fullName,
       role: user.role.toLowerCase() as 'admin' | 'staff',
       isTest: user.isTest,
+      passwordChangeRequired: user.passwordChangeRequired,
     };
   }
 
+  @Post('change-password')
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change the current user password' })
+  @ApiResponse({ status: 201, description: 'Password changed' })
+  @ApiResponse({ status: 401, description: 'Current password is incorrect' })
+  async changePassword(@CurrentUser() user: Express.User, @Body() body: ChangePasswordDto): Promise<{ id: string }> {
+    if (body.newPassword !== body.newPasswordConfirmation) {
+      throw new BadRequestException('New passwords do not match');
+    }
+
+    await this.authService.changePassword(user.id, body.currentPassword, body.newPassword);
+    return { id: user.id };
+  }
+
+  @Post('replace-temporary-password')
+  @UseGuards(SessionAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Replace the current temporary password' })
+  async replaceTemporaryPassword(@CurrentUser() user: Express.User, @Body() body: ReplaceTemporaryPasswordDto): Promise<{ id: string }> {
+    if (body.newPassword !== body.newPasswordConfirmation) {
+      throw new BadRequestException('New passwords do not match');
+    }
+
+    await this.authService.replaceTemporaryPassword(user.id, body.newPassword);
+    return { id: user.id };
+  }
   @Post('logout')
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()

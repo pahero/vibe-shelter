@@ -32,6 +32,7 @@ export class UsersService {
           role: data.role.toUpperCase() as UserRole,
           status: data.status.toUpperCase() as UserStatus,
           passwordHash,
+          passwordChangeRequired: true,
           isTest: data.isTest,
         },
       });
@@ -82,7 +83,7 @@ export class UsersService {
         ...(data.fullName && { fullName: data.fullName }),
         ...(data.role && { role: data.role.toUpperCase() as UserRole }),
         ...(data.status && { status: data.status.toUpperCase() as UserStatus }),
-        ...(passwordHash && { passwordHash }),
+        ...(passwordHash && { passwordHash, passwordChangeRequired: true }),
       },
     });
     return this.mapToDto(user);
@@ -109,6 +110,7 @@ export class UsersService {
       status: user.status.toLowerCase() as 'active' | 'inactive',
       role: user.role.toLowerCase() as 'admin' | 'staff',
       isTest: user.isTest,
+      passwordChangeRequired: user.passwordChangeRequired,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

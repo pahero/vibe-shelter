@@ -39,6 +39,28 @@ async function ensureUser(api: Awaited<ReturnType<typeof request.newContext>>, a
       `Could not register test user ${account.email} (${created.status()}): ${await created.text()}`,
     );
   }
+
+  const userApi = await request.newContext({ baseURL: BACKEND_URL });
+  try {
+    const login = await userApi.post("/auth/login", {
+      data: { email: account.email, password: account.password },
+    });
+    if (login.status() !== 201) {
+      throw new Error(`Created test user ${account.email} cannot log in: ${await login.text()}`);
+    }
+
+    const replacePassword = await userApi.post("/auth/replace-temporary-password", {
+      data: {
+        newPassword: account.password,
+        newPasswordConfirmation: account.password,
+      },
+    });
+    if (replacePassword.status() !== 201) {
+      throw new Error(`Could not activate test user ${account.email}: ${await replacePassword.text()}`);
+    }
+  } finally {
+    await userApi.dispose();
+  }
   console.log(`Global setup: registered test user ${account.email} (${account.role})`);
 }
 
