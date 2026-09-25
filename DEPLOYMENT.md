@@ -6,7 +6,7 @@ ports.
 
 ## VM requirements
 
-- A Linux VM with Podman and a Compose provider (`podman compose`), or Docker
+- A Linux VM with Podman and `podman-compose`, or Docker
   Engine with Docker Compose v2
 - Ports 80/TCP, 443/TCP, and 443/UDP open in the firewall
 - Two DNS records pointing to the VM:
@@ -56,13 +56,13 @@ https://<APP_DOMAIN>/auth/google/callback
 From the repository root on the VM, using Podman:
 
 ```text
-podman compose --env-file .env.production -f compose.prod.yml config
-podman compose --env-file .env.production -f compose.prod.yml build
-podman compose --env-file .env.production -f compose.prod.yml up -d
-podman compose --env-file .env.production -f compose.prod.yml ps
+podman-compose --env-file .env.production -f compose.prod.yml config
+podman-compose --env-file .env.production -f compose.prod.yml build
+podman-compose --env-file .env.production -f compose.prod.yml up -d
+podman-compose --env-file .env.production -f compose.prod.yml ps
 ```
 
-The same commands work with Docker by replacing `podman compose` with
+The same commands work with Docker by replacing `podman-compose` with
 `docker compose`.
 
 The one-shot `migrate` service applies Prisma migrations before the backend is
@@ -72,7 +72,7 @@ Caddy obtains and renews public TLS certificates automatically.
 On the first deployment, create the initial `admin@shelter.local` account:
 
 ```text
-podman compose --env-file .env.production -f compose.prod.yml --profile bootstrap run --rm seed
+podman-compose --env-file .env.production -f compose.prod.yml --profile bootstrap run --rm seed
 ```
 
 The seed is idempotent, but running it again resets that admin account to
@@ -81,7 +81,7 @@ The seed is idempotent, but running it again resets that admin account to
 Inspect service output with:
 
 ```text
-podman compose --env-file .env.production -f compose.prod.yml logs -f
+podman-compose --env-file .env.production -f compose.prod.yml logs -f
 ```
 
 For a rootless Podman deployment, enable user services at boot and Podman's
@@ -97,8 +97,8 @@ systemctl --user enable --now podman-restart.service
 Pull the new source and run:
 
 ```text
-podman compose --env-file .env.production -f compose.prod.yml build
-podman compose --env-file .env.production -f compose.prod.yml up -d --remove-orphans
+podman-compose --env-file .env.production -f compose.prod.yml build
+podman-compose --env-file .env.production -f compose.prod.yml up -d --remove-orphans
 ```
 
 Compose reruns the migration service and only starts the new backend after the
@@ -112,7 +112,9 @@ account must be able to invoke `podman`, bind the configured public ports, and
 access the persistent Podman volumes. Only one production deployment runs at a
 time. Run the GitHub runner service under the same Ubuntu account that owns the
 rootless Podman containers and volumes. The runner also requires Bash and
-`curl`.
+`curl`. The workflow supplies a temporary Podman configuration override using
+the `cgroupfs` cgroup manager, avoiding interactive systemd/polkit authorization
+when Buildah runs from the non-interactive runner service.
 
 Create a GitHub Environment named `production` and configure these Environment
 Variables:
@@ -155,7 +157,7 @@ Back up both stateful services. A database dump alone does not include photos.
 Create a PostgreSQL dump:
 
 ```text
-podman compose --env-file .env.production -f compose.prod.yml exec -T postgres pg_dump -U shelter -d shelter -Fc > shelter.dump
+podman-compose --env-file .env.production -f compose.prod.yml exec -T postgres pg_dump -U shelter -d shelter -Fc > shelter.dump
 ```
 
 Use the actual database user and name if they differ. For Garage, use a
@@ -172,5 +174,5 @@ state can be recreated.
 - Login, photo upload, and photo display work through HTTPS.
 
 PostgreSQL, Garage, frontend, and backend ports intentionally are not exposed
-on the VM. Administrative access should use `podman compose exec` over SSH
+on the VM. Administrative access should use `podman-compose exec` over SSH
 (`docker compose exec` when using Docker).

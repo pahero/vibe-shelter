@@ -36,6 +36,15 @@ jobs:
         run: |
           set -euo pipefail
           printf 'DEPLOY_ENV_FILE=%s/shelter-production-%s.env\n' "${RUNNER_TEMP}" "${GITHUB_RUN_ID}" >> "${GITHUB_ENV}"
+          containers_conf_override="${RUNNER_TEMP}/shelter-containers-${GITHUB_RUN_ID}.conf"
+          printf '[engine]\ncgroup_manager="cgroupfs"\n' > "${containers_conf_override}"
+          chmod 600 "${containers_conf_override}"
+          printf 'CONTAINERS_CONF_OVERRIDE=%s\n' "${containers_conf_override}" >> "${GITHUB_ENV}"
+
+      - name: Verify Podman runner configuration
+        run: |
+          set -euo pipefail
+          podman info --format 'rootless={{.Host.Security.Rootless}} cgroupManager={{.Host.CgroupManager}} runtime={{.Host.OCIRuntime.Name}}'
 
       - name: Create deployment environment
         env:
@@ -124,30 +133,30 @@ jobs:
       - name: Validate Compose configuration
         run: |
           set -euo pipefail
-          podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml config --quiet
+          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml config --quiet
 
       - name: Build deployment images
         run: |
           set -euo pipefail
-          podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml build --pull
+          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml build
 
       - name: Deploy stack
         run: |
           set -euo pipefail
-          podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml up -d --remove-orphans
+          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml up -d --remove-orphans
 
       - name: Bootstrap or reset admin
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_admin == true }}
         run: |
           set -euo pipefail
-          podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml --profile bootstrap run --rm seed
+          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml --profile bootstrap run --rm seed
 
       - name: Verify services
         env:
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
         run: |
           set -euo pipefail
-          compose=(podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml)
+          compose=(podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml)
           health_services=(postgres garage backend frontend)
           healthy=false
 
@@ -195,18 +204,20 @@ jobs:
       - name: Show deployment status
         run: |
           set -euo pipefail
-          podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml ps -a
+          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml ps -a
 
       - name: Show failure diagnostics
         if: ${{ failure() }}
         run: |
           if [[ -f "${DEPLOY_ENV_FILE}" ]]; then
-            podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml ps -a || true
-            podman compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml logs --no-color --tail 200 || true
+            podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml ps -a || true
+            podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml logs --no-color --tail 200 || true
           fi
 
       - name: Remove temporary deployment environment
         if: ${{ always() }}
         run: |
           deploy_env_file="${DEPLOY_ENV_FILE:-${RUNNER_TEMP}/shelter-production-${GITHUB_RUN_ID}.env}"
+          containers_conf_override="${CONTAINERS_CONF_OVERRIDE:-${RUNNER_TEMP}/shelter-containers-${GITHUB_RUN_ID}.conf}"
           rm -f -- "${deploy_env_file}"
+          rm -f -- "${containers_conf_override}"
