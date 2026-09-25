@@ -1,4 +1,4 @@
-name: Deploy website
+name: Build and deploy website
 
 on:
   push:
@@ -18,35 +18,72 @@ concurrency:
 
 permissions:
   contents: read
+  packages: write
+
+env:
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
-  deploy:
-    name: Deploy production
-    runs-on: [self-hosted, Linux, X64]
-    environment: production
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
+  build:
+    name: Build images
+    runs-on: ubuntu-latest
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Initialize deployment paths
-        run: |
-          set -euo pipefail
-          printf 'DEPLOY_ENV_FILE=%s/shelter-production-%s.env\n' "${RUNNER_TEMP}" "${GITHUB_RUN_ID}" >> "${GITHUB_ENV}"
-          containers_conf_override="${RUNNER_TEMP}/shelter-containers-${GITHUB_RUN_ID}.conf"
-          printf '[engine]\ncgroup_manager="cgroupfs"\n' > "${containers_conf_override}"
-          chmod 600 "${containers_conf_override}"
-          printf 'CONTAINERS_CONF_OVERRIDE=%s\n' "${containers_conf_override}" >> "${GITHUB_ENV}"
+      - name: Sign in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify Podman runner configuration
-        run: |
-          set -euo pipefail
-          podman info --format 'rootless={{.Host.Security.Rootless}} cgroupManager={{.Host.CgroupManager}} runtime={{.Host.OCIRuntime.Name}}'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Create deployment environment
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          target: runner
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and push migration image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          target: migration
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/migration:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  deploy:
+    name: Deploy production
+    needs: build
+    runs-on: [self-hosted, Linux, X64]
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Pull and deploy images
+        shell: bash
         env:
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
           STORAGE_DOMAIN: ${{ vars.STORAGE_DOMAIN }}
@@ -66,9 +103,14 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_CALLBACK_URL: ${{ vars.GOOGLE_CALLBACK_URL }}
           ALLOWED_GOOGLE_DOMAIN: ${{ vars.ALLOWED_GOOGLE_DOMAIN }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEED_ADMIN: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_admin || false }}
         run: |
           set -euo pipefail
           umask 077
+
+          deploy_env_file="${RUNNER_TEMP}/shelter-production-${GITHUB_RUN_ID}.env"
+          trap 'rm -f -- "${deploy_env_file}"' EXIT
 
           HTTP_PORT="${HTTP_PORT:-80}"
           HTTPS_PORT="${HTTPS_PORT:-443}"
@@ -78,20 +120,15 @@ jobs:
           GARAGE_BUCKET="${GARAGE_BUCKET:-shelter}"
           GOOGLE_CALLBACK_URL="${GOOGLE_CALLBACK_URL:-https://${APP_DOMAIN}/auth/google/callback}"
           ALLOWED_GOOGLE_DOMAIN="${ALLOWED_GOOGLE_DOMAIN:-}"
+          FRONTEND_IMAGE="${IMAGE_PREFIX}/frontend:${GITHUB_SHA}"
+          BACKEND_IMAGE="${IMAGE_PREFIX}/backend:${GITHUB_SHA}"
+          MIGRATION_IMAGE="${IMAGE_PREFIX}/migration:${GITHUB_SHA}"
 
           required=(
-            APP_DOMAIN
-            STORAGE_DOMAIN
-            POSTGRES_PASSWORD
-            SESSION_SECRET
-            SEED_ADMIN_PASSWORD
-            GARAGE_RPC_SECRET
-            GARAGE_ACCESS_KEY
-            GARAGE_SECRET_KEY
-            GOOGLE_CLIENT_ID
-            GOOGLE_CLIENT_SECRET
+            APP_DOMAIN STORAGE_DOMAIN POSTGRES_PASSWORD SESSION_SECRET
+            SEED_ADMIN_PASSWORD GARAGE_RPC_SECRET GARAGE_ACCESS_KEY
+            GARAGE_SECRET_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET
           )
-
           for name in "${required[@]}"; do
             if [[ -z "${!name:-}" ]]; then
               echo "Missing required GitHub production variable or secret: ${name}" >&2
@@ -100,66 +137,36 @@ jobs:
           done
 
           names=(
-            APP_DOMAIN
-            STORAGE_DOMAIN
-            HTTP_PORT
-            HTTPS_PORT
-            POSTGRES_USER
-            POSTGRES_PASSWORD
-            POSTGRES_DB
-            SESSION_SECRET
-            SESSION_TTL_HOURS
-            SEED_ADMIN_PASSWORD
-            GARAGE_RPC_SECRET
-            GARAGE_ACCESS_KEY
-            GARAGE_SECRET_KEY
-            GARAGE_BUCKET
-            GOOGLE_CLIENT_ID
-            GOOGLE_CLIENT_SECRET
-            GOOGLE_CALLBACK_URL
-            ALLOWED_GOOGLE_DOMAIN
+            APP_DOMAIN STORAGE_DOMAIN HTTP_PORT HTTPS_PORT POSTGRES_USER
+            POSTGRES_PASSWORD POSTGRES_DB SESSION_SECRET SESSION_TTL_HOURS
+            SEED_ADMIN_PASSWORD GARAGE_RPC_SECRET GARAGE_ACCESS_KEY
+            GARAGE_SECRET_KEY GARAGE_BUCKET GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_SECRET GOOGLE_CALLBACK_URL ALLOWED_GOOGLE_DOMAIN
+            FRONTEND_IMAGE BACKEND_IMAGE MIGRATION_IMAGE
           )
-
-          : > "${DEPLOY_ENV_FILE}"
+          : > "${deploy_env_file}"
           for name in "${names[@]}"; do
             value="${!name:-}"
             if [[ "${value}" == *$'\n'* || "${value}" == *$'\r'* ]]; then
               echo "Deployment value ${name} must not contain a newline" >&2
               exit 1
             fi
-            printf '%s=%s\n' "${name}" "${value}" >> "${DEPLOY_ENV_FILE}"
+            printf '%s=%s\n' "${name}" "${value}" >> "${deploy_env_file}"
           done
 
-      - name: Validate Compose configuration
-        run: |
-          set -euo pipefail
-          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml config --quiet
+          printf '%s' "${GHCR_TOKEN}" | podman login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
 
-      - name: Build deployment images
-        run: |
-          set -euo pipefail
-          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml build
+          compose=(podman-compose --env-file "${deploy_env_file}" -f compose.prod.yml)
+          "${compose[@]}" config --quiet
+          "${compose[@]}" pull
+          "${compose[@]}" up -d --remove-orphans
 
-      - name: Deploy stack
-        run: |
-          set -euo pipefail
-          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml up -d --remove-orphans
+          if [[ "${SEED_ADMIN}" == 'true' ]]; then
+            "${compose[@]}" --profile bootstrap run --rm seed
+          fi
 
-      - name: Bootstrap or reset admin
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_admin == true }}
-        run: |
-          set -euo pipefail
-          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml --profile bootstrap run --rm seed
-
-      - name: Verify services
-        env:
-          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
-        run: |
-          set -euo pipefail
-          compose=(podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml)
           health_services=(postgres garage backend frontend)
           healthy=false
-
           for _ in {1..60}; do
             healthy=true
             for service in "${health_services[@]}"; do
@@ -168,27 +175,20 @@ jobs:
                 healthy=false
                 continue
               fi
-
               status="$(podman inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_id}")"
-              if [[ "${status}" != 'healthy' ]]; then
-                healthy=false
-              fi
+              if [[ "${status}" != 'healthy' ]]; then healthy=false; fi
             done
-
             if [[ "${healthy}" == 'true' ]]; then break; fi
             sleep 5
           done
 
           if [[ "${healthy}" != 'true' ]]; then
-            echo 'Services did not become healthy within five minutes' >&2
+            "${compose[@]}" ps -a
+            "${compose[@]}" logs --no-color --tail 200
             exit 1
           fi
 
           migration_id="$("${compose[@]}" ps -a -q migrate)"
-          if [[ -z "${migration_id}" ]]; then
-            echo 'Migration container was not created' >&2
-            exit 1
-          fi
           migration_exit_code="$(podman inspect --format '{{.State.ExitCode}}' "${migration_id}")"
           if [[ "${migration_exit_code}" != '0' ]]; then
             echo "Migration failed with exit code ${migration_exit_code}" >&2
@@ -196,28 +196,5 @@ jobs:
           fi
 
           health_response="$(curl --fail --silent --show-error --max-time 30 "https://${APP_DOMAIN}/health")"
-          if ! grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"' <<< "${health_response}"; then
-            echo 'Public backend health check failed' >&2
-            exit 1
-          fi
-
-      - name: Show deployment status
-        run: |
-          set -euo pipefail
-          podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml ps -a
-
-      - name: Show failure diagnostics
-        if: ${{ failure() }}
-        run: |
-          if [[ -f "${DEPLOY_ENV_FILE}" ]]; then
-            podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml ps -a || true
-            podman-compose --env-file "${DEPLOY_ENV_FILE}" -f compose.prod.yml logs --no-color --tail 200 || true
-          fi
-
-      - name: Remove temporary deployment environment
-        if: ${{ always() }}
-        run: |
-          deploy_env_file="${DEPLOY_ENV_FILE:-${RUNNER_TEMP}/shelter-production-${GITHUB_RUN_ID}.env}"
-          containers_conf_override="${CONTAINERS_CONF_OVERRIDE:-${RUNNER_TEMP}/shelter-containers-${GITHUB_RUN_ID}.conf}"
-          rm -f -- "${deploy_env_file}"
-          rm -f -- "${containers_conf_override}"
+          grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"' <<< "${health_response}"
+          "${compose[@]}" ps -a

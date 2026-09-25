@@ -92,6 +92,10 @@ sudo loginctl enable-linger <user>
 systemctl --user enable --now podman-restart.service
 ```
 
+Run the GitHub Actions runner as that same user. Lingering provides its systemd
+user session at boot and prevents Podman from repeatedly warning that it must
+fall back from the `systemd` cgroup manager to `cgroupfs`.
+
 ## Update
 
 Pull the new source and run:
@@ -106,15 +110,20 @@ migrations complete successfully.
 
 ## GitHub Actions deployment
 
-.github/workflows/deploy.yml deploys every push to `main` on an Ubuntu x64
-self-hosted GitHub Actions runner installed on the deployment host. The runner
-account must be able to invoke `podman`, bind the configured public ports, and
-access the persistent Podman volumes. Only one production deployment runs at a
-time. Run the GitHub runner service under the same Ubuntu account that owns the
-rootless Podman containers and volumes. The runner also requires Bash and
-`curl`. The workflow supplies a temporary Podman configuration override using
-the `cgroupfs` cgroup manager, avoiding interactive systemd/polkit authorization
-when Buildah runs from the non-interactive runner service.
+`.github/workflows/deploy.yml` has two jobs for every push to `main`:
+
+1. `build` runs on GitHub-hosted Ubuntu, builds immutable frontend, backend,
+   and migration images, and pushes them to GHCR with the commit SHA as the
+   image tag.
+2. `deploy` runs on the Ubuntu x64 self-hosted runner, pulls those images,
+   starts `compose.prod.yml`, and verifies migrations and service health.
+
+The deployment host does not build application images. Its runner account must
+be able to invoke `podman` and `podman-compose`, bind the configured public
+ports, and access the persistent Podman volumes. Run the runner service under
+the same Ubuntu account that owns the rootless Podman containers and volumes.
+The runner also requires Bash and `curl`. Only one production deployment runs
+at a time.
 
 Create a GitHub Environment named `production` and configure these Environment
 Variables:
@@ -143,7 +152,7 @@ Configure these Environment Secrets:
 
 The workflow writes these values to a temporary runner file without logging
 them, deploys `compose.prod.yml`, verifies migrations and service health, and
-deletes the file in an `always()` cleanup step. Do not use `compose.local.yml`
+deletes the file when the deployment step exits. Do not use `compose.local.yml`
 for an actual environment.
 
 The `workflow_dispatch` trigger has a `seed_admin` option. Enable it only for

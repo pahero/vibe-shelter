@@ -2,7 +2,7 @@ name: shelter
 
 services:
   caddy:
-    image: caddy:2-alpine
+    image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in the production environment file}
@@ -22,6 +22,7 @@ services:
           - ${STORAGE_DOMAIN}
 
   frontend:
+    image: ${FRONTEND_IMAGE:-shelter-frontend:local}
     build:
       context: ./frontend
       args:
@@ -45,6 +46,7 @@ services:
       - private
 
   backend:
+    image: ${BACKEND_IMAGE:-shelter-backend:local}
     build:
       context: ./backend
       target: runner
@@ -82,6 +84,7 @@ services:
       - private
 
   migrate:
+    image: ${MIGRATION_IMAGE:-shelter-migration:local}
     build:
       context: ./backend
       target: migration
@@ -95,6 +98,7 @@ services:
 
   seed:
     profiles: ["bootstrap"]
+    image: ${MIGRATION_IMAGE:-shelter-migration:local}
     build:
       context: ./backend
       target: migration
@@ -110,7 +114,7 @@ services:
       - private
 
   postgres:
-    image: postgres:18-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -128,7 +132,7 @@ services:
       - private
 
   garage:
-    image: dxflrs/garage:v2.3.0
+    image: docker.io/dxflrs/garage:v2.3.0
     command: ["/garage", "server", "--single-node", "--default-bucket"]
     restart: unless-stopped
     environment:
