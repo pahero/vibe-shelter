@@ -1,0 +1,26 @@
+services:
+  backend:
+    environment:
+      NODE_EXTRA_CA_CERTS: /local-ca/root.crt
+    volumes:
+      - local-ca:/local-ca:ro
+    depends_on:
+      local-ca-ready:
+        condition: service_completed_successfully
+
+  local-ca-ready:
+    image: busybox:1.37
+    command:
+      - sh
+      - -c
+      - until test -s /caddy-data/caddy/pki/authorities/local/root.crt; do sleep 1; done; cp /caddy-data/caddy/pki/authorities/local/root.crt /local-ca/root.crt; chmod 644 /local-ca/root.crt
+    restart: "no"
+    depends_on:
+      caddy:
+        condition: service_started
+    volumes:
+      - caddy-data:/caddy-data:ro
+      - local-ca:/local-ca
+
+volumes:
+  local-ca:

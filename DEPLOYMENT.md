@@ -104,6 +104,50 @@ podman compose --env-file .env.production -f compose.prod.yml up -d --remove-orp
 Compose reruns the migration service and only starts the new backend after the
 migrations complete successfully.
 
+## GitHub Actions deployment
+
+.github/workflows/deploy.yml deploys every push to `main` on an Ubuntu x64
+self-hosted GitHub Actions runner installed on the deployment host. The runner
+account must be able to invoke `podman`, bind the configured public ports, and
+access the persistent Podman volumes. Only one production deployment runs at a
+time. Run the GitHub runner service under the same Ubuntu account that owns the
+rootless Podman containers and volumes. The runner also requires Bash and
+`curl`.
+
+Create a GitHub Environment named `production` and configure these Environment
+Variables:
+
+- `APP_DOMAIN`
+- `STORAGE_DOMAIN`
+- `GOOGLE_CLIENT_ID`
+- `HTTP_PORT` (optional; defaults to `80`)
+- `HTTPS_PORT` (optional; defaults to `443`)
+- `POSTGRES_USER` (optional; defaults to `shelter`)
+- `POSTGRES_DB` (optional; defaults to `shelter`)
+- `SESSION_TTL_HOURS` (optional; defaults to `168`)
+- `GARAGE_BUCKET` (optional; defaults to `shelter`)
+- `GOOGLE_CALLBACK_URL` (optional; derived from `APP_DOMAIN`)
+- `ALLOWED_GOOGLE_DOMAIN` (optional)
+
+Configure these Environment Secrets:
+
+- `POSTGRES_PASSWORD` (URL-safe)
+- `SESSION_SECRET`
+- `SEED_ADMIN_PASSWORD`
+- `GARAGE_RPC_SECRET`
+- `GARAGE_ACCESS_KEY`
+- `GARAGE_SECRET_KEY`
+- `GOOGLE_CLIENT_SECRET`
+
+The workflow writes these values to a temporary runner file without logging
+them, deploys `compose.prod.yml`, verifies migrations and service health, and
+deletes the file in an `always()` cleanup step. Do not use `compose.local.yml`
+for an actual environment.
+
+The `workflow_dispatch` trigger has a `seed_admin` option. Enable it only for
+the first deployment or when intentionally resetting `admin@shelter.local` to
+`SEED_ADMIN_PASSWORD`.
+
 ## Back up
 
 Back up both stateful services. A database dump alone does not include photos.

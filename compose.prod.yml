@@ -16,8 +16,10 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     networks:
-      - public
-      - private
+      public:
+      private:
+        aliases:
+          - ${STORAGE_DOMAIN}
 
   frontend:
     build:
@@ -28,6 +30,10 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}
+      INTERNAL_API_URL: http://backend:4000
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4001').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 30s
