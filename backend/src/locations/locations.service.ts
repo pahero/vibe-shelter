@@ -22,7 +22,7 @@ export interface LocationFilters {
 export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
-  async createLocation(data: CreateLocationDto) {
+  async createLocation(data: CreateLocationDto, currentUserIsTest = false, actorUserId?: string) {
     // Validate name is not empty
     if (!data.name || data.name.trim().length === 0) {
       throw new BadRequestException('Location name is required');
@@ -39,17 +39,27 @@ export class LocationsService {
     }
 
     try {
-      const location = await (this.prisma as any).location.create({
-        data: {
-          name: data.name.trim(),
-          description: data.description?.trim(),
-          ownerId: data.ownerId || null,
-          status: 'ACTIVE',
-        },
-        include: {
-          owner: true,
-        },
-      });
+      const create = async (transaction: any) => {
+        const location = await transaction.location.create({
+          data: {
+            name: data.name.trim(),
+            description: data.description?.trim(),
+            ownerId: data.ownerId || null,
+            isTest: currentUserIsTest,
+            status: 'ACTIVE',
+          },
+          include: {
+            owner: true,
+          },
+        });
+        if (actorUserId) {
+          await transaction.locationAuditEvent.create({
+            data: { locationId: location.id, actorUserId, action: 'create', oldValue: null, newValue: this.locationAuditValue(location) },
+          });
+        }
+        return location;
+      };
+      const location = actorUserId ? await this.prisma.$transaction(create) : await create(this.prisma);
       return location;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -61,11 +71,11 @@ export class LocationsService {
     }
   }
 
-  async findAll(filters: LocationFilters = {}) {
+  async findAll(filters: LocationFilters = {}, currentUserIsTest = false) {
     const { ownerId, status, skip = 0, limit = 50 } = filters;
 
     // Build where clause
-    const where: any = {};
+    const where: any = { isTest: currentUserIsTest, deletedAt: null };
     if (ownerId) {
       where.ownerId = ownerId;
     }
@@ -101,13 +111,13 @@ export class LocationsService {
     };
   }
 
-  async findById(id: string) {
+  async findById(id: string, currentUserIsTest = false) {
     if (!id || id.trim().length === 0) {
       throw new BadRequestException('Location ID is required');
     }
 
-    const location = await (this.prisma as any).location.findUnique({
-      where: { id },
+    const location = await (this.prisma as any).location.findFirst({
+      where: { id, isTest: currentUserIsTest, deletedAt: null },
       include: {
         owner: true,
       },
@@ -120,13 +130,13 @@ export class LocationsService {
     return location;
   }
 
-  async findByOwnerId(ownerId: string) {
+  async findByOwnerId(ownerId: string, currentUserIsTest = false) {
     if (!ownerId || ownerId.trim().length === 0) {
       throw new BadRequestException('Owner ID is required');
     }
 
     return await (this.prisma as any).location.findMany({
-      where: { ownerId },
+      where: { ownerId, isTest: currentUserIsTest, deletedAt: null },
       include: {
         owner: true,
       },
@@ -136,14 +146,14 @@ export class LocationsService {
     });
   }
 
-  async updateLocation(id: string, data: UpdateLocationDto) {
+  async updateLocation(id: string, data: UpdateLocationDto, currentUserIsTest = false, actorUserId?: string) {
     // Verify location exists
-    const existingLocation = await this.findById(id);
+    const existingLocation = await this.findById(id, currentUserIsTest);
 
     // If updating name, check uniqueness (except current location)
     if (data.name) {
-      const existing = await (this.prisma as any).location.findUnique({
-        where: { name: data.name.trim() },
+      const existing = await (this.prisma as any).location.findFirst({
+        where: { name: data.name.trim(), deletedAt: null },
       });
       if (existing && existing.id !== id) {
         throw new ConflictException(
@@ -175,30 +185,66 @@ export class LocationsService {
     if (data.ownerId !== undefined) updateData.ownerId = data.ownerId?.trim() || null;
     if (data.status !== undefined) updateData.status = data.status;
 
-    const location = await (this.prisma as any).location.update({
-      where: { id },
-      data: updateData,
-      include: {
-        owner: true,
-      },
-    });
+    const update = async (transaction: any) => {
+      const location = await transaction.location.update({
+        where: { id },
+        data: updateData,
+        include: {
+          owner: true,
+        },
+      });
+      if (actorUserId) {
+        await transaction.locationAuditEvent.create({
+          data: {
+            locationId: id,
+            actorUserId,
+            action: 'update',
+            oldValue: this.locationAuditValue(existingLocation),
+            newValue: this.locationAuditValue(location),
+          },
+        });
+      }
+      return location;
+    };
+    const location = actorUserId ? await this.prisma.$transaction(update) : await update(this.prisma);
     return location;
   }
 
-  async archiveLocation(id: string) {
-    await this.findById(id);
-    const location = await (this.prisma as any).location.update({
-      where: { id },
-      data: { status: 'ARCHIVED' },
-      include: {
-        owner: true,
-      },
+  async archiveLocation(id: string, currentUserIsTest = false, actorUserId?: string) {
+    const existingLocation = await this.findById(id, currentUserIsTest);
+    const assignedCats = await (this.prisma as any).cat.count({
+      where: { currentLocationId: id, isTest: currentUserIsTest },
     });
+    if (assignedCats > 0) {
+      throw new ConflictException('Cannot remove a location that is assigned to cats. Move the cats to another location first.');
+    }
+    const archive = async (transaction: any) => {
+      const location = await transaction.location.update({
+        where: { id },
+        data: { status: 'ARCHIVED', deletedAt: new Date() },
+        include: {
+          owner: true,
+        },
+      });
+      if (actorUserId) {
+        await transaction.locationAuditEvent.create({
+          data: {
+            locationId: id,
+            actorUserId,
+            action: 'delete',
+            oldValue: this.locationAuditValue(existingLocation),
+            newValue: null,
+          },
+        });
+      }
+      return location;
+    };
+    const location = actorUserId ? await this.prisma.$transaction(archive) : await archive(this.prisma);
     return location;
   }
 
-  async reactivateLocation(id: string) {
-    await this.findById(id);
+  async reactivateLocation(id: string, currentUserIsTest = false) {
+    await this.findById(id, currentUserIsTest);
     return await (this.prisma as any).location.update({
       where: { id },
       data: { status: 'ACTIVE' },
@@ -208,18 +254,22 @@ export class LocationsService {
     });
   }
 
-  async validateLocationExists(id: string): Promise<boolean> {
+  async validateLocationExists(id: string, currentUserIsTest = false): Promise<boolean> {
     const location = await (this.prisma as any).location.findUnique({
       where: { id },
     });
-    return !!location;
+    return !!location && location.isTest === currentUserIsTest;
   }
 
-  async validateLocationActive(id: string): Promise<boolean> {
-    const location = await (this.prisma as any).location.findUnique({
-      where: { id },
+  async validateLocationActive(id: string, currentUserIsTest = false): Promise<boolean> {
+    const location = await (this.prisma as any).location.findFirst({
+      where: { id, isTest: currentUserIsTest, deletedAt: null },
     });
-    return location?.status === 'ACTIVE';
+    return location?.status === 'ACTIVE' && !location.deletedAt;
+  }
+
+  private locationAuditValue(location: { name: string; description?: string | null; status: string }): string {
+    return `${location.name} (${location.status})${location.description ? `: ${location.description}` : ''}`;
   }
 
 }

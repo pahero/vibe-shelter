@@ -12,7 +12,8 @@ export type CatHistoryPhotoDto = {
 
 export type CatHistoryEventDto = {
   id: string;
-  catId: string;
+  catId: string | null;
+  catName: string | null;
   eventType: string;
   occurredAt: string;
   actor: CatHistoryActorDto;

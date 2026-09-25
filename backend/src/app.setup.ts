@@ -6,16 +6,21 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import type { Express } from 'express';
 
 export function setupApp(app: INestApplication) {
-  
+  // Caddy terminates TLS. Express must trust its forwarded protocol so secure
+  // session cookies are issued when NODE_ENV=production.
+  const expressApp = app.getHttpAdapter().getInstance() as Express;
+  expressApp.set('trust proxy', 1);
+
   const configService = app.get(ConfigService);
   const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:4001');
   const sessionSecret = configService.get<string>('sessionSecret') ?? 'dev-session-secret';
 
   // Enable CORS
   app.enableCors({
-    origin: [frontendUrl, 'http://192.168.1.138:4001'],
+    origin: [frontendUrl],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',

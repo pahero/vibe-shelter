@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient, Prisma } from '@prisma/client';
 import {
@@ -111,7 +111,7 @@ describe('CatsService', () => {
     });
   });
 
-  it('filters by default active status, location, search, and pagination', async () => {
+  it('filters active and archived cats by archivation reason, location, search, and pagination', async () => {
     await runInTestTransaction(async (tx) => {
       const location = await createLocation(tx, 'filter');
       const otherLocation = await createLocation(tx, 'other');
@@ -120,17 +120,36 @@ describe('CatsService', () => {
       await createCatFixture(tx, { name: `${prefix} Boris`, sex: 'MALE', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id, passportNumber: `${prefix}-P` });
       const archived = await createCatFixture(tx, { name: `${prefix} Old`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
       const service = createService(tx);
-      await service.updateCat(archived.id, { status: 'ARCHIVED' });
+      const reason = await tx.catArchivationReason.create({ data: { name: unique('filter-reason') } });
+      await tx.cat.update({ where: { id: archived.id }, data: { archivationReasonId: reason.id } });
       await createCatFixture(tx, { name: `${prefix} Elsewhere`, sex: 'FEMALE', sterilizationStatus: 'UNKNOWN', currentLocationId: otherLocation.id });
 
       const page = await service.findAll({ locationId: location.id, search: prefix, skip: 1, limit: 1 });
       expect(page.total).toBe(2);
       expect(page.data).toHaveLength(1);
-      expect(page.data[0].status).toBe('ACTIVE');
 
-      const archivedPage = await service.findAll({ status: 'ARCHIVED', search: prefix });
+      const archivedPage = await service.findAll({ archived: true, search: prefix });
       expect(archivedPage.data).toHaveLength(1);
       expect(archivedPage.data[0].name).toContain('Old');
+    });
+  });
+
+  it('filters cat list and detail by current user test status', async () => {
+    await runInTestTransaction(async (tx) => {
+      const prefix = unique('partition');
+      const regular = await createCatFixture(tx, { name: `${prefix}-regular`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: false });
+      const test = await createCatFixture(tx, { name: `${prefix}-test`, sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: true });
+      const service = createService(tx);
+
+      const regularPage = await service.findAll({ search: prefix }, false);
+      const testPage = await service.findAll({ search: prefix }, true);
+
+      expect(regularPage.data.map((cat) => cat.id)).toContain(regular.id);
+      expect(regularPage.data.map((cat) => cat.id)).not.toContain(test.id);
+      expect(testPage.data.map((cat) => cat.id)).toContain(test.id);
+      expect(testPage.data.map((cat) => cat.id)).not.toContain(regular.id);
+      await expect(service.findCardById(test.id, false)).rejects.toThrow(NotFoundException);
+      await expect(service.findCardById(regular.id, true)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -154,19 +173,30 @@ describe('CatsService', () => {
     });
   });
 
+  it('rejects cat updates that reference an opposite-status location', async () => {
+    await runInTestTransaction(async (tx) => {
+      const regularLocation = await createLocation(tx, 'regular-location', 'ACTIVE', false);
+      const testLocation = await createLocation(tx, 'test-location', 'ACTIVE', true);
+      const regularCat = await createCatFixture(tx, { name: unique('regular-cat'), sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', currentLocationId: regularLocation.id, isTest: false });
+      const service = createService(tx);
+
+      await expect(service.updateCat(regularCat.id, { currentLocationId: testLocation.id }, undefined, false)).rejects.toThrow(NotFoundException);
+      await expect(service.updateCat(regularCat.id, { name: 'Hidden Cat' }, undefined, true)).rejects.toThrow(NotFoundException);
+    });
+  });
+
   it('writes granular audit events only for changed cat fields', async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await createUser(tx, 'field-auditor');
       const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN' });
       const service = createService(tx);
 
-      await service.updateCat(card.id, { name: 'Luna', color: 'Calico', status: 'ADOPTED' }, actor.id);
+      await service.updateCat(card.id, { name: 'Luna', color: 'Calico' }, actor.id);
 
       const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { eventType: 'asc' } });
-      expect(events.map((event: any) => event.eventType)).toEqual(['name_changed', 'status_changed']);
+      expect(events.map((event: any) => event.eventType)).toEqual(['name_changed']);
       expect(events).toEqual(expect.arrayContaining([
         expect.objectContaining({ actorUserId: actor.id, oldValue: 'Mila', newValue: 'Luna' }),
-        expect.objectContaining({ actorUserId: actor.id, oldValue: 'ACTIVE', newValue: 'ADOPTED' }),
       ]));
     });
   });
@@ -207,6 +237,25 @@ describe('CatsService', () => {
     });
   });
 
+  it('scopes child cat operations through the current user test status', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'child-scope-auditor');
+      const regularCat = await createCatFixture(tx, { name: unique('regular-child'), sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: false });
+      const testCat = await createCatFixture(tx, { name: unique('test-child'), sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN', isTest: true });
+      const service = createService(tx);
+      const tag = await service.createTag({ name: `scope-${Math.random().toString(36).slice(2, 8)}` });
+
+      await expect(service.addPhoto(regularCat.id, { originalname: 'blocked.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('x') }, actor.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.listPhotos(regularCat.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.addWeight(regularCat.id, { weightKg: 4, measuredAt: '2026-07-30' }, undefined, true)).rejects.toThrow(NotFoundException);
+      await expect(service.listWeights(regularCat.id, true)).rejects.toThrow(NotFoundException);
+      await expect(service.addTag(regularCat.id, tag.id, undefined, true)).rejects.toThrow(NotFoundException);
+      await expect(service.removeTag(regularCat.id, tag.id, undefined, true)).rejects.toThrow(NotFoundException);
+
+      await expect(service.addPhoto(testCat.id, { originalname: 'allowed.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('x') }, actor.id, true)).resolves.toMatchObject({ catId: testCat.id });
+    });
+  });
+
   it('adds, lists, and removes cat weight entries', async () => {
     await runInTestTransaction(async (tx) => {
       const card = await createCatFixture(tx, { name: 'Weight Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
@@ -226,6 +275,67 @@ describe('CatsService', () => {
       await expect(service.removeWeight(card.id, weight.id)).rejects.toThrow(NotFoundException);
       await expect(service.addWeight(card.id, { weightKg: 0, measuredAt: '2026-07-30' })).rejects.toThrow(BadRequestException);
       await expect(service.addWeight(card.id, { weightKg: 4, measuredAt: 'bad-date' })).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  it('writes weight-created and weight-deleted audit events', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'weight-auditor');
+      const card = await createCatFixture(tx, { name: 'Weight Audit Cat', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      const weight = await service.addWeight(card.id, { weightKg: 4.25, measuredAt: '2026-07-30' }, actor.id);
+      await service.removeWeight(card.id, weight.id, actor.id);
+
+      const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
+      expect(events.map((event: any) => event.eventType)).toEqual(['weight_created', 'weight_deleted']);
+      expect(events).toEqual(expect.arrayContaining([
+        expect.objectContaining({ actorUserId: actor.id, oldValue: null, newValue: '4.25 kg' }),
+        expect.objectContaining({ actorUserId: actor.id, oldValue: '4.25 kg', newValue: null }),
+      ]));
+    });
+  });
+
+  it('audits tag creation, update, deletion, and cat tag assignment', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'tag-auditor');
+      const cat = await createCatFixture(tx, { name: unique('tag-audit-cat'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      const tag = await service.createTag({ name: unique('audit-tag'), color: '#8ecaff' }, actor.id);
+      await service.updateTag(tag.id, { color: '#ffd166' }, actor.id);
+      await service.addTag(cat.id, tag.id, actor.id);
+      await service.removeTag(cat.id, tag.id, actor.id);
+      await service.deleteTag(tag.id, actor.id);
+
+      const tagEvents = await (tx as any).tagAuditEvent.findMany({ where: { actorUserId: actor.id }, orderBy: { createdAt: 'asc' } });
+      expect(tagEvents.map((event: any) => event.action)).toEqual(['create', 'update', 'delete']);
+      expect(tagEvents.every((event: any) => event.actorUserId === actor.id)).toBe(true);
+
+      const catEvents = await (tx as any).catAuditEvent.findMany({ where: { catId: cat.id }, orderBy: { occurredAt: 'asc' } });
+      expect(catEvents.map((event: any) => event.eventType)).toEqual(['tag_added_to_cat', 'tag_removed_from_cat']);
+      expect(catEvents.every((event: any) => event.actorUserId === actor.id)).toBe(true);
+    });
+  });
+
+  it('soft deletes tags and allows reusing a deleted tag name', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'tag-soft-delete');
+      const service = createService(tx);
+
+      const tag = await service.createTag({ name: unique('soft-deleted'), color: '#8ecaff' }, actor.id);
+      await service.deleteTag(tag.id, actor.id);
+
+      const stored = await (tx as any).catTag.findUnique({ where: { id: tag.id } });
+      expect(stored.deletedAt).toBeInstanceOf(Date);
+
+      const list = await service.listTags();
+      expect(list.map((item) => item.id)).not.toContain(tag.id);
+
+      const recreated = await service.createTag({ name: stored.name }, actor.id);
+      expect(recreated.id).not.toBe(tag.id);
+
+      await expect(service.deleteTag(tag.id, actor.id)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -252,9 +362,10 @@ describe('CatsService', () => {
     });
   });
 
-  it('updates tag color and blocks deleting tags that are used by cats', async () => {
+  it('updates tag color and soft deletes used tags from all cats', async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await createCatFixture(tx, { name: unique('tagged-delete'), sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
+      const actor = await createUser(tx, 'tag-delete');
       const service = createService(tx);
       const tag = await service.createTag({ name: unique('editable-tag'), color: '#9ee6a8' });
 
@@ -264,10 +375,16 @@ describe('CatsService', () => {
       await expect(service.updateTag(tag.id, { color: '#123456' })).rejects.toThrow(BadRequestException);
 
       await service.addTag(cat.id, tag.id);
-      await expect(service.deleteTag(tag.id)).rejects.toThrow(ConflictException);
+      await expect(service.deleteTag(tag.id, actor.id)).resolves.toBeUndefined();
 
-      await service.removeTag(cat.id, tag.id);
-      await expect(service.deleteTag(tag.id)).resolves.toBeUndefined();
+      const updatedCat = await service.findCardById(cat.id);
+      expect(updatedCat.tags).toHaveLength(0);
+      expect((await service.listTags()).map((item) => item.id)).not.toContain(tag.id);
+
+      const history = await (tx as any).catAuditEvent.findMany({ where: { catId: cat.id } });
+      expect(history).toEqual(expect.arrayContaining([
+        expect.objectContaining({ eventType: 'tag_removed_from_cat', oldValue: updated.name, actorUserId: actor.id }),
+      ]));
     });
   });
 
@@ -280,7 +397,7 @@ describe('CatsService', () => {
     });
   });
 
-  it('has migration-backed indexes, unique constraints, enum defaults, and nullable location on delete', async () => {
+  it('has migration-backed indexes, enum defaults, and nullable location on delete', async () => {
     await runInTestTransaction(async (tx) => {
       const indexes: Array<{ indexname: string }> = await tx.$queryRaw`
         SELECT indexname FROM pg_indexes WHERE tablename = 'Cat'
@@ -288,7 +405,7 @@ describe('CatsService', () => {
       expect(indexes.map((index) => index.indexname)).toEqual(
         expect.arrayContaining([
           'Cat_currentLocationId_idx',
-          'Cat_status_idx',
+          'Cat_isTest_idx',
           'Cat_name_idx',
           'Cat_intakeDate_idx',
           'Cat_microchipNumber_key',
@@ -296,16 +413,14 @@ describe('CatsService', () => {
         ]),
       );
 
-      const defaults = await tx.$queryRaw<Array<{ sex_default: string; status_default: string; sterilization_default: string }>>`
+      const defaults = await tx.$queryRaw<Array<{ sex_default: string; sterilization_default: string }>>`
         SELECT
           column_default AS sex_default,
-          (SELECT column_default FROM information_schema.columns WHERE table_name = 'Cat' AND column_name = 'status') AS status_default,
           (SELECT column_default FROM information_schema.columns WHERE table_name = 'Cat' AND column_name = 'sterilizationStatus') AS sterilization_default
         FROM information_schema.columns
         WHERE table_name = 'Cat' AND column_name = 'sex'
       `;
       expect(defaults[0].sex_default).toContain('UNKNOWN');
-      expect(defaults[0].status_default).toContain('ACTIVE');
       expect(defaults[0].sterilization_default).toContain('UNKNOWN');
 
       const foreignKeys = await tx.$queryRaw<Array<{ delete_rule: string }>>`
@@ -333,11 +448,13 @@ async function createLocation(
   prisma: PrismaClient | Prisma.TransactionClient,
   namePrefix: string,
   status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' = 'ACTIVE',
+  isTest = false,
 ) {
   return prisma.location.create({
     data: {
       name: unique(`cats-${namePrefix}`),
       status,
+      isTest,
     },
   });
 }

@@ -12,10 +12,13 @@ const shouldManageWebServers = process.env.CI === "true" || process.env.MANAGE_W
 
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: path.resolve(__dirname, "global-setup.ts"),
+  globalTeardown: path.resolve(__dirname, "global-teardown.ts"),
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   timeout: 30_000,
+  expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   webServer: shouldManageWebServers
     ? [

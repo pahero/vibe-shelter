@@ -67,6 +67,29 @@ export class AuthService {
     return user;
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.passwordHash || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: await bcrypt.hash(newPassword, 10), passwordChangeRequired: false },
+    });
+  }
+
+  async replaceTemporaryPassword(userId: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.passwordChangeRequired) {
+      throw new BadRequestException('A temporary password replacement is not required');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: await bcrypt.hash(newPassword, 10), passwordChangeRequired: false },
+    });
+  }
   async createSession(userId: string, userAgent?: string, ipAddress?: string) {
     const sessionTokenHash = this.hashSessionToken(crypto.randomBytes(32).toString('hex'));
     const ttlMs = this.configService.get<number>('sessionTtlMs', 7 * 24 * 60 * 60 * 1000);

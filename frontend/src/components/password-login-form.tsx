@@ -46,7 +46,8 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
         return;
       }
 
-      router.push(nextPath);
+      const user = (await response.json()) as { passwordChangeRequired?: boolean };
+      router.push(user.passwordChangeRequired ? "/replace-temporary-password" : nextPath);
     } catch {
       setErrorMessage("Unable to sign in");
     } finally {

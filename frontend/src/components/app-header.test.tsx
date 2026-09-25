@@ -38,7 +38,7 @@ describe("AppHeader", () => {
   it("shows admin navigation and user controls for admins", () => {
     render(<AppHeader user={adminUser} />);
 
-    expect(screen.getByRole("link", { name: "Edit shelter" })).toHaveAttribute("href", "/edit-shelter");
+    expect(screen.getByRole("link", { name: "Shelter management" })).toHaveAttribute("href", "/shelter-management");
     expect(screen.getByText("Admin User")).toBeVisible();
     expect(screen.getByRole("button", { name: "Log out" })).toBeVisible();
   });
@@ -46,13 +46,13 @@ describe("AppHeader", () => {
   it("hides edit shelter navigation when requested", () => {
     render(<AppHeader user={adminUser} hideEditShelterLink />);
 
-    expect(screen.queryByRole("link", { name: "Edit shelter" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Shelter management" })).not.toBeInTheDocument();
   });
 
   it("does not show admin navigation for staff users", () => {
     render(<AppHeader user={staffUser} />);
 
-    expect(screen.queryByRole("link", { name: "Edit shelter" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Shelter management" })).not.toBeInTheDocument();
     expect(screen.getByText("staff@shelter.local")).toBeVisible();
   });
 });

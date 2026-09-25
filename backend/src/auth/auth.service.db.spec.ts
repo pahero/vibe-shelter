@@ -57,6 +57,38 @@ describe('AuthService (db)', () => {
     expect(user.email).toBe('staff@example.com');
   });
 
+  it('validates password credentials identically for test and non-test users', async () => {
+    const password = 'Password123!';
+    const testEmail = `${unique('test-login')}@example.com`;
+    const realEmail = `${unique('real-login')}@example.com`;
+    await prisma.user.createMany({
+      data: [
+        {
+          email: testEmail,
+          role: 'STAFF',
+          status: 'ACTIVE',
+          passwordHash: await bcrypt.hash(password, 10),
+          isTest: true,
+        },
+        {
+          email: realEmail,
+          role: 'STAFF',
+          status: 'ACTIVE',
+          passwordHash: await bcrypt.hash(password, 10),
+          isTest: false,
+        },
+      ],
+    });
+
+    const testUser = await authService.validatePasswordCredentials(testEmail, password);
+    const realUser = await authService.validatePasswordCredentials(realEmail, password);
+
+    expect(testUser.email).toBe(testEmail);
+    expect(realUser.email).toBe(realEmail);
+    expect(testUser.isTest).toBe(true);
+    expect(realUser.isTest).toBe(false);
+  });
+
   it('rejects password login for inactive users', async () => {
     const password = 'Password123!';
     await prisma.user.create({
@@ -91,4 +123,39 @@ describe('AuthService (db)', () => {
     const updatedUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(updatedUser.lastLoginAt).toBeTruthy();
   });
+
+  it('changes a password after verifying the current password', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `${unique('password-change')}@example.com`,
+        role: 'STAFF',
+        status: 'ACTIVE',
+        passwordHash: await bcrypt.hash('CurrentPass123!', 10),
+      },
+    });
+
+    await authService.changePassword(user.id, 'CurrentPass123!', 'NewPass123!');
+
+    const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(await bcrypt.compare('NewPass123!', updated.passwordHash!)).toBe(true);
+  });
+
+  it('rejects a password change with an incorrect current password', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `${unique('password-change-invalid')}@example.com`,
+        role: 'STAFF',
+        status: 'ACTIVE',
+        passwordHash: await bcrypt.hash('CurrentPass123!', 10),
+      },
+    });
+
+    await expect(authService.changePassword(user.id, 'WrongPass123!', 'NewPass123!')).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
 });
+
+function unique(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}

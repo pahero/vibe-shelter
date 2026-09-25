@@ -30,6 +30,7 @@ export function HomeCatsList() {
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const [searchArchived, setSearchArchived] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
@@ -117,7 +118,7 @@ export function HomeCatsList() {
       try {
         const response = await catsApi.listCats({
           locationId: locationFilter || undefined,
-          status: "ACTIVE",
+          archived: searchArchived,
           search: search.trim() || undefined,
           tagId: tagFilter || undefined,
           skip: (currentPage - 1) * CATS_PER_PAGE,
@@ -151,7 +152,7 @@ export function HomeCatsList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, locationFilter, refreshKey, search, tagFilter]);
+  }, [currentPage, locationFilter, refreshKey, search, searchArchived, tagFilter]);
 
   const handleCreateCat = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -380,6 +381,19 @@ export function HomeCatsList() {
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-gray-800">
+          <input
+            type="checkbox"
+            checked={searchArchived}
+            onChange={(event) => {
+              setSearchArchived(event.target.checked);
+              setCurrentPage(1);
+            }}
+            className="h-4 w-4 rounded border-[#d4c7b4] text-[#d05a2c] focus:ring-[#d05a2c]"
+          />
+          Search archived
         </label>
 
       </div>

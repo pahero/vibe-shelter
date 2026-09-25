@@ -12,6 +12,8 @@ model User {
   email          String     @unique @db.Citext
   fullName       String?
   passwordHash   String?
+  passwordChangeRequired Boolean @default(false)
+  isTest         Boolean    @default(false)
   status         UserStatus @default(ACTIVE)
   role           UserRole   @default(STAFF)
   lastLoginAt    DateTime?
@@ -23,6 +25,11 @@ model User {
   createdPhotos  CatPhoto[] @relation("createdPhotos")
   deletedPhotos  CatPhoto[] @relation("deletedPhotos")
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
+  tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
+  locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
+  taskReceivers      CatTaskReceiver[]    @relation("taskReceivers")
+  completedTasks     CatTask[]            @relation("completedTasks")
+  taskNotifications  TaskNotification[]
 
   @@index([status])
   @@index([role])
@@ -73,14 +80,13 @@ enum SterilizationStatus {
   UNKNOWN
 }
 
-enum CatStatus {
-  ACTIVE
-  ADOPTED
-  DECEASED
-  ARCHIVED
-}
-
 enum CatAuditEventType {
+  cat_created
+  cat_archived
+  cat_dearchived
+  archivation_reason_create
+  archivation_reason_update
+  archivation_reason_delete
   name_changed
   sex_changed
   color_changed
@@ -92,23 +98,55 @@ enum CatAuditEventType {
   sterilization_status_changed
   status_changed
   current_location_changed
-  photo_created
+photo_created
   photo_deleted
+  weight_created
+  weight_deleted
+  tag_added_to_cat
+  tag_removed_from_cat
+  task_created
+  task_updated
+  task_comment_changed
+  task_due_date_changed
+  task_receivers_changed
+  task_deleted
+  task_completed
 }
 
 model Location {
   id          String         @id @default(cuid())
-  name        String         @unique
+  name        String
   description String?
   ownerId     String?
   owner       User?          @relation("ownedLocations", fields: [ownerId], references: [id], onDelete: SetNull)
+  isTest      Boolean        @default(false)
   status      LocationStatus @default(ACTIVE)
+  deletedAt   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
+  auditEvents LocationAuditEvent[]
 
   @@index([ownerId])
+  @@index([isTest])
   @@index([status])
+  @@index([deletedAt])
+}
+
+model LocationAuditEvent {
+  id          String   @id @default(cuid())
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  actorUserId String
+  actorUser   User     @relation("locationAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([locationId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model Cat {
@@ -122,7 +160,10 @@ model Cat {
   microchipNumber     String?             @unique
   passportNumber      String?             @unique
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
-  status              CatStatus           @default(ACTIVE)
+  archivedAt          DateTime?
+  archivationReasonId String?
+  archivationReason   CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: Restrict)
+  isTest              Boolean             @default(false)
   currentLocationId   String?
   currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
   createdByUserId     String?
@@ -134,12 +175,27 @@ model Cat {
   tags                CatTagOnCat[]
   photos              CatPhoto[]
   auditEvents         CatAuditEvent[]
+  tasks               CatTask[]
 
   @@index([createdByUserId])
   @@index([currentLocationId])
-  @@index([status])
+  @@index([isTest])
+  @@index([archivedAt])
+  @@index([archivationReasonId])
   @@index([name])
   @@index([intakeDate])
+}
+
+model CatArchivationReason {
+  id          String   @id @default(cuid())
+  name        String
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  cats        Cat[]
+  auditEvents CatAuditEvent[]
+
+  @@index([deletedAt])
 }
 
 model CatPhoto {
@@ -147,6 +203,7 @@ model CatPhoto {
   catId           String
   cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   key             String   @unique
+  previewKey      String?
   createdByUserId String?
   createdByUser   User?    @relation("createdPhotos", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedByUserId String?
@@ -164,8 +221,10 @@ model CatPhoto {
 
 model CatAuditEvent {
   id          String            @id @default(cuid())
-  catId       String
-  cat         Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
+  catId       String?
+  cat         Cat?              @relation(fields: [catId], references: [id], onDelete: Cascade)
+  archivationReasonId String?
+  archivationReason CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: SetNull)
   actorUserId String
   actorUser   User              @relation("catAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
   eventType   CatAuditEventType
@@ -176,6 +235,7 @@ model CatAuditEvent {
   photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
 
   @@index([catId, occurredAt])
+  @@index([archivationReasonId, occurredAt])
   @@index([actorUserId])
   @@index([photoId])
   @@index([eventType])
@@ -183,12 +243,31 @@ model CatAuditEvent {
 
 model CatTag {
   id        String        @id @default(cuid())
-  name      String        @unique
+  name      String
   color     String        @default("#ffb38a")
+  deletedAt DateTime?
   createdAt DateTime      @default(now())
   cats      CatTagOnCat[]
+  auditEvents TagAuditEvent[]
 
   @@index([name])
+  @@index([deletedAt])
+}
+
+model TagAuditEvent {
+  id          String   @id @default(cuid())
+  tagId       String?
+  tag         CatTag?  @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  actorUserId String
+  actorUser   User     @relation("tagAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([tagId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model CatTagOnCat {
@@ -211,5 +290,51 @@ model CatWeight {
 
   @@index([catId])
   @@index([measuredAt])
+}
+
+model CatTask {
+  id                String            @id @default(cuid())
+  catId             String
+  cat               Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
+  comment           String
+  dueDate           DateTime
+  deletedAt         DateTime?
+  concurrencyToken  String            @default(cuid())
+  notificationSentAt DateTime?
+  completedAt       DateTime?
+  completedByUserId String?
+  completedByUser   User?             @relation("completedTasks", fields: [completedByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  receivers         CatTaskReceiver[]
+  notifications     TaskNotification[]
+
+  @@index([catId, dueDate])
+  @@index([deletedAt, completedAt, dueDate])
+  @@index([completedByUserId])
+  @@index([deletedAt])
+  @@index([notificationSentAt])
+}
+
+model CatTaskReceiver {
+  taskId String
+  userId String
+  task   CatTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User    @relation("taskReceivers", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([taskId, userId])
+  @@index([userId])
+}
+
+model TaskNotification {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  task      CatTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([taskId, userId])
+  @@index([userId, createdAt])
 }
 

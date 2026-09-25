@@ -1,4 +1,5 @@
 {
+  "name": "vibe-shelter",
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --names API,WEB --prefix-colors cyan,magenta \"npm --prefix backend run start:dev\" \"npm --prefix frontend run dev\""
   },

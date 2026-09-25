@@ -13,5 +13,6 @@ export class CreateCatCommand {
     readonly sterilizationStatus: SterilizationStatus,
     readonly currentLocationId: string | null,
     readonly createdByUserId: string,
+    readonly isTest: boolean,
   ) {}
 }

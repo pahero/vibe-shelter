@@ -3,6 +3,8 @@ dist/
 build/
 *.log
 .env*
+!.env.production.example
+variables.txt
 .DS_Store
 Thumbs.db
 *.tmp

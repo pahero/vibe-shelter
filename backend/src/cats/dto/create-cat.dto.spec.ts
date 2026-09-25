@@ -15,7 +15,7 @@ describe('CreateCatDto', () => {
     dto.sterilizationStatus = 'STERILIZED';
     dto.currentLocationId = '  location-1  ';
 
-    const command = dto.toCommand('user-1');
+    const command = dto.toCommand('user-1', true);
 
     expect(command).toMatchObject({
       name: 'Mila',
@@ -29,6 +29,7 @@ describe('CreateCatDto', () => {
       sterilizationStatus: 'STERILIZED',
       currentLocationId: 'location-1',
       createdByUserId: 'user-1',
+      isTest: true,
     });
   });
 
@@ -46,7 +47,7 @@ describe('CreateCatDto', () => {
     dto.passportNumber = value;
     dto.currentLocationId = value;
 
-    expect(dto.toCommand('user-1')).toMatchObject({
+    expect(dto.toCommand('user-1', false)).toMatchObject({
       color: null,
       estimatedBirthDate: null,
       intakeDate: null,
@@ -61,7 +62,7 @@ describe('CreateCatDto', () => {
     const dto = createRequiredDto();
     dto.color = '   ';
 
-    const command = dto.toCommand('user-1');
+    const command = dto.toCommand('user-1', false);
 
     expect(command.color).toBeNull();
   });
@@ -70,7 +71,7 @@ describe('CreateCatDto', () => {
     const dto = createRequiredDto();
     dto.name = name as string;
 
-    expect(() => dto.toCommand('user-1')).toThrow(new BadRequestException('Cat name is required'));
+    expect(() => dto.toCommand('user-1', false)).toThrow(new BadRequestException('Cat name is required'));
   });
 
   it.each([
@@ -84,7 +85,7 @@ describe('CreateCatDto', () => {
     const dto = createRequiredDto();
     Object.assign(dto, { [field]: value });
 
-    expect(() => dto.toCommand('user-1')).toThrow(new BadRequestException(message));
+    expect(() => dto.toCommand('user-1', false)).toThrow(new BadRequestException(message));
   });
 
   it.each(['estimatedBirthDate', 'intakeDate'] as const)(
@@ -93,7 +94,7 @@ describe('CreateCatDto', () => {
       const dto = createRequiredDto();
       dto[field] = 'not-a-date';
 
-      expect(() => dto.toCommand('user-1')).toThrow(
+      expect(() => dto.toCommand('user-1', false)).toThrow(
         new BadRequestException(`${field} must be a valid date`),
       );
     },
@@ -108,7 +109,7 @@ describe('CreateCatDto', () => {
     dto.sex = sex;
     dto.sterilizationStatus = sterilizationStatus;
 
-    expect(dto.toCommand('user-1')).toMatchObject({ sex, sterilizationStatus });
+    expect(dto.toCommand('user-1', false)).toMatchObject({ sex, sterilizationStatus });
   });
 });
 

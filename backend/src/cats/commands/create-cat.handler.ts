@@ -6,8 +6,10 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CatPhotoUrlService } from '../cat-photo-url.service';
+import { CAT_AUDIT_EVENT_TYPES } from '../cat-audit-event-types';
 import { CatCard } from '../cats.service';
 import { CreateCatCommand } from './create-cat.command';
+import { WriteCatAuditEventCommand } from './write-cat-audit-event.command';
 
 const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
@@ -18,6 +20,7 @@ export class CreateCatHandler {
   constructor(
     private readonly prisma: PrismaService,
     private readonly photoUrls: CatPhotoUrlService,
+    private readonly auditWriter: WriteCatAuditEventCommand,
   ) {}
 
   async execute(command: CreateCatCommand): Promise<CatCard> {
@@ -25,9 +28,9 @@ export class CreateCatHandler {
         if (command.currentLocationId) {
           const location = await transaction.location.findUnique({
             where: { id: command.currentLocationId },
-            select: { status: true },
+            select: { status: true, isTest: true },
           });
-          if (location?.status !== 'ACTIVE') {
+          if (location?.status !== 'ACTIVE' || location.isTest !== command.isTest) {
             throw new NotFoundException('Active location not found');
           }
         }
@@ -65,8 +68,16 @@ export class CreateCatHandler {
             sterilizationStatus: command.sterilizationStatus,
             currentLocationId: command.currentLocationId,
             createdByUserId: command.createdByUserId,
+            isTest: command.isTest,
           },
           include: CAT_CARD_INCLUDE,
+        });
+        await this.auditWriter.execute(transaction, {
+          catId: created.id,
+          actorUserId: command.createdByUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.catCreated,
+          oldValue: null,
+          newValue: created.name,
         });
         return created;
     });
@@ -78,7 +89,10 @@ export class CreateCatHandler {
       color: cat.color,
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,
       intakeDate: cat.intakeDate?.toISOString() ?? null,
-      status: cat.status,
+      archivedAt: null,
+      archivationReasonId: null,
+      archivationReasonName: null,
+      isTest: cat.isTest,
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,

@@ -1,0 +1,16 @@
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	@backend path /api /api/* /auth /auth/* /admin /admin/* /users /users/* /health
+	handle @backend {
+		reverse_proxy backend:4000
+	}
+
+	handle {
+		reverse_proxy frontend:4001
+	}
+}
+
+{$STORAGE_DOMAIN} {
+	reverse_proxy garage:3900
+}

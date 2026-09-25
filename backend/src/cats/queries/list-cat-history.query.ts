@@ -7,6 +7,7 @@ type ListCatHistoryInput = {
   catId: string;
   skip?: number;
   limit?: number;
+  currentUserIsTest?: boolean;
 };
 
 @Injectable()
@@ -20,8 +21,8 @@ export class ListCatHistoryQuery {
     this.validateId(input.catId);
     const { skip, limit } = this.validatePagination(input.skip, input.limit);
 
-    const cat = await (this.prisma as any).cat.findUnique({
-      where: { id: input.catId },
+    const cat = await (this.prisma as any).cat.findFirst({
+      where: { id: input.catId, isTest: input.currentUserIsTest ?? false },
       select: { id: true },
     });
     if (!cat) {
@@ -35,6 +36,7 @@ export class ListCatHistoryQuery {
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
           photo: { select: { id: true, key: true, deletedAt: true } },
+          cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
         skip,
@@ -55,6 +57,7 @@ export class ListCatHistoryQuery {
     return {
       id: event.id,
       catId: event.catId,
+      catName: event.cat?.name ?? null,
       eventType: event.eventType,
       occurredAt: event.occurredAt.toISOString(),
       actor: {

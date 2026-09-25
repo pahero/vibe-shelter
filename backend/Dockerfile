@@ -1,27 +1,40 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS dependencies
 
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
 
+FROM dependencies AS builder
+
 COPY . .
+RUN DATABASE_URL=postgresql://unused:unused@localhost:5432/unused npx prisma generate
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine
+# This target intentionally retains the Prisma CLI for the one-shot migration
+# service in compose.prod.yml.
+FROM builder AS migration
+
+ENV NODE_ENV=production
+CMD ["npx", "prisma", "migrate", "deploy"]
+
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=4000
 
 COPY package*.json ./
-RUN npm ci --only=production
+COPY prisma ./prisma
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-EXPOSE 3000
+USER node
+
+EXPOSE 4000
 
 CMD ["node", "dist/main"]
