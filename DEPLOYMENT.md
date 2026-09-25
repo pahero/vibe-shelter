@@ -1,13 +1,11 @@
 # Self-hosted production deployment
 
 The production stack runs Caddy, the Next.js frontend, NestJS backend,
-PostgreSQL, and Garage on one Podman or Docker host. Only Caddy publishes host
-ports.
+PostgreSQL, and Garage on one Docker host. Only Caddy publishes host ports.
 
 ## VM requirements
 
-- A Linux VM with Podman and `podman-compose`, or Docker
-  Engine with Docker Compose v2
+- A Linux VM with Docker Engine and the Docker Compose v2 plugin
 - Ports 80/TCP, 443/TCP, and 443/UDP open in the firewall
 - Two DNS records pointing to the VM:
   - the application domain, for example `shelter.example.com`
@@ -15,22 +13,6 @@ ports.
 
 Garage is configured as a single-node store. Its volume must be backed up; a
 single VM provides persistence, but not redundancy.
-
-### Rootless Podman ports
-
-Caddy needs public ports 80 and 443 for automatic certificates. Rootless
-Podman commonly blocks ports below 1024. On a dedicated VM, allow rootless
-processes to bind from port 80 by creating `/etc/sysctl.d/99-rootless-ports.conf`
-with this content:
-
-```text
-net.ipv4.ip_unprivileged_port_start=80
-```
-
-Then apply it with `sudo sysctl --system`. Alternatively, run the stack with
-rootful Podman, or forward public ports 80/443 to unprivileged ports and set
-`HTTP_PORT`/`HTTPS_PORT` accordingly. Changing the ports without external
-forwarding will prevent normal ACME certificate issuance.
 
 ## Configure
 
@@ -53,17 +35,14 @@ https://<APP_DOMAIN>/auth/google/callback
 
 ## Deploy
 
-From the repository root on the VM, using Podman:
+From the repository root on the VM:
 
 ```text
-podman-compose --env-file .env.production -f compose.prod.yml config
-podman-compose --env-file .env.production -f compose.prod.yml build
-podman-compose --env-file .env.production -f compose.prod.yml up -d
-podman-compose --env-file .env.production -f compose.prod.yml ps
+docker compose --env-file .env.production -f compose.prod.yml config
+docker compose --env-file .env.production -f compose.prod.yml build
+docker compose --env-file .env.production -f compose.prod.yml up -d
+docker compose --env-file .env.production -f compose.prod.yml ps
 ```
-
-The same commands work with Docker by replacing `podman-compose` with
-`docker compose`.
 
 The one-shot `migrate` service applies Prisma migrations before the backend is
 started. It is expected to show an exited status with exit code 0 afterward.
@@ -72,7 +51,7 @@ Caddy obtains and renews public TLS certificates automatically.
 On the first deployment, create the initial `admin@shelter.local` account:
 
 ```text
-podman-compose --env-file .env.production -f compose.prod.yml --profile bootstrap run --rm seed
+docker compose --env-file .env.production -f compose.prod.yml --profile bootstrap run --rm seed
 ```
 
 The seed is idempotent, but running it again resets that admin account to
@@ -81,28 +60,16 @@ The seed is idempotent, but running it again resets that admin account to
 Inspect service output with:
 
 ```text
-podman-compose --env-file .env.production -f compose.prod.yml logs -f
+docker compose --env-file .env.production -f compose.prod.yml logs -f
 ```
-
-For a rootless Podman deployment, enable user services at boot and Podman's
-restart service (replace `<user>` with the deployment account):
-
-```text
-sudo loginctl enable-linger <user>
-systemctl --user enable --now podman-restart.service
-```
-
-Run the GitHub Actions runner as that same user. Lingering provides its systemd
-user session at boot and prevents Podman from repeatedly warning that it must
-fall back from the `systemd` cgroup manager to `cgroupfs`.
 
 ## Update
 
 Pull the new source and run:
 
 ```text
-podman-compose --env-file .env.production -f compose.prod.yml build
-podman-compose --env-file .env.production -f compose.prod.yml up -d --remove-orphans
+docker compose --env-file .env.production -f compose.prod.yml build
+docker compose --env-file .env.production -f compose.prod.yml up -d --remove-orphans
 ```
 
 Compose reruns the migration service and only starts the new backend after the
@@ -119,11 +86,28 @@ migrations complete successfully.
    starts `compose.prod.yml`, and verifies migrations and service health.
 
 The deployment host does not build application images. Its runner account must
-be able to invoke `podman` and `podman-compose`, bind the configured public
-ports, and access the persistent Podman volumes. Run the runner service under
-the same Ubuntu account that owns the rootless Podman containers and volumes.
-The runner also requires Bash and `curl`. Only one production deployment runs
-at a time.
+be a member of the `docker` group and able to invoke `docker` and
+`docker compose`. Membership in that group effectively grants root access, so
+protect the production GitHub Environment and do not deploy untrusted pull
+requests. The runner also requires Bash and `curl`. Only one production
+deployment runs at a time.
+
+After installing Docker, grant the runner access and restart its service so the
+new group membership is applied:
+
+```text
+sudo usermod -aG docker github-runner
+cd /home/github-runner/actions-runner
+sudo ./svc.sh stop
+sudo ./svc.sh start
+```
+
+Verify this as `github-runner` before running the workflow:
+
+```text
+docker version
+docker compose version
+```
 
 Create a GitHub Environment named `production` and configure these Environment
 Variables:
@@ -166,7 +150,7 @@ Back up both stateful services. A database dump alone does not include photos.
 Create a PostgreSQL dump:
 
 ```text
-podman-compose --env-file .env.production -f compose.prod.yml exec -T postgres pg_dump -U shelter -d shelter -Fc > shelter.dump
+docker compose --env-file .env.production -f compose.prod.yml exec -T postgres pg_dump -U shelter -d shelter -Fc > shelter.dump
 ```
 
 Use the actual database user and name if they differ. For Garage, use a
@@ -183,5 +167,4 @@ state can be recreated.
 - Login, photo upload, and photo display work through HTTPS.
 
 PostgreSQL, Garage, frontend, and backend ports intentionally are not exposed
-on the VM. Administrative access should use `podman-compose exec` over SSH
-(`docker compose exec` when using Docker).
+on the VM. Administrative access should use `docker compose exec` over SSH.

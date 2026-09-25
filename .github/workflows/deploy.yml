@@ -110,7 +110,11 @@ jobs:
           umask 077
 
           deploy_env_file="${RUNNER_TEMP}/shelter-production-${GITHUB_RUN_ID}.env"
-          trap 'rm -f -- "${deploy_env_file}"' EXIT
+          cleanup() {
+            rm -f -- "${deploy_env_file}"
+            docker logout ghcr.io > /dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
 
           HTTP_PORT="${HTTP_PORT:-80}"
           HTTPS_PORT="${HTTPS_PORT:-443}"
@@ -154,10 +158,10 @@ jobs:
             printf '%s=%s\n' "${name}" "${value}" >> "${deploy_env_file}"
           done
 
-          printf '%s' "${GHCR_TOKEN}" | podman login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
 
-          compose=(podman-compose --env-file "${deploy_env_file}" -f compose.prod.yml)
-          "${compose[@]}" config --quiet
+          compose=(docker compose --env-file "${deploy_env_file}" -f compose.prod.yml)
+          "${compose[@]}" config > /dev/null
           "${compose[@]}" pull
           "${compose[@]}" up -d --remove-orphans
 
@@ -175,7 +179,10 @@ jobs:
                 healthy=false
                 continue
               fi
-              status="$(podman inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_id}")"
+              if ! status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_id}" 2>/dev/null)"; then
+                healthy=false
+                continue
+              fi
               if [[ "${status}" != 'healthy' ]]; then healthy=false; fi
             done
             if [[ "${healthy}" == 'true' ]]; then break; fi
@@ -184,12 +191,25 @@ jobs:
 
           if [[ "${healthy}" != 'true' ]]; then
             "${compose[@]}" ps -a
+            for service in "${health_services[@]}"; do
+              container_id="$("${compose[@]}" ps -q "${service}" 2>/dev/null || true)"
+              echo "Health details for ${service}:"
+              if [[ -n "${container_id}" ]]; then
+                docker inspect --format '{{json .State.Health}}' "${container_id}" 2>/dev/null || true
+              else
+                echo 'Container not found'
+              fi
+            done
             "${compose[@]}" logs --no-color --tail 200
             exit 1
           fi
 
           migration_id="$("${compose[@]}" ps -a -q migrate)"
-          migration_exit_code="$(podman inspect --format '{{.State.ExitCode}}' "${migration_id}")"
+          if [[ -z "${migration_id}" ]]; then
+            echo 'Migration container was not found' >&2
+            exit 1
+          fi
+          migration_exit_code="$(docker inspect --format '{{.State.ExitCode}}' "${migration_id}")"
           if [[ "${migration_exit_code}" != '0' ]]; then
             echo "Migration failed with exit code ${migration_exit_code}" >&2
             exit 1
