@@ -28,12 +28,14 @@ jobs:
     defaults:
       run:
         shell: bash
-    env:
-      DEPLOY_ENV_FILE: ${{ runner.temp }}/shelter-production-${{ github.run_id }}.env
-
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Initialize deployment paths
+        run: |
+          set -euo pipefail
+          printf 'DEPLOY_ENV_FILE=%s/shelter-production-%s.env\n' "${RUNNER_TEMP}" "${GITHUB_RUN_ID}" >> "${GITHUB_ENV}"
 
       - name: Create deployment environment
         env:
@@ -206,4 +208,5 @@ jobs:
       - name: Remove temporary deployment environment
         if: ${{ always() }}
         run: |
-          rm -f -- "${DEPLOY_ENV_FILE}"
+          deploy_env_file="${DEPLOY_ENV_FILE:-${RUNNER_TEMP}/shelter-production-${GITHUB_RUN_ID}.env}"
+          rm -f -- "${deploy_env_file}"
