@@ -226,6 +226,34 @@ describe("Cats endpoints", () => {
     expect(afterDelete.body.primaryPhotoUrl).toContain("first.jpg");
   });
 
+  it("manages PDF document endpoints and records both audit events", async () => {
+    const cat = await createCat(prisma, { name: unique("document") });
+
+    const created = await authAgent
+      .post(`/api/cats/${cat.id}/documents`)
+      .attach("document", Buffer.from("%PDF-1.7\ncat document"), {
+        filename: "medical record.pdf",
+        contentType: "application/pdf",
+      })
+      .expect(201);
+
+    expect(created.body).toMatchObject({ catId: cat.id, fileName: "medical record.pdf" });
+    expect(created.body.url).toContain(`cats/${cat.id}/documents/`);
+
+    const documents = await authAgent.get(`/api/cats/${cat.id}/documents`).expect(200);
+    expect(documents.body).toHaveLength(1);
+    expect(documents.body[0].id).toBe(created.body.id);
+
+    await authAgent.delete(`/api/cats/${cat.id}/documents/${created.body.id}`).expect(204);
+    expect((await authAgent.get(`/api/cats/${cat.id}/documents`).expect(200)).body).toEqual([]);
+
+    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    expect(history.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: "document_created", newValue: "medical record.pdf", document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
+      expect.objectContaining({ eventType: "document_deleted", oldValue: "medical record.pdf", document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
+    ]));
+  });
+
   it("GET /api/cats lists active cat cards with filters", async () => {
     const location = await createLocation(prisma, "list");
     const prefix = unique("list");

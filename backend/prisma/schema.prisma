@@ -24,6 +24,8 @@ model User {
   createdCats    Cat[]      @relation("createdCats")
   createdPhotos  CatPhoto[] @relation("createdPhotos")
   deletedPhotos  CatPhoto[] @relation("deletedPhotos")
+  createdDocuments CatDocument[] @relation("createdDocuments")
+  deletedDocuments CatDocument[] @relation("deletedDocuments")
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
   tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
   locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
@@ -98,8 +100,10 @@ enum CatAuditEventType {
   sterilization_status_changed
   status_changed
   current_location_changed
-photo_created
+  photo_created
   photo_deleted
+  document_created
+  document_deleted
   weight_created
   weight_deleted
   tag_added_to_cat
@@ -174,6 +178,7 @@ model Cat {
   weights             CatWeight[]
   tags                CatTagOnCat[]
   photos              CatPhoto[]
+  documents           CatDocument[]
   auditEvents         CatAuditEvent[]
   tasks               CatTask[]
 
@@ -219,6 +224,29 @@ model CatPhoto {
   @@index([createdAt])
 }
 
+model CatDocument {
+  id              String   @id @default(cuid())
+  catId           String
+  cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  key             String   @unique
+  fileName        String
+  createdByUserId String?
+  createdByUser   User?    @relation("createdDocuments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  deletedByUserId String?
+  deletedByUser   User?    @relation("deletedDocuments", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  deletedAt       DateTime?
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  auditEvents     CatAuditEvent[]
+
+  @@index([catId])
+  @@index([createdByUserId])
+  @@index([deletedByUserId])
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
 model CatAuditEvent {
   id          String            @id @default(cuid())
   catId       String?
@@ -233,11 +261,14 @@ model CatAuditEvent {
   newValue    String?
   photoId     String?
   photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  documentId  String?
+  document    CatDocument?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
 
   @@index([catId, occurredAt])
   @@index([archivationReasonId, occurredAt])
   @@index([actorUserId])
   @@index([photoId])
+  @@index([documentId])
   @@index([eventType])
 }
 

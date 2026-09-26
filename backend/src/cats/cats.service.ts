@@ -117,6 +117,15 @@ export type CatPhoto = {
   createdAt: string;
 };
 
+export type CatDocument = {
+  id: string;
+  catId: string;
+  fileName: string;
+  url: string | null;
+  downloadUrl: string | null;
+  createdAt: string;
+};
+
 export type PrimaryPhotoUpload = {
   originalname?: string;
   mimetype?: string;
@@ -188,6 +197,69 @@ export class CatsService {
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
     return Promise.all(photos.map((photo: any) => this.toCatPhoto(photo, cat.primaryPhotoKey)));
+  }
+
+  async listDocuments(catId: string, currentUserIsTest = false): Promise<CatDocument[]> {
+    this.validateId(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
+    const documents = await (this.prisma as any).catDocument.findMany({
+      where: { catId, deletedAt: null },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return Promise.all(documents.map((document: any) => this.toCatDocument(document)));
+  }
+
+  async addDocument(catId: string, document: PrimaryPhotoUpload | undefined, actorUserId: string, currentUserIsTest = false): Promise<CatDocument> {
+    this.validateId(catId);
+    await this.findExistingCat(catId, currentUserIsTest);
+    this.validatePdf(document);
+
+    const key = await this.photoUrls.uploadDocument({
+      catId,
+      originalName: document.originalname,
+      body: document.buffer,
+    });
+    try {
+      const created = await this.runWrite(async (transaction) => {
+        const catDocument = await (transaction as any).catDocument.create({
+          data: { catId, key, fileName: document.originalname ?? 'document.pdf', createdByUserId: actorUserId },
+        });
+        await transaction.cat.update({ where: { id: catId }, data: { updatedAt: new Date() } });
+        await this.auditWriter.execute(transaction, {
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.documentCreated,
+          newValue: catDocument.fileName,
+          documentId: catDocument.id,
+        });
+        return catDocument;
+      });
+      return this.toCatDocument(created);
+    } catch (error) {
+      await this.photoUrls.deleteDocument(key);
+      throw error;
+    }
+  }
+
+  async deleteDocument(catId: string, documentId: string, actorUserId: string, currentUserIsTest = false): Promise<void> {
+    this.validateId(catId);
+    this.validateId(documentId);
+    await this.findExistingCat(catId, currentUserIsTest);
+    const document = await this.findExistingDocument(catId, documentId);
+    await this.runWrite(async (transaction) => {
+      await (transaction as any).catDocument.update({
+        where: { id: documentId },
+        data: { deletedAt: new Date(), deletedByUserId: actorUserId, version: { increment: 1 } },
+      });
+      await transaction.cat.update({ where: { id: catId }, data: { updatedAt: new Date() } });
+      await this.auditWriter.execute(transaction, {
+        catId,
+        actorUserId,
+        eventType: CAT_AUDIT_EVENT_TYPES.documentDeleted,
+        oldValue: document.fileName,
+        documentId,
+      });
+    });
   }
 
   async addPhoto(catId: string, photo: PrimaryPhotoUpload | undefined, actorUserId?: string, currentUserIsTest = false): Promise<CatPhoto> {
@@ -749,6 +821,19 @@ export class CatsService {
     return photo;
   }
 
+  private async findExistingDocument(catId: string, documentId: string): Promise<{ id: string; key: string; fileName: string }> {
+    const document = await (this.prisma as any).catDocument.findFirst({ where: { id: documentId, catId, deletedAt: null } });
+    if (!document) throw new NotFoundException('Document not found');
+    return document;
+  }
+
+  private validatePdf(document: PrimaryPhotoUpload | undefined): asserts document is Required<PrimaryPhotoUpload> {
+    if (!document?.buffer || document.buffer.length === 0) throw new BadRequestException('PDF document file is required');
+    if (document.mimetype !== 'application/pdf' || !document.buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))) {
+      throw new BadRequestException('Document must be a PDF file');
+    }
+  }
+
   private async findPhotoKey(photoId: string): Promise<string> {
     const photo = await (this.prisma as any).catPhoto.findUnique({ where: { id: photoId } });
     if (!photo) throw new NotFoundException('Photo not found');
@@ -854,6 +939,17 @@ export class CatsService {
       fullUrl: await this.photoUrls.getPhotoUrl(photo.key),
       isPrimary: photo.key === primaryPhotoKey,
       createdAt: photo.createdAt.toISOString(),
+    };
+  }
+
+  private async toCatDocument(document: { id: string; catId: string; key: string; fileName: string; createdAt: Date }): Promise<CatDocument> {
+    return {
+      id: document.id,
+      catId: document.catId,
+      fileName: document.fileName,
+      url: await this.photoUrls.getDocumentUrl(document.key),
+      downloadUrl: await this.photoUrls.getDocumentDownloadUrl(document.key, document.fileName),
+      createdAt: document.createdAt.toISOString(),
     };
   }
 

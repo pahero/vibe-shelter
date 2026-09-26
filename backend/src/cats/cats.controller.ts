@@ -119,6 +119,11 @@ export class CatsController {
     return this.catsService.listPhotos(id, user.isTest);
   }
 
+  @Get(":id/documents")
+  async listDocuments(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.catsService.listDocuments(id, user.isTest);
+  }
+
   @Get(":id/history")
   @ApiOperation({ summary: "List cat audit history" })
   @ApiQuery({ name: "skip", required: false })
@@ -236,6 +241,17 @@ export class CatsController {
     return this.catsService.addPhoto(id, photo, user.id, user.isTest);
   }
 
+  @Post(":id/documents")
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor("document", { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async addDocument(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() document?: PrimaryPhotoUpload,
+  ) {
+    return this.catsService.addDocument(id, document, user.id, user.isTest);
+  }
+
   @Put(":id/photos/:photoId/primary")
   async setPrimaryPhoto(
     @Param("id") id: string,
@@ -252,6 +268,16 @@ export class CatsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.catsService.deletePhoto(id, photoId, user.id, user.isTest);
+  }
+
+  @Delete(":id/documents/:documentId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteDocument(
+    @Param("id") id: string,
+    @Param("documentId") documentId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.catsService.deleteDocument(id, documentId, user.id, user.isTest);
   }
 
   @Delete(":id/weights/:weightId")

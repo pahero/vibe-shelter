@@ -9,6 +9,7 @@ export type WriteCatAuditEventInput = {
   oldValue?: string | null;
   newValue?: string | null;
   photoId?: string | null;
+  documentId?: string | null;
 };
 
 @Injectable()
@@ -22,6 +23,7 @@ export class WriteCatAuditEventCommand {
         oldValue: input.oldValue ?? null,
         newValue: input.newValue ?? null,
         photoId: input.photoId ?? null,
+        documentId: input.documentId ?? null,
       },
     });
   }

@@ -7,7 +7,7 @@ import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
-import { CatArchivationReason, CatCard as CatCardType, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -86,6 +86,12 @@ export default function CatProfilePage() {
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [photos, setPhotos] = useState<CatPhoto[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
+  const [documents, setDocuments] = useState<CatDocument[]>([]);
+  const [expandedDocumentId, setExpandedDocumentId] = useState<string | null>(null);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [removingDocumentId, setRemovingDocumentId] = useState<string | null>(null);
+  const [documentError, setDocumentError] = useState<string | null>(null);
   const [historyEvents, setHistoryEvents] = useState<CatHistoryEvent[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -123,6 +129,30 @@ export default function CatProfilePage() {
     };
 
     fetchCat();
+  }, [catId]);
+
+  useEffect(() => {
+    if (!catId) return;
+    let cancelled = false;
+
+    const fetchDocuments = async () => {
+      setIsLoadingDocuments(true);
+      setDocumentError(null);
+      try {
+        const data = await catsApi.listDocuments(catId);
+        if (!cancelled) setDocuments(data);
+      } catch (err) {
+        if (!cancelled) {
+          setDocumentError(ApiErrorHandler.handle(err));
+          setDocuments([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingDocuments(false);
+      }
+    };
+
+    fetchDocuments();
+    return () => { cancelled = true; };
   }, [catId]);
 
   const refreshHistory = async () => {
@@ -306,6 +336,44 @@ export default function CatProfilePage() {
       setPhotoError(ApiErrorHandler.handle(err));
     } finally {
       setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleDocumentChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !cat) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setDocumentError("Choose a PDF document.");
+      return;
+    }
+
+    setIsUploadingDocument(true);
+    setDocumentError(null);
+    try {
+      await catsApi.addDocument(cat.id, file);
+      const [updatedDocuments] = await Promise.all([catsApi.listDocuments(cat.id), refreshHistory()]);
+      setDocuments(updatedDocuments);
+    } catch (err) {
+      setDocumentError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!cat) return;
+    setRemovingDocumentId(documentId);
+    setDocumentError(null);
+    try {
+      await catsApi.deleteDocument(cat.id, documentId);
+      const [updatedDocuments] = await Promise.all([catsApi.listDocuments(cat.id), refreshHistory()]);
+      setDocuments(updatedDocuments);
+      if (expandedDocumentId === documentId) setExpandedDocumentId(null);
+    } catch (err) {
+      setDocumentError(ApiErrorHandler.handle(err));
+    } finally {
+      setRemovingDocumentId(null);
     }
   };
 
@@ -563,6 +631,9 @@ export default function CatProfilePage() {
   const currentTagIds = new Set(cat?.tags.map((tag) => tag.id) ?? []);
   const tagsToAdd = availableTags.filter((tag) => !currentTagIds.has(tag.id));
   const primaryPhoto = photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
+  const expandedDocument = expandedDocumentId ? documents.find((document) => document.id === expandedDocumentId) ?? null : null;
+  const expandedDocumentIndex = expandedDocumentId ? documents.findIndex((document) => document.id === expandedDocumentId) : -1;
+  const hasMultipleDocuments = documents.length > 1;
   const expandedPhotoIndex = expandedPhotoId ? photos.findIndex((photo) => photo.id === expandedPhotoId) : -1;
   const expandedPhoto = expandedPhotoIndex >= 0 ? photos[expandedPhotoIndex] : null;
   const hasMultiplePhotos = photos.length > 1;
@@ -574,6 +645,14 @@ export default function CatProfilePage() {
   const showNextPhoto = () => {
     if (!hasMultiplePhotos || expandedPhotoIndex < 0) return;
     openPhoto(photos[(expandedPhotoIndex + 1) % photos.length].id);
+  };
+  const showPreviousDocument = () => {
+    if (!hasMultipleDocuments || expandedDocumentIndex < 0) return;
+    setExpandedDocumentId(documents[(expandedDocumentIndex - 1 + documents.length) % documents.length].id);
+  };
+  const showNextDocument = () => {
+    if (!hasMultipleDocuments || expandedDocumentIndex < 0) return;
+    setExpandedDocumentId(documents[(expandedDocumentIndex + 1) % documents.length].id);
   };
 
   return (
@@ -620,7 +699,36 @@ export default function CatProfilePage() {
                   </div>
                 )}
 
-                {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
+               {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
+              </section>
+              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Documents</p>
+                    <p className="mt-1 text-xs text-[#6d6a66]">PDF files only</p>
+                  </div>
+                  <label className="cursor-pointer rounded-lg border border-[#b24a20] bg-[#d05a2c] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
+                    {isUploadingDocument ? "Uploading..." : "Upload PDF"}
+                    <input type="file" accept="application/pdf,.pdf" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
+                  </label>
+                </div>
+                {isLoadingDocuments && <p className="mt-4 text-sm text-[#6d6a66]">Loading documents...</p>}
+                {!isLoadingDocuments && documents.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No documents have been uploaded.</p>}
+                {!isLoadingDocuments && documents.length > 0 && (
+                  <ul className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
+                    {documents.map((document) => (
+                      <li key={document.id} className="flex items-center gap-3 py-2.5">
+                        <button type="button" onClick={() => setExpandedDocumentId(document.id)} disabled={!document.url} className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-[#b24a20] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-gray-800 disabled:no-underline" title={document.fileName}>
+                          {document.fileName}
+                        </button>
+                        <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} className="shrink-0 text-xs font-semibold text-red-700 transition hover:text-red-900 disabled:opacity-50">
+                          {removingDocumentId === document.id ? "Removing..." : "Remove"}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {documentError && <p className="mt-3 text-sm font-medium text-red-700">{documentError}</p>}
               </section>
             </div>
             <section className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
@@ -1039,6 +1147,32 @@ export default function CatProfilePage() {
 
             {hasMultiplePhotos && (
               <button type="button" onClick={showNextPhoto} className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20" aria-label="Next photo">
+                ›
+              </button>
+            )}
+          </div>
+        )}
+
+        {cat && expandedDocument && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4" role="dialog" aria-modal="true" aria-label={`Document preview: ${expandedDocument.fileName}`}>
+            <button type="button" onClick={() => setExpandedDocumentId(null)} className="absolute inset-0 z-0" aria-label="Close document preview" />
+            {hasMultipleDocuments && (
+              <button type="button" onClick={showPreviousDocument} className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20" aria-label="Previous document">
+                ‹
+              </button>
+            )}
+            <div className="relative z-10 flex h-[92dvh] w-[95vw] max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between gap-3 border-b border-[#d4c7b4] bg-[#fff8ee] px-4 py-3">
+                <p className="min-w-0 truncate text-sm font-semibold text-gray-900" title={expandedDocument.fileName}>{expandedDocument.fileName}{hasMultipleDocuments && <span className="ml-2 text-xs font-medium text-[#6d6a66]">{expandedDocumentIndex + 1} / {documents.length}</span>}</p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <a href={expandedDocument.downloadUrl ?? undefined} className="rounded-lg border border-[#b24a20] px-3 py-1.5 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10">Download</a>
+                  <button type="button" onClick={() => setExpandedDocumentId(null)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d05a2c] text-2xl font-light leading-none text-white transition hover:bg-[#b24a20]" aria-label="Close document preview">×</button>
+                </div>
+              </div>
+              <iframe src={expandedDocument.url ?? undefined} title={`Preview of ${expandedDocument.fileName}`} className="min-h-0 flex-1 bg-white" />
+            </div>
+            {hasMultipleDocuments && (
+              <button type="button" onClick={showNextDocument} className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20" aria-label="Next document">
                 ›
               </button>
             )}

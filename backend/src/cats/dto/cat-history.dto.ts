@@ -10,6 +10,13 @@ export type CatHistoryPhotoDto = {
   status: 'ACTIVE' | 'DELETED';
 };
 
+export type CatHistoryDocumentDto = {
+  id: string;
+  link: string | null;
+  fileName: string;
+  status: 'ACTIVE' | 'DELETED';
+};
+
 export type CatHistoryEventDto = {
   id: string;
   catId: string | null;
@@ -20,6 +27,7 @@ export type CatHistoryEventDto = {
   oldValue: string | null;
   newValue: string | null;
   photo: CatHistoryPhotoDto | null;
+  document: CatHistoryDocumentDto | null;
 };
 
 export type CatHistoryResponseDto = {

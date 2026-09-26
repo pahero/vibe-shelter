@@ -32,6 +32,34 @@ export class CatPhotoUrlService {
     return this.getPrimaryPhotoUrl(key);
   }
 
+  async getDocumentUrl(key: string): Promise<string | null> {
+    if (!this.bucketName) return null;
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        ResponseContentDisposition: 'inline',
+        ResponseContentType: 'application/pdf',
+      }),
+      { expiresIn: 3600 },
+    );
+  }
+
+  async getDocumentDownloadUrl(key: string, fileName: string): Promise<string | null> {
+    if (!this.bucketName) return null;
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        ResponseContentDisposition: `attachment; filename="${this.safeFileName(fileName)}"`,
+        ResponseContentType: 'application/pdf',
+      }),
+      { expiresIn: 3600 },
+    );
+  }
+
   async getPreviewPhotoUrl(fullKey: string | null): Promise<string | null> {
     if (!fullKey) return null;
     return this.getPrimaryPhotoUrl(fullKey.endsWith('/full.jpg') ? fullKey.replace(/\/full\.jpg$/, '/preview.jpg') : fullKey);
@@ -84,6 +112,28 @@ export class CatPhotoUrlService {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }));
   }
 
+  async uploadDocument(input: {
+    catId: string;
+    originalName?: string;
+    body: Buffer;
+  }): Promise<string> {
+    if (!this.bucketName) throw new Error('S3 bucket is not configured');
+
+    const key = this.buildDocumentKey(input.catId, input.originalName);
+    await this.client.send(new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      Body: input.body,
+      ContentType: 'application/pdf',
+      ContentDisposition: `attachment; filename="${this.safeFileName(input.originalName)}"`,
+    }));
+    return key;
+  }
+
+  async deleteDocument(key: string): Promise<void> {
+    await this.deletePhoto(key);
+  }
+
   async listPhotoObjects(prefix: string): Promise<Array<{ key: string; lastModified: Date | null }>> {
     const objects: Array<{ key: string; lastModified: Date | null }> = [];
     let continuationToken: string | undefined;
@@ -116,5 +166,17 @@ export class CatPhotoUrlService {
       .replace(/-+/g, '-')
       .slice(0, 120);
     return `cats/${catId}/photos/${Date.now()}-${randomUUID()}-${safeName}`;
+  }
+
+  private buildDocumentKey(catId: string, originalName?: string): string {
+    return `cats/${catId}/documents/${Date.now()}-${randomUUID()}-${this.safeFileName(originalName)}`;
+  }
+
+  private safeFileName(originalName?: string): string {
+    const safeName = (originalName ?? 'document.pdf')
+      .replace(/[^a-zA-Z0-9._-]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 120);
+    return safeName.toLowerCase().endsWith('.pdf') ? safeName : `${safeName}.pdf`;
   }
 }
