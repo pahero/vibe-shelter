@@ -80,6 +80,7 @@ export class ListAllCatHistoryQuery {
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
           photo: { select: { id: true, key: true, deletedAt: true } },
+          document: { select: { id: true, key: true, fileName: true, deletedAt: true } },
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
@@ -151,6 +152,14 @@ export class ListAllCatHistoryQuery {
             status: event.photo.deletedAt ? 'DELETED' : 'ACTIVE',
           }
         : null,
+      document: event.document
+        ? {
+            id: event.document.id,
+            link: await this.photoUrls.getDocumentUrl(event.document.key),
+            fileName: event.document.fileName,
+            status: event.document.deletedAt ? 'DELETED' : 'ACTIVE',
+          }
+        : null,
     };
   }
 
@@ -169,6 +178,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       photo: null,
+      document: null,
     };
   }
 
@@ -187,6 +197,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       photo: null,
+      document: null,
     };
   }
 
@@ -205,6 +216,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       photo: null,
+      document: null,
     };
   }
 

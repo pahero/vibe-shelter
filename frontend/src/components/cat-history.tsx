@@ -19,6 +19,8 @@ export const eventLabels: Record<string, string> = {
   current_location_changed: "Current location changed",
   photo_created: "Photo added",
   photo_deleted: "Photo deleted",
+  document_created: "Document uploaded",
+  document_deleted: "Document removed",
   weight_created: "Weight added",
   weight_deleted: "Weight deleted",
   tag_added_to_cat: "Tag added",
@@ -92,6 +94,12 @@ export function CatHistory({ events, isLoading, error }: CatHistoryProps) {
                     <p className="mt-1 text-xs">
                       <a className="font-semibold text-[#b24a20] underline-offset-2 hover:underline" href={event.photo.link ?? "#"} target="_blank" rel="noreferrer">
                         {event.photo.status === "DELETED" ? "Open historical deleted-photo link" : "Open photo link"}
+                      </a>
+                    </p>
+                  ) : event.document ? (
+                    <p className="mt-1 text-xs">
+                      <a className="font-semibold text-[#b24a20] underline-offset-2 hover:underline" href={event.document.link ?? "#"} target="_blank" rel="noreferrer">
+                        Open {event.document.status === "DELETED" ? "removed " : ""}PDF: {event.document.fileName}
                       </a>
                     </p>
                   ) : (

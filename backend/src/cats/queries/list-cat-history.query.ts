@@ -36,6 +36,7 @@ export class ListCatHistoryQuery {
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
           photo: { select: { id: true, key: true, deletedAt: true } },
+          document: { select: { id: true, key: true, fileName: true, deletedAt: true } },
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
@@ -72,6 +73,14 @@ export class ListCatHistoryQuery {
             id: event.photo.id,
             link: await this.photoUrls.getPhotoUrl(event.photo.key),
             status: event.photo.deletedAt ? 'DELETED' : 'ACTIVE',
+          }
+        : null,
+      document: event.document
+        ? {
+            id: event.document.id,
+            link: await this.photoUrls.getDocumentUrl(event.document.key),
+            fileName: event.document.fileName,
+            status: event.document.deletedAt ? 'DELETED' : 'ACTIVE',
           }
         : null,
     };
