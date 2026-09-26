@@ -25,7 +25,7 @@ test.describe("cats UI", () => {
     await createLocationViaApi(page, locationName, "Active location for new cats");
     await page.reload();
 
-    await page.getByRole("button", { name: "+ Add Cat" }).click();
+    await page.getByRole("button", { name: "Add cat" }).click();
 
     const form = page.locator("form").filter({ has: page.getByRole("button", { name: "Add cat" }) });
     await expect(form.getByLabel("Location")).toBeEnabled();
@@ -222,5 +222,31 @@ const location = await createLocationViaApi(page, locationName);
     await updatedTaskCard.getByRole("button", { name: "Delete" }).click();
     expect((await deleteTask).status()).toBe(204);
     await expect(page.getByText(updatedComment, { exact: true })).toHaveCount(0);
+  });
+
+  test("user can create a treatment and record a medication dose", async ({ page }) => {
+    const treatmentName = uniqueName("Antibiotic");
+    const treatmentDate = new Date().toISOString().slice(0, 10);
+
+    await authenticateAsStaff(page);
+    const cat = await createCatViaApi(page, { name: uniqueName("Treatment Cat") });
+    await page.goto(`/cats/${cat.id}`);
+    await expect(page.getByRole("heading", { level: 2, name: "Medication schedule" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Save" }).click();
+    const treatmentForm = page.locator("form").filter({ has: page.getByLabel("Treatment short name") });
+    await treatmentForm.getByLabel("Treatment short name").fill(treatmentName);
+    await treatmentForm.getByLabel("Treatment start date").fill(treatmentDate);
+    await treatmentForm.getByLabel("Doses per day").selectOption("2");
+    const createTreatment = page.waitForResponse((response) => response.url().includes(`/api/cats/${cat.id}/treatments`) && response.request().method() === "POST");
+    await treatmentForm.getByRole("button", { name: "Save" }).click();
+    expect((await createTreatment).status()).toBe(201);
+
+    const eveningDose = page.getByLabel(`${treatmentName} ${treatmentDate} dose 2`);
+    await expect(eveningDose).toBeVisible();
+    const checkDose = page.waitForResponse((response) => response.url().includes("/administrations") && response.request().method() === "PUT");
+    await eveningDose.check();
+    expect((await checkDose).status()).toBe(200);
+    await expect(eveningDose).toBeChecked();
   });
 });

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 
 export type CatTreatmentResponse = {
-  id: string; shortName: string; instructions: string; startDate: string; endDate: string | null;
+  id: string; shortName: string; instructions: string | null; startDate: string; endDate: string | null;
   dosesPerDay: number; createdAt: string; updatedAt: string;
   administrations: { date: string; doseNumber: number; checkedBy: { id: string; fullName: string | null } }[];
 };
@@ -15,7 +15,7 @@ export class ListCatTreatmentsHandler {
     const cat = await this.prisma.cat.findFirst({ where: { id: catId, isTest }, select: { id: true } });
     if (!cat) throw new NotFoundException("Cat not found");
     const treatments = await this.prisma.catTreatment.findMany({
-      where: { catId }, orderBy: { createdAt: "asc" },
+      where: { catId, deletedAt: null }, orderBy: { createdAt: "asc" },
       include: { administrations: { orderBy: [{ administeredOn: "asc" }, { doseNumber: "asc" }], include: { checkedByUser: { select: { id: true, fullName: true } } } } },
     });
     return treatments.map((treatment) => ({

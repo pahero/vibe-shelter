@@ -14,6 +14,7 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 
 ## Soft-deletable entities
 
+- Entities must only be deleted through soft deletion; hard deletion is prohibited.
 - Soft-deletable entities must have a concurrency token.
 - When creating an item that references a soft-deletable entity, update that entity's concurrency token in the same transaction. This verifies that it still exists and has not been removed.
 - Soft deletion must always update the entity's concurrency token in the same write.
@@ -26,6 +27,10 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 ## Audit events
 
 - Entity creation must emit one `<entity>_created` audit event with no `oldValue` or `newValue`; do not create per-field audit events for creation. Updates must continue to emit one audit event for each changed field.
+
+## Forms
+
+- Do not label optional fields with an `(optional)` suffix. Every required form field must instead have a visually red asterisk (`*`) in its label, on the same line as the label text with a space before it. When the label uses a grid layout, wrap the text and asterisk in one inline container so they cannot split onto separate rows.
 
 ## Examples
 

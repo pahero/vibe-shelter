@@ -211,9 +211,11 @@ export function HomeCatsList() {
             setCreateSuccess(null);
             setError(null);
           }}
-          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
+          aria-label={showCreateForm ? "Close add cat form" : "Add cat"}
+          title={showCreateForm ? "Close add cat form" : "Add cat"}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
         >
-          {showCreateForm ? "Close form" : "+ Add Cat"}
+          {showCreateForm ? "×" : "+"}
         </button>
       </div>
 

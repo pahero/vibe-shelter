@@ -163,9 +163,11 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
         <button
           type="button"
           onClick={() => setShowForm((value) => !value)}
-          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
+          aria-label={showForm ? "Close add cat form" : "Add cat"}
+          title={showForm ? "Close add cat form" : "Add cat"}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
         >
-          {showForm ? "Close form" : "+ Add Cat"}
+          {showForm ? "×" : "+"}
         </button>
       </div>
 

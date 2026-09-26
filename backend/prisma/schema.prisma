@@ -117,6 +117,7 @@ enum CatAuditEventType {
   task_deleted
   task_completed
   treatment_created
+  treatment_deleted
   treatment_short_name_changed
   treatment_start_date_changed
   treatment_end_date_changed
@@ -338,16 +339,19 @@ model CatTreatment {
   catId       String
   cat         Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   shortName   String
-  instructions String
+  instructions String?
   startDate   DateTime @db.Date
   endDate     DateTime? @db.Date
   dosesPerDay Int
+  deletedAt   DateTime?
+  concurrencyToken String @default(cuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   administrations CatTreatmentAdministration[]
 
   @@index([catId, createdAt])
   @@index([catId, startDate, endDate])
+  @@index([deletedAt])
 }
 
 model CatTreatmentAdministration {

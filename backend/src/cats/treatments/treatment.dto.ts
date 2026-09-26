@@ -3,7 +3,7 @@ import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, Max, Min } from "
 
 export type TreatmentPayload = {
   shortName: string;
-  instructions: string;
+  instructions: string | null;
   startDate: Date;
   endDate: Date | null;
   dosesPerDay: number;
@@ -28,7 +28,8 @@ export class CreateTreatmentDto {
   shortName!: string;
 
   @IsString()
-  instructions!: string;
+  @IsOptional()
+  instructions?: string | null;
 
   @IsDateString()
   startDate!: string;
@@ -50,7 +51,7 @@ export class CreateTreatmentDto {
     }
     return {
       shortName: toRequiredText(this.shortName, "shortName"),
-      instructions: toRequiredText(this.instructions, "instructions"),
+      instructions: this.instructions?.trim() || null,
       startDate,
       endDate,
       dosesPerDay: this.dosesPerDay,
@@ -65,7 +66,7 @@ export class UpdateTreatmentDto {
 
   @IsString()
   @IsOptional()
-  instructions?: string;
+  instructions?: string | null;
 
   @IsDateString()
   @IsOptional()
@@ -84,9 +85,7 @@ export class UpdateTreatmentDto {
   toCommand(): Partial<TreatmentPayload> {
     return {
       ...(this.shortName !== undefined && { shortName: toRequiredText(this.shortName, "shortName") }),
-      ...(this.instructions !== undefined && {
-        instructions: toRequiredText(this.instructions, "instructions"),
-      }),
+      ...(this.instructions !== undefined && { instructions: this.instructions?.trim() || null }),
       ...(this.startDate !== undefined && { startDate: toDate(this.startDate, "startDate") }),
       ...(this.endDate !== undefined && { endDate: this.endDate === null ? null : toDate(this.endDate, "endDate") }),
       ...(this.dosesPerDay !== undefined && { dosesPerDay: this.dosesPerDay }),

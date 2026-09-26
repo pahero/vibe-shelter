@@ -18,7 +18,7 @@ test.describe("locations UI", () => {
     await page.goto("/");
 
     await expect(page.getByText("Cats list")).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Add Cat" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add cat" })).toBeVisible();
     await expect(page.getByLabel("Search cats")).toBeVisible();
     await expect(page.getByLabel("Tag")).toBeVisible();
     await expect(page.getByText("All locations", { exact: true })).toBeVisible();

@@ -29,6 +29,7 @@ import { TaskNotificationsController } from "./tasks/task-notifications.controll
 import { CatTasksController } from "./tasks/cat-tasks.controller";
 import { CatTreatmentsController } from "./treatments/cat-treatments.controller";
 import { CreateCatTreatmentHandler } from "./treatments/create-cat-treatment.handler";
+import { DeleteCatTreatmentHandler } from "./treatments/delete-cat-treatment.handler";
 import { ListCatTreatmentsHandler } from "./treatments/list-cat-treatments.handler";
 import { SetCatTreatmentAdministrationHandler } from "./treatments/set-cat-treatment-administration.handler";
 import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.handler";
@@ -66,6 +67,7 @@ import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.han
     ListCurrentUserNotificationsQuery,
     ListCatTreatmentsHandler,
     CreateCatTreatmentHandler,
+    DeleteCatTreatmentHandler,
     UpdateCatTreatmentHandler,
     SetCatTreatmentAdministrationHandler,
   ],

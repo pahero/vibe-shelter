@@ -16,4 +16,9 @@ describe("treatment DTOs", () => {
     const dto = Object.assign(new UpdateTreatmentDto(), { endDate: null });
     expect(dto.toCommand()).toEqual({ endDate: null });
   });
+
+  it("accepts omitted instructions as null", () => {
+    const dto = Object.assign(new CreateTreatmentDto(), { shortName: "Antibiotic", startDate: "2026-09-01", dosesPerDay: 1 });
+    expect(dto.toCommand()).toMatchObject({ instructions: null });
+  });
 });

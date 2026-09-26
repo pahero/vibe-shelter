@@ -91,6 +91,30 @@ export type TaskInput = {
   receiverIds: string[];
 };
 
+export type CatTreatment = {
+  id: string;
+  shortName: string;
+  instructions: string | null;
+  startDate: string;
+  endDate: string | null;
+  dosesPerDay: 1 | 2;
+  createdAt: string;
+  updatedAt: string;
+  administrations: {
+    date: string;
+    doseNumber: number;
+    checkedBy: { id: string; fullName: string | null };
+  }[];
+};
+
+export type TreatmentInput = {
+  shortName: string;
+  instructions?: string | null;
+  startDate: string;
+  endDate: string | null;
+  dosesPerDay: 1 | 2;
+};
+
 export type TaskNotification = {
   id: string;
   taskId: string;
@@ -314,6 +338,39 @@ export const notificationsApi = {
 };
 
 export const catsApi = {
+  async listTreatments(catId: string): Promise<CatTreatment[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/treatments`, { method: "GET", credentials: "include" });
+    return handleResponse<CatTreatment[]>(response);
+  },
+
+  async createTreatment(catId: string, data: TreatmentInput): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/treatments`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async updateTreatment(treatmentId: string, data: Partial<TreatmentInput>): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}`, {
+      method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async deleteTreatment(treatmentId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}`, {
+      method: "DELETE", credentials: "include",
+    });
+    return handleResponse<void>(response);
+  },
+
+  async setTreatmentAdministration(treatmentId: string, date: string, doseNumber: number, checked: boolean): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}/administrations`, {
+      method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, doseNumber, checked }),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
   async listTasks(catId: string): Promise<CatTask[]> {
     const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/tasks`, { method: "GET", credentials: "include" });
     return handleResponse<CatTask[]>(response);

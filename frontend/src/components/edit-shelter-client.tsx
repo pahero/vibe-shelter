@@ -600,7 +600,7 @@ export function EditShelterClient() {
           {activeSection === "archivation" && <section className="space-y-2 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
             <div className="flex items-start justify-between gap-2">
               <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Archivation reasons</h2>
-              <button type="button" onClick={() => { setIsAddingReason((isOpen) => !isOpen); setNewReasonName(""); setError(null); }} disabled={isSaving} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:opacity-60">{isAddingReason ? "Cancel" : "+ New Reason"}</button>
+              <button type="button" onClick={() => { setIsAddingReason((isOpen) => !isOpen); setNewReasonName(""); setError(null); }} disabled={isSaving} aria-label={isAddingReason ? "Close add reason form" : "Add archivation reason"} title={isAddingReason ? "Close add reason form" : "Add archivation reason"} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:opacity-60">{isAddingReason ? "×" : "+"}</button>
             </div>
             <div className="grid gap-2">
               {isAddingReason && <div className="order-2 rounded-xl border border-[#d4c7b4] bg-[#fff8ee]/70 p-3">

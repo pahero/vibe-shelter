@@ -30,6 +30,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   taskDeleted: "task_deleted",
   taskCompleted: "task_completed",
   treatmentCreated: "treatment_created",
+  treatmentDeleted: "treatment_deleted",
   treatmentShortNameChanged: "treatment_short_name_changed",
   treatmentStartDateChanged: "treatment_start_date_changed",
   treatmentEndDateChanged: "treatment_end_date_changed",

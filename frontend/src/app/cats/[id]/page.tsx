@@ -7,6 +7,7 @@ import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
+import { CatTreatments } from "@/components/cat-treatments";
 import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
@@ -710,8 +711,8 @@ export default function CatProfilePage() {
                     <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Documents</p>
                     <p className="mt-1 text-xs text-[#6d6a66]">PDF files only</p>
                   </div>
-                  <label className="cursor-pointer rounded-lg border border-[#b24a20] bg-[#d05a2c] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                    {isUploadingDocument ? "Uploading..." : "Upload PDF"}
+                  <label aria-label="Upload PDF" title="Upload PDF" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
+                    {isUploadingDocument ? "…" : "+"}
                     <input type="file" accept="application/pdf,.pdf" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
                   </label>
                 </div>
@@ -806,9 +807,11 @@ export default function CatProfilePage() {
                     setIsTagPickerOpen((isOpen) => !isOpen);
                     setTagError(null);
                   }}
-                  className="inline-flex items-center rounded-full border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 px-2.5 py-1 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20"
+                  aria-label="Add tag"
+                  title="Add tag"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-lg font-semibold leading-none text-[#b24a20] transition hover:bg-[#d05a2c]/20"
                 >
-                  + tag
+                  +
                 </button>
                 {isTagPickerOpen && (
                   <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-3 shadow-lg">
@@ -993,6 +996,7 @@ export default function CatProfilePage() {
               )}
             </section>
             <CatTasks catId={cat.id} onChanged={refreshHistory} />
+            <CatTreatments catId={cat.id} onChanged={refreshHistory} />
             <section className="md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Weight history</p>
