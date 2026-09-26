@@ -99,6 +99,7 @@ export class CreateCatHandler {
       createdByUserId: cat.createdByUserId,
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
+      rescueSource: cat.rescueSource,
       updatedAt: cat.updatedAt.toISOString(),
       tags: [],
     };
