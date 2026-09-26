@@ -156,7 +156,7 @@ describe('CatsService', () => {
   it('updates cat card fields and can clear nullable fields', async () => {
     await runInTestTransaction(async (tx) => {
       const location = await createLocation(tx, 'update');
-      const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
+      const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', color: 'Calico', rescueSource: 'Original source', sterilizationStatus: 'UNKNOWN', currentLocationId: location.id });
 
       const service = createService(tx);
       const updated = await service.updateCat(card.id, {
@@ -165,11 +165,13 @@ describe('CatsService', () => {
         sex: 'UNKNOWN',
         sterilizationStatus: 'STERILIZED',
         currentLocationId: null,
+        rescueSource: 'Found near clinic',
       });
 
       expect(updated.name).toBe('Luna');
       expect(updated.color).toBeNull();
       expect(updated.currentLocationId).toBeNull();
+      expect(updated.rescueSource).toBe('Found near clinic');
     });
   });
 

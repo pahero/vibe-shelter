@@ -18,6 +18,7 @@ type CatEditForm = {
   estimatedBirthDate: string;
   intakeDate: string;
   microchipNumber: string;
+  rescueSource: string;
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string;
 };
@@ -50,6 +51,7 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     estimatedBirthDate: dateInputValue(cat.estimatedBirthDate),
     intakeDate: dateInputValue(cat.intakeDate),
     microchipNumber: cat.microchipNumber ?? "",
+    rescueSource: cat.rescueSource ?? "",
     sterilizationStatus: cat.sterilizationStatus,
     currentLocationId: cat.currentLocationId ?? "",
   };
@@ -510,6 +512,7 @@ export default function CatProfilePage() {
         estimatedBirthDate: editForm.estimatedBirthDate || null,
         intakeDate: editForm.intakeDate || null,
         microchipNumber: editForm.microchipNumber.trim() || null,
+        rescueSource: editForm.rescueSource.trim() || null,
         sterilizationStatus: editForm.sterilizationStatus,
         currentLocationId: editForm.currentLocationId || null,
       });
@@ -735,7 +738,17 @@ export default function CatProfilePage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</p>
-                  <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name}</h1>
+                  {isEditingDetails && editForm ? (
+                    <input
+                      form="cat-details-form"
+                      value={editForm.name}
+                      onChange={(event) => setEditForm((prev) => prev && { ...prev, name: event.target.value })}
+                      aria-label="Cat name"
+                      className="mt-1 w-full border-b border-[#d4c7b4] bg-transparent text-4xl font-semibold text-gray-900 focus:border-[#d05a2c] focus:outline-none"
+                    />
+                  ) : (
+                    <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name}</h1>
+                  )}
                 </div>
                 {!isEditingDetails && !cat.archivationReasonId && (
                   <div className="flex gap-2">
@@ -850,9 +863,9 @@ export default function CatProfilePage() {
               )}
 
               {isEditingDetails && editForm ? (
-                <form onSubmit={handleDetailsSubmit} className="mt-6 space-y-4">
+                <form id="cat-details-form" onSubmit={handleDetailsSubmit} className="mt-6 space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
-                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Current location
                       <select
                         value={editForm.currentLocationId}
@@ -870,24 +883,6 @@ export default function CatProfilePage() {
                         ))}
                       </select>
                       {locationsError && <span className="text-xs font-medium text-red-700">Locations could not be loaded: {locationsError}</span>}
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Name *
-                      <input
-                        value={editForm.name}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, name: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Color
-                      <input
-                        value={editForm.color}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, color: event.target.value })}
-                        list="cat-color-options"
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
-                      <CatColorDatalist />
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Sex
@@ -916,6 +911,16 @@ export default function CatProfilePage() {
                       </select>
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Color
+                      <input
+                        value={editForm.color}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, color: event.target.value })}
+                        list="cat-color-options"
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      />
+                      <CatColorDatalist />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Microchip number
                       <input
                         value={editForm.microchipNumber}
@@ -932,12 +937,20 @@ export default function CatProfilePage() {
                         className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       />
                     </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Estimated birth date
+                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                      Birth date
                       <input
                         type="date"
                         value={editForm.estimatedBirthDate}
                         onChange={(event) => setEditForm((prev) => prev && { ...prev, estimatedBirthDate: event.target.value })}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                      Rescue source
+                      <input
+                        value={editForm.rescueSource}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, rescueSource: event.target.value })}
                         className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       />
                     </label>
@@ -959,7 +972,7 @@ export default function CatProfilePage() {
                   </div>
                 </form>
               ) : (
-                <dl className="mt-6 grid gap-x-6 gap-y-3 rounded-2xl border border-[#d4c7b4] bg-white/45 p-4 sm:grid-cols-2">
+                <dl className="mt-6 grid gap-x-6 gap-y-0 rounded-2xl bg-[#fff8ee]/85 p-4 sm:grid-cols-2">
                   {[
                     ["Current location", cat.currentLocationName || "Not assigned"],
                     ["Sex", sexLabels[cat.sex]],
@@ -968,12 +981,12 @@ export default function CatProfilePage() {
                     ["Color", cat.color || "Not set"],
                     ["Microchip number", cat.microchipNumber || "Not set"],
                     ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
-                    ["Estimated birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
-                    ["Last updated", formatDate(cat.updatedAt)],
+                    ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
+                    ["Rescue source", cat.rescueSource || "Not set"],
                   ].map(([label, value]) => (
-                    <div key={label} className="min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 sm:[&:nth-last-child(2)]:border-b-0">
-                      <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">{label}</dt>
-                      <dd className="mt-0.5 truncate font-semibold text-gray-900">{value}</dd>
+                    <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Rescue source" ? "border-t sm:col-span-2" : ""} ${label === "Birth date" && !cat.archivationReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivationReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
+                      <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66] sm:whitespace-nowrap">{label}</dt>
+                      <dd className={`mt-0.5 font-semibold text-gray-900 ${label === "Rescue source" ? "whitespace-pre-wrap break-words" : "truncate"}`}>{value}</dd>
                     </div>
                   ))}
                 </dl>

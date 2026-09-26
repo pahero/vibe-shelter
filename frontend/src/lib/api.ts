@@ -45,6 +45,7 @@ export type CatCard = {
   isTest: boolean;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
+  rescueSource: string | null;
   updatedAt: string;
   tags: CatTag[];
 };

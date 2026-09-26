@@ -82,6 +82,7 @@ export type CatCard = {
   currentLocationName: string | null;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
+  rescueSource: string | null;
   createdByUserId: string | null;
   isTest: boolean;
   updatedAt: string;
@@ -917,6 +918,7 @@ export class CatsService {
       isTest: cat.isTest,
       primaryPhotoUrl: await this.photoUrls.getPreviewPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
+      rescueSource: cat.rescueSource,
       updatedAt: cat.updatedAt.toISOString(),
       tags: cat.tags?.map((item) => this.toCatTag(item.tag)) ?? [],
     };
