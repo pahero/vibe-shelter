@@ -123,6 +123,14 @@ export type CatPhoto = {
   createdAt: string;
 };
 
+export type CatDocument = {
+  id: string;
+  catId: string;
+  fileName: string;
+  url: string | null;
+  createdAt: string;
+};
+
 export type CatHistoryEvent = {
   id: string;
   catId: string;
@@ -526,6 +534,33 @@ export const catsApi = {
       credentials: "include",
     });
     return handleResponse<CatPhoto[]>(response);
+  },
+
+  async listDocuments(id: string): Promise<CatDocument[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/documents`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<CatDocument[]>(response);
+  },
+
+  async addDocument(id: string, document: File): Promise<CatDocument> {
+    const formData = new FormData();
+    formData.append("document", document);
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/documents`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    return handleResponse<CatDocument>(response);
+  },
+
+  async deleteDocument(id: string, documentId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/documents/${documentId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleResponse<void>(response);
   },
 
   async addPhoto(id: string, photo: File): Promise<CatPhoto> {

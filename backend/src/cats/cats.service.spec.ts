@@ -237,6 +237,51 @@ describe('CatsService', () => {
     });
   });
 
+  it('uploads, lists, soft deletes, and audits PDF documents', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'document-auditor');
+      const card = await createCatFixture(tx, { name: 'Document Audit Cat', sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      const document = await service.addDocument(card.id, {
+        originalname: 'vaccination record.pdf',
+        mimetype: 'application/pdf',
+        buffer: Buffer.from('%PDF-1.7\ncat document'),
+      }, actor.id);
+
+      expect(document).toMatchObject({ catId: card.id, fileName: 'vaccination record.pdf' });
+      expect(document.url).toContain(`cats/${card.id}/documents/`);
+      expect(await service.listDocuments(card.id)).toHaveLength(1);
+
+      await service.deleteDocument(card.id, document.id, actor.id);
+
+      expect(await service.listDocuments(card.id)).toHaveLength(0);
+      const stored = await (tx as any).catDocument.findUnique({ where: { id: document.id } });
+      expect(stored).toMatchObject({ createdByUserId: actor.id, deletedByUserId: actor.id, version: 2 });
+      expect(stored.deletedAt).toBeInstanceOf(Date);
+      const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
+      expect(events).toEqual([
+        expect.objectContaining({ eventType: 'document_created', actorUserId: actor.id, oldValue: null, newValue: 'vaccination record.pdf' }),
+        expect.objectContaining({ eventType: 'document_deleted', actorUserId: actor.id, oldValue: 'vaccination record.pdf', newValue: null }),
+      ]);
+    });
+  });
+
+  it('rejects empty or non-PDF document uploads', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'document-validator');
+      const card = await createCatFixture(tx, { name: 'Document Validator Cat', sex: 'UNKNOWN', sterilizationStatus: 'UNKNOWN' });
+      const service = createService(tx);
+
+      await expect(service.addDocument(card.id, undefined, actor.id)).rejects.toThrow(BadRequestException);
+      await expect(service.addDocument(card.id, {
+        originalname: 'not-a-pdf.pdf',
+        mimetype: 'application/pdf',
+        buffer: Buffer.from('not a PDF'),
+      }, actor.id)).rejects.toThrow('Document must be a PDF file');
+    });
+  });
+
   it('scopes child cat operations through the current user test status', async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await createUser(tx, 'child-scope-auditor');

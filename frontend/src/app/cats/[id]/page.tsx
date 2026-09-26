@@ -7,7 +7,7 @@ import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
-import { CatArchivationReason, CatCard as CatCardType, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -86,6 +86,11 @@ export default function CatProfilePage() {
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [photos, setPhotos] = useState<CatPhoto[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
+  const [documents, setDocuments] = useState<CatDocument[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [removingDocumentId, setRemovingDocumentId] = useState<string | null>(null);
+  const [documentError, setDocumentError] = useState<string | null>(null);
   const [historyEvents, setHistoryEvents] = useState<CatHistoryEvent[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -123,6 +128,30 @@ export default function CatProfilePage() {
     };
 
     fetchCat();
+  }, [catId]);
+
+  useEffect(() => {
+    if (!catId) return;
+    let cancelled = false;
+
+    const fetchDocuments = async () => {
+      setIsLoadingDocuments(true);
+      setDocumentError(null);
+      try {
+        const data = await catsApi.listDocuments(catId);
+        if (!cancelled) setDocuments(data);
+      } catch (err) {
+        if (!cancelled) {
+          setDocumentError(ApiErrorHandler.handle(err));
+          setDocuments([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingDocuments(false);
+      }
+    };
+
+    fetchDocuments();
+    return () => { cancelled = true; };
   }, [catId]);
 
   const refreshHistory = async () => {
@@ -306,6 +335,43 @@ export default function CatProfilePage() {
       setPhotoError(ApiErrorHandler.handle(err));
     } finally {
       setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleDocumentChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !cat) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setDocumentError("Choose a PDF document.");
+      return;
+    }
+
+    setIsUploadingDocument(true);
+    setDocumentError(null);
+    try {
+      await catsApi.addDocument(cat.id, file);
+      const [updatedDocuments] = await Promise.all([catsApi.listDocuments(cat.id), refreshHistory()]);
+      setDocuments(updatedDocuments);
+    } catch (err) {
+      setDocumentError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!cat) return;
+    setRemovingDocumentId(documentId);
+    setDocumentError(null);
+    try {
+      await catsApi.deleteDocument(cat.id, documentId);
+      const [updatedDocuments] = await Promise.all([catsApi.listDocuments(cat.id), refreshHistory()]);
+      setDocuments(updatedDocuments);
+    } catch (err) {
+      setDocumentError(ApiErrorHandler.handle(err));
+    } finally {
+      setRemovingDocumentId(null);
     }
   };
 
@@ -620,7 +686,38 @@ export default function CatProfilePage() {
                   </div>
                 )}
 
-                {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
+               {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
+              </section>
+              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Documents</p>
+                    <p className="mt-1 text-xs text-[#6d6a66]">PDF files only</p>
+                  </div>
+                  <label className="cursor-pointer rounded-lg border border-[#b24a20] bg-[#d05a2c] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
+                    {isUploadingDocument ? "Uploading..." : "Upload PDF"}
+                    <input type="file" accept="application/pdf,.pdf" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
+                  </label>
+                </div>
+                {isLoadingDocuments && <p className="mt-4 text-sm text-[#6d6a66]">Loading documents...</p>}
+                {!isLoadingDocuments && documents.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No documents have been uploaded.</p>}
+                {!isLoadingDocuments && documents.length > 0 && (
+                  <ul className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
+                    {documents.map((document) => (
+                      <li key={document.id} className="flex items-center gap-3 py-2.5">
+                        {document.url ? (
+                          <a href={document.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-sm font-semibold text-[#b24a20] underline-offset-2 hover:underline" title={document.fileName}>{document.fileName}</a>
+                        ) : (
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800" title={document.fileName}>{document.fileName}</span>
+                        )}
+                        <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} className="shrink-0 text-xs font-semibold text-red-700 transition hover:text-red-900 disabled:opacity-50">
+                          {removingDocumentId === document.id ? "Removing..." : "Remove"}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {documentError && <p className="mt-3 text-sm font-medium text-red-700">{documentError}</p>}
               </section>
             </div>
             <section className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">

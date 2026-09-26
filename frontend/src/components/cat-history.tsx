@@ -19,6 +19,8 @@ export const eventLabels: Record<string, string> = {
   current_location_changed: "Current location changed",
   photo_created: "Photo added",
   photo_deleted: "Photo deleted",
+  document_created: "Document uploaded",
+  document_deleted: "Document removed",
   weight_created: "Weight added",
   weight_deleted: "Weight deleted",
   tag_added_to_cat: "Tag added",

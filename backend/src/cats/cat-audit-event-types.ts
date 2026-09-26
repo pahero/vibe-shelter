@@ -17,6 +17,8 @@ export const CAT_AUDIT_EVENT_TYPES = {
   currentLocationId: "current_location_changed",
   photoCreated: "photo_created",
   photoDeleted: "photo_deleted",
+  documentCreated: "document_created",
+  documentDeleted: "document_deleted",
   weightCreated: "weight_created",
   weightDeleted: "weight_deleted",
   tagAddedToCat: "tag_added_to_cat",

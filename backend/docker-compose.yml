@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: shelter_user
       POSTGRES_PASSWORD: shelter_password
-      POSTGRES_DB: postgres
+      POSTGRES_DB: shelter
     ports:
       - 5435:5432
     healthcheck:
