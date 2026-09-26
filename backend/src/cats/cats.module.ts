@@ -27,6 +27,11 @@ import { TaskNotificationCronService } from "./tasks/task-notification-cron.serv
 import { ListCurrentUserNotificationsQuery } from "./tasks/list-current-user-notifications.query";
 import { TaskNotificationsController } from "./tasks/task-notifications.controller";
 import { CatTasksController } from "./tasks/cat-tasks.controller";
+import { CatTreatmentsController } from "./treatments/cat-treatments.controller";
+import { CreateCatTreatmentHandler } from "./treatments/create-cat-treatment.handler";
+import { ListCatTreatmentsHandler } from "./treatments/list-cat-treatments.handler";
+import { SetCatTreatmentAdministrationHandler } from "./treatments/set-cat-treatment-administration.handler";
+import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.handler";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -35,6 +40,7 @@ import { CatTasksController } from "./tasks/cat-tasks.controller";
     CatsController,
     CatTasksController,
     TaskNotificationsController,
+    CatTreatmentsController,
   ],
   providers: [
     CatsService,
@@ -58,6 +64,10 @@ import { CatTasksController } from "./tasks/cat-tasks.controller";
     SendDueTaskNotificationsHandler,
     TaskNotificationCronService,
     ListCurrentUserNotificationsQuery,
+    ListCatTreatmentsHandler,
+    CreateCatTreatmentHandler,
+    UpdateCatTreatmentHandler,
+    SetCatTreatmentAdministrationHandler,
   ],
   exports: [CatsService],
 })

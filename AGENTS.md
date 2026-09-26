@@ -18,6 +18,15 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 - When creating an item that references a soft-deletable entity, update that entity's concurrency token in the same transaction. This verifies that it still exists and has not been removed.
 - Soft deletion must always update the entity's concurrency token in the same write.
 
+## Testing
+
+- Every command and query handler must have complete automated test coverage for all of its behavior and branches before the work is considered complete.
+- Do not run backend builds for validation. Always run the relevant backend tests instead.
+
+## Audit events
+
+- Entity creation must emit one `<entity>_created` audit event with no `oldValue` or `newValue`; do not create per-field audit events for creation. Updates must continue to emit one audit event for each changed field.
+
 ## Examples
 
 | Bash | PowerShell |
