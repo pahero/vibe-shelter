@@ -32,6 +32,7 @@ model User {
   taskReceivers      CatTaskReceiver[]    @relation("taskReceivers")
   completedTasks     CatTask[]            @relation("completedTasks")
   taskNotifications  TaskNotification[]
+  checkedTreatmentAdministrations CatTreatmentAdministration[] @relation("treatmentAdministrationCheckers")
 
   @@index([status])
   @@index([role])
@@ -115,6 +116,14 @@ enum CatAuditEventType {
   task_receivers_changed
   task_deleted
   task_completed
+  treatment_created
+  treatment_short_name_changed
+  treatment_start_date_changed
+  treatment_end_date_changed
+  treatment_doses_per_day_changed
+  treatment_instructions_changed
+  treatment_administration_checked
+  treatment_administration_unchecked
 }
 
 model Location {
@@ -181,6 +190,7 @@ model Cat {
   documents           CatDocument[]
   auditEvents         CatAuditEvent[]
   tasks               CatTask[]
+  treatments          CatTreatment[]
 
   @@index([createdByUserId])
   @@index([currentLocationId])
@@ -321,6 +331,37 @@ model CatWeight {
 
   @@index([catId])
   @@index([measuredAt])
+}
+
+model CatTreatment {
+  id          String   @id @default(cuid())
+  catId       String
+  cat         Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  shortName   String
+  instructions String
+  startDate   DateTime @db.Date
+  endDate     DateTime? @db.Date
+  dosesPerDay Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  administrations CatTreatmentAdministration[]
+
+  @@index([catId, createdAt])
+  @@index([catId, startDate, endDate])
+}
+
+model CatTreatmentAdministration {
+  treatmentId     String
+  treatment       CatTreatment @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
+  administeredOn  DateTime @db.Date
+  doseNumber      Int
+  checkedByUserId String
+  checkedByUser   User @relation("treatmentAdministrationCheckers", fields: [checkedByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime @default(now())
+
+  @@id([treatmentId, administeredOn, doseNumber])
+  @@index([checkedByUserId])
+  @@index([treatmentId, administeredOn])
 }
 
 model CatTask {
