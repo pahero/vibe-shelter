@@ -34,6 +34,10 @@ All commands should run from `frontend/`.
 
 Use web-fetch tooling for HTTP requests, health checks, and API endpoint verification when available. Do not use `curl` or shell HTTP commands for service health checks.
 
+## UI Actions
+
+- Use a clear icon rather than text for an action when its meaning is universally obvious (for example: add, expand/collapse, edit, delete, close, or navigation). Provide an accessible `aria-label` and a `title` tooltip for icon-only controls.
+
 ## Backend API Contract Reference
 
 The live backend OpenAPI spec is the source of truth. When backend is running, inspect `http://localhost:4000/api/openapi.json` and `http://localhost:4000/api/docs` with web-fetch/browser tooling.

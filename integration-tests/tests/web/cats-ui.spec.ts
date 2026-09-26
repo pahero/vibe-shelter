@@ -185,16 +185,17 @@ const location = await createLocationViaApi(page, locationName);
     await page.goto(`/cats/${cat.id}`);
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
 
-    const taskForm = page.locator("form").filter({ has: page.getByText("Notification receivers", { exact: true }) });
+    await page.getByRole("button", { name: "Show tasks" }).click();
+    await page.getByRole("button", { name: "Add task" }).click();
+    const taskForm = page.locator("form").filter({ has: page.getByLabel("Notification receivers") });
     await taskForm.getByLabel("Comment").fill(initialComment);
     await taskForm.getByLabel("Due date").fill("2030-01-02T10:00");
-    await taskForm.getByLabel("Search notification receivers").fill(staffTestUser.fullName);
-    await taskForm.getByRole("option", { name: new RegExp(staffTestUser.fullName) }).click();
+    await taskForm.getByLabel("Notification receivers").selectOption({ label: `${staffTestUser.fullName} (${staffTestUser.email})` });
 
     const createTask = page.waitForResponse(
       (response) => response.url().includes(`/api/cats/${cat.id}/tasks`) && response.request().method() === "POST",
     );
-    await taskForm.getByRole("button", { name: "Add task" }).click();
+    await taskForm.getByRole("button", { name: "Save" }).click();
     expect((await createTask).status()).toBe(201);
     await expect(page.getByText(initialComment, { exact: true })).toBeVisible();
 
@@ -204,7 +205,7 @@ const location = await createLocationViaApi(page, locationName);
     const updateTask = page.waitForResponse(
       (response) => response.url().includes("/api/cats/tasks/") && response.request().method() === "PATCH",
     );
-    await taskForm.getByRole("button", { name: "Save task" }).click();
+    await taskForm.getByRole("button", { name: "Save" }).click();
     expect((await updateTask).status()).toBe(200);
     await expect(page.getByText(updatedComment, { exact: true })).toBeVisible();
 

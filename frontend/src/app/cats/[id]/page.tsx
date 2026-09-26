@@ -678,7 +678,7 @@ export default function CatProfilePage() {
           <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,360px)_1fr]">
             <div className="space-y-4">
               <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={primaryPhoto ? () => openPhoto(primaryPhoto.id) : undefined} />
-              <section className="inline-block max-w-full rounded-2xl border border-[#d4c7b4] bg-white/60 p-3 shadow-sm">
+               <section className="w-full rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Gallery</p>
 
                 {isLoadingPhotos && <p className="mt-4 text-sm text-[#6d6a66]">Loading photos...</p>}
@@ -757,7 +757,7 @@ export default function CatProfilePage() {
                       Archive
                     </button>
                     <button type="button" onClick={startEditingDetails} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]">
-                      Edit details
+                       Edit
                     </button>
                   </div>
                 )}
@@ -809,9 +809,9 @@ export default function CatProfilePage() {
                   }}
                   aria-label="Add tag"
                   title="Add tag"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-lg font-semibold leading-none text-[#b24a20] transition hover:bg-[#d05a2c]/20"
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 px-2 text-xs font-semibold leading-none text-[#b24a20] transition hover:bg-[#d05a2c]/20"
                 >
-                  +
+                  + tag
                 </button>
                 {isTagPickerOpen && (
                   <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-3 shadow-lg">
