@@ -70,6 +70,26 @@ describe("UpdateCatTreatmentHandler", () => {
     });
   });
 
+  it("allows clearing instructions and records none as the new value", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({ data: { email: `${Date.now()}-clear-instructions@example.com` } });
+      const cat = await tx.cat.create({ data: { name: "Clear instructions cat" } });
+      const treatment = await tx.catTreatment.create({ data: { catId: cat.id, shortName: "Drug", instructions: "With food", startDate: day("2026-09-01"), endDate: null, dosesPerDay: 1 } });
+      await new UpdateCatTreatmentHandler(tx as PrismaService).handle(treatment.id, { instructions: null }, actor.id, false);
+      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_instructions_changed" } })).resolves.toMatchObject({ oldValue: "With food", newValue: "none" });
+    });
+  });
+
+  it("records none as the previous value when adding instructions", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({ data: { email: `${Date.now()}-add-instructions@example.com` } });
+      const cat = await tx.cat.create({ data: { name: "Add instructions cat" } });
+      const treatment = await tx.catTreatment.create({ data: { catId: cat.id, shortName: "Drug", instructions: null, startDate: day("2026-09-01"), endDate: null, dosesPerDay: 1 } });
+      await new UpdateCatTreatmentHandler(tx as PrismaService).handle(treatment.id, { instructions: "With food" }, actor.id, false);
+      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_instructions_changed" } })).resolves.toMatchObject({ oldValue: "none", newValue: "With food" });
+    });
+  });
+
   it("updates every field and writes a field-specific audit event", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({ data: { email: `${Date.now()}-success-update@example.com` } });

@@ -84,6 +84,8 @@ describe("Cat treatment endpoints", () => {
       .expect({ id: created.body.id });
 
     await expect(prisma.catTreatmentAdministration.count({ where: { treatmentId: created.body.id } })).resolves.toBe(0);
+    await agent.delete(`/api/cats/treatments/${created.body.id}`).expect(204);
+    await expect(prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } })).resolves.toMatchObject({ deletedAt: expect.any(Date) });
     const history = await agent.get(`/api/cats/${cat.id}/history`).expect(200);
     expect(history.body.data).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventType: "treatment_created", actor: expect.objectContaining({ id: userId }), oldValue: null, newValue: null }),
@@ -91,6 +93,7 @@ describe("Cat treatment endpoints", () => {
       expect.objectContaining({ eventType: "treatment_instructions_changed", actor: expect.objectContaining({ id: userId }) }),
       expect.objectContaining({ eventType: "treatment_administration_checked", actor: expect.objectContaining({ id: userId }) }),
       expect.objectContaining({ eventType: "treatment_administration_unchecked", actor: expect.objectContaining({ id: userId }) }),
+      expect.objectContaining({ eventType: "treatment_deleted", actor: expect.objectContaining({ id: userId }), oldValue: "Antibiotic updated", newValue: null }),
     ]));
   });
 });
