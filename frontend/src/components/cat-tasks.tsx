@@ -1,10 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faChevronUp, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { CatTask, catsApi, TaskInput, User, usersApi } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
+import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 
 const emptyTask = (): TaskInput => ({ comment: "", dueDate: "", receiverIds: [] });
 
@@ -103,14 +102,8 @@ export function CatTasks({ catId, onChanged }: { catId: string; onChanged?: () =
     try { await action(); await refresh(); await onChanged?.(); } catch (reason) { setError(ApiErrorHandler.handle(reason)); } finally { setActionId(null); }
   };
 
-  return <section className="md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
-    <div className="flex items-center justify-between gap-2">
-      <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Tasks</p>
-      <div className="flex items-center gap-2">
-        {isExpanded && <button type="button" onClick={openNewTask} aria-label="Add task" title="Add task" className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#b24a20] bg-[#d05a2c] text-sm text-white transition hover:bg-[#b24a20]"><FontAwesomeIcon icon={faPlus} /></button>}
-        <button type="button" onClick={() => { if (isExpanded) cancel(); setIsExpanded((current) => !current); }} aria-label={isExpanded ? "Hide tasks" : "Show tasks"} title={isExpanded ? "Hide tasks" : "Show tasks"} className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#d4c7b4] bg-white text-sm text-gray-800 transition hover:bg-[#fff0e8]"><FontAwesomeIcon icon={isExpanded ? faChevronUp : faChevronDown} /></button>
-      </div>
-    </div>
+  return <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+    <CatProfileSectionHeader title="Tasks" isExpanded={isExpanded} onToggle={() => { if (isExpanded) cancel(); setIsExpanded((current) => !current); }} onAdd={openNewTask} addLabel="Add task" />
 
     {isExpanded && <>
     {isFormOpen && <form onSubmit={submit} className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/50 p-4 md:grid-cols-2">

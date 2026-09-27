@@ -2,12 +2,14 @@
 
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
 import { CatTreatments } from "@/components/cat-treatments";
+import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
@@ -35,6 +37,8 @@ const sterilizationLabels: Record<SterilizationStatus, string> = {
   NOT_STERILIZED: "Not neutered",
   UNKNOWN: "Unknown",
 };
+
+const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
 function dateInputValue(date: string | null): string {
   return date ? date.slice(0, 10) : "";
@@ -81,6 +85,8 @@ export default function CatProfilePage() {
   const [weights, setWeights] = useState<CatWeight[]>([]);
   const [isLoadingWeights, setIsLoadingWeights] = useState(true);
   const [isAddingWeight, setIsAddingWeight] = useState(false);
+  const [isWeightExpanded, setIsWeightExpanded] = useState(false);
+  const [isWeightFormOpen, setIsWeightFormOpen] = useState(false);
   const [removingWeightId, setRemovingWeightId] = useState<string | null>(null);
   const [weightKg, setWeightKg] = useState("");
   const [weightDate, setWeightDate] = useState(() => todayInputValue());
@@ -548,8 +554,9 @@ export default function CatProfilePage() {
     try {
       const created = await catsApi.addWeight(cat.id, { weightKg: parsedWeight, measuredAt: weightDate });
       setWeights((prev) => [created, ...prev].sort((a, b) => b.measuredAt.localeCompare(a.measuredAt)));
-      setWeightKg("");
-      setWeightDate(todayInputValue());
+       setWeightKg("");
+       setWeightDate(todayInputValue());
+       setIsWeightFormOpen(false);
       await refreshHistory();
     } catch (err) {
       setWeightError(ApiErrorHandler.handle(err));
@@ -621,17 +628,7 @@ export default function CatProfilePage() {
     }
   };
 
-  const graphWeights = [...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
-  const graphValues = graphWeights.map((weight) => weight.weightKg);
-  const minGraphWeight = Math.min(...graphValues);
-  const maxGraphWeight = Math.max(...graphValues);
-  const graphRange = maxGraphWeight - minGraphWeight || 1;
-  const graphPoints = graphWeights.map((weight, index) => {
-    const x = graphWeights.length === 1 ? 50 : 10 + (index / (graphWeights.length - 1)) * 80;
-    const y = 80 - ((weight.weightKg - minGraphWeight) / graphRange) * 60;
-    return { ...weight, x, y };
-  });
-  const graphLine = graphPoints.map((point) => `${point.x},${point.y}`).join(" ");
+   const graphWeights = [...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
   const currentTagIds = new Set(cat?.tags.map((tag) => tag.id) ?? []);
   const tagsToAdd = availableTags.filter((tag) => !currentTagIds.has(tag.id));
   const primaryPhoto = photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
@@ -997,14 +994,13 @@ export default function CatProfilePage() {
             </section>
             <CatTasks catId={cat.id} onChanged={refreshHistory} />
             <CatTreatments catId={cat.id} onChanged={refreshHistory} />
-            <section className="md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Weight history</p>
-              </div>
+            <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+              <CatProfileSectionHeader title="Weight history" isExpanded={isWeightExpanded} onToggle={() => { setIsWeightFormOpen(false); setIsWeightExpanded((current) => !current); }} onAdd={() => setIsWeightFormOpen(true)} addLabel="Add weight" />
 
-              <form onSubmit={handleWeightSubmit} className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+              {isWeightExpanded && <>
+              {isWeightFormOpen && <form onSubmit={handleWeightSubmit} className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
                 <label className="grid gap-1 text-sm font-medium text-gray-800">
-                  Weight, kg
+                  <span>Weight, kg <span className="text-red-700">*</span></span>
                   <input
                     type="number"
                     min="0.01"
@@ -1016,7 +1012,7 @@ export default function CatProfilePage() {
                   />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-gray-800">
-                  Date
+                  <span>Date <span className="text-red-700">*</span></span>
                   <input
                     type="date"
                     lang="en-GB"
@@ -1032,7 +1028,7 @@ export default function CatProfilePage() {
                 >
                   {isAddingWeight ? "Adding..." : "Add weight"}
                 </button>
-              </form>
+              </form>}
 
               {weightError && <p className="mt-3 text-sm font-medium text-red-700">{weightError}</p>}
               {isLoadingWeights && <p className="mt-5 text-sm text-[#6d6a66]">Loading weight history...</p>}
@@ -1045,24 +1041,33 @@ export default function CatProfilePage() {
 
               {!isLoadingWeights && weights.length > 0 && (
                 <>
-                  <div className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/50 p-4">
-                    <div className="flex items-center justify-between gap-3 text-xs text-[#6d6a66]">
-                      <span>{formatDateShort(graphWeights[0].measuredAt)}</span>
-                      <span>{formatDateShort(graphWeights[graphWeights.length - 1].measuredAt)}</span>
-                    </div>
-                    <svg viewBox="0 0 100 90" role="img" aria-label="Weight trend" className="mt-2 h-40 w-full overflow-visible">
-                      <line x1="10" y1="80" x2="90" y2="80" stroke="#d4c7b4" strokeWidth="1" />
-                      <line x1="10" y1="20" x2="10" y2="80" stroke="#d4c7b4" strokeWidth="1" />
-                      {graphLine && <polyline fill="none" points={graphLine} stroke="#d05a2c" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />}
-                      {graphPoints.map((point) => (
-                        <g key={point.id}>
-                          <circle cx={point.x} cy={point.y} r="3" fill="#d05a2c" />
-                          <text x={point.x} y={Math.max(10, point.y - 7)} textAnchor="middle" className="fill-[#6d6a66] text-[5px] font-semibold">
-                            {point.weightKg.toFixed(1)}
-                          </text>
-                        </g>
-                      ))}
-                    </svg>
+                  <div className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/50 p-2">
+                    <Plot
+                      data={[{
+                        type: "scatter",
+                        mode: "lines+markers+text",
+                        x: graphWeights.map((weight) => formatDateShort(weight.measuredAt)),
+                        y: graphWeights.map((weight) => weight.weightKg),
+                        text: graphWeights.map((weight) => weight.weightKg.toFixed(2)),
+                        textposition: "top center",
+                        line: { color: "#d05a2c", width: 3 },
+                        marker: { color: "#d05a2c", size: 8 },
+                        hovertemplate: "%{x}: %{y:.2f} kg<extra></extra>",
+                      }]}
+                      layout={{
+                        autosize: true,
+                        height: 260,
+                        margin: { l: 50, r: 20, t: 30, b: 45 },
+                        paper_bgcolor: "rgba(0,0,0,0)",
+                        plot_bgcolor: "rgba(0,0,0,0)",
+                        font: { color: "#6d6a66" },
+                        xaxis: { title: "Date", fixedrange: true },
+                        yaxis: { title: "Weight, kg", fixedrange: true },
+                        showlegend: false,
+                      }}
+                      config={{ displayModeBar: false, responsive: true }}
+                      style={{ width: "100%" }}
+                    />
                   </div>
 
                   <div className="mt-5 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/50">
@@ -1096,6 +1101,7 @@ export default function CatProfilePage() {
                   </div>
                 </>
               )}
+              </>}
             </section>
             <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} />
           </div>

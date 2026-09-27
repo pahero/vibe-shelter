@@ -1,6 +1,7 @@
 import { CatHistoryEvent } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useState } from "react";
+import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 
 export const eventLabels: Record<string, string> = {
   cat_created: "Cat created",
@@ -56,16 +57,8 @@ export function CatHistory({ events, isLoading, error }: CatHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <section className="md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
-      <button
-        type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        aria-expanded={isOpen}
-        className="flex w-full items-center justify-between text-left"
-      >
-        <span className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Audit</span>
-        <span className="text-sm font-semibold text-[#b24a20]">{isOpen ? "Hide" : "Show"}</span>
-      </button>
+    <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+      <CatProfileSectionHeader title="Audit" isExpanded={isOpen} onToggle={() => setIsOpen((open) => !open)} />
 
       {isOpen && (
         <>
