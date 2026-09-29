@@ -40,8 +40,6 @@ export class ArchiveCatHandler {
           catId: cat.id,
           actorUserId: input.actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.catArchived,
-          oldValue: null,
-          newValue: reason.name,
         },
       });
     });

@@ -15,7 +15,7 @@ describe('DearchiveCatHandler', () => {
         archivedAt: null, archivationReasonId: null,
       });
       await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } })).resolves.toMatchObject({
-        eventType: 'cat_dearchived', actorUserId: actor.id, oldValue: 'ARCHIVED', newValue: 'ACTIVE',
+        eventType: 'cat_dearchived', actorUserId: actor.id, oldValue: null, newValue: null,
       });
     });
   });

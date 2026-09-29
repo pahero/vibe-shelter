@@ -263,8 +263,8 @@ describe('CatsService', () => {
       expect(stored.deletedAt).toBeInstanceOf(Date);
       const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
       expect(events).toEqual([
-        expect.objectContaining({ eventType: 'document_created', actorUserId: actor.id, oldValue: null, newValue: 'vaccination record.pdf', documentId: document.id }),
-        expect.objectContaining({ eventType: 'document_deleted', actorUserId: actor.id, oldValue: 'vaccination record.pdf', newValue: null, documentId: document.id }),
+        expect.objectContaining({ eventType: 'document_created', actorUserId: actor.id, oldValue: null, newValue: null, documentId: document.id }),
+        expect.objectContaining({ eventType: 'document_deleted', actorUserId: actor.id, oldValue: null, newValue: null, documentId: document.id }),
       ]);
     });
   });
@@ -337,8 +337,8 @@ describe('CatsService', () => {
       const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { occurredAt: 'asc' } });
       expect(events.map((event: any) => event.eventType)).toEqual(['weight_created', 'weight_deleted']);
       expect(events).toEqual(expect.arrayContaining([
-        expect.objectContaining({ actorUserId: actor.id, oldValue: null, newValue: '4.25 kg' }),
-        expect.objectContaining({ actorUserId: actor.id, oldValue: '4.25 kg', newValue: null }),
+        expect.objectContaining({ actorUserId: actor.id, oldValue: null, newValue: null }),
+        expect.objectContaining({ actorUserId: actor.id, oldValue: null, newValue: null }),
       ]));
     });
   });
@@ -356,7 +356,7 @@ describe('CatsService', () => {
       await service.deleteTag(tag.id, actor.id);
 
       const tagEvents = await (tx as any).tagAuditEvent.findMany({ where: { actorUserId: actor.id }, orderBy: { createdAt: 'asc' } });
-      expect(tagEvents.map((event: any) => event.action)).toEqual(['create', 'update', 'delete']);
+      expect(tagEvents.map((event: any) => event.action)).toEqual(['create', 'color_changed', 'delete']);
       expect(tagEvents.every((event: any) => event.actorUserId === actor.id)).toBe(true);
 
       const catEvents = await (tx as any).catAuditEvent.findMany({ where: { catId: cat.id }, orderBy: { occurredAt: 'asc' } });
@@ -430,7 +430,7 @@ describe('CatsService', () => {
 
       const history = await (tx as any).catAuditEvent.findMany({ where: { catId: cat.id } });
       expect(history).toEqual(expect.arrayContaining([
-        expect.objectContaining({ eventType: 'tag_removed_from_cat', oldValue: updated.name, actorUserId: actor.id }),
+        expect.objectContaining({ eventType: 'tag_removed_from_cat', oldValue: null, newValue: null, actorUserId: actor.id }),
       ]));
     });
   });

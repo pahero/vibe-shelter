@@ -28,8 +28,6 @@ export class DearchiveCatHandler {
           catId: cat.id,
           actorUserId: input.actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.catDearchived,
-          oldValue: 'ARCHIVED',
-          newValue: 'ACTIVE',
         },
       });
     });

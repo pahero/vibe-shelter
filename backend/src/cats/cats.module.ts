@@ -33,6 +33,22 @@ import { DeleteCatTreatmentHandler } from "./treatments/delete-cat-treatment.han
 import { ListCatTreatmentsHandler } from "./treatments/list-cat-treatments.handler";
 import { SetCatTreatmentAdministrationHandler } from "./treatments/set-cat-treatment-administration.handler";
 import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.handler";
+import { RestoreCatTreatmentHandler } from "./treatments/restore-cat-treatment.handler";
+import { CatMedicalNotesController } from "./medical-notes/cat-medical-notes.controller";
+import { CreateCatMedicalNoteHandler } from "./medical-notes/create-cat-medical-note.handler";
+import { DeleteCatMedicalNoteHandler } from "./medical-notes/delete-cat-medical-note.handler";
+import { ListCatMedicalNotesHandler } from "./medical-notes/list-cat-medical-notes.handler";
+import { UpdateCatMedicalNoteHandler } from "./medical-notes/update-cat-medical-note.handler";
+import { CatPreventiveTreatmentsController } from "./preventive-treatments/cat-preventive-treatments.controller";
+import { CreateCatPreventiveTreatmentHandler } from "./preventive-treatments/create-cat-preventive-treatment.handler";
+import { DeleteCatPreventiveTreatmentHandler } from "./preventive-treatments/delete-cat-preventive-treatment.handler";
+import { ListCatPreventiveTreatmentsHandler } from "./preventive-treatments/list-cat-preventive-treatments.handler";
+import { UpdateCatPreventiveTreatmentHandler } from "./preventive-treatments/update-cat-preventive-treatment.handler";
+import { CatNotesController } from "./notes/cat-notes.controller";
+import { CreateCatNoteHandler } from "./notes/create-cat-note.handler";
+import { DeleteCatNoteHandler } from "./notes/delete-cat-note.handler";
+import { ListCatNotesHandler } from "./notes/list-cat-notes.handler";
+import { UpdateCatNoteHandler } from "./notes/update-cat-note.handler";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -42,6 +58,9 @@ import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.han
     CatTasksController,
     TaskNotificationsController,
     CatTreatmentsController,
+    CatMedicalNotesController,
+    CatPreventiveTreatmentsController,
+    CatNotesController,
   ],
   providers: [
     CatsService,
@@ -69,7 +88,20 @@ import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.han
     CreateCatTreatmentHandler,
     DeleteCatTreatmentHandler,
     UpdateCatTreatmentHandler,
+    RestoreCatTreatmentHandler,
     SetCatTreatmentAdministrationHandler,
+    ListCatMedicalNotesHandler,
+    CreateCatMedicalNoteHandler,
+    UpdateCatMedicalNoteHandler,
+    DeleteCatMedicalNoteHandler,
+    ListCatPreventiveTreatmentsHandler,
+    CreateCatPreventiveTreatmentHandler,
+    UpdateCatPreventiveTreatmentHandler,
+    DeleteCatPreventiveTreatmentHandler,
+    ListCatNotesHandler,
+    CreateCatNoteHandler,
+    UpdateCatNoteHandler,
+    DeleteCatNoteHandler,
   ],
   exports: [CatsService],
 })

@@ -31,6 +31,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   taskCompleted: "task_completed",
   treatmentCreated: "treatment_created",
   treatmentDeleted: "treatment_deleted",
+  treatmentRestored: "treatment_restored",
   treatmentShortNameChanged: "treatment_short_name_changed",
   treatmentStartDateChanged: "treatment_start_date_changed",
   treatmentEndDateChanged: "treatment_end_date_changed",
@@ -38,6 +39,18 @@ export const CAT_AUDIT_EVENT_TYPES = {
   treatmentInstructionsChanged: "treatment_instructions_changed",
   treatmentAdministrationChecked: "treatment_administration_checked",
   treatmentAdministrationUnchecked: "treatment_administration_unchecked",
+  medicalNoteCreated: "medical_note_created",
+  medicalNoteDeleted: "medical_note_deleted",
+  medicalNoteDateChanged: "medical_note_date_changed",
+  medicalNoteCommentChanged: "medical_note_comment_changed",
+  preventiveTreatmentCreated: "preventive_treatment_created",
+  preventiveTreatmentDeleted: "preventive_treatment_deleted",
+  preventiveTreatmentDateChanged: "preventive_treatment_date_changed",
+  preventiveTreatmentNameChanged: "preventive_treatment_name_changed",
+  noteCreated: "note_created",
+  noteDeleted: "note_deleted",
+  noteDateChanged: "note_date_changed",
+  noteCommentChanged: "note_comment_changed",
 } as const;
 
 export type CatAuditEventType = (typeof CAT_AUDIT_EVENT_TYPES)[keyof typeof CAT_AUDIT_EVENT_TYPES];

@@ -16,7 +16,7 @@ export class CreateArchivationReasonCommand {
     const reason = await runInNewTransaction(this.prisma, async (transaction) => {
       const created = await transaction.catArchivationReason.create({ data: { name } });
       await transaction.catAuditEvent.create({
-        data: { archivationReasonId: created.id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.archivationReasonCreate, oldValue: null, newValue: created.name },
+        data: { archivationReasonId: created.id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.archivationReasonCreate },
       });
       return created;
     });

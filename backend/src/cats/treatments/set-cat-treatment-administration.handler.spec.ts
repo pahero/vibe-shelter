@@ -46,7 +46,7 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const treatment = await tx.catTreatment.create({ data: { catId: cat.id, shortName: "Drug", instructions: "Do", startDate: day("2026-09-01"), endDate: null, dosesPerDay: 1 } });
       await expect(new SetCatTreatmentAdministrationHandler(tx as PrismaService).handle(treatment.id, { date: day("2026-09-01"), doseNumber: 1, checked: true }, actor.id, false)).resolves.toEqual({ id: treatment.id });
       await expect(tx.catTreatmentAdministration.findUniqueOrThrow({ where: { treatmentId_administeredOn_doseNumber: { treatmentId: treatment.id, administeredOn: day("2026-09-01"), doseNumber: 1 } } })).resolves.toMatchObject({ checkedByUserId: actor.id });
-      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_administration_checked" } })).resolves.toMatchObject({ actorUserId: actor.id });
+      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_administration_checked" } })).resolves.toMatchObject({ actorUserId: actor.id, treatmentId: treatment.id, treatmentAdministrationDate: day("2026-09-01"), newValue: "checked", oldValue: "unchecked" });
     });
   });
 
@@ -58,7 +58,7 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       await tx.catTreatmentAdministration.create({ data: { treatmentId: treatment.id, administeredOn: day("2026-09-01"), doseNumber: 1, checkedByUserId: actor.id } });
       await new SetCatTreatmentAdministrationHandler(tx as PrismaService).handle(treatment.id, { date: day("2026-09-01"), doseNumber: 1, checked: false }, actor.id, false);
       await expect(tx.catTreatmentAdministration.count({ where: { treatmentId: treatment.id } })).resolves.toBe(0);
-      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_administration_unchecked" } })).resolves.toMatchObject({ oldValue: "2026-09-01 dose 1" });
+      await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_administration_unchecked" } })).resolves.toMatchObject({ treatmentId: treatment.id, treatmentAdministrationDate: day("2026-09-01"), oldValue: "checked", newValue: "unchecked" });
     });
   });
 

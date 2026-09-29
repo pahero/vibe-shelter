@@ -43,7 +43,7 @@ export class UpdateCatTreatmentHandler {
       if (payload.startDate && payload.startDate.getTime() !== treatment.startDate.getTime()) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.treatmentStartDateChanged, oldValue: treatment.startDate.toISOString().slice(0, 10), newValue: payload.startDate.toISOString().slice(0, 10) });
       if (payload.endDate !== undefined && payload.endDate?.getTime() !== treatment.endDate?.getTime()) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.treatmentEndDateChanged, oldValue: treatment.endDate?.toISOString().slice(0, 10) ?? "none", newValue: payload.endDate?.toISOString().slice(0, 10) ?? "none" });
       if (payload.dosesPerDay !== undefined && payload.dosesPerDay !== treatment.dosesPerDay) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.treatmentDosesPerDayChanged, oldValue: String(treatment.dosesPerDay), newValue: String(payload.dosesPerDay) });
-      if (changes.length) await transaction.catAuditEvent.createMany({ data: changes.map((change) => ({ catId: treatment.catId, actorUserId, ...change })) });
+      if (changes.length) await transaction.catAuditEvent.createMany({ data: changes.map((change) => ({ catId: treatment.catId, treatmentId: treatment.id, actorUserId, ...change })) });
       return { id: treatmentId };
     });
   }

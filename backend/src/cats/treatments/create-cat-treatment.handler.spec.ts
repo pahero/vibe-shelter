@@ -17,7 +17,7 @@ describe("CreateCatTreatmentHandler", () => {
       const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
       const result = await new CreateCatTreatmentHandler(transaction as PrismaService).handle(cat.id, { shortName: "Antibiotic", instructions: "With food", startDate: new Date("2026-09-01T00:00:00.000Z"), endDate: null, dosesPerDay: 2 }, actor.id, false);
       await expect(transaction.catTreatment.findUniqueOrThrow({ where: { id: result.id } })).resolves.toMatchObject({ catId: cat.id, shortName: "Antibiotic", dosesPerDay: 2 });
-      await expect(transaction.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_created" } })).resolves.toMatchObject({ actorUserId: actor.id, oldValue: null, newValue: null });
+      await expect(transaction.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_created" } })).resolves.toMatchObject({ actorUserId: actor.id, treatmentId: result.id, oldValue: null, newValue: null });
     });
   });
 });

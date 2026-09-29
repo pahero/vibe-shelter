@@ -76,8 +76,6 @@ export class CreateCatHandler {
           catId: created.id,
           actorUserId: command.createdByUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.catCreated,
-          oldValue: null,
-          newValue: created.name,
         });
         return created;
     });

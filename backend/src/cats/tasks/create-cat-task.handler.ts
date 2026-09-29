@@ -44,7 +44,6 @@ export class CreateCatTaskHandler {
           catId,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.taskCreated,
-          newValue: task.comment,
         },
       });
       return { id: task.id };

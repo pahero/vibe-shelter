@@ -11,7 +11,7 @@ export class CompleteCatTaskHandler {
     return runInNewTransaction(this.prisma, async (transaction) => {
       const task = await transaction.catTask.findFirst({
         where: { id: taskId, deletedAt: null, cat: { isTest } },
-        select: { id: true, catId: true, comment: true, completedAt: true },
+        select: { id: true, catId: true, completedAt: true },
       });
       if (!task) throw new NotFoundException("Task not found");
       if (task.completedAt) throw new ConflictException("Task is already completed");
@@ -35,8 +35,8 @@ export class CompleteCatTaskHandler {
           catId: task.catId,
           actorUserId: userId,
           eventType: CAT_AUDIT_EVENT_TYPES.taskCompleted,
-          oldValue: task.comment,
-          newValue: userId,
+          oldValue: "not completed",
+          newValue: "completed",
         },
       });
       return { id: task.id };

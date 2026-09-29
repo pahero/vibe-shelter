@@ -14,7 +14,7 @@ export class CreateCatTreatmentHandler {
       if (!cat) throw new NotFoundException("Cat not found");
       const treatment = await transaction.catTreatment.create({ data: { catId, ...payload } });
       await transaction.catAuditEvent.create({
-        data: { catId, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.treatmentCreated },
+        data: { catId, treatmentId: treatment.id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.treatmentCreated },
       });
       return { id: treatment.id };
     });

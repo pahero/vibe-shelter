@@ -26,6 +26,8 @@ export type CatHistoryEventDto = {
   actor: CatHistoryActorDto;
   oldValue: string | null;
   newValue: string | null;
+  treatmentAdministrationDate: string | null;
+  treatment: { id: string; shortName: string; isDeleted: boolean } | null;
   photo: CatHistoryPhotoDto | null;
   document: CatHistoryDocumentDto | null;
 };

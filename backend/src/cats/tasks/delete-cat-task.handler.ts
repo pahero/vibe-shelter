@@ -11,7 +11,7 @@ export class DeleteCatTaskHandler {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const task = await transaction.catTask.findFirst({
         where: { id: taskId, deletedAt: null, cat: { isTest } },
-        select: { id: true, catId: true, comment: true },
+        select: { id: true, catId: true },
       });
       if (!task) throw new NotFoundException("Task not found");
       await transaction.catTask.update({
@@ -27,7 +27,6 @@ export class DeleteCatTaskHandler {
           catId: task.catId,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.taskDeleted,
-          oldValue: task.comment,
         },
       });
     });

@@ -20,7 +20,7 @@ describe("DeleteCatTreatmentHandler", () => {
       await new DeleteCatTreatmentHandler(transaction as PrismaService).handle(treatment.id, actor.id, false);
       await expect(transaction.catTreatment.findUniqueOrThrow({ where: { id: treatment.id } })).resolves.toMatchObject({ deletedAt: expect.any(Date), concurrencyToken: expect.not.stringMatching(originalToken) });
       await expect(transaction.catTreatmentAdministration.count({ where: { treatmentId: treatment.id } })).resolves.toBe(1);
-      await expect(transaction.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_deleted" } })).resolves.toMatchObject({ actorUserId: actor.id, oldValue: "Pills", newValue: null });
+      await expect(transaction.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id, eventType: "treatment_deleted" } })).resolves.toMatchObject({ actorUserId: actor.id, treatmentId: treatment.id, oldValue: null, newValue: null });
     });
   });
 });

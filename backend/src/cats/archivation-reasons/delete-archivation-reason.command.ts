@@ -23,7 +23,7 @@ export class DeleteArchivationReasonCommand {
         await transaction.cat.updateMany({ where: { archivationReasonId: id }, data: { archivationReasonId: replacement.id } });
       }
       await transaction.catAuditEvent.create({
-        data: { archivationReasonId: id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.archivationReasonDelete, oldValue: existing.name, newValue: replacement?.name ?? null },
+        data: { archivationReasonId: id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.archivationReasonDelete },
       });
       await transaction.catArchivationReason.update({ where: { id }, data: { deletedAt: new Date() } });
     });

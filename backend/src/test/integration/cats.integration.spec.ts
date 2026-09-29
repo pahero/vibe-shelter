@@ -83,7 +83,7 @@ describe("Cats endpoints", () => {
           eventType: "cat_created",
           actor: expect.objectContaining({ id: authUser.id }),
           oldValue: null,
-          newValue: "Mila",
+          newValue: null,
         }),
       ]),
     );
@@ -249,8 +249,8 @@ describe("Cats endpoints", () => {
 
     const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
     expect(history.body.data).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventType: "document_created", newValue: "medical record.pdf", document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
-      expect.objectContaining({ eventType: "document_deleted", oldValue: "medical record.pdf", document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
+      expect.objectContaining({ eventType: "document_created", oldValue: null, newValue: null, document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
+      expect.objectContaining({ eventType: "document_deleted", oldValue: null, newValue: null, document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
     ]));
   });
 
@@ -456,12 +456,12 @@ describe("Cats endpoints", () => {
           eventType: "weight_created",
           actor: expect.objectContaining({ id: authUser.id }),
           oldValue: null,
-          newValue: "3.80 kg",
+          newValue: null,
         }),
         expect.objectContaining({
           eventType: "weight_deleted",
           actor: expect.objectContaining({ id: authUser.id }),
-          oldValue: "3.80 kg",
+          oldValue: null,
           newValue: null,
         }),
       ]),
@@ -506,17 +506,22 @@ describe("Cats endpoints", () => {
           eventType: "tag_added_to_cat",
           catId: cat.id,
           actor: expect.objectContaining({ id: authUser.id }),
-          newValue: createdTag.body.name,
+          oldValue: null,
+          newValue: null,
         }),
         expect.objectContaining({
           eventType: "tag_create",
           catId: null,
           actor: expect.objectContaining({ id: authUser.id }),
+          oldValue: null,
+          newValue: null,
         }),
         expect.objectContaining({
-          eventType: "tag_update",
+          eventType: "tag_color_changed",
           catId: null,
           actor: expect.objectContaining({ id: authUser.id }),
+          oldValue: "#8ecaff",
+          newValue: "#ffd166",
         }),
       ]),
     );
@@ -525,7 +530,7 @@ describe("Cats endpoints", () => {
       orderBy: { createdAt: "asc" },
     });
     expect(tagAuditEvents.map((event: any) => event.action)).toContain("create");
-    expect(tagAuditEvents.map((event: any) => event.action)).toContain("update");
+    expect(tagAuditEvents.map((event: any) => event.action)).toContain("color_changed");
     expect(tagAuditEvents.every((event: any) => event.actorUserId === authUser.id)).toBe(true);
 
     const list = await authAgent.get("/api/cats").query({ tagId: createdTag.body.id }).expect(200);
@@ -542,7 +547,8 @@ describe("Cats endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "tag_removed_from_cat",
-          oldValue: createdTag.body.name,
+          oldValue: null,
+          newValue: null,
           actor: expect.objectContaining({ id: authUser.id }),
         }),
       ]),
@@ -671,13 +677,14 @@ describe("Cats endpoints", () => {
         expect.objectContaining({
           eventType: "cat_archived",
           actor: expect.objectContaining({ id: authUser.id }),
-          newValue: updatedReasonName,
+          oldValue: null,
+          newValue: null,
         }),
         expect.objectContaining({
           eventType: "cat_dearchived",
           actor: expect.objectContaining({ id: authUser.id }),
-          oldValue: "ARCHIVED",
-          newValue: "ACTIVE",
+          oldValue: null,
+          newValue: null,
         }),
       ]),
     );

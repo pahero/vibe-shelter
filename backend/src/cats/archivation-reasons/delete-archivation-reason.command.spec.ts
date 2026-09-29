@@ -13,7 +13,7 @@ describe('DeleteArchivationReasonCommand', () => {
 
       await expect(tx.catArchivationReason.findUniqueOrThrow({ where: { id: reason.id } })).resolves.toMatchObject({ deletedAt: expect.any(Date) });
       await expect(tx.catAuditEvent.findFirstOrThrow({ where: { archivationReasonId: reason.id } })).resolves.toMatchObject({
-        eventType: 'archivation_reason_delete', actorUserId: actor.id, oldValue: reason.name, newValue: null,
+        eventType: 'archivation_reason_delete', actorUserId: actor.id, oldValue: null, newValue: null,
       });
     });
   });

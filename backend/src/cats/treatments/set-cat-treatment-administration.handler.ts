@@ -9,7 +9,7 @@ export class SetCatTreatmentAdministrationHandler {
 
   async handle(treatmentId: string, input: { date: Date; doseNumber: number; checked: boolean }, actorUserId: string, isTest: boolean): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (transaction) => {
-      const treatment = await transaction.catTreatment.findFirst({ where: { id: treatmentId, deletedAt: null, cat: { isTest } }, select: { id: true, catId: true, startDate: true, endDate: true, dosesPerDay: true } });
+      const treatment = await transaction.catTreatment.findFirst({ where: { id: treatmentId, deletedAt: null, cat: { isTest } }, select: { id: true, catId: true, shortName: true, startDate: true, endDate: true, dosesPerDay: true } });
       if (!treatment) throw new NotFoundException("Treatment not found");
       if (input.doseNumber > treatment.dosesPerDay) throw new BadRequestException("doseNumber is not configured for this treatment");
       if (input.date < treatment.startDate || (treatment.endDate && input.date > treatment.endDate)) throw new BadRequestException("date is outside the treatment period");
@@ -21,8 +21,7 @@ export class SetCatTreatmentAdministrationHandler {
         await transaction.catTreatment.update({ where: { id: treatment.id }, data: { concurrencyToken: crypto.randomUUID() } });
       }
       if (input.checked !== Boolean(existing)) {
-        const value = `${input.date.toISOString().slice(0, 10)} dose ${input.doseNumber}`;
-        await transaction.catAuditEvent.create({ data: { catId: treatment.catId, actorUserId, eventType: input.checked ? CAT_AUDIT_EVENT_TYPES.treatmentAdministrationChecked : CAT_AUDIT_EVENT_TYPES.treatmentAdministrationUnchecked, ...(input.checked ? { newValue: value } : { oldValue: value }) } });
+        await transaction.catAuditEvent.create({ data: { catId: treatment.catId, treatmentId: treatment.id, treatmentAdministrationDate: input.date, actorUserId, eventType: input.checked ? CAT_AUDIT_EVENT_TYPES.treatmentAdministrationChecked : CAT_AUDIT_EVENT_TYPES.treatmentAdministrationUnchecked, oldValue: input.checked ? "unchecked" : "checked", newValue: input.checked ? "checked" : "unchecked" } });
       }
       return { id: treatmentId };
     });

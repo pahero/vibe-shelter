@@ -27,10 +27,23 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 ## Audit events
 
 - Entity creation must emit one `<entity>_created` audit event with no `oldValue` or `newValue`; do not create per-field audit events for creation. Updates must continue to emit one audit event for each changed field.
+- Whole-entity lifecycle events, including creation, deletion, and restoration, must not set `oldValue` or `newValue`.
+- A field-change audit event must set exactly one human-readable scalar `oldValue` and exactly one human-readable scalar `newValue`. When a mutation changes multiple fields, write one separate field-change event per field.
+- Each cat-page audit row must use distinct styling based on whether the event represents creation, an update/edit, or deletion.
+- When an audit event concerns a linked entity, store a nullable foreign key to that entity on the audit record; do not store arbitrary target-description text. Include the linked entity's display data and current deletion state in history responses so the cat-page audit row can use a human-readable name such as `<entity> <name> <action>`.
+- Audit-row actions for soft-deleted linked entities (such as Restore) must be rendered only when the history response reports that the linked entity is currently deleted. Restoring must update the entity's concurrency token and emit a corresponding, value-free audit event linked to that entity.
 
 ## Forms
 
 - Do not label optional fields with an `(optional)` suffix. Every required form field must instead have a visually red asterisk (`*`) in its label, on the same line as the label text with a space before it. When the label uses a grid layout, wrap the text and asterisk in one inline container so they cannot split onto separate rows.
+
+## Icon-only actions
+
+- Use the project FontAwesome `faPen` icon for edit actions and `faTrash` icon for delete actions. Icon-only controls must include an `aria-label` and matching `title` tooltip.
+
+## Tables
+
+- Table body rows must use the standard visual height established by `py-2` checkbox-table cells. Rows containing padded icon-only actions must use `py-px` container padding to preserve that same rendered height. Do not use another table-row height without explicit user approval.
 
 ## Examples
 

@@ -64,7 +64,7 @@ describe('CreateCatHandler', () => {
       eventType: 'cat_created',
       actorUserId,
       oldValue: null,
-      newValue: 'Mila',
+      newValue: null,
     });
   });
 

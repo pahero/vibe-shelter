@@ -230,7 +230,6 @@ export class CatsService {
           catId,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.documentCreated,
-          newValue: catDocument.fileName,
           documentId: catDocument.id,
         });
         return catDocument;
@@ -246,7 +245,7 @@ export class CatsService {
     this.validateId(catId);
     this.validateId(documentId);
     await this.findExistingCat(catId, currentUserIsTest);
-    const document = await this.findExistingDocument(catId, documentId);
+    await this.findExistingDocument(catId, documentId);
     await this.runWrite(async (transaction) => {
       await (transaction as any).catDocument.update({
         where: { id: documentId },
@@ -254,11 +253,10 @@ export class CatsService {
       });
       await transaction.cat.update({ where: { id: catId }, data: { updatedAt: new Date() } });
       await this.auditWriter.execute(transaction, {
-        catId,
-        actorUserId,
-        eventType: CAT_AUDIT_EVENT_TYPES.documentDeleted,
-        oldValue: document.fileName,
-        documentId,
+          catId,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.documentDeleted,
+          documentId,
       });
     });
   }
@@ -415,8 +413,6 @@ export class CatsService {
           tagId: created.id,
           actorUserId,
           action: 'create',
-          oldValue: null,
-          newValue: `${created.name} (${created.color})`,
         },
       });
       return created;
@@ -454,15 +450,11 @@ export class CatsService {
       const tag = actorUserId
         ? await this.runWithTransaction(async (transaction: any) => {
             const updated = await transaction.catTag.update({ where: { id }, data: updateData });
-            await transaction.tagAuditEvent.create({
-              data: {
-                tagId: id,
-                actorUserId,
-                action: 'update',
-                oldValue: this.tagAuditValue(existing),
-                newValue: this.tagAuditValue(updated),
-              },
-            });
+            const changes = [
+              ...(updated.name !== existing.name ? [{ action: 'name_changed', oldValue: existing.name, newValue: updated.name }] : []),
+              ...(updated.color !== existing.color ? [{ action: 'color_changed', oldValue: existing.color, newValue: updated.color }] : []),
+            ];
+            if (changes.length) await transaction.tagAuditEvent.createMany({ data: changes.map((change) => ({ tagId: id, actorUserId, ...change })) });
             return updated;
           })
         : await (this.prisma as any).catTag.update({ where: { id }, data: updateData });
@@ -492,17 +484,13 @@ export class CatsService {
           tagId: id,
           actorUserId,
           action: 'delete',
-          oldValue: this.tagAuditValue(existing),
-          newValue: null,
         },
       });
       await transaction.catTagOnCat.deleteMany({ where: { tagId: id } });
       await Promise.all(assignments.map(({ catId }: { catId: string }) => this.auditWriter.execute(transaction, {
         catId,
         actorUserId: actorUserId!,
-        eventType: CAT_AUDIT_EVENT_TYPES.tagRemovedFromCat,
-        oldValue: existing.name,
-        newValue: null,
+          eventType: CAT_AUDIT_EVENT_TYPES.tagRemovedFromCat,
       })));
       await transaction.catTag.update({ where: { id }, data: { deletedAt: new Date() } });
     };
@@ -535,8 +523,6 @@ export class CatsService {
           catId,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.tagAddedToCat,
-          oldValue: null,
-          newValue: tag.name,
         });
       });
       return this.findCardById(catId, currentUserIsTest);
@@ -564,8 +550,6 @@ export class CatsService {
           catId,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.tagRemovedFromCat,
-          oldValue: tag.name,
-          newValue: null,
         });
       });
       return this.findCardById(catId, currentUserIsTest);
@@ -606,8 +590,6 @@ export class CatsService {
             catId,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.weightCreated,
-            oldValue: null,
-            newValue: `${created.weightKg.toFixed(2)} kg`,
           });
           return created;
         })
@@ -641,8 +623,6 @@ export class CatsService {
           catId,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.weightDeleted,
-          oldValue: `${weight.weightKg.toFixed(2)} kg`,
-          newValue: null,
         });
       });
       return;
@@ -808,10 +788,6 @@ export class CatsService {
       throw new NotFoundException('Tag not found');
     }
     return this.toCatTag(tag);
-  }
-
-  private tagAuditValue(tag: CatTag): string {
-    return `${tag.name} (${tag.color})`;
   }
 
   private async findExistingPhoto(catId: string, photoId: string): Promise<{ id: string; key: string; createdAt: Date }> {

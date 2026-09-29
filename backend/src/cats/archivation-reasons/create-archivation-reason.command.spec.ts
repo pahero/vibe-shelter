@@ -13,7 +13,7 @@ describe('CreateArchivationReasonCommand', () => {
 
       expect(reason).toEqual({ id: expect.any(String) });
       await expect(tx.catAuditEvent.findFirstOrThrow({ where: { archivationReasonId: reason.id } })).resolves.toMatchObject({
-        eventType: 'archivation_reason_create', actorUserId: actor.id, oldValue: null, newValue: name,
+        eventType: 'archivation_reason_create', actorUserId: actor.id, oldValue: null, newValue: null,
       });
     });
   });

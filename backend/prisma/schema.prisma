@@ -118,6 +118,7 @@ enum CatAuditEventType {
   task_completed
   treatment_created
   treatment_deleted
+  treatment_restored
   treatment_short_name_changed
   treatment_start_date_changed
   treatment_end_date_changed
@@ -125,6 +126,18 @@ enum CatAuditEventType {
   treatment_instructions_changed
   treatment_administration_checked
   treatment_administration_unchecked
+  medical_note_created
+  medical_note_deleted
+  medical_note_date_changed
+  medical_note_comment_changed
+  preventive_treatment_created
+  preventive_treatment_deleted
+  preventive_treatment_date_changed
+  preventive_treatment_name_changed
+  note_created
+  note_deleted
+  note_date_changed
+  note_comment_changed
 }
 
 model Location {
@@ -192,6 +205,9 @@ model Cat {
   auditEvents         CatAuditEvent[]
   tasks               CatTask[]
   treatments          CatTreatment[]
+  medicalNotes        CatMedicalNote[]
+  preventiveTreatments CatPreventiveTreatment[]
+  notes               CatNote[]
 
   @@index([createdByUserId])
   @@index([currentLocationId])
@@ -270,6 +286,9 @@ model CatAuditEvent {
   occurredAt  DateTime          @default(now())
   oldValue    String?
   newValue    String?
+  treatmentAdministrationDate DateTime? @db.Date
+  treatmentId String?
+  treatment   CatTreatment?      @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
   photoId     String?
   photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
   documentId  String?
@@ -280,6 +299,7 @@ model CatAuditEvent {
   @@index([actorUserId])
   @@index([photoId])
   @@index([documentId])
+  @@index([treatmentId])
   @@index([eventType])
 }
 
@@ -348,6 +368,7 @@ model CatTreatment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   administrations CatTreatmentAdministration[]
+  auditEvents     CatAuditEvent[]
 
   @@index([catId, createdAt])
   @@index([catId, startDate, endDate])
@@ -366,6 +387,51 @@ model CatTreatmentAdministration {
   @@id([treatmentId, administeredOn, doseNumber])
   @@index([checkedByUserId])
   @@index([treatmentId, administeredOn])
+}
+
+model CatMedicalNote {
+  id               String   @id @default(cuid())
+  catId            String
+  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  comment          String
+  deletedAt        DateTime?
+  concurrencyToken String   @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([catId, date])
+  @@index([deletedAt])
+}
+
+model CatPreventiveTreatment {
+  id               String   @id @default(cuid())
+  catId            String
+  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  name             String
+  deletedAt        DateTime?
+  concurrencyToken String   @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([catId, date])
+  @@index([deletedAt])
+}
+
+model CatNote {
+  id               String   @id @default(cuid())
+  catId            String
+  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  comment          String
+  deletedAt        DateTime?
+  concurrencyToken String   @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([catId, date])
+  @@index([deletedAt])
 }
 
 model CatTask {

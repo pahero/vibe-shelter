@@ -37,6 +37,7 @@ export class ListCatHistoryQuery {
           actorUser: { select: { id: true, fullName: true, email: true } },
           photo: { select: { id: true, key: true, deletedAt: true } },
           document: { select: { id: true, key: true, fileName: true, deletedAt: true } },
+          treatment: { select: { id: true, shortName: true, deletedAt: true } },
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
@@ -68,6 +69,8 @@ export class ListCatHistoryQuery {
       },
       oldValue: event.oldValue,
       newValue: event.newValue,
+      treatmentAdministrationDate: event.treatmentAdministrationDate?.toISOString().slice(0, 10) ?? null,
+      treatment: event.treatment ? { id: event.treatment.id, shortName: event.treatment.shortName, isDeleted: Boolean(event.treatment.deletedAt) } : null,
       photo: event.photo
         ? {
             id: event.photo.id,

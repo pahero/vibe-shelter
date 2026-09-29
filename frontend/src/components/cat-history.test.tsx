@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { CatHistory } from "./cat-history";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { auditEventStyle, CatHistory } from "./cat-history";
 import { CatHistoryEvent } from "@/lib/api";
 
 const baseEvent = {
@@ -11,6 +11,12 @@ const baseEvent = {
 } satisfies Partial<CatHistoryEvent>;
 
 describe("CatHistory", () => {
+  it("uses green, amber, and red styles for create, edit, and delete events", () => {
+    expect(auditEventStyle("treatment_created")).toContain("border-l-[#31734b]");
+    expect(auditEventStyle("treatment_short_name_changed")).toContain("border-l-amber-600");
+    expect(auditEventStyle("treatment_deleted")).toContain("border-l-red-700");
+  });
+
   it("renders loading, empty, and error states", () => {
     const { rerender } = render(<CatHistory events={[]} isLoading error={null} />);
     expect(screen.queryByText("Loading cat history...")).not.toBeInTheDocument();
@@ -90,5 +96,34 @@ describe("CatHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Tag added")).toBeVisible();
     expect(screen.getByText("Tag removed")).toBeVisible();
+  });
+
+  it("shows next-page controls when more audit events are available", () => {
+    const onPageChange = vi.fn();
+    render(<CatHistory events={[{ ...baseEvent, eventType: "name_changed", oldValue: "A", newValue: "B", photo: null } as CatHistoryEvent]} isLoading={false} error={null} total={51} skip={0} limit={50} onPageChange={onPageChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
+    expect(screen.getByText("Showing 1-50 of 51")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(onPageChange).toHaveBeenCalledWith(50);
+  });
+
+  it("identifies a treatment audit event by its linked treatment", () => {
+    render(<CatHistory events={[{ ...baseEvent, eventType: "treatment_start_date_changed", oldValue: "2026-09-01", newValue: "2026-09-02", treatment: { id: "treatment-1", shortName: "Antibiotic" }, photo: null } as CatHistoryEvent]} isLoading={false} error={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
+    expect(screen.getByText("Treatment Antibiotic Start date changed")).toBeVisible();
+  });
+
+  it("restores a deleted linked treatment from its audit event", async () => {
+    const onRestoreTreatment = vi.fn().mockResolvedValue(undefined);
+    render(<CatHistory events={[{ ...baseEvent, eventType: "treatment_deleted", oldValue: null, newValue: null, treatment: { id: "treatment-1", shortName: "Antibiotic", isDeleted: true }, photo: null } as CatHistoryEvent]} isLoading={false} error={null} onRestoreTreatment={onRestoreTreatment} />);
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    await waitFor(() => expect(onRestoreTreatment).toHaveBeenCalledWith("treatment-1"));
+  });
+
+  it("hides Restore after the linked treatment is restored", () => {
+    render(<CatHistory events={[{ ...baseEvent, eventType: "treatment_deleted", oldValue: null, newValue: null, treatment: { id: "treatment-1", shortName: "Antibiotic", isDeleted: false }, photo: null } as CatHistoryEvent]} isLoading={false} error={null} onRestoreTreatment={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
+    expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
   });
 });

@@ -11,7 +11,7 @@ export class DeleteCatTreatmentHandler {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const treatment = await transaction.catTreatment.findFirst({
         where: { id: treatmentId, deletedAt: null, cat: { isTest } },
-        select: { id: true, catId: true, shortName: true },
+        select: { id: true, catId: true },
       });
       if (!treatment) throw new NotFoundException("Treatment not found");
       await transaction.catTreatment.update({
@@ -21,9 +21,9 @@ export class DeleteCatTreatmentHandler {
       await transaction.catAuditEvent.create({
         data: {
           catId: treatment.catId,
+          treatmentId: treatment.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.treatmentDeleted,
-          oldValue: treatment.shortName,
         },
       });
     });

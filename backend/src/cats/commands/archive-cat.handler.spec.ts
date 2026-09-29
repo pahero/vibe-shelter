@@ -22,7 +22,7 @@ describe('ArchiveCatHandler', () => {
         archivationReasonId: reason.id, archivedAt: expect.any(Date),
       });
       await expect(tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } })).resolves.toMatchObject({
-        eventType: 'cat_archived', actorUserId: actor.id, newValue: reason.name,
+        eventType: 'cat_archived', actorUserId: actor.id, oldValue: null, newValue: null,
       });
     });
   });

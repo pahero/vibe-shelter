@@ -115,6 +115,13 @@ export type TreatmentInput = {
   dosesPerDay: 1 | 2;
 };
 
+export type CatMedicalNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
+export type MedicalNoteInput = { date: string; comment: string };
+export type CatPreventiveTreatment = { id: string; date: string; name: string; createdAt: string; updatedAt: string };
+export type PreventiveTreatmentInput = { date: string; name: string };
+export type CatNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
+export type NoteInput = { date: string; comment: string };
+
 export type TaskNotification = {
   id: string;
   taskId: string;
@@ -170,6 +177,8 @@ export type CatHistoryEvent = {
   };
   oldValue: string | null;
   newValue: string | null;
+  treatmentAdministrationDate: string | null;
+  treatment: { id: string; shortName: string; isDeleted: boolean } | null;
   photo: {
     id: string;
     link: string | null;
@@ -338,6 +347,30 @@ export const notificationsApi = {
 };
 
 export const catsApi = {
+  async listNotes(catId: string): Promise<CatNote[]> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "GET", credentials: "include" }); return handleResponse<CatNote[]>(response); },
+  async createNote(catId: string, data: NoteInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async updateNote(id: string, data: Partial<NoteInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async deleteNote(id: string): Promise<void> { const response = await fetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "DELETE", credentials: "include" }); return handleResponse<void>(response); },
+  async listPreventiveTreatments(catId: string): Promise<CatPreventiveTreatment[]> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/preventive-treatments`, { method: "GET", credentials: "include" }); return handleResponse<CatPreventiveTreatment[]>(response); },
+  async createPreventiveTreatment(catId: string, data: PreventiveTreatmentInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/preventive-treatments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async updatePreventiveTreatment(id: string, data: Partial<PreventiveTreatmentInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/preventive-treatments/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async deletePreventiveTreatment(id: string): Promise<void> { const response = await fetch(`${BACKEND_URL}/api/cats/preventive-treatments/${id}`, { method: "DELETE", credentials: "include" }); return handleResponse<void>(response); },
+  async listMedicalNotes(catId: string): Promise<CatMedicalNote[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/medical-notes`, { method: "GET", credentials: "include" });
+    return handleResponse<CatMedicalNote[]>(response);
+  },
+  async createMedicalNote(catId: string, data: MedicalNoteInput): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/medical-notes`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    return handleResponse<MutationResult>(response);
+  },
+  async updateMedicalNote(noteId: string, data: Partial<MedicalNoteInput>): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/medical-notes/${noteId}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    return handleResponse<MutationResult>(response);
+  },
+  async deleteMedicalNote(noteId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/medical-notes/${noteId}`, { method: "DELETE", credentials: "include" });
+    return handleResponse<void>(response);
+  },
   async listTreatments(catId: string): Promise<CatTreatment[]> {
     const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/treatments`, { method: "GET", credentials: "include" });
     return handleResponse<CatTreatment[]>(response);
@@ -362,6 +395,13 @@ export const catsApi = {
       method: "DELETE", credentials: "include",
     });
     return handleResponse<void>(response);
+  },
+
+  async restoreTreatment(treatmentId: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}/restore`, {
+      method: "POST", credentials: "include",
+    });
+    return handleResponse<MutationResult>(response);
   },
 
   async setTreatmentAdministration(treatmentId: string, date: string, doseNumber: number, checked: boolean): Promise<MutationResult> {
@@ -428,8 +468,12 @@ export const catsApi = {
     return handleResponse<CatCard>(response);
   },
 
-  async listHistory(id: string): Promise<CatHistoryResponse> {
-    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/history`, {
+  async listHistory(id: string, params?: { skip?: number; limit?: number }): Promise<CatHistoryResponse> {
+    const query = new URLSearchParams();
+    if (params?.skip !== undefined) query.set("skip", params.skip.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const suffix = query.size ? `?${query.toString()}` : "";
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/history${suffix}`, {
       method: "GET",
       credentials: "include",
     });

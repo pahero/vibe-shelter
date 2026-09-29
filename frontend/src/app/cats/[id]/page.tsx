@@ -3,12 +3,17 @@
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
 import { CatTreatments } from "@/components/cat-treatments";
+import { CatMedicalNotes } from "@/components/cat-medical-notes";
+import { CatPreventiveTreatments } from "@/components/cat-preventive-treatments";
+import { CatNotes } from "@/components/cat-notes";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
@@ -104,6 +109,10 @@ export default function CatProfilePage() {
   const [historyEvents, setHistoryEvents] = useState<CatHistoryEvent[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historySkip, setHistorySkip] = useState(0);
+  const [treatmentRefreshVersion, setTreatmentRefreshVersion] = useState(0);
+  const historyLimit = 50;
   const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
   const [settingPrimaryPhotoId, setSettingPrimaryPhotoId] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<CatTag[]>([]);
@@ -167,8 +176,16 @@ export default function CatProfilePage() {
   const refreshHistory = async () => {
     if (!catId) return;
     setHistoryError(null);
-    const response = await catsApi.listHistory(catId);
+    setHistorySkip(0);
+    const response = await catsApi.listHistory(catId, { skip: 0, limit: historyLimit });
     setHistoryEvents(response.data);
+    setHistoryTotal(response.total);
+  };
+
+  const restoreTreatment = async (treatmentId: string) => {
+    await catsApi.restoreTreatment(treatmentId);
+    setTreatmentRefreshVersion((version) => version + 1);
+    await refreshHistory();
   };
 
   useEffect(() => {
@@ -179,9 +196,10 @@ export default function CatProfilePage() {
       setIsLoadingHistory(true);
       setHistoryError(null);
       try {
-        const response = await catsApi.listHistory(catId);
+        const response = await catsApi.listHistory(catId, { skip: historySkip, limit: historyLimit });
         if (!cancelled) {
           setHistoryEvents(response.data);
+          setHistoryTotal(response.total);
         }
       } catch (err) {
         if (!cancelled) {
@@ -200,7 +218,7 @@ export default function CatProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [catId]);
+  }, [catId, historySkip]);
 
   useEffect(() => {
     let cancelled = false;
@@ -709,7 +727,7 @@ export default function CatProfilePage() {
                     <p className="mt-1 text-xs text-[#6d6a66]">PDF files only</p>
                   </div>
                   <label aria-label="Upload PDF" title="Upload PDF" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                    {isUploadingDocument ? "…" : "+"}
+                    {isUploadingDocument ? "…" : <FontAwesomeIcon icon={faPlus} className="text-sm" />}
                     <input type="file" accept="application/pdf,.pdf" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
                   </label>
                 </div>
@@ -722,8 +740,8 @@ export default function CatProfilePage() {
                         <button type="button" onClick={() => setExpandedDocumentId(document.id)} disabled={!document.url} className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-[#b24a20] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-gray-800 disabled:no-underline" title={document.fileName}>
                           {document.fileName}
                         </button>
-                        <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} className="shrink-0 text-xs font-semibold text-red-700 transition hover:text-red-900 disabled:opacity-50">
-                          {removingDocumentId === document.id ? "Removing..." : "Remove"}
+                        <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} aria-label="Delete document" title="Delete document" className="shrink-0 rounded-lg p-2 text-red-700 transition hover:bg-red-100 disabled:opacity-50">
+                          <FontAwesomeIcon icon={faTrash} />
                         </button>
                       </li>
                     ))}
@@ -993,7 +1011,10 @@ export default function CatProfilePage() {
               )}
             </section>
             <CatTasks catId={cat.id} onChanged={refreshHistory} />
-            <CatTreatments catId={cat.id} onChanged={refreshHistory} />
+            <CatTreatments catId={cat.id} onChanged={refreshHistory} refreshVersion={treatmentRefreshVersion} />
+            <CatMedicalNotes catId={cat.id} onChanged={refreshHistory} />
+            <CatPreventiveTreatments catId={cat.id} onChanged={refreshHistory} />
+            <CatNotes catId={cat.id} onChanged={refreshHistory} />
             <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
               <CatProfileSectionHeader title="Weight history" isExpanded={isWeightExpanded} onToggle={() => { setIsWeightFormOpen(false); setIsWeightExpanded((current) => !current); }} onAdd={() => setIsWeightFormOpen(true)} addLabel="Add weight" />
 
@@ -1089,9 +1110,11 @@ export default function CatProfilePage() {
                                 type="button"
                                 onClick={() => handleRemoveWeight(weight.id)}
                                 disabled={removingWeightId === weight.id}
-                                className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-label="Delete weight"
+                                title="Delete weight"
+                                className="rounded-lg border border-red-300 bg-red-50 p-2 text-xs text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                {removingWeightId === weight.id ? "Removing..." : "Remove"}
+                                <FontAwesomeIcon icon={faTrash} />
                               </button>
                             </td>
                           </tr>
@@ -1103,7 +1126,7 @@ export default function CatProfilePage() {
               )}
               </>}
             </section>
-            <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} />
+            <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} total={historyTotal} skip={historySkip} limit={historyLimit} onPageChange={setHistorySkip} onRestoreTreatment={restoreTreatment} />
           </div>
         )}
 
