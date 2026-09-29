@@ -56,6 +56,9 @@ type CatWithLocation = {
   primaryPhotoKey: string | null;
   microchipNumber: string | null;
   passportNumber: string | null;
+  adopterName: string | null;
+  adopterAddress: string | null;
+  felvFivTestDone: boolean;
   rescueSource: string | null;
   updatedAt: Date;
   archivedAt: Date | null;
@@ -82,6 +85,10 @@ export type CatCard = {
   currentLocationName: string | null;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
+  passportNumber: string | null;
+  adopterName: string | null;
+  adopterAddress: string | null;
+  felvFivTestDone: boolean;
   rescueSource: string | null;
   createdByUserId: string | null;
   isTest: boolean;
@@ -835,6 +842,9 @@ export class CatsService {
     if (data.rescueSource !== undefined) updateData.rescueSource = this.optionalTrim(data.rescueSource);
     if (data.microchipNumber !== undefined) updateData.microchipNumber = this.optionalTrim(data.microchipNumber);
     if (data.passportNumber !== undefined) updateData.passportNumber = this.optionalTrim(data.passportNumber);
+    if (data.adopterName !== undefined) updateData.adopterName = this.optionalTrim(data.adopterName);
+    if (data.adopterAddress !== undefined) updateData.adopterAddress = this.optionalTrim(data.adopterAddress);
+    if (data.felvFivTestDone !== undefined) updateData.felvFivTestDone = data.felvFivTestDone;
     if (data.sterilizationStatus !== undefined) updateData.sterilizationStatus = data.sterilizationStatus;
     if (data.currentLocationId !== undefined) updateData.currentLocationId = data.currentLocationId || null;
     return updateData;
@@ -846,12 +856,14 @@ export class CatsService {
       const oldValue = this.auditFieldValue(existing, field);
       const newValue = formatCatAuditValue(updateData[field]);
       if (oldValue === newValue) return [];
+      const oldScalarValue = field === 'adopterName' || field === 'adopterAddress' ? oldValue ?? 'Not set' : oldValue;
+      const newScalarValue = field === 'adopterName' || field === 'adopterAddress' ? newValue ?? 'Not set' : newValue;
       return [{
         catId: existing.id,
         actorUserId,
         eventType: CAT_AUDIT_FIELD_EVENT_TYPES[field],
-        oldValue,
-        newValue,
+        oldValue: oldScalarValue,
+        newValue: newScalarValue,
       }];
     });
   }
@@ -894,6 +906,10 @@ export class CatsService {
       isTest: cat.isTest,
       primaryPhotoUrl: await this.photoUrls.getPreviewPhotoUrl(cat.primaryPhotoKey),
       microchipNumber: cat.microchipNumber,
+      passportNumber: cat.passportNumber,
+      adopterName: cat.adopterName,
+      adopterAddress: cat.adopterAddress,
+      felvFivTestDone: cat.felvFivTestDone,
       rescueSource: cat.rescueSource,
       updatedAt: cat.updatedAt.toISOString(),
       tags: cat.tags?.map((item) => this.toCatTag(item.tag)) ?? [],

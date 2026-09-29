@@ -15,6 +15,23 @@ export const eventLabels: Record<string, string> = {
   rescue_source_changed: "Rescue source changed",
   microchip_number_changed: "Microchip number changed",
   passport_number_changed: "Passport number changed",
+  adopter_name_changed: "Adopter name changed",
+  adopter_address_changed: "Adopter address changed",
+  felv_fiv_test_done_changed: "FeLV/FIV test status changed",
+  traces_changed: "Traces changed",
+  fit_to_fly_changed: "Fit-to-fly changed",
+  flight_created: "Flight created",
+  flight_deleted: "Flight deleted",
+  flight_restored: "Flight restored",
+  flight_date_changed: "Flight date changed",
+  flight_airport_changed: "Airport changed",
+  flight_number_changed: "Flight number changed",
+  flight_parent_changed: "Flight parent changed",
+  flight_cat_assigned: "Cat assigned",
+  flight_cat_unassigned: "Cat removed",
+  flight_cat_restored: "Cat assignment restored",
+  flight_cat_f2f_changed: "Fit-to-fly status changed",
+  flight_cat_traces_changed: "Traces status changed",
   sterilization_status_changed: "Neutering changed",
   status_changed: "Status changed",
   current_location_changed: "Current location changed",
@@ -51,6 +68,7 @@ export const eventLabels: Record<string, string> = {
   preventive_treatment_deleted: "Vaccination or parasite treatment deleted",
   preventive_treatment_date_changed: "Vaccination or parasite treatment date changed",
   preventive_treatment_name_changed: "Vaccine or medicine changed",
+  preventive_treatment_type_changed: "Vaccination or treatment type changed",
   note_created: "Note created",
   note_deleted: "Note deleted",
   note_date_changed: "Note date changed",
@@ -66,6 +84,7 @@ type CatHistoryProps = {
   limit?: number;
   onPageChange?: (skip: number) => void;
   onRestoreTreatment?: (treatmentId: string) => Promise<void>;
+  onRestoreFlight?: (flightId: string) => Promise<void>;
 };
 
 export function historyValueText(value: string | null): string {
@@ -79,6 +98,10 @@ export function auditEventStyle(eventType: string): string {
 }
 
 function eventLabel(event: CatHistoryEvent): string {
+  if (event.flight) {
+    const label = eventLabels[event.eventType] ?? event.eventType;
+    return `Flight ${event.flight.flightNumber} · ${label}`;
+  }
   const administrationDate = event.treatmentAdministrationDate;
   if (event.treatment && administrationDate && event.eventType === "treatment_administration_checked") return `Treatment ${event.treatment.shortName} ${administrationDate} Checked`;
   if (event.treatment && administrationDate && event.eventType === "treatment_administration_unchecked") return `Treatment ${event.treatment.shortName} ${administrationDate} Unchecked`;
@@ -99,11 +122,21 @@ function eventLabel(event: CatHistoryEvent): string {
   return eventLabels[event.eventType] ?? event.eventType;
 }
 
-export function CatHistory({ events, isLoading, error, total = events.length, skip = 0, limit = 50, onPageChange, onRestoreTreatment }: CatHistoryProps) {
+export function CatHistory({ events, isLoading, error, total = events.length, skip = 0, limit = 50, onPageChange, onRestoreTreatment, onRestoreFlight }: CatHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [restoringTreatmentId, setRestoringTreatmentId] = useState<string | null>(null);
+  const [restoringFlightId, setRestoringFlightId] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const restoreTreatment = async (treatmentId: string) => { if (!onRestoreTreatment) return; setRestoringTreatmentId(treatmentId); setRestoreError(null); try { await onRestoreTreatment(treatmentId); } catch (reason) { setRestoreError(ApiErrorHandler.handle(reason)); } finally { setRestoringTreatmentId(null); } };
+  const restoreFlight = async (flightId: string) => { if (!onRestoreFlight) return; setRestoringFlightId(flightId); setRestoreError(null); try { await onRestoreFlight(flightId); } catch (reason) { setRestoreError(ApiErrorHandler.handle(reason)); } finally { setRestoringFlightId(null); } };
+  const restoredFlightActionIds = new Set<string>();
+  const flightRestoreEventIds = new Set<string>();
+  for (const event of events) {
+    if (event.flight?.isDeleted && !restoredFlightActionIds.has(event.flight.id)) {
+      restoredFlightActionIds.add(event.flight.id);
+      flightRestoreEventIds.add(event.id);
+    }
+  }
 
   return (
     <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
@@ -130,7 +163,7 @@ export function CatHistory({ events, isLoading, error, total = events.length, sk
                       <span className="font-semibold text-gray-900">{eventLabel(event)}</span>
                       <span className="text-[#6d6a66]"> by {event.actor.displayName || event.actor.email}</span>
                     </p>
-                    <div className="flex shrink-0 items-center gap-2"><time className="text-xs font-medium text-[#6d6a66]" dateTime={event.occurredAt}>{formatDate(event.occurredAt)}</time>{event.eventType === "treatment_deleted" && event.treatment?.isDeleted && onRestoreTreatment && <button type="button" disabled={restoringTreatmentId === event.treatment.id} onClick={() => void restoreTreatment(event.treatment!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringTreatmentId === event.treatment.id ? "Restoring..." : "Restore"}</button>}</div>
+                     <div className="flex shrink-0 items-center gap-2"><time className="text-xs font-medium text-[#6d6a66]" dateTime={event.occurredAt}>{formatDate(event.occurredAt)}</time>{event.eventType === "treatment_deleted" && event.treatment?.isDeleted && onRestoreTreatment && <button type="button" disabled={restoringTreatmentId === event.treatment.id} onClick={() => void restoreTreatment(event.treatment!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringTreatmentId === event.treatment.id ? "Restoring..." : "Restore"}</button>}{event.flight?.isDeleted && flightRestoreEventIds.has(event.id) && onRestoreFlight && <button type="button" disabled={restoringFlightId === event.flight.id} onClick={() => void restoreFlight(event.flight!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringFlightId === event.flight.id ? "Restoring..." : "Restore flight"}</button>}</div>
                   </div>
 
                   {event.photo ? (

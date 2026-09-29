@@ -32,6 +32,7 @@ import {
 } from "./dto";
 import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
+import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -45,6 +46,7 @@ export class CatsController {
     private dearchiveCatHandler: DearchiveCatHandler,
     private listCatHistoryQuery: ListCatHistoryQuery,
     private listAllCatHistoryQuery: ListAllCatHistoryQuery,
+    private listFlightCandidatesHandler: ListFlightCandidatesHandler,
   ) {}
 
   @Get()
@@ -73,6 +75,11 @@ export class CatsController {
   @Get("tags")
   async listTags() {
     return this.catsService.listTags();
+  }
+
+  @Get("flight-candidates")
+  async listFlightCandidates(@CurrentUser() user: AuthenticatedUser) {
+    return this.listFlightCandidatesHandler.handle(user.isTest);
   }
 
   @Get("history")

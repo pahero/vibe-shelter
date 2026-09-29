@@ -45,6 +45,10 @@ export type CatCard = {
   isTest: boolean;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
+  passportNumber?: string | null;
+  adopterName?: string | null;
+  adopterAddress?: string | null;
+  felvFivTestDone: boolean;
   rescueSource: string | null;
   updatedAt: string;
   tags: CatTag[];
@@ -117,8 +121,9 @@ export type TreatmentInput = {
 
 export type CatMedicalNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
 export type MedicalNoteInput = { date: string; comment: string };
-export type CatPreventiveTreatment = { id: string; date: string; name: string; createdAt: string; updatedAt: string };
-export type PreventiveTreatmentInput = { date: string; name: string };
+export type PreventiveTreatmentType = "FIRST_VACCINE" | "SECOND_VACCINE" | "RABIES" | "OTHER";
+export type CatPreventiveTreatment = { id: string; date: string; name: string; type: PreventiveTreatmentType; createdAt: string; updatedAt: string };
+export type PreventiveTreatmentInput = { date: string; name: string; type: PreventiveTreatmentType };
 export type CatNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
 export type NoteInput = { date: string; comment: string };
 
@@ -166,7 +171,7 @@ export type CatDocument = {
 
 export type CatHistoryEvent = {
   id: string;
-  catId: string;
+  catId: string | null;
   catName: string | null;
   eventType: string;
   occurredAt: string;
@@ -189,6 +194,13 @@ export type CatHistoryEvent = {
     link: string | null;
     fileName: string;
     status: "ACTIVE" | "DELETED";
+  } | null;
+  flight?: {
+    id: string;
+    flightNumber: string;
+    airport: string;
+    date: string;
+    isDeleted: boolean;
   } | null;
 };
 
@@ -224,11 +236,93 @@ export type CreateCatDto = {
   rescueSource?: string | null;
   microchipNumber?: string | null;
   passportNumber?: string | null;
+  adopterName?: string | null;
+  adopterAddress?: string | null;
   sterilizationStatus: SterilizationStatus;
   currentLocationId?: string | null;
 };
 
-export type UpdateCatDto = Partial<CreateCatDto>;
+export type UpdateCatDto = Partial<CreateCatDto> & { felvFivTestDone?: boolean };
+
+export type FlightListItem = {
+  id: string;
+  date: string;
+  airport: string;
+  flightNumber: string;
+  flightParent: string;
+  deletedAt: string | null;
+  catCount: number;
+};
+
+export type FlightCatAssignment = {
+  assignmentId: string;
+  cat: {
+    id: string;
+    name: string;
+    archivedAt: string | null;
+    microchipNumber: string | null;
+    passportNumber: string | null;
+  };
+  f2fDone: boolean;
+  tracesDone: boolean;
+};
+
+export type FlightDetails = {
+  id: string;
+  date: string;
+  airport: string;
+  flightNumber: string;
+  flightParent: string;
+  updatedAt: string;
+  cats: FlightCatAssignment[];
+};
+
+export type FlightAuditEvent = {
+  id: string;
+  flightId: string;
+  eventType: string;
+  createdAt: string;
+  actor: { id: string; displayName: string; email: string };
+  oldValue: string | null;
+  newValue: string | null;
+  cat: { id: string; name: string; archivedAt: string | null } | null;
+  flight: { id: string; flightNumber: string; airport: string; date: string; isDeleted: boolean };
+  assignment: { id: string; f2fDone: boolean; tracesDone: boolean; isDeleted: boolean } | null;
+};
+
+export type FlightInput = {
+  date: string;
+  airport: string;
+  flightNumber: string;
+  flightParent: string;
+};
+
+export type FlightCatAssignmentUpdate = {
+  f2fDone?: boolean;
+  tracesDone?: boolean;
+};
+
+export type FlightCandidateRequirements = {
+  firstVaccine: boolean;
+  secondVaccine: boolean;
+  rabies: boolean;
+  passport: boolean;
+  chipped: boolean;
+  adopter: boolean;
+  felvFivTestDone: boolean;
+};
+
+export type FlightCandidate = {
+  id: string;
+  name: string;
+  currentLocationName: string | null;
+  archivedAt: string | null;
+  microchipNumber: string | null;
+  passportNumber: string | null;
+  adopterName: string | null;
+  adopterAddress: string | null;
+  requirements: FlightCandidateRequirements;
+};
 
 export type CreateLocationDto = {
   name: string;
@@ -347,6 +441,10 @@ export const notificationsApi = {
 };
 
 export const catsApi = {
+  async listFlightCandidates(): Promise<FlightCandidate[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/flight-candidates`, { method: "GET", credentials: "include" });
+    return handleResponse<FlightCandidate[]>(response);
+  },
   async listNotes(catId: string): Promise<CatNote[]> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "GET", credentials: "include" }); return handleResponse<CatNote[]>(response); },
   async createNote(catId: string, data: NoteInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
   async updateNote(id: string, data: Partial<NoteInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
@@ -728,5 +826,71 @@ export const catsApi = {
     if (!response.ok) {
       await handleResponse<never>(response);
     }
+  },
+};
+
+export const flightsApi = {
+  async list(includeDeleted = false): Promise<FlightListItem[]> {
+    const path = includeDeleted ? "/api/flights/deleted" : "/api/flights";
+    const response = await fetch(`${BACKEND_URL}${path}`, { method: "GET", credentials: "include" });
+    return handleResponse<FlightListItem[]>(response);
+  },
+
+  async get(flightId: string): Promise<FlightDetails> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/${flightId}`, { method: "GET", credentials: "include" });
+    return handleResponse<FlightDetails>(response);
+  },
+
+  async history(flightId: string): Promise<FlightAuditEvent[]> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/${flightId}/history`, { method: "GET", credentials: "include" });
+    return handleResponse<FlightAuditEvent[]>(response);
+  },
+
+  async create(data: FlightInput): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/flights`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async update(flightId: string, data: Partial<FlightInput>): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/${flightId}`, {
+      method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async delete(flightId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/${flightId}`, { method: "DELETE", credentials: "include" });
+    return handleResponse<void>(response);
+  },
+
+  async restore(flightId: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/${flightId}/restore`, { method: "POST", credentials: "include" });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async assignCat(flightId: string, catId: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/${flightId}/cats`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ catId }),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async updateAssignment(assignmentId: string, data: FlightCatAssignmentUpdate): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/assignments/${assignmentId}`, {
+      method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async deleteAssignment(assignmentId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/assignments/${assignmentId}`, { method: "DELETE", credentials: "include" });
+    return handleResponse<void>(response);
+  },
+
+  async restoreAssignment(assignmentId: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/flights/assignments/${assignmentId}/restore`, { method: "POST", credentials: "include" });
+    return handleResponse<MutationResult>(response);
   },
 };

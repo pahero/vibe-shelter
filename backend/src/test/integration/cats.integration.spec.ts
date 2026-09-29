@@ -65,6 +65,8 @@ describe("Cats endpoints", () => {
         sex: "FEMALE",
         sterilizationStatus: "STERILIZED",
         currentLocationId: location.id,
+        adopterName: "Taylor Adopter",
+        adopterAddress: "123 Cat Street",
       })
       .expect(201);
 
@@ -72,6 +74,7 @@ describe("Cats endpoints", () => {
     expect(response.body.currentLocationName).toBe(location.name);
     expect(response.body.primaryPhotoUrl).toBeNull();
     expect(response.body.primaryPhotoKey).toBeUndefined();
+    expect(response.body).toMatchObject({ adopterName: "Taylor Adopter", adopterAddress: "123 Cat Street" });
     const stored = await (prisma as any).cat.findUnique({ where: { id: response.body.id } });
     expect(stored.createdByUserId).toBe(authUser.id);
     expect(response.body.isTest).toBe(false);
@@ -272,6 +275,50 @@ describe("Cats endpoints", () => {
     expect(response.body.data[0].name).toContain("Mila");
   });
 
+  it("GET /api/cats/flight-candidates includes the readiness checklist", async () => {
+    const cat = await createCat(prisma, {
+      name: unique("flight-candidate"),
+      microchipNumber: unique("flight-chip"),
+      passportNumber: unique("flight-passport"),
+    });
+    await prisma.cat.update({
+      where: { id: cat.id },
+      data: { adopterName: "Jordan Adopter", adopterAddress: "45 Travel Road", felvFivTestDone: true },
+    });
+    await authAgent.post(`/api/cats/${cat.id}/preventive-treatments`).send({
+      date: "2026-01-01", name: "First dose", type: "FIRST_VACCINE",
+    }).expect(201);
+    await authAgent.post(`/api/cats/${cat.id}/preventive-treatments`).send({
+      date: "2026-02-01", name: "Second dose", type: "SECOND_VACCINE",
+    }).expect(201);
+    await authAgent.post(`/api/cats/${cat.id}/preventive-treatments`).send({
+      date: "2026-03-01", name: "Rabies", type: "RABIES",
+    }).expect(201);
+
+    const treatments = await authAgent.get(`/api/cats/${cat.id}/preventive-treatments`).expect(200);
+    expect(treatments.body.map((treatment: { type: string }) => treatment.type)).toEqual(
+      expect.arrayContaining(["FIRST_VACCINE", "SECOND_VACCINE", "RABIES"]),
+    );
+
+    const response = await authAgent.get("/api/cats/flight-candidates").expect(200);
+    const candidate = response.body.find((item: { id: string }) => item.id === cat.id);
+
+    expect(candidate).toMatchObject({
+      id: cat.id,
+      adopterName: "Jordan Adopter",
+      adopterAddress: "45 Travel Road",
+      requirements: {
+        firstVaccine: true,
+        secondVaccine: true,
+        rabies: true,
+        passport: true,
+        chipped: true,
+        adopter: true,
+        felvFivTestDone: true,
+      },
+    });
+  });
+
   it("GET /api/cats/:id/card returns one cat card", async () => {
     const cat = await createCat(prisma, { name: unique("card") });
 
@@ -279,6 +326,7 @@ describe("Cats endpoints", () => {
 
     expect(response.body.id).toBe(cat.id);
     expect(response.body.primaryPhotoUrl).toBeNull();
+    expect(response.body.felvFivTestDone).toBe(false);
   });
 
   it("PATCH /api/cats/:id updates a cat card", async () => {
@@ -286,10 +334,11 @@ describe("Cats endpoints", () => {
 
     const response = await authAgent
       .patch(`/api/cats/${cat.id}`)
-      .send({ name: "Updated cat" })
+      .send({ name: "Updated cat", felvFivTestDone: true })
       .expect(200);
 
     expect(response.body.name).toBe("Updated cat");
+    expect(response.body.felvFivTestDone).toBe(true);
 
     const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
     expect(history.body.data).toEqual(
@@ -299,9 +348,20 @@ describe("Cats endpoints", () => {
           oldValue: cat.name,
           newValue: "Updated cat",
         }),
+        expect.objectContaining({
+          eventType: "felv_fiv_test_done_changed",
+          oldValue: "false",
+          newValue: "true",
+        }),
       ]),
     );
     expect(history.body.data[0].actor).toMatchObject({ id: authUser.id, email: authUser.email });
+  });
+
+  it("PATCH /api/cats/:id rejects a non-boolean FeLV/FIV test status", async () => {
+    const cat = await createCat(prisma, { name: unique("invalid-felv-fiv") });
+
+    await authAgent.patch(`/api/cats/${cat.id}`).send({ felvFivTestDone: "true" }).expect(400);
   });
 
   it("preserves creator attribution when another user updates a cat", async () => {
@@ -361,11 +421,12 @@ describe("Cats endpoints", () => {
 
     const all = await authAgent.get("/api/cats/history").query({ limit: 50 }).expect(200);
     expect(all.body.total).toBeGreaterThanOrEqual(2);
-    expect(all.body.data[0]).toMatchObject({
+    const latestCatEvent = all.body.data.find((event: { catId: string | null; catName: string | null; actor: { id: string } }) => event.catId === cat.id);
+    expect(latestCatEvent).toMatchObject({
       catId: cat.id,
       actor: expect.objectContaining({ id: otherAuth.user.id }),
     });
-    expect(all.body.data[0].catName).toBe("Updated by other user");
+    expect(latestCatEvent.catName).toBe("Updated by other user");
     expect(all.body.data.some((event: any) => event.eventType === "name_changed")).toBe(true);
 
     const byCat = await authAgent
@@ -914,15 +975,16 @@ async function createLocation(prisma: PrismaClient, prefix: string) {
 
 async function createCat(
   prisma: PrismaClient,
-  data: { name: string; currentLocationId?: string; microchipNumber?: string },
+  data: { name: string; currentLocationId?: string; microchipNumber?: string; passportNumber?: string },
 ) {
-  return (prisma as any).cat.create({
+  return prisma.cat.create({
     data: {
       name: data.name,
       sex: "UNKNOWN",
       sterilizationStatus: "UNKNOWN",
       currentLocationId: data.currentLocationId ?? null,
       microchipNumber: data.microchipNumber ?? null,
+      passportNumber: data.passportNumber ?? null,
     },
   });
 }

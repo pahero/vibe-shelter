@@ -30,6 +30,7 @@ export type CatHistoryEventDto = {
   treatment: { id: string; shortName: string; isDeleted: boolean } | null;
   photo: CatHistoryPhotoDto | null;
   document: CatHistoryDocumentDto | null;
+  flight?: { id: string; flightNumber: string; airport: string; date: string; isDeleted: boolean } | null;
 };
 
 export type CatHistoryResponseDto = {

@@ -15,7 +15,7 @@ import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatPreventiveTreatments } from "@/components/cat-preventive-treatments";
 import { CatNotes } from "@/components/cat-notes";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
-import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -26,6 +26,10 @@ type CatEditForm = {
   estimatedBirthDate: string;
   intakeDate: string;
   microchipNumber: string;
+  passportNumber: string;
+  adopterName: string;
+  adopterAddress: string;
+  felvFivTestDone: boolean;
   rescueSource: string;
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string;
@@ -61,6 +65,10 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     estimatedBirthDate: dateInputValue(cat.estimatedBirthDate),
     intakeDate: dateInputValue(cat.intakeDate),
     microchipNumber: cat.microchipNumber ?? "",
+    passportNumber: cat.passportNumber ?? "",
+    adopterName: cat.adopterName ?? "",
+    adopterAddress: cat.adopterAddress ?? "",
+    felvFivTestDone: cat.felvFivTestDone,
     rescueSource: cat.rescueSource ?? "",
     sterilizationStatus: cat.sterilizationStatus,
     currentLocationId: cat.currentLocationId ?? "",
@@ -185,6 +193,11 @@ export default function CatProfilePage() {
   const restoreTreatment = async (treatmentId: string) => {
     await catsApi.restoreTreatment(treatmentId);
     setTreatmentRefreshVersion((version) => version + 1);
+    await refreshHistory();
+  };
+
+  const restoreFlight = async (flightId: string) => {
+    await flightsApi.restore(flightId);
     await refreshHistory();
   };
 
@@ -537,6 +550,10 @@ export default function CatProfilePage() {
         estimatedBirthDate: editForm.estimatedBirthDate || null,
         intakeDate: editForm.intakeDate || null,
         microchipNumber: editForm.microchipNumber.trim() || null,
+        passportNumber: editForm.passportNumber.trim() || null,
+        adopterName: editForm.adopterName.trim() || null,
+        adopterAddress: editForm.adopterAddress.trim() || null,
+        felvFivTestDone: editForm.felvFivTestDone,
         rescueSource: editForm.rescueSource.trim() || null,
         sterilizationStatus: editForm.sterilizationStatus,
         currentLocationId: editForm.currentLocationId || null,
@@ -947,6 +964,39 @@ export default function CatProfilePage() {
                       />
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Passport number
+                      <input
+                        value={editForm.passportNumber}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, passportNumber: event.target.value })}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Adopter name
+                      <input
+                        value={editForm.adopterName}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterName: event.target.value })}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={editForm.felvFivTestDone}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, felvFivTestDone: event.target.checked })}
+                        className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]"
+                      />
+                      FeLV/FIV test done
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                      Adopter address
+                      <input
+                        value={editForm.adopterAddress}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterAddress: event.target.value })}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Intake date
                       <input
                         type="date"
@@ -998,6 +1048,10 @@ export default function CatProfilePage() {
                     ["Neutering", sterilizationLabels[cat.sterilizationStatus]],
                     ["Color", cat.color || "Not set"],
                     ["Microchip number", cat.microchipNumber || "Not set"],
+                    ["Passport number", cat.passportNumber || "Not set"],
+                    ["Adopter name", cat.adopterName || "Not set"],
+                    ["Adopter address", cat.adopterAddress || "Not set"],
+                    ["FeLV/FIV test", cat.felvFivTestDone ? "Done" : "Not done"],
                     ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
                     ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
                     ["Rescue source", cat.rescueSource || "Not set"],
@@ -1126,7 +1180,7 @@ export default function CatProfilePage() {
               )}
               </>}
             </section>
-            <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} total={historyTotal} skip={historySkip} limit={historyLimit} onPageChange={setHistorySkip} onRestoreTreatment={restoreTreatment} />
+            <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} total={historyTotal} skip={historySkip} limit={historyLimit} onPageChange={setHistorySkip} onRestoreTreatment={restoreTreatment} onRestoreFlight={restoreFlight} />
           </div>
         )}
 

@@ -76,6 +76,8 @@ describe('CreateCatHandler', () => {
     const intakeDate = new Date('2026-04-01');
     const microchipNumber = unique('chip');
     const passportNumber = unique('passport');
+    const adopterName = 'Taylor Adopter';
+    const adopterAddress = '123 Cat Street';
 
     const card = await handler.execute(new CreateCatCommand(
       'Mila',
@@ -90,6 +92,8 @@ describe('CreateCatHandler', () => {
       location.id,
       actorUserId,
       false,
+      adopterName,
+      adopterAddress,
     ));
 
     expect(card).toMatchObject({
@@ -103,12 +107,19 @@ describe('CreateCatHandler', () => {
       currentLocationName: location.name,
       primaryPhotoUrl: null,
       microchipNumber,
+      passportNumber,
+      adopterName,
+      adopterAddress,
+      felvFivTestDone: false,
       tags: [],
     });
     const stored = await prisma.cat.findUniqueOrThrow({ where: { id: card.id } });
     expect(stored).toMatchObject({
       rescueSource: 'Found near clinic',
       passportNumber,
+      adopterName,
+      adopterAddress,
+      felvFivTestDone: false,
       createdByUserId: actorUserId,
       isTest: false,
     });

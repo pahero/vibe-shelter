@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 
 export class UpdateCatDto {
   @IsString()
@@ -32,6 +32,18 @@ export class UpdateCatDto {
   @IsString()
   @IsOptional()
   passportNumber?: string | null;
+
+  @IsString()
+  @IsOptional()
+  adopterName?: string | null;
+
+  @IsString()
+  @IsOptional()
+  adopterAddress?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  felvFivTestDone?: boolean;
 
   @IsIn(['STERILIZED', 'NOT_STERILIZED', 'UNKNOWN'])
   @IsOptional()

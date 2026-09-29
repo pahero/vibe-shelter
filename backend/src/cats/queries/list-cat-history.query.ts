@@ -30,7 +30,7 @@ export class ListCatHistoryQuery {
     }
 
     const where = { catId: input.catId };
-    const [events, total] = await Promise.all([
+    const [catEvents, flightEvents] = await Promise.all([
       (this.prisma as any).catAuditEvent.findMany({
         where,
         include: {
@@ -41,15 +41,25 @@ export class ListCatHistoryQuery {
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
-        skip,
-        take: limit,
       }),
-      (this.prisma as any).catAuditEvent.count({ where }),
+      this.prisma.flightAuditEvent.findMany({
+        where: { catId: input.catId, flight: { isTest: input.currentUserIsTest ?? false } },
+        include: {
+          actorUser: { select: { id: true, fullName: true, email: true } },
+          cat: { select: { id: true, name: true } },
+          flight: { select: { id: true, flightNumber: true, airport: true, date: true, deletedAt: true } },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      }),
     ]);
+    const events = [
+      ...catEvents.map((event: any) => ({ source: 'cat' as const, event, occurredAt: event.occurredAt })),
+      ...flightEvents.map((event) => ({ source: 'flight' as const, event, occurredAt: event.createdAt })),
+    ].sort((left, right) => right.occurredAt.getTime() - left.occurredAt.getTime() || right.event.id.localeCompare(left.event.id));
 
     return {
-      data: await Promise.all(events.map((event: any) => this.toDto(event))),
-      total,
+      data: await Promise.all(events.slice(skip, skip + limit).map(({ source, event }) => source === 'cat' ? this.toDto(event) : this.toFlightDto(event))),
+      total: events.length,
       skip,
       limit,
     };
@@ -86,6 +96,40 @@ export class ListCatHistoryQuery {
             status: event.document.deletedAt ? 'DELETED' : 'ACTIVE',
           }
         : null,
+    };
+  }
+
+  private toFlightDto(event: {
+    id: string;
+    catId: string | null;
+    cat: { id: string; name: string } | null;
+    eventType: string;
+    createdAt: Date;
+    actorUser: { id: string; fullName: string | null; email: string };
+    oldValue: string | null;
+    newValue: string | null;
+    flight: { id: string; flightNumber: string; airport: string; date: Date; deletedAt: Date | null };
+  }): CatHistoryEventDto {
+    return {
+      id: `flight-${event.id}`,
+      catId: event.catId,
+      catName: event.cat?.name ?? null,
+      eventType: event.eventType,
+      occurredAt: event.createdAt.toISOString(),
+      actor: { id: event.actorUser.id, displayName: event.actorUser.fullName || event.actorUser.email, email: event.actorUser.email },
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      treatmentAdministrationDate: null,
+      treatment: null,
+      photo: null,
+      document: null,
+      flight: {
+        id: event.flight.id,
+        flightNumber: event.flight.flightNumber,
+        airport: event.flight.airport,
+        date: event.flight.date.toISOString().slice(0, 10),
+        isDeleted: event.flight.deletedAt !== null,
+      },
     };
   }
 

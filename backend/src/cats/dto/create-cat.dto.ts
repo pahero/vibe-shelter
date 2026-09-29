@@ -35,6 +35,14 @@ export class CreateCatDto {
   @IsOptional()
   passportNumber?: string | null;
 
+  @IsString()
+  @IsOptional()
+  adopterName?: string | null;
+
+  @IsString()
+  @IsOptional()
+  adopterAddress?: string | null;
+
   @IsIn(['STERILIZED', 'NOT_STERILIZED', 'UNKNOWN'])
   sterilizationStatus!: string;
 
@@ -65,6 +73,8 @@ export class CreateCatDto {
       this.optionalTrim(this.currentLocationId),
       createdByUserId,
       currentUserIsTest,
+      this.optionalTrim(this.adopterName),
+      this.optionalTrim(this.adopterAddress),
     );
   }
 

@@ -166,12 +166,18 @@ describe('CatsService', () => {
         sterilizationStatus: 'STERILIZED',
         currentLocationId: null,
         rescueSource: 'Found near clinic',
+        adopterName: 'Taylor Adopter',
+        adopterAddress: '123 Cat Street',
+        felvFivTestDone: true,
       });
 
       expect(updated.name).toBe('Luna');
       expect(updated.color).toBeNull();
       expect(updated.currentLocationId).toBeNull();
       expect(updated.rescueSource).toBe('Found near clinic');
+      expect(updated.adopterName).toBe('Taylor Adopter');
+      expect(updated.adopterAddress).toBe('123 Cat Street');
+      expect(updated.felvFivTestDone).toBe(true);
     });
   });
 
@@ -193,12 +199,36 @@ describe('CatsService', () => {
       const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', color: 'Calico', sterilizationStatus: 'UNKNOWN' });
       const service = createService(tx);
 
-      await service.updateCat(card.id, { name: 'Luna', color: 'Calico' }, actor.id);
+       await service.updateCat(card.id, { name: 'Luna', color: 'Calico', adopterName: 'Taylor Adopter', adopterAddress: '123 Cat Street', felvFivTestDone: true }, actor.id);
 
       const events = await (tx as any).catAuditEvent.findMany({ where: { catId: card.id }, orderBy: { eventType: 'asc' } });
-      expect(events.map((event: any) => event.eventType)).toEqual(['name_changed']);
+       expect(events.map((event: any) => event.eventType)).toEqual(expect.arrayContaining(['adopter_address_changed', 'adopter_name_changed', 'felv_fiv_test_done_changed', 'name_changed']));
+       expect(events).toHaveLength(4);
+       expect(events).toEqual(expect.arrayContaining([
+         expect.objectContaining({ actorUserId: actor.id, oldValue: 'Mila', newValue: 'Luna' }),
+         expect.objectContaining({ eventType: 'adopter_name_changed', actorUserId: actor.id, oldValue: 'Not set', newValue: 'Taylor Adopter' }),
+         expect.objectContaining({ eventType: 'adopter_address_changed', actorUserId: actor.id, oldValue: 'Not set', newValue: '123 Cat Street' }),
+         expect.objectContaining({ eventType: 'felv_fiv_test_done_changed', actorUserId: actor.id, oldValue: 'false', newValue: 'true' }),
+       ]));
+    });
+  });
+
+  it('uses a human-readable marker when adopter details are cleared', async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await createUser(tx, 'adopter-clear-auditor');
+      const card = await createCatFixture(tx, {
+        name: unique('adopter-clear'),
+        adopterName: 'Taylor Adopter',
+        adopterAddress: '123 Cat Street',
+      });
+      const service = createService(tx);
+
+      await service.updateCat(card.id, { adopterName: null, adopterAddress: null }, actor.id);
+
+      const events = await tx.catAuditEvent.findMany({ where: { catId: card.id } });
       expect(events).toEqual(expect.arrayContaining([
-        expect.objectContaining({ actorUserId: actor.id, oldValue: 'Mila', newValue: 'Luna' }),
+        expect.objectContaining({ eventType: 'adopter_name_changed', oldValue: 'Taylor Adopter', newValue: 'Not set' }),
+        expect.objectContaining({ eventType: 'adopter_address_changed', oldValue: '123 Cat Street', newValue: 'Not set' }),
       ]));
     });
   });
@@ -209,7 +239,7 @@ describe('CatsService', () => {
       const card = await createCatFixture(tx, { name: 'Mila', sex: 'FEMALE', sterilizationStatus: 'UNKNOWN' });
       const service = createService(tx);
 
-      await service.updateCat(card.id, { name: 'Mila', sex: 'FEMALE' }, actor.id);
+      await service.updateCat(card.id, { name: 'Mila', sex: 'FEMALE', felvFivTestDone: false }, actor.id);
       await expect(service.updateCat(card.id, { sex: 'BAD' }, actor.id)).rejects.toThrow(BadRequestException);
 
       expect(await (tx as any).catAuditEvent.count({ where: { catId: card.id } })).toBe(0);

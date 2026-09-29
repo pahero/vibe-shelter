@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
@@ -22,6 +22,8 @@ function emptyForm(locationId: string) {
     intakeDate: "",
     microchipNumber: "",
     passportNumber: "",
+    adopterName: "",
+    adopterAddress: "",
     rescueSource: "",
     sterilizationStatus: "UNKNOWN" as SterilizationStatus,
     currentLocationId: locationId,
@@ -81,11 +83,7 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
     };
   }, []);
 
-  useEffect(() => {
-    fetchCats();
-  }, [locationId, currentPage, search]);
-
-  const fetchCats = async () => {
+  const fetchCats = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -102,7 +100,11 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, locationId, search]);
+
+  useEffect(() => {
+    void fetchCats();
+  }, [fetchCats]);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -128,6 +130,8 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
       rescueSource: form.rescueSource.trim() || null,
       microchipNumber: form.microchipNumber.trim() || null,
       passportNumber: form.passportNumber.trim() || null,
+      adopterName: form.adopterName.trim() || null,
+      adopterAddress: form.adopterAddress.trim() || null,
       sterilizationStatus: form.sterilizationStatus,
       currentLocationId: form.currentLocationId || null,
     };
@@ -273,6 +277,22 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               <input
                 value={form.passportNumber}
                 onChange={(event) => setForm((prev) => ({ ...prev, passportNumber: event.target.value }))}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Adopter name
+              <input
+                value={form.adopterName}
+                onChange={(event) => setForm((prev) => ({ ...prev, adopterName: event.target.value }))}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Adopter address
+              <input
+                value={form.adopterAddress}
+                onChange={(event) => setForm((prev) => ({ ...prev, adopterAddress: event.target.value }))}
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               />
             </label>

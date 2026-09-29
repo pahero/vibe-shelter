@@ -14,12 +14,13 @@ export function AppHeader({ user, hideEditShelterLink = false }: AppHeaderProps)
     redirect("/replace-temporary-password");
   }
 
-  const navLinks =
-    user?.role === "admin"
+  const navLinks = user
       ? [
-           ...(hideEditShelterLink ? [] : [{ href: "/shelter-management", label: "Shelter management" }]),
-        ]
-      : [];
+        { href: "/flights", label: "Flights" },
+        { href: "/flight-candidates", label: "Flight candidates" },
+        ...(user.role === "admin" && !hideEditShelterLink ? [{ href: "/shelter-management", label: "Shelter management" }] : []),
+      ]
+    : [];
 
   return (
     <header className="relative z-50 w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 px-5 py-4 shadow-panel backdrop-blur-sm md:px-6">

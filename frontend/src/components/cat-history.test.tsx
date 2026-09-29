@@ -126,4 +126,20 @@ describe("CatHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
   });
+
+  it("shows a flight restore action only while the linked flight is deleted", async () => {
+    const onRestoreFlight = vi.fn().mockResolvedValue(undefined);
+    render(<CatHistory events={[{
+      ...baseEvent,
+      eventType: "flight_cat_assigned",
+      oldValue: null,
+      newValue: null,
+      photo: null,
+      flight: { id: "flight-1", flightNumber: "CY123", airport: "Larnaca", date: "2026-10-15", isDeleted: true },
+    } as CatHistoryEvent]} isLoading={false} error={null} onRestoreFlight={onRestoreFlight} />);
+    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
+    expect(screen.getByText("Flight CY123 · Cat assigned")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Restore flight" }));
+    await waitFor(() => expect(onRestoreFlight).toHaveBeenCalledWith("flight-1"));
+  });
 });

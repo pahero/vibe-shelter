@@ -12,6 +12,7 @@ import { DearchiveCatHandler } from "./commands/dearchive-cat.handler";
 import { WriteCatAuditEventCommand } from "./commands/write-cat-audit-event.command";
 import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
+import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
 import { ArchivationReasonsController } from "./archivation-reasons/archivation-reasons.controller";
 import { CreateArchivationReasonCommand } from "./archivation-reasons/create-archivation-reason.command";
 import { DeleteArchivationReasonCommand } from "./archivation-reasons/delete-archivation-reason.command";
@@ -72,6 +73,7 @@ import { UpdateCatNoteHandler } from "./notes/update-cat-note.handler";
     WriteCatAuditEventCommand,
     ListCatHistoryQuery,
     ListAllCatHistoryQuery,
+    ListFlightCandidatesHandler,
     ListArchivationReasonsQuery,
     CreateArchivationReasonCommand,
     UpdateArchivationReasonCommand,

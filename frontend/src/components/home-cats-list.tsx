@@ -16,6 +16,9 @@ function emptyCatForm(locationId = "") {
     estimatedBirthDate: "",
     intakeDate: "",
     microchipNumber: "",
+    passportNumber: "",
+    adopterName: "",
+    adopterAddress: "",
     rescueSource: "",
     sterilizationStatus: "UNKNOWN" as SterilizationStatus,
     currentLocationId: locationId,
@@ -176,6 +179,9 @@ export function HomeCatsList() {
       intakeDate: createForm.intakeDate || null,
       rescueSource: createForm.rescueSource.trim() || null,
       microchipNumber: createForm.microchipNumber.trim() || null,
+      passportNumber: createForm.passportNumber.trim() || null,
+      adopterName: createForm.adopterName.trim() || null,
+      adopterAddress: createForm.adopterAddress.trim() || null,
       sterilizationStatus: createForm.sterilizationStatus,
       currentLocationId: createForm.currentLocationId || null,
     };
@@ -267,6 +273,18 @@ export function HomeCatsList() {
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Microchip number
               <input value={createForm.microchipNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, microchipNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Passport number
+              <input value={createForm.passportNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, passportNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Adopter name
+              <input value={createForm.adopterName} onChange={(event) => setCreateForm((prev) => ({ ...prev, adopterName: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Adopter address
+              <input value={createForm.adopterAddress} onChange={(event) => setCreateForm((prev) => ({ ...prev, adopterAddress: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
               Rescue source
