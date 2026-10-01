@@ -105,8 +105,10 @@ describe("Cats endpoints", () => {
       .send({ name: unique("test-location"), ownerId: regularAuth.user.id })
       .expect(201);
 
-    expect(regularLocation.body.isTest).toBe(false);
-    expect(testLocation.body.isTest).toBe(true);
+    const regularLocationDetails = await regularAuth.agent.get(`/api/locations/${regularLocation.body.id}`).expect(200);
+    const testLocationDetails = await testAuth.agent.get(`/api/locations/${testLocation.body.id}`).expect(200);
+    expect(regularLocationDetails.body.isTest).toBe(false);
+    expect(testLocationDetails.body.isTest).toBe(true);
 
     const regularCat = await regularAuth.agent
       .post("/api/cats")
@@ -638,7 +640,7 @@ describe("Cats endpoints", () => {
 
     await authAgent
       .patch(`/api/locations/${created.body.id}`)
-      .send({ description: "After" })
+      .send({ description: "After", ownerId: authUser.id })
       .expect(200);
 
     await authAgent.delete(`/api/locations/${created.body.id}`).expect(204);
@@ -661,9 +663,14 @@ describe("Cats endpoints", () => {
           actor: expect.objectContaining({ id: authUser.id }),
         }),
         expect.objectContaining({
-          eventType: "location_update",
+          eventType: "location_description_changed",
           catId: null,
           actor: expect.objectContaining({ id: authUser.id }),
+        }),
+        expect.objectContaining({
+          eventType: "location_owner_changed",
+          location: expect.objectContaining({ id: created.body.id, name: expect.any(String) }),
+          relatedUser: expect.objectContaining({ id: authUser.id, isDeleted: false }),
         }),
         expect.objectContaining({
           eventType: "location_delete",

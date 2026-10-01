@@ -96,6 +96,7 @@ export class ListAllCatHistoryQuery {
           photo: { select: { id: true, key: true, deletedAt: true } },
           document: { select: { id: true, key: true, fileName: true, deletedAt: true } },
           treatment: { select: { id: true, shortName: true, deletedAt: true } },
+          tag: { select: { id: true, name: true, deletedAt: true } },
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
@@ -106,6 +107,7 @@ export class ListAllCatHistoryQuery {
             where: tagWhere,
             include: {
               actorUser: { select: { id: true, fullName: true, email: true } },
+              tag: { select: { id: true, name: true, deletedAt: true } },
             },
           }),
       input.catId?.trim()
@@ -114,6 +116,8 @@ export class ListAllCatHistoryQuery {
             where: tagWhere,
             include: {
               actorUser: { select: { id: true, fullName: true, email: true } },
+              location: { select: { id: true, name: true, deletedAt: true } },
+              relatedUser: { select: { id: true, fullName: true, email: true, deletedAt: true } },
             },
           }),
       input.catId?.trim()
@@ -172,6 +176,9 @@ export class ListAllCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: event.treatmentAdministrationDate?.toISOString().slice(0, 10) ?? null,
       treatment: event.treatment ? { id: event.treatment.id, shortName: event.treatment.shortName, isDeleted: Boolean(event.treatment.deletedAt) } : null,
+      tag: event.tag ? { id: event.tag.id, name: event.tag.name, isDeleted: Boolean(event.tag.deletedAt) } : null,
+      location: null,
+      relatedUser: null,
       photo: event.photo
         ? {
             id: event.photo.id,
@@ -212,6 +219,9 @@ export class ListAllCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: null,
       treatment: null,
+      tag: null,
+      location: null,
+      relatedUser: null,
       photo: null,
       document: null,
       flight: {
@@ -240,6 +250,9 @@ export class ListAllCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: null,
       treatment: null,
+      tag: event.tag ? { id: event.tag.id, name: event.tag.name, isDeleted: Boolean(event.tag.deletedAt) } : null,
+      location: null,
+      relatedUser: null,
       photo: null,
       document: null,
     };
@@ -261,6 +274,9 @@ export class ListAllCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: null,
       treatment: null,
+      tag: null,
+      location: event.location ? { id: event.location.id, name: event.location.name, isDeleted: Boolean(event.location.deletedAt) } : null,
+      relatedUser: event.relatedUser ? { id: event.relatedUser.id, displayName: event.relatedUser.fullName || event.relatedUser.email, isDeleted: Boolean(event.relatedUser.deletedAt) } : null,
       photo: null,
       document: null,
     };
@@ -282,6 +298,9 @@ export class ListAllCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: null,
       treatment: null,
+      tag: null,
+      location: null,
+      relatedUser: null,
       photo: null,
       document: null,
     };

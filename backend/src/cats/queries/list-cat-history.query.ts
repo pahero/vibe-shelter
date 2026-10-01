@@ -38,6 +38,7 @@ export class ListCatHistoryQuery {
           photo: { select: { id: true, key: true, deletedAt: true } },
           document: { select: { id: true, key: true, fileName: true, deletedAt: true } },
           treatment: { select: { id: true, shortName: true, deletedAt: true } },
+          tag: { select: { id: true, name: true, deletedAt: true } },
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
@@ -81,6 +82,9 @@ export class ListCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: event.treatmentAdministrationDate?.toISOString().slice(0, 10) ?? null,
       treatment: event.treatment ? { id: event.treatment.id, shortName: event.treatment.shortName, isDeleted: Boolean(event.treatment.deletedAt) } : null,
+      tag: event.tag ? { id: event.tag.id, name: event.tag.name, isDeleted: Boolean(event.tag.deletedAt) } : null,
+      location: null,
+      relatedUser: null,
       photo: event.photo
         ? {
             id: event.photo.id,
@@ -121,6 +125,9 @@ export class ListCatHistoryQuery {
       newValue: event.newValue,
       treatmentAdministrationDate: null,
       treatment: null,
+      tag: null,
+      location: null,
+      relatedUser: null,
       photo: null,
       document: null,
       flight: {

@@ -28,6 +28,9 @@ export type CatHistoryEventDto = {
   newValue: string | null;
   treatmentAdministrationDate: string | null;
   treatment: { id: string; shortName: string; isDeleted: boolean } | null;
+  tag: { id: string; name: string; isDeleted: boolean } | null;
+  location: { id: string; name: string; isDeleted: boolean } | null;
+  relatedUser: { id: string; displayName: string; isDeleted: boolean } | null;
   photo: CatHistoryPhotoDto | null;
   document: CatHistoryDocumentDto | null;
   flight?: { id: string; flightNumber: string; airport: string; date: string; isDeleted: boolean } | null;

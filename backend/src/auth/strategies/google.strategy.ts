@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
-import { AuthService } from '../auth.service';
+import { ValidateGoogleProfileHandler } from '../queries/validate-google-profile.handler';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     configService: ConfigService,
-    private authService: AuthService,
+    private readonly validateGoogleProfileHandler: ValidateGoogleProfileHandler,
   ) {
     super({
       clientID: configService.getOrThrow<string>('googleClientId'),
@@ -21,11 +21,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   async validate(
     accessToken: string,
     refreshToken: string,
-    profile: any,
+    profile: Profile,
     done: VerifyCallback,
-  ): Promise<any> {
+  ): Promise<void> {
     try {
-      const user = await this.authService.validateGoogleProfile(profile);
+      const user = await this.validateGoogleProfileHandler.handle(profile);
       done(null, user);
     } catch (error) {
       done(error);

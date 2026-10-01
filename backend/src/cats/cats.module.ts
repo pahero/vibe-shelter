@@ -5,7 +5,6 @@ import { DatabaseModule } from "../database/database.module";
 import { CatPhotoUrlService } from "./cat-photo-url.service";
 import { CatPhotoCleanupService } from "./cat-photo-cleanup.service";
 import { CatsController } from "./cats.controller";
-import { CatsService } from "./cats.service";
 import { CreateCatHandler } from "./commands/create-cat.handler";
 import { ArchiveCatHandler } from "./commands/archive-cat.handler";
 import { DearchiveCatHandler } from "./commands/dearchive-cat.handler";
@@ -50,6 +49,26 @@ import { CreateCatNoteHandler } from "./notes/create-cat-note.handler";
 import { DeleteCatNoteHandler } from "./notes/delete-cat-note.handler";
 import { ListCatNotesHandler } from "./notes/list-cat-notes.handler";
 import { UpdateCatNoteHandler } from "./notes/update-cat-note.handler";
+import { ListCatsHandler } from "./queries/list-cats.handler";
+import { ListCatTagsHandler } from "./queries/list-cat-tags.handler";
+import { GetCatCardHandler } from "./queries/get-cat-card.handler";
+import { ListCatWeightsHandler } from "./queries/list-cat-weights.handler";
+import { ListCatPhotosHandler } from "./queries/list-cat-photos.handler";
+import { ListCatDocumentsHandler } from "./queries/list-cat-documents.handler";
+import { UpdateCatHandler } from "./commands/update-cat.handler";
+import { CreateCatTagHandler } from "./commands/create-cat-tag.handler";
+import { UpdateCatTagHandler } from "./commands/update-cat-tag.handler";
+import { DeleteCatTagHandler } from "./commands/delete-cat-tag.handler";
+import { AddCatTagHandler } from "./commands/add-cat-tag.handler";
+import { RemoveCatTagHandler } from "./commands/remove-cat-tag.handler";
+import { AddCatWeightHandler } from "./commands/add-cat-weight.handler";
+import { DeleteCatWeightHandler } from "./commands/delete-cat-weight.handler";
+import { AddCatPhotoHandler } from "./commands/add-cat-photo.handler";
+import { UpdatePrimaryCatPhotoHandler } from "./commands/update-primary-cat-photo.handler";
+import { SetPrimaryCatPhotoHandler } from "./commands/set-primary-cat-photo.handler";
+import { DeleteCatPhotoHandler } from "./commands/delete-cat-photo.handler";
+import { AddCatDocumentHandler } from "./commands/add-cat-document.handler";
+import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -64,7 +83,6 @@ import { UpdateCatNoteHandler } from "./notes/update-cat-note.handler";
     CatNotesController,
   ],
   providers: [
-    CatsService,
     CatPhotoUrlService,
     CatPhotoCleanupService,
     CreateCatHandler,
@@ -104,7 +122,26 @@ import { UpdateCatNoteHandler } from "./notes/update-cat-note.handler";
     CreateCatNoteHandler,
     UpdateCatNoteHandler,
     DeleteCatNoteHandler,
+    ListCatsHandler,
+    ListCatTagsHandler,
+    GetCatCardHandler,
+    ListCatWeightsHandler,
+    ListCatPhotosHandler,
+    ListCatDocumentsHandler,
+    UpdateCatHandler,
+    CreateCatTagHandler,
+    UpdateCatTagHandler,
+    DeleteCatTagHandler,
+    AddCatTagHandler,
+    RemoveCatTagHandler,
+    AddCatWeightHandler,
+    DeleteCatWeightHandler,
+    AddCatPhotoHandler,
+    UpdatePrimaryCatPhotoHandler,
+    SetPrimaryCatPhotoHandler,
+    DeleteCatPhotoHandler,
+    AddCatDocumentHandler,
+    DeleteCatDocumentHandler,
   ],
-  exports: [CatsService],
 })
 export class CatsModule {}

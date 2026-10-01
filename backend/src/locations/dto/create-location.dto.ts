@@ -26,4 +26,12 @@ export class CreateLocationDto {
   @IsString()
   @IsOptional()
   ownerId?: string;
+
+  toCommand(): { name: string; description?: string; ownerId?: string } {
+    return {
+      name: this.name.trim(),
+      ...(this.description !== undefined ? { description: this.description.trim() } : {}),
+      ...(this.ownerId !== undefined ? { ownerId: this.ownerId.trim() } : {}),
+    };
+  }
 }

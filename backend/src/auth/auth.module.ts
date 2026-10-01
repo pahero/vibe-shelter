@@ -1,17 +1,35 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { DatabaseModule } from '@/database/database.module';
-import { UsersModule } from '@/users/users.module';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { AdminRoleGuard } from './guards/admin-role.guard';
+import { ValidateGoogleProfileHandler } from './queries/validate-google-profile.handler';
+import { ValidatePasswordCredentialsHandler } from './queries/validate-password-credentials.handler';
+import { ValidateSessionHandler } from './queries/validate-session.handler';
+import { ChangePasswordHandler } from './commands/change-password.handler';
+import { ReplaceTemporaryPasswordHandler } from './commands/replace-temporary-password.handler';
+import { CreateSessionHandler } from './commands/create-session.handler';
+import { RevokeSessionHandler } from './commands/revoke-session.handler';
+import { CleanupExpiredSessionsHandler } from './commands/cleanup-expired-sessions.handler';
 
 @Module({
-  imports: [PassportModule, DatabaseModule, forwardRef(() => UsersModule)],
+  imports: [PassportModule, DatabaseModule],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy, SessionAuthGuard, AdminRoleGuard],
-  exports: [AuthService, SessionAuthGuard, AdminRoleGuard],
+  providers: [
+    GoogleStrategy,
+    SessionAuthGuard,
+    AdminRoleGuard,
+    ValidateGoogleProfileHandler,
+    ValidatePasswordCredentialsHandler,
+    ValidateSessionHandler,
+    ChangePasswordHandler,
+    ReplaceTemporaryPasswordHandler,
+    CreateSessionHandler,
+    RevokeSessionHandler,
+    CleanupExpiredSessionsHandler,
+  ],
+  exports: [SessionAuthGuard, AdminRoleGuard, ValidateSessionHandler],
 })
 export class AuthModule {}

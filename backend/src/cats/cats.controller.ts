@@ -18,7 +18,27 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiOperation, ApiQuery, ApiResponse } from "@nestjs/swagger";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { SessionAuthGuard } from "../auth/guards/session-auth.guard";
-import { CatsService, PrimaryPhotoUpload } from "./cats.service";
+import { PrimaryPhotoUpload } from "./cats.types";
+import { ListCatsHandler } from "./queries/list-cats.handler";
+import { ListCatTagsHandler } from "./queries/list-cat-tags.handler";
+import { GetCatCardHandler } from "./queries/get-cat-card.handler";
+import { ListCatWeightsHandler } from "./queries/list-cat-weights.handler";
+import { ListCatPhotosHandler } from "./queries/list-cat-photos.handler";
+import { ListCatDocumentsHandler } from "./queries/list-cat-documents.handler";
+import { UpdateCatHandler } from "./commands/update-cat.handler";
+import { CreateCatTagHandler } from "./commands/create-cat-tag.handler";
+import { UpdateCatTagHandler } from "./commands/update-cat-tag.handler";
+import { DeleteCatTagHandler } from "./commands/delete-cat-tag.handler";
+import { AddCatTagHandler } from "./commands/add-cat-tag.handler";
+import { RemoveCatTagHandler } from "./commands/remove-cat-tag.handler";
+import { AddCatWeightHandler } from "./commands/add-cat-weight.handler";
+import { DeleteCatWeightHandler } from "./commands/delete-cat-weight.handler";
+import { AddCatPhotoHandler } from "./commands/add-cat-photo.handler";
+import { UpdatePrimaryCatPhotoHandler } from "./commands/update-primary-cat-photo.handler";
+import { SetPrimaryCatPhotoHandler } from "./commands/set-primary-cat-photo.handler";
+import { DeleteCatPhotoHandler } from "./commands/delete-cat-photo.handler";
+import { AddCatDocumentHandler } from "./commands/add-cat-document.handler";
+import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler";
 import { CreateCatHandler } from "./commands/create-cat.handler";
 import { ArchiveCatHandler } from "./commands/archive-cat.handler";
 import { DearchiveCatHandler } from "./commands/dearchive-cat.handler";
@@ -33,6 +53,7 @@ import {
 import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
 import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
+import { ListCatsQueryDto } from "./dto/list-cats-query.dto";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -40,7 +61,26 @@ type AuthenticatedUser = { id: string; isTest: boolean };
 @UseGuards(SessionAuthGuard)
 export class CatsController {
   constructor(
-    private catsService: CatsService,
+    private readonly listCatsHandler: ListCatsHandler,
+    private readonly listCatTagsHandler: ListCatTagsHandler,
+    private readonly getCatCardHandler: GetCatCardHandler,
+    private readonly listCatWeightsHandler: ListCatWeightsHandler,
+    private readonly listCatPhotosHandler: ListCatPhotosHandler,
+    private readonly listCatDocumentsHandler: ListCatDocumentsHandler,
+    private readonly updateCatHandler: UpdateCatHandler,
+    private readonly createCatTagHandler: CreateCatTagHandler,
+    private readonly updateCatTagHandler: UpdateCatTagHandler,
+    private readonly deleteCatTagHandler: DeleteCatTagHandler,
+    private readonly addCatTagHandler: AddCatTagHandler,
+    private readonly removeCatTagHandler: RemoveCatTagHandler,
+    private readonly addCatWeightHandler: AddCatWeightHandler,
+    private readonly deleteCatWeightHandler: DeleteCatWeightHandler,
+    private readonly addCatPhotoHandler: AddCatPhotoHandler,
+    private readonly updatePrimaryCatPhotoHandler: UpdatePrimaryCatPhotoHandler,
+    private readonly setPrimaryCatPhotoHandler: SetPrimaryCatPhotoHandler,
+    private readonly deleteCatPhotoHandler: DeleteCatPhotoHandler,
+    private readonly addCatDocumentHandler: AddCatDocumentHandler,
+    private readonly deleteCatDocumentHandler: DeleteCatDocumentHandler,
     private createCatHandler: CreateCatHandler,
     private archiveCatHandler: ArchiveCatHandler,
     private dearchiveCatHandler: DearchiveCatHandler,
@@ -59,22 +99,12 @@ export class CatsController {
     @Query("limit") limit?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.catsService.findAll(
-      {
-        locationId,
-        search,
-        tagId,
-        archived: archived === "true",
-        skip: skip === undefined ? undefined : Number(skip),
-        limit: limit === undefined ? undefined : Number(limit),
-      },
-      user?.isTest ?? false,
-    );
+    return this.listCatsHandler.handle(ListCatsQueryDto.toQuery({ locationId, search, tagId, archived, skip, limit }), user?.isTest ?? false);
   }
 
   @Get("tags")
   async listTags() {
-    return this.catsService.listTags();
+    return this.listCatTagsHandler.handle();
   }
 
   @Get("flight-candidates")
@@ -113,22 +143,22 @@ export class CatsController {
 
   @Get(":id/card")
   async getCatCard(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.findCardById(id, user.isTest);
+    return this.getCatCardHandler.handle(id, user.isTest);
   }
 
   @Get(":id/weights")
   async listWeights(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.listWeights(id, user.isTest);
+    return this.listCatWeightsHandler.handle(id, user.isTest);
   }
 
   @Get(":id/photos")
   async listPhotos(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.listPhotos(id, user.isTest);
+    return this.listCatPhotosHandler.handle(id, user.isTest);
   }
 
   @Get(":id/documents")
   async listDocuments(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.listDocuments(id, user.isTest);
+    return this.listCatDocumentsHandler.handle(id, user.isTest);
   }
 
   @Get(":id/history")
@@ -182,7 +212,7 @@ export class CatsController {
   @Post("tags")
   @HttpCode(HttpStatus.CREATED)
   async createTag(@Body() dto: CreateCatTagDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.catsService.createTag(dto, user.id);
+    return this.createCatTagHandler.handle(dto.toCommand(), user.id);
   }
 
   @Patch("tags/:tagId")
@@ -191,13 +221,13 @@ export class CatsController {
     @Body() dto: UpdateCatTagDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.updateTag(tagId, dto, user.id);
+    return this.updateCatTagHandler.handle(tagId, dto.toCommand(), user.id);
   }
 
   @Delete("tags/:tagId")
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTag(@Param("tagId") tagId: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.catsService.deleteTag(tagId, user.id);
+    await this.deleteCatTagHandler.handle(tagId, user.id);
   }
 
   @Patch(":id")
@@ -206,7 +236,7 @@ export class CatsController {
     @Body() dto: UpdateCatDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.updateCat(id, dto, user.id, user.isTest);
+    return this.updateCatHandler.handle(id, dto.toCommand(), user.id, user.isTest);
   }
 
   @Post(":id/tags/:tagId")
@@ -215,7 +245,7 @@ export class CatsController {
     @Param("tagId") tagId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.addTag(id, tagId, user.id, user.isTest);
+    return this.addCatTagHandler.handle(id, tagId, user.id, user.isTest);
   }
 
   @Delete(":id/tags/:tagId")
@@ -224,7 +254,7 @@ export class CatsController {
     @Param("tagId") tagId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.removeTag(id, tagId, user.id, user.isTest);
+    return this.removeCatTagHandler.handle(id, tagId, user.id, user.isTest);
   }
 
   @Post(":id/weights")
@@ -234,7 +264,7 @@ export class CatsController {
     @Body() dto: CreateCatWeightDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.addWeight(id, dto, user.id, user.isTest);
+    return this.addCatWeightHandler.handle(id, dto.toCommand(), user.id, user.isTest);
   }
 
   @Post(":id/photos")
@@ -245,7 +275,7 @@ export class CatsController {
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() photo?: PrimaryPhotoUpload,
   ) {
-    return this.catsService.addPhoto(id, photo, user.id, user.isTest);
+    return this.addCatPhotoHandler.handle(id, photo, user.id, user.isTest);
   }
 
   @Post(":id/documents")
@@ -256,7 +286,7 @@ export class CatsController {
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() document?: PrimaryPhotoUpload,
   ) {
-    return this.catsService.addDocument(id, document, user.id, user.isTest);
+    return this.addCatDocumentHandler.handle(id, document, user.id, user.isTest);
   }
 
   @Put(":id/photos/:photoId/primary")
@@ -265,7 +295,7 @@ export class CatsController {
     @Param("photoId") photoId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.setPrimaryPhoto(id, photoId, user.isTest);
+    return this.setPrimaryCatPhotoHandler.handle(id, photoId, user.isTest);
   }
 
   @Delete(":id/photos/:photoId")
@@ -274,7 +304,7 @@ export class CatsController {
     @Param("photoId") photoId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.catsService.deletePhoto(id, photoId, user.id, user.isTest);
+    return this.deleteCatPhotoHandler.handle(id, photoId, user.id, user.isTest);
   }
 
   @Delete(":id/documents/:documentId")
@@ -284,7 +314,7 @@ export class CatsController {
     @Param("documentId") documentId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.catsService.deleteDocument(id, documentId, user.id, user.isTest);
+    await this.deleteCatDocumentHandler.handle(id, documentId, user.id, user.isTest);
   }
 
   @Delete(":id/weights/:weightId")
@@ -294,7 +324,7 @@ export class CatsController {
     @Param("weightId") weightId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.catsService.removeWeight(id, weightId, user.id, user.isTest);
+    await this.deleteCatWeightHandler.handle(id, weightId, user.id, user.isTest);
   }
 
   @Put(":id/primary-photo")
@@ -304,6 +334,6 @@ export class CatsController {
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() photo: PrimaryPhotoUpload | undefined,
   ) {
-    return this.catsService.updatePrimaryPhoto(id, photo, user.id, user.isTest);
+    return this.updatePrimaryCatPhotoHandler.handle(id, photo, user.id, user.isTest);
   }
 }

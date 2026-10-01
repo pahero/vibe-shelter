@@ -1,13 +1,17 @@
-import { Controller, Get, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { UsersService } from './users.service';
 import { UserResponseDto } from '@/auth/dto';
 import { SessionAuthGuard } from '@/auth/guards/session-auth.guard';
 import { CurrentUser } from '@/auth/decorators/current-user.decorator';
+import { ListUsersHandler } from './queries/list-users.handler';
+import { GetUserHandler } from './queries/get-user.handler';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private readonly listUsersHandler: ListUsersHandler,
+    private readonly getUserHandler: GetUserHandler,
+  ) {}
 
   @Get()
   @UseGuards(SessionAuthGuard)
@@ -22,19 +26,7 @@ export class UsersController {
     @Query('role') role?: string,
     @CurrentUser() user?: { isTest: boolean },
   ): Promise<UserResponseDto[]> {
-    const users = await this.usersService.getAll({ status, role, isTest: user?.isTest ?? false });
-    return users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      status: user.status.toLowerCase() as 'active' | 'inactive',
-      role: user.role.toLowerCase() as 'admin' | 'staff',
-      isTest: user.isTest,
-      passwordChangeRequired: user.passwordChangeRequired,
-      lastLoginAt: user.lastLoginAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    }));
+    return this.listUsersHandler.handle({ status, role, isTest: user?.isTest ?? false });
   }
 
   @Get(':id')
@@ -46,23 +38,6 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Not authenticated' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getById(@Param('id') id: string): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(id);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      status: user.status.toLowerCase() as 'active' | 'inactive',
-      role: user.role.toLowerCase() as 'admin' | 'staff',
-      isTest: user.isTest,
-      passwordChangeRequired: user.passwordChangeRequired,
-      lastLoginAt: user.lastLoginAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return this.getUserHandler.handle(id);
   }
 }

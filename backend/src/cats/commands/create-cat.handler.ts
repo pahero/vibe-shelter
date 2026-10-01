@@ -7,7 +7,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CatPhotoUrlService } from '../cat-photo-url.service';
 import { CAT_AUDIT_EVENT_TYPES } from '../cat-audit-event-types';
-import { CatCard } from '../cats.service';
+import { CatCard } from '../cats.types';
 import { CreateCatCommand } from './create-cat.command';
 import { WriteCatAuditEventCommand } from './write-cat-audit-event.command';
 
@@ -33,6 +33,10 @@ export class CreateCatHandler {
           if (location?.status !== 'ACTIVE' || location.isTest !== command.isTest) {
             throw new NotFoundException('Active location not found');
           }
+          await transaction.location.update({
+            where: { id: command.currentLocationId },
+            data: { version: { increment: 1 } },
+          });
         }
 
         if (command.microchipNumber) {

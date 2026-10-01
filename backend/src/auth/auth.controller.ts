@@ -6,24 +6,32 @@ import {
   Res,
   Req,
   Body,
+  HttpCode,
+  HttpStatus,
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { Response, Request } from 'express';
-import { AuthService } from './auth.service';
-import { UsersService } from '@/users/users.service';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ConfigService } from '@nestjs/config';
 import { AuthMeDto, ChangePasswordDto, PasswordLoginDto, ReplaceTemporaryPasswordDto } from './dto';
+import { CreateSessionHandler } from './commands/create-session.handler';
+import { ValidatePasswordCredentialsHandler } from './queries/validate-password-credentials.handler';
+import { ChangePasswordHandler } from './commands/change-password.handler';
+import { ReplaceTemporaryPasswordHandler } from './commands/replace-temporary-password.handler';
+import { RevokeSessionHandler } from './commands/revoke-session.handler';
 
 @Controller('auth')
 export class AuthController {
   constructor(
-    private authService: AuthService,
-    private usersService: UsersService,
+    private readonly createSessionHandler: CreateSessionHandler,
+    private readonly validatePasswordCredentialsHandler: ValidatePasswordCredentialsHandler,
+    private readonly changePasswordHandler: ChangePasswordHandler,
+    private readonly replaceTemporaryPasswordHandler: ReplaceTemporaryPasswordHandler,
+    private readonly revokeSessionHandler: RevokeSessionHandler,
     private configService: ConfigService,
   ) {}
 
@@ -41,14 +49,14 @@ export class AuthController {
   @ApiResponse({ status: 302, description: 'Redirects to dashboard or login with error' })
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     try {
-      const user = req.user as any;
+      const user = req.user;
 
       if (!user) {
         throw new UnauthorizedException('Google authentication failed');
       }
 
       // Create session
-      const session = await this.authService.createSession(
+      const session = await this.createSessionHandler.handle(
         user.id,
         req.get('user-agent'),
         req.ip,
@@ -74,8 +82,9 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Login successful', type: AuthMeDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async passwordLogin(@Body() body: PasswordLoginDto, @Req() req: Request): Promise<AuthMeDto> {
-    const user = await this.authService.validatePasswordCredentials(body.email, body.password);
-    const session = await this.authService.createSession(user.id, req.get('user-agent'), req.ip);
+    const command = body.toCommand();
+    const user = await this.validatePasswordCredentialsHandler.handle(command.email, command.password);
+    const session = await this.createSessionHandler.handle(user.id, req.get('user-agent'), req.ip);
 
     req.session.userId = user.id;
     req.session.sessionId = session.id;
@@ -118,11 +127,8 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Password changed' })
   @ApiResponse({ status: 401, description: 'Current password is incorrect' })
   async changePassword(@CurrentUser() user: Express.User, @Body() body: ChangePasswordDto): Promise<{ id: string }> {
-    if (body.newPassword !== body.newPasswordConfirmation) {
-      throw new BadRequestException('New passwords do not match');
-    }
-
-    await this.authService.changePassword(user.id, body.currentPassword, body.newPassword);
+    const command = body.toCommand(user.id);
+    await this.changePasswordHandler.handle(command.userId, command.currentPassword, command.newPassword);
     return { id: user.id };
   }
 
@@ -131,14 +137,12 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Replace the current temporary password' })
   async replaceTemporaryPassword(@CurrentUser() user: Express.User, @Body() body: ReplaceTemporaryPasswordDto): Promise<{ id: string }> {
-    if (body.newPassword !== body.newPasswordConfirmation) {
-      throw new BadRequestException('New passwords do not match');
-    }
-
-    await this.authService.replaceTemporaryPassword(user.id, body.newPassword);
+    const command = body.toCommand(user.id);
+    await this.replaceTemporaryPasswordHandler.handle(command.userId, command.newPassword);
     return { id: user.id };
   }
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout current user' })
@@ -149,7 +153,7 @@ export class AuthController {
       const sessionId = req.session.sessionId;
 
       if (sessionId) {
-        await this.authService.revokeSession(sessionId);
+        await this.revokeSessionHandler.handle(sessionId);
       }
 
       req.session.destroy((err) => {
@@ -180,7 +184,7 @@ export class AuthController {
       }
 
       // Create new session
-      const newSession = await this.authService.createSession(
+      const newSession = await this.createSessionHandler.handle(
         userId,
         req.get('user-agent'),
         req.ip,

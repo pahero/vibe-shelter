@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import type { PrimaryPhotoUpload } from './cats.service';
+import type { PrimaryPhotoUpload } from './cats.types';
 
 const MAX_PHOTO_DIMENSION = 1920;
 const PREVIEW_PHOTO_DIMENSION = 640;

@@ -1,10 +1,10 @@
 import { ForbiddenException, Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from '../auth.service';
+import { ValidateSessionHandler } from '../queries/validate-session.handler';
 import { Request } from 'express';
 
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly validateSessionHandler: ValidateSessionHandler) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -15,7 +15,7 @@ export class SessionAuthGuard implements CanActivate {
     }
 
     try {
-      const session = await this.authService.validateSession(sessionId);
+      const session = await this.validateSessionHandler.handle(sessionId);
       const permittedPaths = ['/auth/me', '/auth/change-password', '/auth/replace-temporary-password', '/auth/logout'];
       if (session.user.passwordChangeRequired && !permittedPaths.includes(request.path)) {
         throw new ForbiddenException('Password change is required before accessing the API');

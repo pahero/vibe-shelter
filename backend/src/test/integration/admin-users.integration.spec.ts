@@ -68,10 +68,14 @@ describe('Admin user registration endpoints', () => {
       })
       .expect(201);
 
-    expect(testResponse.body).toMatchObject({ email: testEmail, isTest: true });
-    expect(realResponse.body).toMatchObject({ email: realEmail, isTest: false });
-    expect(testResponse.body.password).toBeUndefined();
-    expect(testResponse.body.passwordHash).toBeUndefined();
+    expect(testResponse.body).toEqual({ id: expect.any(String) });
+    expect(realResponse.body).toEqual({ id: expect.any(String) });
+    const testUser = await adminAgent.get(`/admin/users/${testResponse.body.id}`).expect(200);
+    const realUser = await adminAgent.get(`/admin/users/${realResponse.body.id}`).expect(200);
+    expect(testUser.body).toMatchObject({ email: testEmail.toLowerCase(), isTest: true });
+    expect(realUser.body).toMatchObject({ email: realEmail.toLowerCase(), isTest: false });
+    expect(testUser.body.password).toBeUndefined();
+    expect(testUser.body.passwordHash).toBeUndefined();
 
     const stored = await prisma.user.findUniqueOrThrow({ where: { email: testEmail } });
     expect(stored.isTest).toBe(true);
@@ -119,6 +123,25 @@ describe('Admin user registration endpoints', () => {
 
     const userDetail = await adminAgent.get(`/users/${created.id}`).expect(200);
     expect(userDetail.body).toMatchObject({ email, isTest: true });
+  });
+
+  it('updates, deactivates, and soft-deletes users', async () => {
+    const email = `${unique('mutable-user')}@example.com`;
+    const user = await prisma.user.create({ data: { email, fullName: 'Before', status: 'ACTIVE', isTest: false } });
+
+    await adminAgent.patch(`/admin/users/${user.id}`).send({ fullName: 'After', role: 'admin' }).expect(200).expect(({ body }) => {
+      expect(body).toEqual({ id: user.id });
+    });
+    await adminAgent.patch(`/admin/users/${user.id}/status`).send({ status: 'inactive' }).expect(200).expect(({ body }) => {
+      expect(body).toEqual({ id: user.id });
+    });
+    const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(updated).toMatchObject({ fullName: 'After', role: 'ADMIN', status: 'INACTIVE' });
+
+    await adminAgent.delete(`/admin/users/${user.id}`).expect(204);
+    const deleted = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(deleted).toMatchObject({ status: 'INACTIVE', deletedAt: expect.any(Date), version: 3 });
+    await adminAgent.get(`/admin/users/${user.id}`).expect(404);
   });
 });
 

@@ -17,6 +17,8 @@ model User {
   status         UserStatus @default(ACTIVE)
   role           UserRole   @default(STAFF)
   lastLoginAt    DateTime?
+  deletedAt      DateTime?
+  version        Int        @default(0)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   sessions       Session[]
@@ -29,6 +31,7 @@ model User {
   catAuditEvents CatAuditEvent[] @relation("catAuditActors")
   tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
   locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
+  relatedLocationAuditEvents LocationAuditEvent[] @relation("locationRelatedUsers")
   taskReceivers      CatTaskReceiver[]    @relation("taskReceivers")
   completedTasks     CatTask[]            @relation("completedTasks")
   taskNotifications  TaskNotification[]
@@ -38,6 +41,7 @@ model User {
   @@index([status])
   @@index([role])
   @@index([email])
+  @@index([deletedAt])
 }
 
 model Session {
@@ -178,6 +182,7 @@ model Location {
   isTest      Boolean        @default(false)
   status      LocationStatus @default(ACTIVE)
   deletedAt   DateTime?
+  version     Int            @default(0)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
@@ -193,6 +198,8 @@ model LocationAuditEvent {
   id          String   @id @default(cuid())
   locationId  String?
   location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  relatedUserId String?
+  relatedUser User? @relation("locationRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
   actorUserId String
   actorUser   User     @relation("locationAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
   action      String
@@ -203,6 +210,7 @@ model LocationAuditEvent {
   @@index([locationId])
   @@index([actorUserId])
   @@index([createdAt])
+  @@index([relatedUserId])
 }
 
 model Cat {
@@ -275,6 +283,7 @@ model CatPhoto {
   deletedByUserId String?
   deletedByUser   User?    @relation("deletedPhotos", fields: [deletedByUserId], references: [id], onDelete: SetNull)
   deletedAt       DateTime?
+  version         Int      @default(0)
   createdAt       DateTime @default(now())
   auditEvents     CatAuditEvent[]
 
@@ -327,6 +336,8 @@ model CatAuditEvent {
   photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
   documentId  String?
   document    CatDocument?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  tagId       String?
+  tag         CatTag?           @relation("catAuditTag", fields: [tagId], references: [id], onDelete: SetNull)
 
   @@index([catId, occurredAt])
   @@index([archivationReasonId, occurredAt])
@@ -334,6 +345,7 @@ model CatAuditEvent {
   @@index([photoId])
   @@index([documentId])
   @@index([treatmentId])
+  @@index([tagId])
   @@index([eventType])
 }
 
@@ -342,9 +354,11 @@ model CatTag {
   name      String
   color     String        @default("#ffb38a")
   deletedAt DateTime?
+  version   Int           @default(0)
   createdAt DateTime      @default(now())
   cats      CatTagOnCat[]
   auditEvents TagAuditEvent[]
+  catAuditEvents CatAuditEvent[] @relation("catAuditTag")
 
   @@index([name])
   @@index([deletedAt])

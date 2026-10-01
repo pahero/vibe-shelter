@@ -1,5 +1,6 @@
 import { IsBoolean, IsDefined, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BadRequestException } from '@nestjs/common';
 
 export class CreateUserDto {
   @ApiProperty({ description: 'User email address', example: 'user@example.com' })
@@ -29,7 +30,27 @@ export class CreateUserDto {
   @IsDefined()
   @IsBoolean()
   isTest!: boolean;
+
+  toCommand(): CreateUserCommand {
+    return {
+      email: this.email.trim().toLowerCase(),
+      fullName: this.fullName?.trim(),
+      role: this.role,
+      status: this.status,
+      password: this.password,
+      isTest: this.isTest,
+    };
+  }
 }
+
+export type CreateUserCommand = {
+  email: string;
+  fullName?: string;
+  role: 'admin' | 'staff';
+  status: 'active' | 'inactive';
+  password: string;
+  isTest: boolean;
+};
 
 export class UpdateUserDto {
   @ApiProperty({ description: 'Full name of the user', example: 'John Doe', required: false })
@@ -52,7 +73,23 @@ export class UpdateUserDto {
   @IsOptional()
   @MinLength(8)
   password?: string;
+
+  toCommand(): UpdateUserCommand {
+    return {
+      ...(this.fullName !== undefined ? { fullName: this.fullName.trim() } : {}),
+      ...(this.role !== undefined ? { role: this.role } : {}),
+      ...(this.status !== undefined ? { status: this.status } : {}),
+      ...(this.password !== undefined ? { password: this.password } : {}),
+    };
+  }
 }
+
+export type UpdateUserCommand = {
+  fullName?: string;
+  role?: 'admin' | 'staff';
+  status?: 'active' | 'inactive';
+  password?: string;
+};
 
 export class UserResponseDto {
   @ApiProperty({ description: 'Unique user identifier', example: 'uuid-1234' })
@@ -115,7 +152,13 @@ export class PasswordLoginDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  toCommand(): PasswordLoginCommand {
+    return { email: this.email.trim().toLowerCase(), password: this.password };
+  }
 }
+
+export type PasswordLoginCommand = { email: string; password: string };
 
 export class ChangePasswordDto {
   @ApiProperty({ description: 'Current password', example: 'CurrentPass123!', minLength: 8 })
@@ -132,7 +175,14 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(8)
   newPasswordConfirmation!: string;
+
+  toCommand(userId: string): ChangePasswordCommand {
+    if (this.newPassword !== this.newPasswordConfirmation) throw new BadRequestException('New passwords do not match');
+    return { userId, currentPassword: this.currentPassword, newPassword: this.newPassword };
+  }
 }
+
+export type ChangePasswordCommand = { userId: string; currentPassword: string; newPassword: string };
 
 export class ReplaceTemporaryPasswordDto {
   @ApiProperty({ description: 'New password', example: 'NewPass123!', minLength: 8 })
@@ -144,4 +194,11 @@ export class ReplaceTemporaryPasswordDto {
   @IsString()
   @MinLength(8)
   newPasswordConfirmation!: string;
+
+  toCommand(userId: string): ReplaceTemporaryPasswordCommand {
+    if (this.newPassword !== this.newPasswordConfirmation) throw new BadRequestException('New passwords do not match');
+    return { userId, newPassword: this.newPassword };
+  }
 }
+
+export type ReplaceTemporaryPasswordCommand = { userId: string; newPassword: string };
