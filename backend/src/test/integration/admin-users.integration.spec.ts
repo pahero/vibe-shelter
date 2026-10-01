@@ -1,15 +1,19 @@
-import { INestApplication } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
-import request from 'supertest';
-import * as bcrypt from 'bcrypt';
-import { AppModule } from '@/app.module';
-import { setupApp } from '@/app.setup';
-import { generateIntegrationTestConfig } from '@/test-utils/test-configuration';
-import { getGarageTestConnection, getIntegrationTestDatabaseUrl, getIntegrationTestS3Bucket } from '@/test-utils/test-db-env';
+import { INestApplication } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { Test, TestingModule } from "@nestjs/testing";
+import { PrismaClient } from "@prisma/client";
+import request from "supertest";
+import * as bcrypt from "bcrypt";
+import { AppModule } from "@/app.module";
+import { setupApp } from "@/app.setup";
+import { generateIntegrationTestConfig } from "@/test-utils/test-configuration";
+import {
+  getGarageTestConnection,
+  getIntegrationTestDatabaseUrl,
+  getIntegrationTestS3Bucket,
+} from "@/test-utils/test-db-env";
 
-describe('Admin user registration endpoints', () => {
+describe("Admin user registration endpoints", () => {
   let app: INestApplication;
   let moduleRef: TestingModule;
   let prisma: PrismaClient;
@@ -23,7 +27,15 @@ describe('Admin user registration endpoints', () => {
       imports: [
         AppModule,
         ConfigModule.forRoot({
-          load: [generateIntegrationTestConfig(databaseUrl, s3.endpoint, s3.accessKey, s3.secretAccessKey, s3Bucket)],
+          load: [
+            generateIntegrationTestConfig(
+              databaseUrl,
+              s3.endpoint,
+              s3.accessKey,
+              s3.secretAccessKey,
+              s3Bucket,
+            ),
+          ],
           isGlobal: true,
         }),
       ],
@@ -41,106 +53,165 @@ describe('Admin user registration endpoints', () => {
     await moduleRef?.close();
   });
 
-  it('POST /admin/users creates users with isTest and hides password data', async () => {
-    const testEmail = `${unique('test-user')}@example.com`;
-    const realEmail = `${unique('real-user')}@example.com`;
+  it("POST /admin/users creates users with isTest and hides password data", async () => {
+    const testEmail = `${unique("test-user")}@example.com`;
+    const realEmail = `${unique("real-user")}@example.com`;
 
     const testResponse = await adminAgent
-      .post('/admin/users')
+      .post("/admin/users")
       .send({
         email: testEmail,
-        fullName: 'Test User',
-        role: 'staff',
-        status: 'active',
-        password: 'Password123!',
+        fullName: "Test User",
+        role: "staff",
+        status: "active",
+        password: "Password123!",
         isTest: true,
       })
       .expect(201);
     const realResponse = await adminAgent
-      .post('/admin/users')
+      .post("/admin/users")
       .send({
         email: realEmail,
-        fullName: 'Real User',
-        role: 'staff',
-        status: 'active',
-        password: 'Password123!',
+        fullName: "Real User",
+        role: "staff",
+        status: "active",
+        password: "Password123!",
         isTest: false,
       })
       .expect(201);
 
     expect(testResponse.body).toEqual({ id: expect.any(String) });
     expect(realResponse.body).toEqual({ id: expect.any(String) });
-    const testUser = await adminAgent.get(`/admin/users/${testResponse.body.id}`).expect(200);
-    const realUser = await adminAgent.get(`/admin/users/${realResponse.body.id}`).expect(200);
-    expect(testUser.body).toMatchObject({ email: testEmail.toLowerCase(), isTest: true });
-    expect(realUser.body).toMatchObject({ email: realEmail.toLowerCase(), isTest: false });
+    const testUser = await adminAgent
+      .get(`/admin/users/${testResponse.body.id}`)
+      .expect(200);
+    const realUser = await adminAgent
+      .get(`/admin/users/${realResponse.body.id}`)
+      .expect(200);
+    expect(testUser.body).toMatchObject({
+      email: testEmail.toLowerCase(),
+      isTest: true,
+    });
+    expect(realUser.body).toMatchObject({
+      email: realEmail.toLowerCase(),
+      isTest: false,
+    });
     expect(testUser.body.password).toBeUndefined();
     expect(testUser.body.passwordHash).toBeUndefined();
 
-    const stored = await prisma.user.findUniqueOrThrow({ where: { email: testEmail } });
+    const stored = await prisma.user.findUniqueOrThrow({
+      where: { email: testEmail },
+    });
     expect(stored.isTest).toBe(true);
     expect(stored.passwordHash).toBeTruthy();
   });
 
-  it('POST /admin/users rejects missing and blank password without creating a user', async () => {
-    const missingEmail = `${unique('missing-password')}@example.com`;
-    const blankEmail = `${unique('blank-password')}@example.com`;
+  it("POST /admin/users rejects missing and blank password without creating a user", async () => {
+    const missingEmail = `${unique("missing-password")}@example.com`;
+    const blankEmail = `${unique("blank-password")}@example.com`;
 
     await adminAgent
-      .post('/admin/users')
-      .send({ email: missingEmail, role: 'staff', status: 'active', isTest: false })
+      .post("/admin/users")
+      .send({
+        email: missingEmail,
+        role: "staff",
+        status: "active",
+        isTest: false,
+      })
       .expect(400);
     await adminAgent
-      .post('/admin/users')
-      .send({ email: blankEmail, role: 'staff', status: 'active', password: '        ', isTest: false })
+      .post("/admin/users")
+      .send({
+        email: blankEmail,
+        role: "staff",
+        status: "active",
+        password: "        ",
+        isTest: false,
+      })
       .expect(400);
 
-    await expect(prisma.user.findUnique({ where: { email: missingEmail } })).resolves.toBeNull();
-    await expect(prisma.user.findUnique({ where: { email: blankEmail } })).resolves.toBeNull();
+    await expect(
+      prisma.user.findUnique({ where: { email: missingEmail } }),
+    ).resolves.toBeNull();
+    await expect(
+      prisma.user.findUnique({ where: { email: blankEmail } }),
+    ).resolves.toBeNull();
   });
 
-  it('lists and fetches users with isTest marker', async () => {
-    const email = `${unique('listed-user')}@example.com`;
+  it("lists and fetches users with isTest marker", async () => {
+    const email = `${unique("listed-user")}@example.com`;
     const created = await prisma.user.create({
       data: {
         email,
-        fullName: 'Listed User',
-        role: 'STAFF',
-        status: 'ACTIVE',
-        passwordHash: await bcrypt.hash('Password123!', 10),
+        fullName: "Listed User",
+        role: "STAFF",
+        status: "ACTIVE",
+        passwordHash: await bcrypt.hash("Password123!", 10),
         isTest: true,
       },
     });
 
-    const list = await adminAgent.get('/admin/users').expect(200);
-    expect(list.body).toEqual(expect.arrayContaining([expect.objectContaining({ email, isTest: true })]));
+    const list = await adminAgent.get("/admin/users").expect(200);
+    expect(list.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ email, isTest: true }),
+      ]),
+    );
 
-    const detail = await adminAgent.get(`/admin/users/${created.id}`).expect(200);
+    const detail = await adminAgent
+      .get(`/admin/users/${created.id}`)
+      .expect(200);
     expect(detail.body).toMatchObject({ email, isTest: true });
 
-    const userList = await adminAgent.get('/users').expect(200);
-    expect(userList.body).not.toEqual(expect.arrayContaining([expect.objectContaining({ email, isTest: true })]));
+    const userList = await adminAgent.get("/users").expect(200);
+    expect(userList.body).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ email, isTest: true }),
+      ]),
+    );
 
     const userDetail = await adminAgent.get(`/users/${created.id}`).expect(200);
     expect(userDetail.body).toMatchObject({ email, isTest: true });
   });
 
-  it('updates, deactivates, and soft-deletes users', async () => {
-    const email = `${unique('mutable-user')}@example.com`;
-    const user = await prisma.user.create({ data: { email, fullName: 'Before', status: 'ACTIVE', isTest: false } });
+  it("updates, deactivates, and soft-deletes users", async () => {
+    const email = `${unique("mutable-user")}@example.com`;
+    const user = await prisma.user.create({
+      data: { email, fullName: "Before", status: "ACTIVE", isTest: false },
+    });
 
-    await adminAgent.patch(`/admin/users/${user.id}`).send({ fullName: 'After', role: 'admin' }).expect(200).expect(({ body }) => {
-      expect(body).toEqual({ id: user.id });
+    await adminAgent
+      .patch(`/admin/users/${user.id}`)
+      .send({ fullName: "After", role: "admin" })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ id: user.id });
+      });
+    await adminAgent
+      .patch(`/admin/users/${user.id}/status`)
+      .send({ status: "inactive" })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ id: user.id });
+      });
+    const updated = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
     });
-    await adminAgent.patch(`/admin/users/${user.id}/status`).send({ status: 'inactive' }).expect(200).expect(({ body }) => {
-      expect(body).toEqual({ id: user.id });
+    expect(updated).toMatchObject({
+      fullName: "After",
+      role: "ADMIN",
+      status: "INACTIVE",
     });
-    const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
-    expect(updated).toMatchObject({ fullName: 'After', role: 'ADMIN', status: 'INACTIVE' });
 
     await adminAgent.delete(`/admin/users/${user.id}`).expect(204);
-    const deleted = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
-    expect(deleted).toMatchObject({ status: 'INACTIVE', deletedAt: expect.any(Date), version: 3 });
+    const deleted = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    expect(deleted).toMatchObject({
+      status: "INACTIVE",
+      deletedAt: expect.any(Date),
+      version: 3,
+    });
     await adminAgent.get(`/admin/users/${user.id}`).expect(404);
   });
 });
@@ -149,21 +220,24 @@ function unique(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-async function createAdminAgent(app: INestApplication, prisma: PrismaClient): Promise<ReturnType<typeof request.agent>> {
-  const email = `${unique('admin-auth')}@example.com`;
-  const password = 'admin-integration-password';
+async function createAdminAgent(
+  app: INestApplication,
+  prisma: PrismaClient,
+): Promise<ReturnType<typeof request.agent>> {
+  const email = `${unique("admin-auth")}@example.com`;
+  const password = "admin-integration-password";
   await prisma.user.create({
     data: {
       email,
-      fullName: 'Admin Integration User',
-      role: 'ADMIN',
-      status: 'ACTIVE',
+      fullName: "Admin Integration User",
+      role: "ADMIN",
+      status: "ACTIVE",
       passwordHash: await bcrypt.hash(password, 10),
       isTest: false,
     },
   });
 
   const agent = request.agent(app.getHttpServer());
-  await agent.post('/auth/login').send({ email, password }).expect(201);
+  await agent.post("/auth/login").send({ email, password }).expect(201);
   return agent;
 }

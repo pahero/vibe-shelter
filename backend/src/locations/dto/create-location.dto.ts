@@ -1,18 +1,18 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateLocationDto {
   @ApiProperty({
-    description: 'Location name',
-    example: 'Downtown Shelter',
+    description: "Location name",
+    example: "Downtown Shelter",
   })
   @IsString()
   @IsNotEmpty()
   name!: string;
 
   @ApiProperty({
-    description: 'Location description',
-    example: 'Main downtown shelter facility',
+    description: "Location description",
+    example: "Main downtown shelter facility",
     required: false,
   })
   @IsString()
@@ -20,7 +20,7 @@ export class CreateLocationDto {
   description?: string;
 
   @ApiProperty({
-    description: 'Owner user ID',
+    description: "Owner user ID",
     required: false,
   })
   @IsString()
@@ -30,7 +30,9 @@ export class CreateLocationDto {
   toCommand(): { name: string; description?: string; ownerId?: string } {
     return {
       name: this.name.trim(),
-      ...(this.description !== undefined ? { description: this.description.trim() } : {}),
+      ...(this.description !== undefined
+        ? { description: this.description.trim() }
+        : {}),
       ...(this.ownerId !== undefined ? { ownerId: this.ownerId.trim() } : {}),
     };
   }

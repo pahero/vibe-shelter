@@ -1,12 +1,13 @@
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
+import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
 
-const GARAGE_IMAGE = 'dxflrs/garage:v2.3.0';
+const GARAGE_IMAGE = "dxflrs/garage:v2.3.0";
 const GARAGE_API_PORT = 3900;
 const GARAGE_RPC_PORT = 3901;
-const GARAGE_REGION = 'garage';
-const GARAGE_DEFAULT_ACCESS_KEY = 'GKcc07e066098775f0bfd9a3f74a8b00fa';
-const GARAGE_DEFAULT_SECRET_KEY = 'ca4915e4ecba9c92d21e2a93d6c61fbaf68af324a6158160bc061c93cfd9e560';
-const GARAGE_DEFAULT_BUCKET = 'default-bucket';
+const GARAGE_REGION = "garage";
+const GARAGE_DEFAULT_ACCESS_KEY = "GKcc07e066098775f0bfd9a3f74a8b00fa";
+const GARAGE_DEFAULT_SECRET_KEY =
+  "ca4915e4ecba9c92d21e2a93d6c61fbaf68af324a6158160bc061c93cfd9e560";
+const GARAGE_DEFAULT_BUCKET = "default-bucket";
 
 export type StartedGarageTestContainer = {
   container: StartedTestContainer;
@@ -23,12 +24,12 @@ export async function startGarageTestContainer(): Promise<StartedGarageTestConta
     .withCopyContentToContainer([
       {
         content: garageConfig(),
-        target: '/etc/garage.toml',
+        target: "/etc/garage.toml",
       },
     ])
-    .withCommand(['/garage', 'server', '--single-node', '--default-bucket'])
+    .withCommand(["/garage", "server", "--single-node", "--default-bucket"])
     .withWaitStrategy(Wait.forLogMessage(/S3 API server listening on/))
-    .withLabels({ suite: 'shelter-backend-unit-tests' })
+    .withLabels({ suite: "shelter-backend-unit-tests" })
     .withReuse()
     .withEnvironment({
       GARAGE_DEFAULT_ACCESS_KEY: GARAGE_DEFAULT_ACCESS_KEY,

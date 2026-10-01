@@ -6,16 +6,23 @@ describe("ListCatTasksHandler", () => {
   it("rejects a missing cat", async () => {
     await runInTestTransaction(async (transaction) => {
       const handler = new ListCatTasksHandler(transaction as PrismaService);
-      await expect(handler.handle("missing", false)).rejects.toThrow("Cat not found");
+      await expect(handler.handle("missing", false)).rejects.toThrow(
+        "Cat not found",
+      );
     });
   });
 
   it("returns active tasks with their receivers and completion details", async () => {
     await runInTestTransaction(async (transaction) => {
       const receiver = await transaction.user.create({
-        data: { email: `${Date.now()}-receiver@example.com`, fullName: "Receiver" },
+        data: {
+          email: `${Date.now()}-receiver@example.com`,
+          fullName: "Receiver",
+        },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const activeTask = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Active", dueDate: new Date() },
       });
@@ -32,7 +39,12 @@ describe("ListCatTasksHandler", () => {
         },
       });
       await transaction.catTask.create({
-        data: { catId: cat.id, comment: "Deleted", dueDate: new Date(), deletedAt: new Date() },
+        data: {
+          catId: cat.id,
+          comment: "Deleted",
+          dueDate: new Date(),
+          deletedAt: new Date(),
+        },
       });
       const handler = new ListCatTasksHandler(transaction as PrismaService);
 

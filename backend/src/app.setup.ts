@@ -1,29 +1,30 @@
-import {
-  INestApplication,
-  ValidationPipe,
-} from '@nestjs/common';
-import cookieParser from 'cookie-parser';
-import session from 'express-session';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
-import type { Express } from 'express';
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import cookieParser from "cookie-parser";
+import session from "express-session";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { ConfigService } from "@nestjs/config";
+import type { Express } from "express";
 
 export function setupApp(app: INestApplication) {
   // Caddy terminates TLS. Express must trust its forwarded protocol so secure
   // session cookies are issued when NODE_ENV=production.
   const expressApp = app.getHttpAdapter().getInstance() as Express;
-  expressApp.set('trust proxy', 1);
+  expressApp.set("trust proxy", 1);
 
   const configService = app.get(ConfigService);
-  const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:4001');
-  const sessionSecret = configService.get<string>('sessionSecret') ?? 'dev-session-secret';
+  const frontendUrl = configService.get<string>(
+    "frontendUrl",
+    "http://localhost:4001",
+  );
+  const sessionSecret =
+    configService.get<string>("sessionSecret") ?? "dev-session-secret";
 
   // Enable CORS
   app.enableCors({
     origin: [frontendUrl],
     credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type,Authorization',
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: "Content-Type,Authorization",
   });
 
   // Middleware
@@ -34,10 +35,13 @@ export function setupApp(app: INestApplication) {
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === "production",
         httpOnly: true,
-        sameSite: 'lax',
-        maxAge: configService.get<number>('sessionTtlMs', 7 * 24 * 60 * 60 * 1000),
+        sameSite: "lax",
+        maxAge: configService.get<number>(
+          "sessionTtlMs",
+          7 * 24 * 60 * 60 * 1000,
+        ),
       },
     }),
   );
@@ -53,16 +57,16 @@ export function setupApp(app: INestApplication) {
 
   // OpenAPI/Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Shelter Backend API')
-    .setDescription('API documentation for Shelter Backend')
-    .setVersion('1.0.0')
+    .setTitle("Shelter Backend API")
+    .setDescription("API documentation for Shelter Backend")
+    .setVersion("1.0.0")
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-  
+  SwaggerModule.setup("api/docs", app, document);
+
   // Expose OpenAPI JSON at /api/openapi.json
-  app.getHttpAdapter().get('/api/openapi.json', (req, res) => {
+  app.getHttpAdapter().get("/api/openapi.json", (req, res) => {
     res.json(document);
   });
 }

@@ -8,13 +8,28 @@ import { TreatmentPayload } from "./treatment.dto";
 export class CreateCatTreatmentHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(catId: string, payload: TreatmentPayload, actorUserId: string, isTest: boolean): Promise<{ id: string }> {
+  async handle(
+    catId: string,
+    payload: TreatmentPayload,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (transaction) => {
-      const cat = await transaction.cat.findFirst({ where: { id: catId, isTest }, select: { id: true } });
+      const cat = await transaction.cat.findFirst({
+        where: { id: catId, isTest },
+        select: { id: true },
+      });
       if (!cat) throw new NotFoundException("Cat not found");
-      const treatment = await transaction.catTreatment.create({ data: { catId, ...payload } });
+      const treatment = await transaction.catTreatment.create({
+        data: { catId, ...payload },
+      });
       await transaction.catAuditEvent.create({
-        data: { catId, treatmentId: treatment.id, actorUserId, eventType: CAT_AUDIT_EVENT_TYPES.treatmentCreated },
+        data: {
+          catId,
+          treatmentId: treatment.id,
+          actorUserId,
+          eventType: CAT_AUDIT_EVENT_TYPES.treatmentCreated,
+        },
       });
       return { id: treatment.id };
     });

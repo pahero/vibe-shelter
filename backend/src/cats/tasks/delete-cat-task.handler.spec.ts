@@ -9,7 +9,9 @@ describe("DeleteCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const handler = new DeleteCatTaskHandler(transaction as PrismaService);
-      await expect(handler.handle("missing", actor.id, false)).rejects.toThrow("Task not found");
+      await expect(handler.handle("missing", actor.id, false)).rejects.toThrow(
+        "Task not found",
+      );
     });
   });
 
@@ -18,11 +20,15 @@ describe("DeleteCatTaskHandler", () => {
       const actor = await transaction.user.create({
         data: { email: `${Date.now()}-actor@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Delete", dueDate: new Date() },
       });
-      await transaction.taskNotification.create({ data: { taskId: task.id, userId: actor.id } });
+      await transaction.taskNotification.create({
+        data: { taskId: task.id, userId: actor.id },
+      });
       const handler = new DeleteCatTaskHandler(transaction as PrismaService);
 
       await handler.handle(task.id, actor.id, false);

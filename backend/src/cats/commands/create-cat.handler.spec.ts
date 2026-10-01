@@ -1,19 +1,19 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { S3Client } from '@aws-sdk/client-s3';
-import { PrismaService } from '../../database/prisma.service';
+import { ConflictException, NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { S3Client } from "@aws-sdk/client-s3";
+import { PrismaService } from "../../database/prisma.service";
 import {
   beginTestTransaction,
   getS3Client,
   rollbackTestTransaction,
   startTestDatabase,
-} from '../../test-utils/test-db';
-import { CatPhotoUrlService } from '../cat-photo-url.service';
-import { CreateCatCommand } from './create-cat.command';
-import { CreateCatHandler } from './create-cat.handler';
-import { WriteCatAuditEventCommand } from './write-cat-audit-event.command';
+} from "../../test-utils/test-db";
+import { CatPhotoUrlService } from "../cat-photo-url.service";
+import { CreateCatCommand } from "./create-cat.command";
+import { CreateCatHandler } from "./create-cat.handler";
+import { WriteCatAuditEventCommand } from "./write-cat-audit-event.command";
 
-describe('CreateCatHandler', () => {
+describe("CreateCatHandler", () => {
   let handler: CreateCatHandler;
   let prisma: PrismaService;
   let s3Client: S3Client;
@@ -31,7 +31,11 @@ describe('CreateCatHandler', () => {
   beforeEach(async () => {
     await beginTestTransaction(prisma);
     const user = await prisma.user.create({
-      data: { email: `${unique('creator')}@example.com`, fullName: 'Cat Creator', status: 'ACTIVE' },
+      data: {
+        email: `${unique("creator")}@example.com`,
+        fullName: "Cat Creator",
+        status: "ACTIVE",
+      },
     });
     actorUserId = user.id;
   });
@@ -42,67 +46,73 @@ describe('CreateCatHandler', () => {
     s3Client.destroy();
   });
 
-  it('creates a cat card', async () => {
-    const card = await handler.execute(new CreateCatCommand(
-      'Mila',
-      'FEMALE',
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      'STERILIZED',
-      null,
-      actorUserId,
-      false,
-    ));
+  it("creates a cat card", async () => {
+    const card = await handler.execute(
+      new CreateCatCommand(
+        "Mila",
+        "FEMALE",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "STERILIZED",
+        null,
+        actorUserId,
+        false,
+      ),
+    );
 
-    expect(card.name).toBe('Mila');
+    expect(card.name).toBe("Mila");
     expect(card.primaryPhotoUrl).toBeNull();
-    await expect(prisma.catAuditEvent.findFirstOrThrow({ where: { catId: card.id } })).resolves.toMatchObject({
-      eventType: 'cat_created',
+    await expect(
+      prisma.catAuditEvent.findFirstOrThrow({ where: { catId: card.id } }),
+    ).resolves.toMatchObject({
+      eventType: "cat_created",
       actorUserId,
       oldValue: null,
       newValue: null,
     });
   });
 
-  it('persists every command field and returns the active location', async () => {
+  it("persists every command field and returns the active location", async () => {
     const location = await prisma.location.create({
-      data: { name: unique('active-location'), status: 'ACTIVE' },
+      data: { name: unique("active-location"), status: "ACTIVE" },
     });
-    const estimatedBirthDate = new Date('2024-03-15');
-    const intakeDate = new Date('2026-04-01');
-    const microchipNumber = unique('chip');
-    const passportNumber = unique('passport');
-    const adopterName = 'Taylor Adopter';
-    const adopterAddress = '123 Cat Street';
+    const estimatedBirthDate = new Date("2024-03-15");
+    const intakeDate = new Date("2026-04-01");
+    const microchipNumber = unique("chip");
+    const passportNumber = unique("passport");
+    const adopterName = "Taylor Adopter";
+    const adopterAddress = "123 Cat Street";
 
-    const card = await handler.execute(new CreateCatCommand(
-      'Mila',
-      'FEMALE',
-      'Calico',
-      estimatedBirthDate,
-      intakeDate,
-      'Found near clinic',
-      microchipNumber,
-      passportNumber,
-      'STERILIZED',
-      location.id,
-      actorUserId,
-      false,
-      adopterName,
-      adopterAddress,
-    ));
+    const card = await handler.execute(
+      new CreateCatCommand(
+        "Mila",
+        "FEMALE",
+        "Calico",
+        estimatedBirthDate,
+        intakeDate,
+        "Found near clinic",
+        microchipNumber,
+        passportNumber,
+        "STERILIZED",
+        location.id,
+        actorUserId,
+        false,
+        adopterName,
+        adopterAddress,
+      ),
+    );
 
     expect(card).toMatchObject({
-      name: 'Mila',
-      sex: 'FEMALE',
-      color: 'Calico',
+      name: "Mila",
+      sex: "FEMALE",
+      color: "Calico",
       estimatedBirthDate: estimatedBirthDate.toISOString(),
       intakeDate: intakeDate.toISOString(),
-      sterilizationStatus: 'STERILIZED',
+      sterilizationStatus: "STERILIZED",
       currentLocationId: location.id,
       currentLocationName: location.name,
       primaryPhotoUrl: null,
@@ -113,9 +123,11 @@ describe('CreateCatHandler', () => {
       felvFivTestDone: false,
       tags: [],
     });
-    const stored = await prisma.cat.findUniqueOrThrow({ where: { id: card.id } });
+    const stored = await prisma.cat.findUniqueOrThrow({
+      where: { id: card.id },
+    });
     expect(stored).toMatchObject({
-      rescueSource: 'Found near clinic',
+      rescueSource: "Found near clinic",
       passportNumber,
       adopterName,
       adopterAddress,
@@ -125,61 +137,87 @@ describe('CreateCatHandler', () => {
     });
   });
 
-  it('creates test cats for test users and rejects opposite-status locations', async () => {
+  it("creates test cats for test users and rejects opposite-status locations", async () => {
     const testLocation = await prisma.location.create({
-      data: { name: unique('test-location'), status: 'ACTIVE', isTest: true },
+      data: { name: unique("test-location"), status: "ACTIVE", isTest: true },
     });
     const regularLocation = await prisma.location.create({
-      data: { name: unique('regular-location'), status: 'ACTIVE', isTest: false },
+      data: {
+        name: unique("regular-location"),
+        status: "ACTIVE",
+        isTest: false,
+      },
     });
 
-    const card = await handler.execute(createCommand({
-      name: 'Test Partition Cat',
-      currentLocationId: testLocation.id,
-      isTest: true,
-    }));
+    const card = await handler.execute(
+      createCommand({
+        name: "Test Partition Cat",
+        currentLocationId: testLocation.id,
+        isTest: true,
+      }),
+    );
 
-    const stored = await prisma.cat.findUniqueOrThrow({ where: { id: card.id } });
+    const stored = await prisma.cat.findUniqueOrThrow({
+      where: { id: card.id },
+    });
     expect(card.isTest).toBe(true);
     expect(stored.isTest).toBe(true);
-    await expect(handler.execute(createCommand({
-      name: 'Cross Partition Cat',
-      currentLocationId: regularLocation.id,
-      isTest: true,
-    }))).rejects.toThrow(new NotFoundException('Active location not found'));
+    await expect(
+      handler.execute(
+        createCommand({
+          name: "Cross Partition Cat",
+          currentLocationId: regularLocation.id,
+          isTest: true,
+        }),
+      ),
+    ).rejects.toThrow(new NotFoundException("Active location not found"));
   });
 
-  it.each(['INACTIVE', 'ARCHIVED'] as const)(
-    'rejects a %s location',
+  it.each(["INACTIVE", "ARCHIVED"] as const)(
+    "rejects a %s location",
     async (status) => {
       const location = await prisma.location.create({
         data: { name: unique(`${status}-location`), status },
       });
 
-      await expect(handler.execute(createCommand({
-        name: `${status} Cat`,
-        currentLocationId: location.id,
-      }))).rejects.toThrow(new NotFoundException('Active location not found'));
+      await expect(
+        handler.execute(
+          createCommand({
+            name: `${status} Cat`,
+            currentLocationId: location.id,
+          }),
+        ),
+      ).rejects.toThrow(new NotFoundException("Active location not found"));
     },
   );
 
-  it('rejects a missing location', async () => {
-    await expect(handler.execute(createCommand({
-      name: 'Missing Location Cat',
-      currentLocationId: 'missing-location',
-    }))).rejects.toThrow(new NotFoundException('Active location not found'));
+  it("rejects a missing location", async () => {
+    await expect(
+      handler.execute(
+        createCommand({
+          name: "Missing Location Cat",
+          currentLocationId: "missing-location",
+        }),
+      ),
+    ).rejects.toThrow(new NotFoundException("Active location not found"));
   });
 
-  it.each(['microchipNumber', 'passportNumber'] as const)(
-    'rejects a duplicate %s before inserting',
+  it.each(["microchipNumber", "passportNumber"] as const)(
+    "rejects a duplicate %s before inserting",
     async (field) => {
       const value = unique(field);
-      await handler.execute(createCommand({ name: `First ${field}`, [field]: value }));
+      await handler.execute(
+        createCommand({ name: `First ${field}`, [field]: value }),
+      );
 
-      await expect(handler.execute(createCommand({
-        name: `Second ${field}`,
-        [field]: value,
-      }))).rejects.toThrow(ConflictException);
+      await expect(
+        handler.execute(
+          createCommand({
+            name: `Second ${field}`,
+            [field]: value,
+          }),
+        ),
+      ).rejects.toThrow(ConflictException);
     },
   );
 });
@@ -196,15 +234,15 @@ type CommandOverrides = Partial<{
 
 function createCommand(overrides: CommandOverrides = {}): CreateCatCommand {
   return new CreateCatCommand(
-    overrides.name ?? 'Mila',
-    'UNKNOWN',
+    overrides.name ?? "Mila",
+    "UNKNOWN",
     null,
     null,
     null,
     null,
     overrides.microchipNumber ?? null,
     overrides.passportNumber ?? null,
-    'UNKNOWN',
+    "UNKNOWN",
     overrides.currentLocationId ?? null,
     actorUserId,
     overrides.isTest ?? false,

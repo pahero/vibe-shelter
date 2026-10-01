@@ -17,8 +17,23 @@ export class ListFlightHistoryHandler {
       include: {
         actorUser: { select: { id: true, fullName: true, email: true } },
         cat: { select: { id: true, name: true, archivedAt: true } },
-        flight: { select: { id: true, flightNumber: true, airport: true, date: true, deletedAt: true } },
-        assignment: { select: { id: true, f2fDone: true, tracesDone: true, deletedAt: true } },
+        flight: {
+          select: {
+            id: true,
+            flightNumber: true,
+            airport: true,
+            date: true,
+            deletedAt: true,
+          },
+        },
+        assignment: {
+          select: {
+            id: true,
+            f2fDone: true,
+            tracesDone: true,
+            deletedAt: true,
+          },
+        },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
@@ -35,7 +50,13 @@ export class ListFlightHistoryHandler {
       },
       oldValue: event.oldValue,
       newValue: event.newValue,
-      cat: event.cat ? { id: event.cat.id, name: event.cat.name, archivedAt: event.cat.archivedAt?.toISOString() ?? null } : null,
+      cat: event.cat
+        ? {
+            id: event.cat.id,
+            name: event.cat.name,
+            archivedAt: event.cat.archivedAt?.toISOString() ?? null,
+          }
+        : null,
       flight: {
         id: event.flight.id,
         flightNumber: event.flight.flightNumber,
@@ -43,12 +64,14 @@ export class ListFlightHistoryHandler {
         date: event.flight.date.toISOString().slice(0, 10),
         isDeleted: event.flight.deletedAt !== null,
       },
-      assignment: event.assignment ? {
-        id: event.assignment.id,
-        f2fDone: event.assignment.f2fDone,
-        tracesDone: event.assignment.tracesDone,
-        isDeleted: event.assignment.deletedAt !== null,
-      } : null,
+      assignment: event.assignment
+        ? {
+            id: event.assignment.id,
+            f2fDone: event.assignment.f2fDone,
+            tracesDone: event.assignment.tracesDone,
+            isDeleted: event.assignment.deletedAt !== null,
+          }
+        : null,
     }));
   }
 }

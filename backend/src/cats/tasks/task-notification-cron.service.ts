@@ -4,7 +4,9 @@ import { SendDueTaskNotificationsHandler } from "./send-due-task-notifications.h
 
 @Injectable()
 export class TaskNotificationCronService {
-  constructor(private readonly sendDueTaskNotificationsHandler: SendDueTaskNotificationsHandler) {}
+  constructor(
+    private readonly sendDueTaskNotificationsHandler: SendDueTaskNotificationsHandler,
+  ) {}
 
   @Cron(CronExpression.EVERY_SECOND)
   async sendOverdueTaskNotifications(): Promise<void> {

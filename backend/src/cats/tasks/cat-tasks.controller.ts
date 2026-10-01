@@ -10,8 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser } from "../../auth/decorators/current-user.decorator";
-import { SessionAuthGuard } from "../../auth/guards/session-auth.guard";
+import { CurrentUser, SessionAuthGuard } from "../../auth";
 import { CompleteCatTaskHandler } from "./complete-cat-task.handler";
 import { CreateCatTaskHandler } from "./create-cat-task.handler";
 import { DeleteCatTaskHandler } from "./delete-cat-task.handler";
@@ -33,7 +32,10 @@ export class CatTasksController {
   ) {}
 
   @Get(":id/tasks")
-  async listTasks(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+  async listTasks(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.listCatTasksHandler.handle(id, user.isTest);
   }
 
@@ -44,7 +46,12 @@ export class CatTasksController {
     @Body() dto: TaskDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.createCatTaskHandler.handle(id, dto.toPayload(), user.id, user.isTest);
+    return this.createCatTaskHandler.handle(
+      id,
+      dto.toPayload(),
+      user.id,
+      user.isTest,
+    );
   }
 
   @Patch("tasks/:taskId")
@@ -53,17 +60,28 @@ export class CatTasksController {
     @Body() dto: UpdateTaskDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.updateCatTaskHandler.handle(taskId, dto.toPayload(), user.id, user.isTest);
+    return this.updateCatTaskHandler.handle(
+      taskId,
+      dto.toPayload(),
+      user.id,
+      user.isTest,
+    );
   }
 
   @Delete("tasks/:taskId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTask(@Param("taskId") taskId: string, @CurrentUser() user: AuthenticatedUser) {
+  async deleteTask(
+    @Param("taskId") taskId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     await this.deleteCatTaskHandler.handle(taskId, user.id, user.isTest);
   }
 
   @Post("tasks/:taskId/complete")
-  async completeTask(@Param("taskId") taskId: string, @CurrentUser() user: AuthenticatedUser) {
+  async completeTask(
+    @Param("taskId") taskId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.completeCatTaskHandler.handle(taskId, user.id, user.isTest);
   }
 }

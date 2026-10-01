@@ -12,5 +12,6 @@
         "npm run dev": true,
         "npm run lint": true,
         "npm run --prefix backend": true
-    }
+    },
+    "oxc.enable.oxfmt": true
 }

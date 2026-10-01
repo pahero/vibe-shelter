@@ -9,7 +9,9 @@ describe("CompleteCatTaskHandler", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const handler = new CompleteCatTaskHandler(transaction as PrismaService);
-      await expect(handler.handle("missing", user.id, false)).rejects.toThrow("Task not found");
+      await expect(handler.handle("missing", user.id, false)).rejects.toThrow(
+        "Task not found",
+      );
     });
   });
 
@@ -18,12 +20,21 @@ describe("CompleteCatTaskHandler", () => {
       const user = await transaction.user.create({
         data: { email: `${Date.now()}-user@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
-        data: { catId: cat.id, comment: "Done", dueDate: new Date(), completedAt: new Date() },
+        data: {
+          catId: cat.id,
+          comment: "Done",
+          dueDate: new Date(),
+          completedAt: new Date(),
+        },
       });
       const handler = new CompleteCatTaskHandler(transaction as PrismaService);
-      await expect(handler.handle(task.id, user.id, false)).rejects.toThrow("already completed");
+      await expect(handler.handle(task.id, user.id, false)).rejects.toThrow(
+        "already completed",
+      );
     });
   });
 
@@ -32,7 +43,9 @@ describe("CompleteCatTaskHandler", () => {
       const user = await transaction.user.create({
         data: { email: `${Date.now()}-user@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Open", dueDate: new Date() },
       });
@@ -48,18 +61,29 @@ describe("CompleteCatTaskHandler", () => {
       const receiver = await transaction.user.create({
         data: { email: `${Date.now()}-receiver@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Complete", dueDate: new Date() },
       });
-      await transaction.catTaskReceiver.create({ data: { taskId: task.id, userId: receiver.id } });
-      await transaction.taskNotification.create({ data: { taskId: task.id, userId: receiver.id } });
+      await transaction.catTaskReceiver.create({
+        data: { taskId: task.id, userId: receiver.id },
+      });
+      await transaction.taskNotification.create({
+        data: { taskId: task.id, userId: receiver.id },
+      });
       const handler = new CompleteCatTaskHandler(transaction as PrismaService);
 
-      await expect(handler.handle(task.id, receiver.id, false)).resolves.toEqual({ id: task.id });
+      await expect(
+        handler.handle(task.id, receiver.id, false),
+      ).resolves.toEqual({ id: task.id });
       await expect(
         transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
-      ).resolves.toMatchObject({ completedAt: expect.any(Date), completedByUserId: receiver.id });
+      ).resolves.toMatchObject({
+        completedAt: expect.any(Date),
+        completedByUserId: receiver.id,
+      });
       await expect(
         transaction.catAuditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "task_completed" },

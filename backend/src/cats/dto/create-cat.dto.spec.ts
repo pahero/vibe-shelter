@@ -1,47 +1,47 @@
-import { BadRequestException } from '@nestjs/common';
-import { CreateCatDto } from './create-cat.dto';
+import { BadRequestException } from "@nestjs/common";
+import { CreateCatDto } from "./create-cat.dto";
 
-describe('CreateCatDto', () => {
-  it('parses every request field into a flat command', () => {
+describe("CreateCatDto", () => {
+  it("parses every request field into a flat command", () => {
     const dto = new CreateCatDto();
-    dto.name = '  Mila  ';
-    dto.sex = 'FEMALE';
-    dto.color = '  Calico  ';
-    dto.estimatedBirthDate = '2024-03-15';
-    dto.intakeDate = '2026-04-01';
-    dto.rescueSource = '  Found near clinic  ';
-    dto.microchipNumber = '  900123456789012  ';
-    dto.passportNumber = '  AB123456  ';
-    dto.adopterName = '  Taylor Adopter  ';
-    dto.adopterAddress = '  123 Cat Street  ';
-    dto.sterilizationStatus = 'STERILIZED';
-    dto.currentLocationId = '  location-1  ';
+    dto.name = "  Mila  ";
+    dto.sex = "FEMALE";
+    dto.color = "  Calico  ";
+    dto.estimatedBirthDate = "2024-03-15";
+    dto.intakeDate = "2026-04-01";
+    dto.rescueSource = "  Found near clinic  ";
+    dto.microchipNumber = "  900123456789012  ";
+    dto.passportNumber = "  AB123456  ";
+    dto.adopterName = "  Taylor Adopter  ";
+    dto.adopterAddress = "  123 Cat Street  ";
+    dto.sterilizationStatus = "STERILIZED";
+    dto.currentLocationId = "  location-1  ";
 
-    const command = dto.toCommand('user-1', true);
+    const command = dto.toCommand("user-1", true);
 
     expect(command).toMatchObject({
-      name: 'Mila',
-      sex: 'FEMALE',
-      color: 'Calico',
-      estimatedBirthDate: new Date('2024-03-15'),
-      intakeDate: new Date('2026-04-01'),
-      rescueSource: 'Found near clinic',
-      microchipNumber: '900123456789012',
-      passportNumber: 'AB123456',
-      adopterName: 'Taylor Adopter',
-      adopterAddress: '123 Cat Street',
-      sterilizationStatus: 'STERILIZED',
-      currentLocationId: 'location-1',
-      createdByUserId: 'user-1',
+      name: "Mila",
+      sex: "FEMALE",
+      color: "Calico",
+      estimatedBirthDate: new Date("2024-03-15"),
+      intakeDate: new Date("2026-04-01"),
+      rescueSource: "Found near clinic",
+      microchipNumber: "900123456789012",
+      passportNumber: "AB123456",
+      adopterName: "Taylor Adopter",
+      adopterAddress: "123 Cat Street",
+      sterilizationStatus: "STERILIZED",
+      currentLocationId: "location-1",
+      createdByUserId: "user-1",
       isTest: true,
     });
   });
 
   it.each([
-    ['undefined', undefined],
-    ['null', null],
-    ['empty', ''],
-  ])('normalizes %s optional values and dates to null', (_label, value) => {
+    ["undefined", undefined],
+    ["null", null],
+    ["empty", ""],
+  ])("normalizes %s optional values and dates to null", (_label, value) => {
     const dto = createRequiredDto();
     dto.color = value;
     dto.estimatedBirthDate = value;
@@ -53,7 +53,7 @@ describe('CreateCatDto', () => {
     dto.adopterAddress = value;
     dto.currentLocationId = value;
 
-    expect(dto.toCommand('user-1', false)).toMatchObject({
+    expect(dto.toCommand("user-1", false)).toMatchObject({
       color: null,
       estimatedBirthDate: null,
       intakeDate: null,
@@ -66,65 +66,75 @@ describe('CreateCatDto', () => {
     });
   });
 
-  it('normalizes whitespace-only optional strings', () => {
+  it("normalizes whitespace-only optional strings", () => {
     const dto = createRequiredDto();
-    dto.color = '   ';
+    dto.color = "   ";
 
-    const command = dto.toCommand('user-1', false);
+    const command = dto.toCommand("user-1", false);
 
     expect(command.color).toBeNull();
   });
 
-  it.each([undefined, '', '   '])('rejects an absent or empty name: %p', (name) => {
-    const dto = createRequiredDto();
-    dto.name = name as string;
+  it.each([undefined, "", "   "])(
+    "rejects an absent or empty name: %p",
+    (name) => {
+      const dto = createRequiredDto();
+      dto.name = name as string;
 
-    expect(() => dto.toCommand('user-1', false)).toThrow(new BadRequestException('Cat name is required'));
-  });
+      expect(() => dto.toCommand("user-1", false)).toThrow(
+        new BadRequestException("Cat name is required"),
+      );
+    },
+  );
 
   it.each([
-    ['sex', 'OTHER', 'Invalid sex. Must be one of: FEMALE, MALE, UNKNOWN'],
+    ["sex", "OTHER", "Invalid sex. Must be one of: FEMALE, MALE, UNKNOWN"],
     [
-      'sterilizationStatus',
-      'OTHER',
-      'Invalid sterilizationStatus. Must be one of: STERILIZED, NOT_STERILIZED, UNKNOWN',
+      "sterilizationStatus",
+      "OTHER",
+      "Invalid sterilizationStatus. Must be one of: STERILIZED, NOT_STERILIZED, UNKNOWN",
     ],
-  ])('rejects an invalid %s', (field, value, message) => {
+  ])("rejects an invalid %s", (field, value, message) => {
     const dto = createRequiredDto();
     Object.assign(dto, { [field]: value });
 
-    expect(() => dto.toCommand('user-1', false)).toThrow(new BadRequestException(message));
+    expect(() => dto.toCommand("user-1", false)).toThrow(
+      new BadRequestException(message),
+    );
   });
 
-  it.each(['estimatedBirthDate', 'intakeDate'] as const)(
-    'rejects an invalid %s',
+  it.each(["estimatedBirthDate", "intakeDate"] as const)(
+    "rejects an invalid %s",
     (field) => {
       const dto = createRequiredDto();
-      dto[field] = 'not-a-date';
+      dto[field] = "not-a-date";
 
-      expect(() => dto.toCommand('user-1', false)).toThrow(
+      expect(() => dto.toCommand("user-1", false)).toThrow(
         new BadRequestException(`${field} must be a valid date`),
       );
     },
   );
 
   it.each([
-    ['FEMALE', 'STERILIZED'],
-    ['MALE', 'NOT_STERILIZED'],
-    ['UNKNOWN', 'UNKNOWN'],
-  ])('maps supported enum values %s and %s', (sex, sterilizationStatus) => {
+    ["FEMALE", "STERILIZED"],
+    ["MALE", "NOT_STERILIZED"],
+    ["UNKNOWN", "UNKNOWN"],
+  ])("maps supported enum values %s and %s", (sex, sterilizationStatus) => {
     const dto = createRequiredDto();
     dto.sex = sex;
     dto.sterilizationStatus = sterilizationStatus;
 
-    expect(dto.toCommand('user-1', false)).toMatchObject({ sex, sterilizationStatus });
+    expect(dto.toCommand("user-1", false)).toMatchObject({
+      sex,
+      sterilizationStatus,
+    });
   });
 });
 
 function createRequiredDto(): CreateCatDto {
   const dto = new CreateCatDto();
-  dto.name = 'Mila';
-  dto.sex = 'FEMALE';
-  dto.sterilizationStatus = 'STERILIZED';
+  dto.name = "Mila";
+  dto.sex = "FEMALE";
+  dto.sterilizationStatus = "STERILIZED";
   return dto;
 }

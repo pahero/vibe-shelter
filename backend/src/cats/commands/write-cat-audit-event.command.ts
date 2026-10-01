@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { CatAuditEventType } from '../cat-audit-event-types';
+import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { CatAuditEventType } from "../cat-audit-event-types";
 
 export type WriteCatAuditEventInput = {
   catId: string;
@@ -14,7 +14,10 @@ export type WriteCatAuditEventInput = {
 
 @Injectable()
 export class WriteCatAuditEventCommand {
-  async execute(transaction: Prisma.TransactionClient, input: WriteCatAuditEventInput): Promise<void> {
+  async execute(
+    transaction: Prisma.TransactionClient,
+    input: WriteCatAuditEventInput,
+  ): Promise<void> {
     await transaction.catAuditEvent.create({
       data: {
         catId: input.catId,

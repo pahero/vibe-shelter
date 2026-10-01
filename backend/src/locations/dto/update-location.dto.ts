@@ -1,10 +1,10 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsOptional, IsEnum } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class UpdateLocationDto {
   @ApiProperty({
-    description: 'Location name',
-    example: 'Downtown Shelter Updated',
+    description: "Location name",
+    example: "Downtown Shelter Updated",
     required: false,
   })
   @IsString()
@@ -12,8 +12,8 @@ export class UpdateLocationDto {
   name?: string;
 
   @ApiProperty({
-    description: 'Location description',
-    example: 'Updated description',
+    description: "Location description",
+    example: "Updated description",
     required: false,
   })
   @IsString()
@@ -21,7 +21,7 @@ export class UpdateLocationDto {
   description?: string | null;
 
   @ApiProperty({
-    description: 'Owner user ID',
+    description: "Owner user ID",
     required: false,
     nullable: true,
   })
@@ -30,19 +30,28 @@ export class UpdateLocationDto {
   ownerId?: string | null;
 
   @ApiProperty({
-    description: 'Location status',
-    enum: ['ACTIVE', 'INACTIVE', 'ARCHIVED'],
+    description: "Location status",
+    enum: ["ACTIVE", "INACTIVE", "ARCHIVED"],
     required: false,
   })
-  @IsEnum(['ACTIVE', 'INACTIVE', 'ARCHIVED'])
+  @IsEnum(["ACTIVE", "INACTIVE", "ARCHIVED"])
   @IsOptional()
   status?: string;
 
-  toCommand(): { name?: string; description?: string | null; ownerId?: string | null; status?: string } {
+  toCommand(): {
+    name?: string;
+    description?: string | null;
+    ownerId?: string | null;
+    status?: string;
+  } {
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
-      ...(this.description !== undefined ? { description: this.description?.trim() || null } : {}),
-      ...(this.ownerId !== undefined ? { ownerId: this.ownerId?.trim() || null } : {}),
+      ...(this.description !== undefined
+        ? { description: this.description?.trim() || null }
+        : {}),
+      ...(this.ownerId !== undefined
+        ? { ownerId: this.ownerId?.trim() || null }
+        : {}),
       ...(this.status !== undefined ? { status: this.status } : {}),
     };
   }

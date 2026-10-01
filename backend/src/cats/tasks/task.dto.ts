@@ -1,7 +1,17 @@
 import { BadRequestException } from "@nestjs/common";
-import { ArrayMinSize, IsArray, IsDateString, IsOptional, IsString } from "class-validator";
+import {
+  ArrayMinSize,
+  IsArray,
+  IsDateString,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
-export type TaskPayload = { comment: string; dueDate: Date; receiverIds: string[] };
+export type TaskPayload = {
+  comment: string;
+  dueDate: Date;
+  receiverIds: string[];
+};
 
 export class TaskDto {
   @IsString()
@@ -21,9 +31,13 @@ export class TaskDto {
     const dueDate = new Date(this.dueDate);
     if (Number.isNaN(dueDate.getTime()))
       throw new BadRequestException("dueDate must be a valid date");
-    const receiverIds = [...new Set(this.receiverIds.map((id) => id.trim()).filter(Boolean))];
+    const receiverIds = [
+      ...new Set(this.receiverIds.map((id) => id.trim()).filter(Boolean)),
+    ];
     if (receiverIds.length === 0)
-      throw new BadRequestException("At least one notification receiver is required");
+      throw new BadRequestException(
+        "At least one notification receiver is required",
+      );
     return { comment, dueDate, receiverIds };
   }
 }
@@ -57,9 +71,13 @@ export class UpdateTaskDto {
       result.dueDate = dueDate;
     }
     if (this.receiverIds !== undefined) {
-      const receiverIds = [...new Set(this.receiverIds.map((id) => id.trim()).filter(Boolean))];
+      const receiverIds = [
+        ...new Set(this.receiverIds.map((id) => id.trim()).filter(Boolean)),
+      ];
       if (receiverIds.length === 0)
-        throw new BadRequestException("At least one notification receiver is required");
+        throw new BadRequestException(
+          "At least one notification receiver is required",
+        );
       result.receiverIds = receiverIds;
     }
     return result;

@@ -8,12 +8,22 @@ describe("SendDueTaskNotificationsHandler", () => {
       const receiver = await transaction.user.create({
         data: { email: `${Date.now()}-receiver@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
-      const task = await transaction.catTask.create({
-        data: { catId: cat.id, comment: "Future", dueDate: new Date("2030-01-01T00:00:00.000Z") },
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
       });
-      await transaction.catTaskReceiver.create({ data: { taskId: task.id, userId: receiver.id } });
-      const handler = new SendDueTaskNotificationsHandler(transaction as PrismaService);
+      const task = await transaction.catTask.create({
+        data: {
+          catId: cat.id,
+          comment: "Future",
+          dueDate: new Date("2030-01-01T00:00:00.000Z"),
+        },
+      });
+      await transaction.catTaskReceiver.create({
+        data: { taskId: task.id, userId: receiver.id },
+      });
+      const handler = new SendDueTaskNotificationsHandler(
+        transaction as PrismaService,
+      );
 
       await handler.handle(new Date("2020-01-01T00:00:00.000Z"));
 
@@ -31,12 +41,22 @@ describe("SendDueTaskNotificationsHandler", () => {
       const receiver = await transaction.user.create({
         data: { email: `${Date.now()}-receiver@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
-      const task = await transaction.catTask.create({
-        data: { catId: cat.id, comment: "Overdue", dueDate: new Date("2020-01-01T00:00:00.000Z") },
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
       });
-      await transaction.catTaskReceiver.create({ data: { taskId: task.id, userId: receiver.id } });
-      const handler = new SendDueTaskNotificationsHandler(transaction as PrismaService);
+      const task = await transaction.catTask.create({
+        data: {
+          catId: cat.id,
+          comment: "Overdue",
+          dueDate: new Date("2020-01-01T00:00:00.000Z"),
+        },
+      });
+      await transaction.catTaskReceiver.create({
+        data: { taskId: task.id, userId: receiver.id },
+      });
+      const handler = new SendDueTaskNotificationsHandler(
+        transaction as PrismaService,
+      );
 
       await handler.handle(new Date("2020-01-02T00:00:00.000Z"));
 
@@ -47,7 +67,9 @@ describe("SendDueTaskNotificationsHandler", () => {
       ).resolves.toBeDefined();
       await expect(
         transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
-      ).resolves.toMatchObject({ notificationSentAt: new Date("2020-01-02T00:00:00.000Z") });
+      ).resolves.toMatchObject({
+        notificationSentAt: new Date("2020-01-02T00:00:00.000Z"),
+      });
     });
   });
 });

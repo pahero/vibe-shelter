@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 
 export type CatCard = {
   id: string;
@@ -27,16 +27,49 @@ export type CatCard = {
 };
 
 export type CatTag = { id: string; name: string; color: string };
-export type CatFilters = { locationId?: string; search?: string; tagId?: string; skip?: number; limit?: number; archived?: boolean };
-export type CatWeight = { id: string; catId: string; weightKg: number; measuredAt: string; createdAt: string };
-export type CatPhoto = { id: string; catId: string; url: string | null; fullUrl: string | null; isPrimary: boolean; createdAt: string };
-export type CatDocument = { id: string; catId: string; fileName: string; url: string | null; downloadUrl: string | null; createdAt: string };
-export type PrimaryPhotoUpload = { originalname?: string; mimetype?: string; buffer?: Buffer };
+export type CatFilters = {
+  locationId?: string;
+  search?: string;
+  tagId?: string;
+  skip?: number;
+  limit?: number;
+  archived?: boolean;
+};
+export type CatWeight = {
+  id: string;
+  catId: string;
+  weightKg: number;
+  measuredAt: string;
+  createdAt: string;
+};
+export type CatPhoto = {
+  id: string;
+  catId: string;
+  url: string | null;
+  fullUrl: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+};
+export type CatDocument = {
+  id: string;
+  catId: string;
+  fileName: string;
+  url: string | null;
+  downloadUrl: string | null;
+  createdAt: string;
+};
+export type PrimaryPhotoUpload = {
+  originalname?: string;
+  mimetype?: string;
+  buffer?: Buffer;
+};
 
 export const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
   archivationReason: { select: { name: true } },
-  tags: { include: { tag: true }, orderBy: { tag: { name: 'asc' } } },
+  tags: { include: { tag: true }, orderBy: { tag: { name: "asc" } } },
 } satisfies Prisma.CatInclude;
 
-export type CatWithLocation = Prisma.CatGetPayload<{ include: typeof CAT_CARD_INCLUDE }>;
+export type CatWithLocation = Prisma.CatGetPayload<{
+  include: typeof CAT_CARD_INCLUDE;
+}>;

@@ -1,5 +1,13 @@
 import { BadRequestException } from "@nestjs/common";
-import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from "class-validator";
 
 export type TreatmentPayload = {
   shortName: string;
@@ -11,7 +19,10 @@ export type TreatmentPayload = {
 
 function toDate(value: string, field: string): Date {
   const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
     throw new BadRequestException(`${field} must be a valid ISO date`);
   }
   return date;
@@ -45,7 +56,8 @@ export class CreateTreatmentDto {
 
   toCommand(): TreatmentPayload {
     const startDate = toDate(this.startDate, "startDate");
-    const endDate = this.endDate == null ? null : toDate(this.endDate, "endDate");
+    const endDate =
+      this.endDate == null ? null : toDate(this.endDate, "endDate");
     if (endDate && endDate < startDate) {
       throw new BadRequestException("endDate cannot be before startDate");
     }
@@ -84,10 +96,18 @@ export class UpdateTreatmentDto {
 
   toCommand(): Partial<TreatmentPayload> {
     return {
-      ...(this.shortName !== undefined && { shortName: toRequiredText(this.shortName, "shortName") }),
-      ...(this.instructions !== undefined && { instructions: this.instructions?.trim() || null }),
-      ...(this.startDate !== undefined && { startDate: toDate(this.startDate, "startDate") }),
-      ...(this.endDate !== undefined && { endDate: this.endDate === null ? null : toDate(this.endDate, "endDate") }),
+      ...(this.shortName !== undefined && {
+        shortName: toRequiredText(this.shortName, "shortName"),
+      }),
+      ...(this.instructions !== undefined && {
+        instructions: this.instructions?.trim() || null,
+      }),
+      ...(this.startDate !== undefined && {
+        startDate: toDate(this.startDate, "startDate"),
+      }),
+      ...(this.endDate !== undefined && {
+        endDate: this.endDate === null ? null : toDate(this.endDate, "endDate"),
+      }),
       ...(this.dosesPerDay !== undefined && { dosesPerDay: this.dosesPerDay }),
     };
   }
@@ -106,6 +126,10 @@ export class SetTreatmentAdministrationDto {
   checked!: boolean;
 
   toCommand(): { date: Date; doseNumber: number; checked: boolean } {
-    return { date: toDate(this.date, "date"), doseNumber: this.doseNumber, checked: this.checked };
+    return {
+      date: toDate(this.date, "date"),
+      doseNumber: this.doseNumber,
+      checked: this.checked,
+    };
   }
 }

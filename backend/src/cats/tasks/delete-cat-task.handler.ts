@@ -7,7 +7,11 @@ import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 export class DeleteCatTaskHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(taskId: string, actorUserId: string, isTest: boolean): Promise<void> {
+  async handle(
+    taskId: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<void> {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const task = await transaction.catTask.findFirst({
         where: { id: taskId, deletedAt: null, cat: { isTest } },

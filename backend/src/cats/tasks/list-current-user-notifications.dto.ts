@@ -16,11 +16,16 @@ export class ListCurrentUserNotificationsDto {
   ): { userId: string; isTest: boolean; skip: number; limit: number } {
     const skip = this.parse(this.skip, 0, "skip");
     const limit = this.parse(this.limit, 50, "limit");
-    if (limit < 1 || limit > 100) throw new BadRequestException("limit must be between 1 and 100");
+    if (limit < 1 || limit > 100)
+      throw new BadRequestException("limit must be between 1 and 100");
     return { userId, isTest, skip, limit };
   }
 
-  private parse(value: string | undefined, defaultValue: number, field: string): number {
+  private parse(
+    value: string | undefined,
+    defaultValue: number,
+    field: string,
+  ): number {
     if (value === undefined) return defaultValue;
     const parsed = Number(value);
     if (!Number.isInteger(parsed) || parsed < 0)

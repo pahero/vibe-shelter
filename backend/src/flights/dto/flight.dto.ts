@@ -5,7 +5,10 @@ import { UpdateFlightCommand } from "../commands/update-flight.command";
 
 function parseDate(value: string): Date {
   const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
     throw new BadRequestException("date must be a valid ISO date");
   }
   return date;
@@ -59,13 +62,23 @@ export class UpdateFlightDto {
   @IsOptional()
   flightParent?: string;
 
-  toCommand(flightId: string, actorUserId: string, isTest: boolean): UpdateFlightCommand {
+  toCommand(
+    flightId: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): UpdateFlightCommand {
     return new UpdateFlightCommand(
       flightId,
       this.date === undefined ? undefined : parseDate(this.date),
-      this.airport === undefined ? undefined : parseRequiredString(this.airport, "airport"),
-      this.flightNumber === undefined ? undefined : parseRequiredString(this.flightNumber, "flightNumber"),
-      this.flightParent === undefined ? undefined : parseRequiredString(this.flightParent, "flightParent"),
+      this.airport === undefined
+        ? undefined
+        : parseRequiredString(this.airport, "airport"),
+      this.flightNumber === undefined
+        ? undefined
+        : parseRequiredString(this.flightNumber, "flightNumber"),
+      this.flightParent === undefined
+        ? undefined
+        : parseRequiredString(this.flightParent, "flightParent"),
       actorUserId,
       isTest,
     );

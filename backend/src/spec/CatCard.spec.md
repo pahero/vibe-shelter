@@ -89,12 +89,12 @@ model Location {
 interface CatCard {
   id: string;
   name: string;
-  sex: 'FEMALE' | 'MALE' | 'UNKNOWN';
+  sex: "FEMALE" | "MALE" | "UNKNOWN";
   color: string | null;
   estimatedBirthDate: string | null;
   intakeDate: string | null;
-  status: 'ACTIVE' | 'ADOPTED' | 'DECEASED' | 'ARCHIVED';
-  sterilizationStatus: 'STERILIZED' | 'NOT_STERILIZED' | 'UNKNOWN';
+  status: "ACTIVE" | "ADOPTED" | "DECEASED" | "ARCHIVED";
+  sterilizationStatus: "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
   currentLocationId: string | null;
   currentLocationName: string | null;
   primaryPhotoUrl: string | null;
@@ -114,6 +114,7 @@ Dates are returned as ISO-8601 strings. Nullable fields must be present with `nu
 **List cats as CatCard records**
 
 Query Parameters:
+
 - `locationId`: optional; return cats whose `currentLocationId` matches the location.
 - `status`: optional; one of `ACTIVE`, `ADOPTED`, `DECEASED`, `ARCHIVED`; default `ACTIVE`.
 - `search`: optional; case-insensitive match against `name`, `microchipNumber`, or `passportNumber`.
@@ -121,6 +122,7 @@ Query Parameters:
 - `limit`: page size; default `50`, maximum `100`.
 
 Response (200):
+
 ```json
 {
   "data": [
@@ -147,6 +149,7 @@ Response (200):
 ```
 
 Validation and Errors:
+
 - 400 for invalid `status`, `skip`, or `limit`.
 - 404 is not used for an empty result set; return an empty `data` array.
 
@@ -159,6 +162,7 @@ Validation and Errors:
 Response (200): a single `CatCard` object.
 
 Errors:
+
 - 404 when the cat does not exist.
 
 ---
@@ -168,6 +172,7 @@ Errors:
 **Create a cat with fields required for CatCard display**
 
 Request:
+
 ```json
 {
   "name": "Mila",
@@ -185,6 +190,7 @@ Request:
 Response (201): created `CatCard` object with `primaryPhotoUrl` set to `null`. Primary photo upload is handled by the separate primary-photo endpoint.
 
 Validation and Errors:
+
 - 400 when `name` is missing or empty.
 - 400 when `sex` or `sterilizationStatus` is missing or null.
 - 400 when enum values are invalid.
@@ -201,6 +207,7 @@ Validation and Errors:
 Response (200): updated `CatCard` object.
 
 Validation and Errors:
+
 - Same validation as `POST /api/cats` for provided fields.
 - 404 when the cat does not exist.
 - Changing `currentLocationId` updates the cat's current placement; detailed movement history is handled by the future `LocationHistory` feature.
@@ -214,6 +221,7 @@ Validation and Errors:
 Request: `multipart/form-data` with a single file field named `photo`.
 
 Backend behavior:
+
 - Stream the uploaded photo data to S3-compatible storage.
 - Generate and store the resulting S3 object key in `Cat.primaryPhotoKey`.
 - Return the updated `CatCard` with `primaryPhotoUrl` generated from the stored key.
@@ -221,6 +229,7 @@ Backend behavior:
 Response (200): updated `CatCard` object.
 
 Validation and Errors:
+
 - 400 when no `photo` file is provided.
 - 404 when the cat does not exist.
 - 500 when S3 upload fails.
@@ -230,6 +239,7 @@ Validation and Errors:
 ## 4. Service Layer Requirements
 
 Create a `CatsService` responsible for:
+
 - Creating and updating cats.
 - Returning paginated `CatCard` projections.
 - Validating enum values, required fields, uniqueness, and active location references.

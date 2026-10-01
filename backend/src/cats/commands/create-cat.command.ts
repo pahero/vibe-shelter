@@ -1,4 +1,4 @@
-import { CatSex, SterilizationStatus } from '@prisma/client';
+import { CatSex, SterilizationStatus } from "@prisma/client";
 
 export class CreateCatCommand {
   constructor(

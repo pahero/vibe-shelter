@@ -6,7 +6,11 @@ import { runInNewTransaction } from "../../database/helpers";
 export class DeleteFlightHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(flightId: string, actorUserId: string, isTest: boolean): Promise<void> {
+  async handle(
+    flightId: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<void> {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const flight = await transaction.flight.findFirst({
         where: { id: flightId, isTest, deletedAt: null },

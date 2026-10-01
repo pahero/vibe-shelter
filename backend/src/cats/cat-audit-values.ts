@@ -1,5 +1,5 @@
 export function formatCatAuditValue(value: unknown): string | null {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
   if (value instanceof Date) {

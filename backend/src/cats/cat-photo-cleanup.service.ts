@@ -1,7 +1,12 @@
-import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../database/prisma.service';
-import { CatPhotoUrlService } from './cat-photo-url.service';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnApplicationShutdown,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../database/prisma.service";
+import { CatPhotoUrlService } from "./cat-photo-url.service";
 
 export type CatPhotoCleanupResult = {
   scanned: number;
@@ -11,22 +16,30 @@ export type CatPhotoCleanupResult = {
 };
 
 @Injectable()
-export class CatPhotoCleanupService implements OnApplicationBootstrap, OnApplicationShutdown {
+export class CatPhotoCleanupService
+  implements OnApplicationBootstrap, OnApplicationShutdown
+{
   private readonly logger = new Logger(CatPhotoCleanupService.name);
   private interval: NodeJS.Timeout | null = null;
   private isRunning = false;
 
   constructor(
-    private prisma: PrismaService,
-    private photoUrls: CatPhotoUrlService,
-    private config: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly photoUrls: CatPhotoUrlService,
+    private readonly config: ConfigService,
   ) {}
 
   onApplicationBootstrap(): void {
-    const intervalMs = this.getNumber('S3_DANGLING_PHOTO_CLEANUP_INTERVAL_MS', 60 * 60 * 1000);
+    const intervalMs = this.getNumber(
+      "S3_DANGLING_PHOTO_CLEANUP_INTERVAL_MS",
+      60 * 60 * 1000,
+    );
     this.interval = setInterval(() => {
       void this.cleanupDanglingPhotos().catch((error) => {
-        this.logger.error('Failed to clean dangling S3 cat photos', error instanceof Error ? error.stack : String(error));
+        this.logger.error(
+          "Failed to clean dangling S3 cat photos",
+          error instanceof Error ? error.stack : String(error),
+        );
       });
     }, intervalMs);
     this.interval.unref?.();
@@ -37,25 +50,44 @@ export class CatPhotoCleanupService implements OnApplicationBootstrap, OnApplica
   }
 
   async cleanupDanglingPhotos(): Promise<CatPhotoCleanupResult> {
-    if (this.isRunning) return { scanned: 0, deleted: 0, skippedReferenced: 0, skippedRecent: 0 };
+    if (this.isRunning)
+      return { scanned: 0, deleted: 0, skippedReferenced: 0, skippedRecent: 0 };
     this.isRunning = true;
     try {
-      const graceMs = this.getNumber('S3_DANGLING_PHOTO_CLEANUP_GRACE_MS', 24 * 60 * 60 * 1000);
+      const graceMs = this.getNumber(
+        "S3_DANGLING_PHOTO_CLEANUP_GRACE_MS",
+        24 * 60 * 60 * 1000,
+      );
       const cutoff = Date.now() - graceMs;
       const [photoRows, documentRows, catRows, objects] = await Promise.all([
-        this.prisma.catPhoto.findMany({ select: { key: true, previewKey: true } }),
+        this.prisma.catPhoto.findMany({
+          select: { key: true, previewKey: true },
+        }),
         this.prisma.catDocument.findMany({ select: { key: true } }),
-        this.prisma.cat.findMany({ where: { primaryPhotoKey: { not: null } }, select: { primaryPhotoKey: true } }),
-        this.photoUrls.listPhotoObjects(this.config.get<string>('S3_DANGLING_PHOTO_CLEANUP_PREFIX') ?? 'cats/'),
+        this.prisma.cat.findMany({
+          where: { primaryPhotoKey: { not: null } },
+          select: { primaryPhotoKey: true },
+        }),
+        this.photoUrls.listPhotoObjects(
+          this.config.get<string>("S3_DANGLING_PHOTO_CLEANUP_PREFIX") ??
+            "cats/",
+        ),
       ]);
       const referencedKeys = new Set<string>([
-        ...photoRows.map(row => row.key),
-        ...photoRows.map(row => row.previewKey).filter((key): key is string => key !== null),
-        ...documentRows.map(row => row.key),
-        ...catRows.map(row => row.primaryPhotoKey).filter(x => x !== null),
+        ...photoRows.map((row) => row.key),
+        ...photoRows
+          .map((row) => row.previewKey)
+          .filter((key): key is string => key !== null),
+        ...documentRows.map((row) => row.key),
+        ...catRows.map((row) => row.primaryPhotoKey).filter((x) => x !== null),
       ]);
 
-      const result: CatPhotoCleanupResult = { scanned: objects.length, deleted: 0, skippedReferenced: 0, skippedRecent: 0 };
+      const result: CatPhotoCleanupResult = {
+        scanned: objects.length,
+        deleted: 0,
+        skippedReferenced: 0,
+        skippedRecent: 0,
+      };
       for (const object of objects) {
         if (referencedKeys.has(object.key)) {
           result.skippedReferenced += 1;

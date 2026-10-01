@@ -11,8 +11,18 @@ export class UpdateFlightHandler {
   async handle(command: UpdateFlightCommand): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (transaction) => {
       const flight = await transaction.flight.findFirst({
-        where: { id: command.flightId, isTest: command.isTest, deletedAt: null },
-        select: { id: true, date: true, airport: true, flightNumber: true, flightParent: true },
+        where: {
+          id: command.flightId,
+          isTest: command.isTest,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          date: true,
+          airport: true,
+          flightNumber: true,
+          flightParent: true,
+        },
       });
       if (!flight) throw new NotFoundException("Flight not found");
 
@@ -23,29 +33,62 @@ export class UpdateFlightHandler {
         flightParent?: string;
         concurrencyToken?: string;
       } = {};
-      const changes: { eventType: FlightAuditEventType; oldValue: string; newValue: string }[] = [];
-      if (command.date !== undefined && command.date.getTime() !== flight.date.getTime()) {
+      const changes: {
+        eventType: FlightAuditEventType;
+        oldValue: string;
+        newValue: string;
+      }[] = [];
+      if (
+        command.date !== undefined &&
+        command.date.getTime() !== flight.date.getTime()
+      ) {
         data.date = command.date;
-        changes.push({ eventType: "flight_date_changed", oldValue: flight.date.toISOString().slice(0, 10), newValue: command.date.toISOString().slice(0, 10) });
+        changes.push({
+          eventType: "flight_date_changed",
+          oldValue: flight.date.toISOString().slice(0, 10),
+          newValue: command.date.toISOString().slice(0, 10),
+        });
       }
       if (command.airport !== undefined && command.airport !== flight.airport) {
         data.airport = command.airport;
-        changes.push({ eventType: "flight_airport_changed", oldValue: flight.airport, newValue: command.airport });
+        changes.push({
+          eventType: "flight_airport_changed",
+          oldValue: flight.airport,
+          newValue: command.airport,
+        });
       }
-      if (command.flightNumber !== undefined && command.flightNumber !== flight.flightNumber) {
+      if (
+        command.flightNumber !== undefined &&
+        command.flightNumber !== flight.flightNumber
+      ) {
         data.flightNumber = command.flightNumber;
-        changes.push({ eventType: "flight_number_changed", oldValue: flight.flightNumber, newValue: command.flightNumber });
+        changes.push({
+          eventType: "flight_number_changed",
+          oldValue: flight.flightNumber,
+          newValue: command.flightNumber,
+        });
       }
-      if (command.flightParent !== undefined && command.flightParent !== flight.flightParent) {
+      if (
+        command.flightParent !== undefined &&
+        command.flightParent !== flight.flightParent
+      ) {
         data.flightParent = command.flightParent;
-        changes.push({ eventType: "flight_parent_changed", oldValue: flight.flightParent, newValue: command.flightParent });
+        changes.push({
+          eventType: "flight_parent_changed",
+          oldValue: flight.flightParent,
+          newValue: command.flightParent,
+        });
       }
 
       if (changes.length > 0) {
         data.concurrencyToken = crypto.randomUUID();
         await transaction.flight.update({ where: { id: flight.id }, data });
         await transaction.flightAuditEvent.createMany({
-          data: changes.map((change) => ({ flightId: flight.id, actorUserId: command.actorUserId, ...change })),
+          data: changes.map((change) => ({
+            flightId: flight.id,
+            actorUserId: command.actorUserId,
+            ...change,
+          })),
         });
       }
       return { id: flight.id };

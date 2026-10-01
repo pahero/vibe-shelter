@@ -1,6 +1,5 @@
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
-import { CurrentUser } from "../../auth/decorators/current-user.decorator";
-import { SessionAuthGuard } from "../../auth/guards/session-auth.guard";
+import { CurrentUser, SessionAuthGuard } from "../../auth";
 import { ListCurrentUserNotificationsDto } from "./list-current-user-notifications.dto";
 import { ListCurrentUserNotificationsQuery } from "./list-current-user-notifications.query";
 

@@ -1,0 +1,10 @@
+{
+  "exclude": [
+    "src/test-utils/**",
+    "src/flights/flight-test-fixtures.ts"
+  ],
+  "rules": {
+    "correctness/no-async-without-await": false
+  },
+  "telemetry": false
+}

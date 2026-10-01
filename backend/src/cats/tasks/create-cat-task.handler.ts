@@ -26,14 +26,19 @@ export class CreateCatTaskHandler {
         select: { id: true },
       });
       if (receivers.length !== payload.receiverIds.length) {
-        throw new NotFoundException("One or more active notification receivers were not found");
+        throw new NotFoundException(
+          "One or more active notification receivers were not found",
+        );
       }
 
       const task = await transaction.catTask.create({
         data: { catId, comment: payload.comment, dueDate: payload.dueDate },
       });
       await transaction.catTaskReceiver.createMany({
-        data: payload.receiverIds.map((userId) => ({ taskId: task.id, userId })),
+        data: payload.receiverIds.map((userId) => ({
+          taskId: task.id,
+          userId,
+        })),
       });
       await transaction.catTask.update({
         where: { id: task.id },

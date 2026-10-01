@@ -1,16 +1,23 @@
-import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class CatPhotoUrlService {
   bucketName: string;
   constructor(
     private readonly configService: ConfigService,
-    private readonly client: S3Client) {
-    this.bucketName = this.configService.get<string>('s3.bucketName') ?? '';
+    private readonly client: S3Client,
+  ) {
+    this.bucketName = this.configService.get<string>("s3.bucketName") ?? "";
   }
 
   async getPrimaryPhotoUrl(key: string | null): Promise<string | null> {
@@ -39,14 +46,17 @@ export class CatPhotoUrlService {
       new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key,
-        ResponseContentDisposition: 'inline',
-        ResponseContentType: 'application/pdf',
+        ResponseContentDisposition: "inline",
+        ResponseContentType: "application/pdf",
       }),
       { expiresIn: 3600 },
     );
   }
 
-  async getDocumentDownloadUrl(key: string, fileName: string): Promise<string | null> {
+  async getDocumentDownloadUrl(
+    key: string,
+    fileName: string,
+  ): Promise<string | null> {
     if (!this.bucketName) return null;
     return getSignedUrl(
       this.client,
@@ -54,7 +64,7 @@ export class CatPhotoUrlService {
         Bucket: this.bucketName,
         Key: key,
         ResponseContentDisposition: `attachment; filename="${this.safeFileName(fileName)}"`,
-        ResponseContentType: 'application/pdf',
+        ResponseContentType: "application/pdf",
       }),
       { expiresIn: 3600 },
     );
@@ -62,7 +72,11 @@ export class CatPhotoUrlService {
 
   async getPreviewPhotoUrl(fullKey: string | null): Promise<string | null> {
     if (!fullKey) return null;
-    return this.getPrimaryPhotoUrl(fullKey.endsWith('/full.jpg') ? fullKey.replace(/\/full\.jpg$/, '/preview.jpg') : fullKey);
+    return this.getPrimaryPhotoUrl(
+      fullKey.endsWith("/full.jpg")
+        ? fullKey.replace(/\/full\.jpg$/, "/preview.jpg")
+        : fullKey,
+    );
   }
 
   async uploadPrimaryPhoto(input: {
@@ -72,7 +86,7 @@ export class CatPhotoUrlService {
     body: Buffer;
   }): Promise<string> {
     if (!this.bucketName) {
-      throw new Error('S3 bucket is not configured');
+      throw new Error("S3 bucket is not configured");
     }
 
     const key = this.buildPrimaryPhotoKey(input.catId, input.originalName);
@@ -95,21 +109,37 @@ export class CatPhotoUrlService {
     fullBody: Buffer;
     previewBody: Buffer;
   }): Promise<{ key: string; previewKey: string }> {
-    if (!this.bucketName) throw new Error('S3 bucket is not configured');
+    if (!this.bucketName) throw new Error("S3 bucket is not configured");
 
     const baseKey = this.buildPhotoBaseKey(input.catId, input.originalName);
     const key = `${baseKey}/full.jpg`;
     const previewKey = `${baseKey}/preview.jpg`;
     await Promise.all([
-      this.client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: key, Body: input.fullBody, ContentType: input.contentType })),
-      this.client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: previewKey, Body: input.previewBody, ContentType: input.contentType })),
+      this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: input.fullBody,
+          ContentType: input.contentType,
+        }),
+      ),
+      this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: previewKey,
+          Body: input.previewBody,
+          ContentType: input.contentType,
+        }),
+      ),
     ]);
     return { key, previewKey };
   }
 
   async deletePhoto(key: string): Promise<void> {
     if (!this.bucketName) return;
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }));
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }),
+    );
   }
 
   async uploadDocument(input: {
@@ -117,16 +147,18 @@ export class CatPhotoUrlService {
     originalName?: string;
     body: Buffer;
   }): Promise<string> {
-    if (!this.bucketName) throw new Error('S3 bucket is not configured');
+    if (!this.bucketName) throw new Error("S3 bucket is not configured");
 
     const key = this.buildDocumentKey(input.catId, input.originalName);
-    await this.client.send(new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      Body: input.body,
-      ContentType: 'application/pdf',
-      ContentDisposition: `attachment; filename="${this.safeFileName(input.originalName)}"`,
-    }));
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: input.body,
+        ContentType: "application/pdf",
+        ContentDisposition: `attachment; filename="${this.safeFileName(input.originalName)}"`,
+      }),
+    );
     return key;
   }
 
@@ -134,17 +166,25 @@ export class CatPhotoUrlService {
     await this.deletePhoto(key);
   }
 
-  async listPhotoObjects(prefix: string): Promise<Array<{ key: string; lastModified: Date | null }>> {
+  async listPhotoObjects(
+    prefix: string,
+  ): Promise<Array<{ key: string; lastModified: Date | null }>> {
     const objects: Array<{ key: string; lastModified: Date | null }> = [];
     let continuationToken: string | undefined;
     do {
-      const result = await this.client.send(new ListObjectsV2Command({
-        Bucket: this.bucketName,
-        Prefix: prefix,
-        ContinuationToken: continuationToken,
-      }));
+      const result = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
       for (const item of result.Contents ?? []) {
-        if (item.Key) objects.push({ key: item.Key, lastModified: item.LastModified ?? null });
+        if (item.Key)
+          objects.push({
+            key: item.Key,
+            lastModified: item.LastModified ?? null,
+          });
       }
       continuationToken = result.NextContinuationToken;
     } while (continuationToken);
@@ -153,17 +193,17 @@ export class CatPhotoUrlService {
   }
 
   private buildPrimaryPhotoKey(catId: string, originalName?: string): string {
-    const safeName = (originalName ?? 'photo')
-      .replace(/[^a-zA-Z0-9._-]/g, '-')
-      .replace(/-+/g, '-')
+    const safeName = (originalName ?? "photo")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
       .slice(0, 120);
     return `cats/${catId}/photos/${Date.now()}-${safeName}`;
   }
 
   private buildPhotoBaseKey(catId: string, originalName?: string): string {
-    const safeName = (originalName ?? 'photo')
-      .replace(/[^a-zA-Z0-9._-]/g, '-')
-      .replace(/-+/g, '-')
+    const safeName = (originalName ?? "photo")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
       .slice(0, 120);
     return `cats/${catId}/photos/${Date.now()}-${randomUUID()}-${safeName}`;
   }
@@ -173,10 +213,12 @@ export class CatPhotoUrlService {
   }
 
   private safeFileName(originalName?: string): string {
-    const safeName = (originalName ?? 'document.pdf')
-      .replace(/[^a-zA-Z0-9._-]/g, '-')
-      .replace(/-+/g, '-')
+    const safeName = (originalName ?? "document.pdf")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
       .slice(0, 120);
-    return safeName.toLowerCase().endsWith('.pdf') ? safeName : `${safeName}.pdf`;
+    return safeName.toLowerCase().endsWith(".pdf")
+      ? safeName
+      : `${safeName}.pdf`;
   }
 }

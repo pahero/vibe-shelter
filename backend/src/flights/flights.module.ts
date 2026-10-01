@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
+import { SessionAuthGuard } from "../auth";
 import { DatabaseModule } from "../database/database.module";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
 import { CreateFlightHandler } from "./commands/create-flight.handler";
@@ -29,6 +30,7 @@ import { ListFlightsHandler } from "./queries/list-flights.handler";
     RestoreFlightHandler,
     UpdateFlightCatAssignmentHandler,
     UpdateFlightHandler,
+    SessionAuthGuard,
   ],
 })
 export class FlightsModule {}

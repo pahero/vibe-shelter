@@ -41,7 +41,9 @@ describe("Flight DTOs", () => {
       flightNumber: "CY123",
       flightParent: "Morgan Parent",
     });
-    expect(() => dto.toCommand("user-1", false)).toThrow(new BadRequestException("date must be a valid ISO date"));
+    expect(() => dto.toCommand("user-1", false)).toThrow(
+      new BadRequestException("date must be a valid ISO date"),
+    );
     Object.assign(dto, { date: "not-a-date" });
     expect(() => dto.toCommand("user-1", false)).toThrow(BadRequestException);
   });
@@ -63,14 +65,23 @@ describe("Flight DTOs", () => {
       isTest: false,
     });
     const empty = new UpdateFlightDto().toCommand("flight-1", "user-2", false);
-    expect(empty).toMatchObject({ date: undefined, airport: undefined, flightNumber: undefined, flightParent: undefined });
+    expect(empty).toMatchObject({
+      date: undefined,
+      airport: undefined,
+      flightNumber: undefined,
+      flightParent: undefined,
+    });
   });
 
   it("normalizes empty optional update values and rejects invalid update dates", () => {
     const dto = Object.assign(new UpdateFlightDto(), { airport: "  " });
-    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(new BadRequestException("airport is required"));
+    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(
+      new BadRequestException("airport is required"),
+    );
     Object.assign(dto, { airport: undefined, date: "2026-02-30" });
-    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(BadRequestException);
+    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(
+      BadRequestException,
+    );
   });
 
   it.each([
@@ -79,6 +90,8 @@ describe("Flight DTOs", () => {
     ["flightParent", "  "],
   ])("rejects an empty optional update %s", (field, value) => {
     const dto = Object.assign(new UpdateFlightDto(), { [field]: value });
-    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(BadRequestException);
+    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(
+      BadRequestException,
+    );
   });
 });

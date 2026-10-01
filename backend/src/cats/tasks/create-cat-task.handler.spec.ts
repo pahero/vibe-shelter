@@ -12,7 +12,11 @@ describe("CreateCatTaskHandler", () => {
       await expect(
         handler.handle(
           "missing",
-          { comment: "Medication", dueDate: new Date(), receiverIds: [actor.id] },
+          {
+            comment: "Medication",
+            dueDate: new Date(),
+            receiverIds: [actor.id],
+          },
           actor.id,
           false,
         ),
@@ -25,12 +29,18 @@ describe("CreateCatTaskHandler", () => {
       const actor = await transaction.user.create({
         data: { email: `${Date.now()}-actor@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const handler = new CreateCatTaskHandler(transaction as PrismaService);
       await expect(
         handler.handle(
           cat.id,
-          { comment: "Medication", dueDate: new Date(), receiverIds: ["missing"] },
+          {
+            comment: "Medication",
+            dueDate: new Date(),
+            receiverIds: ["missing"],
+          },
           actor.id,
           false,
         ),
@@ -43,7 +53,9 @@ describe("CreateCatTaskHandler", () => {
       const actor = await transaction.user.create({
         data: { email: `${Date.now()}-actor@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const handler = new CreateCatTaskHandler(transaction as PrismaService);
 
       const result = await handler.handle(

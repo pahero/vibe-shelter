@@ -48,7 +48,9 @@ export class ListFlightCandidatesHandler {
     });
 
     return cats.map((cat) => {
-      const treatmentTypes = new Set(cat.preventiveTreatments.map(({ type }) => type));
+      const treatmentTypes = new Set(
+        cat.preventiveTreatments.map(({ type }) => type),
+      );
       return {
         id: cat.id,
         name: cat.name,
@@ -59,8 +61,12 @@ export class ListFlightCandidatesHandler {
         adopterName: cat.adopterName,
         adopterAddress: cat.adopterAddress,
         requirements: {
-          firstVaccine: treatmentTypes.has(PreventiveTreatmentType.FIRST_VACCINE),
-          secondVaccine: treatmentTypes.has(PreventiveTreatmentType.SECOND_VACCINE),
+          firstVaccine: treatmentTypes.has(
+            PreventiveTreatmentType.FIRST_VACCINE,
+          ),
+          secondVaccine: treatmentTypes.has(
+            PreventiveTreatmentType.SECOND_VACCINE,
+          ),
           rabies: treatmentTypes.has(PreventiveTreatmentType.RABIES),
           passport: cat.passportNumber !== null,
           chipped: cat.microchipNumber !== null,

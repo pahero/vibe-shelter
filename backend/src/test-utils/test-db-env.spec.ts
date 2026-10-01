@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
-import { ensureTestDatabaseEnv, testDatabaseStatePath } from './test-db-env';
+import * as fs from "fs";
+import { ListBucketsCommand, S3Client } from "@aws-sdk/client-s3";
+import { ensureTestDatabaseEnv, testDatabaseStatePath } from "./test-db-env";
 
-describe('test environment state', () => {
+describe("test environment state", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('test environment state', () => {
     process.env = originalEnv;
   });
 
-  it('loads database and garage environment variables', () => {
+  it("loads database and garage environment variables", () => {
     ensureTestDatabaseEnv();
 
     expect(process.env.DATABASE_URL).toBeDefined();
@@ -21,17 +21,19 @@ describe('test environment state', () => {
     expect(process.env.AWS_ACCESS_KEY_ID).toBeDefined();
     expect(process.env.AWS_SECRET_ACCESS_KEY).toBeDefined();
     expect(process.env.S3_BUCKET).toBeDefined();
-    expect(process.env.AWS_REGION).toBe('garage');
+    expect(process.env.AWS_REGION).toBe("garage");
     expect(fs.existsSync(testDatabaseStatePath)).toBe(true);
   });
 
-  it('connects to garage S3 with loaded environment variables', async () => {
+  it("connects to garage S3 with loaded environment variables", async () => {
     ensureTestDatabaseEnv();
 
     const client = new S3Client({});
 
     const result = await client.send(new ListBucketsCommand({}));
 
-    expect(result.Buckets?.some((bucket) => bucket.Name === process.env.S3_BUCKET)).toBe(true);
+    expect(
+      result.Buckets?.some((bucket) => bucket.Name === process.env.S3_BUCKET),
+    ).toBe(true);
   });
 });

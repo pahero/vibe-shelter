@@ -20,7 +20,9 @@ describe("UpdateCatTaskHandler", () => {
       const actor = await transaction.user.create({
         data: { email: `${Date.now()}-actor@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
       });
@@ -36,7 +38,9 @@ describe("UpdateCatTaskHandler", () => {
       const actor = await transaction.user.create({
         data: { email: `${Date.now()}-actor@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: {
           catId: cat.id,
@@ -45,11 +49,18 @@ describe("UpdateCatTaskHandler", () => {
           notificationSentAt: new Date(),
         },
       });
-      await transaction.taskNotification.create({ data: { taskId: task.id, userId: actor.id } });
+      await transaction.taskNotification.create({
+        data: { taskId: task.id, userId: actor.id },
+      });
       const handler = new UpdateCatTaskHandler(transaction as PrismaService);
 
       await expect(
-        handler.handle(task.id, { dueDate: new Date("2030-01-01") }, actor.id, false),
+        handler.handle(
+          task.id,
+          { dueDate: new Date("2030-01-01") },
+          actor.id,
+          false,
+        ),
       ).resolves.toEqual({ id: task.id });
 
       await expect(
@@ -69,14 +80,23 @@ describe("UpdateCatTaskHandler", () => {
       const receiver = await transaction.user.create({
         data: { email: `${Date.now()}-receiver@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
       });
-      await transaction.taskNotification.create({ data: { taskId: task.id, userId: actor.id } });
+      await transaction.taskNotification.create({
+        data: { taskId: task.id, userId: actor.id },
+      });
       const handler = new UpdateCatTaskHandler(transaction as PrismaService);
       await expect(
-        handler.handle(task.id, { receiverIds: [receiver.id] }, actor.id, false),
+        handler.handle(
+          task.id,
+          { receiverIds: [receiver.id] },
+          actor.id,
+          false,
+        ),
       ).resolves.toEqual({ id: task.id });
       await expect(
         transaction.catTaskReceiver.findUniqueOrThrow({
@@ -94,15 +114,17 @@ describe("UpdateCatTaskHandler", () => {
       const actor = await transaction.user.create({
         data: { email: `${Date.now()}-actor@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
       });
       const handler = new UpdateCatTaskHandler(transaction as PrismaService);
 
-      await expect(handler.handle(task.id, { comment: "After" }, actor.id, false)).resolves.toEqual(
-        { id: task.id },
-      );
+      await expect(
+        handler.handle(task.id, { comment: "After" }, actor.id, false),
+      ).resolves.toEqual({ id: task.id });
       await expect(
         transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
       ).resolves.toMatchObject({ comment: "After" });

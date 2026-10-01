@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "../auth/auth.module";
+import { SessionAuthGuard } from "../auth";
 import { DatabaseModule } from "../database/database.module";
 import { CatPhotoUrlService } from "./cat-photo-url.service";
 import { CatPhotoCleanupService } from "./cat-photo-cleanup.service";
@@ -142,6 +143,7 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     DeleteCatPhotoHandler,
     AddCatDocumentHandler,
     DeleteCatDocumentHandler,
+    SessionAuthGuard,
   ],
 })
 export class CatsModule {}

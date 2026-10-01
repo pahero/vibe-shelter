@@ -7,7 +7,11 @@ export class AssignCatToFlightDto {
   @IsString()
   catId!: string;
 
-  toCommand(flightId: string, actorUserId: string, isTest: boolean): AssignCatToFlightCommand {
+  toCommand(
+    flightId: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): AssignCatToFlightCommand {
     const catId = this.catId?.trim();
     if (!catId) throw new BadRequestException("catId is required");
     return new AssignCatToFlightCommand(flightId, catId, actorUserId, isTest);
@@ -23,7 +27,17 @@ export class UpdateFlightCatAssignmentDto {
   @IsOptional()
   tracesDone?: boolean;
 
-  toCommand(assignmentId: string, actorUserId: string, isTest: boolean): UpdateFlightCatAssignmentCommand {
-    return new UpdateFlightCatAssignmentCommand(assignmentId, this.f2fDone, this.tracesDone, actorUserId, isTest);
+  toCommand(
+    assignmentId: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): UpdateFlightCatAssignmentCommand {
+    return new UpdateFlightCatAssignmentCommand(
+      assignmentId,
+      this.f2fDone,
+      this.tracesDone,
+      actorUserId,
+      isTest,
+    );
   }
 }

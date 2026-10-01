@@ -7,14 +7,14 @@ type CatHistoryActorDto = {
 type CatHistoryPhotoDto = {
   id: string;
   link: string | null;
-  status: 'ACTIVE' | 'DELETED';
+  status: "ACTIVE" | "DELETED";
 };
 
 type CatHistoryDocumentDto = {
   id: string;
   link: string | null;
   fileName: string;
-  status: 'ACTIVE' | 'DELETED';
+  status: "ACTIVE" | "DELETED";
 };
 
 export type CatHistoryEventDto = {
@@ -33,7 +33,13 @@ export type CatHistoryEventDto = {
   relatedUser: { id: string; displayName: string; isDeleted: boolean } | null;
   photo: CatHistoryPhotoDto | null;
   document: CatHistoryDocumentDto | null;
-  flight?: { id: string; flightNumber: string; airport: string; date: string; isDeleted: boolean } | null;
+  flight?: {
+    id: string;
+    flightNumber: string;
+    airport: string;
+    date: string;
+    isDeleted: boolean;
+  } | null;
 };
 
 export type CatHistoryResponseDto = {

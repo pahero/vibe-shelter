@@ -57,7 +57,8 @@ export const CAT_AUDIT_EVENT_TYPES = {
   noteCommentChanged: "note_comment_changed",
 } as const;
 
-export type CatAuditEventType = (typeof CAT_AUDIT_EVENT_TYPES)[keyof typeof CAT_AUDIT_EVENT_TYPES];
+export type CatAuditEventType =
+  (typeof CAT_AUDIT_EVENT_TYPES)[keyof typeof CAT_AUDIT_EVENT_TYPES];
 
 export const CAT_AUDIT_EDITABLE_FIELDS = [
   "name",
@@ -77,7 +78,10 @@ export const CAT_AUDIT_EDITABLE_FIELDS = [
 
 export type CatAuditEditableField = (typeof CAT_AUDIT_EDITABLE_FIELDS)[number];
 
-export const CAT_AUDIT_FIELD_EVENT_TYPES: Record<CatAuditEditableField, CatAuditEventType> = {
+export const CAT_AUDIT_FIELD_EVENT_TYPES: Record<
+  CatAuditEditableField,
+  CatAuditEventType
+> = {
   name: CAT_AUDIT_EVENT_TYPES.name,
   sex: CAT_AUDIT_EVENT_TYPES.sex,
   color: CAT_AUDIT_EVENT_TYPES.color,

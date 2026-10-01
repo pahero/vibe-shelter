@@ -74,12 +74,19 @@ describe("Cats endpoints", () => {
     expect(response.body.currentLocationName).toBe(location.name);
     expect(response.body.primaryPhotoUrl).toBeNull();
     expect(response.body.primaryPhotoKey).toBeUndefined();
-    expect(response.body).toMatchObject({ adopterName: "Taylor Adopter", adopterAddress: "123 Cat Street" });
-    const stored = await (prisma as any).cat.findUnique({ where: { id: response.body.id } });
+    expect(response.body).toMatchObject({
+      adopterName: "Taylor Adopter",
+      adopterAddress: "123 Cat Street",
+    });
+    const stored = await (prisma as any).cat.findUnique({
+      where: { id: response.body.id },
+    });
     expect(stored.createdByUserId).toBe(authUser.id);
     expect(response.body.isTest).toBe(false);
     expect(stored.isTest).toBe(false);
-    const history = await authAgent.get(`/api/cats/${response.body.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${response.body.id}/history`)
+      .expect(200);
     expect(history.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -105,8 +112,12 @@ describe("Cats endpoints", () => {
       .send({ name: unique("test-location"), ownerId: regularAuth.user.id })
       .expect(201);
 
-    const regularLocationDetails = await regularAuth.agent.get(`/api/locations/${regularLocation.body.id}`).expect(200);
-    const testLocationDetails = await testAuth.agent.get(`/api/locations/${testLocation.body.id}`).expect(200);
+    const regularLocationDetails = await regularAuth.agent
+      .get(`/api/locations/${regularLocation.body.id}`)
+      .expect(200);
+    const testLocationDetails = await testAuth.agent
+      .get(`/api/locations/${testLocation.body.id}`)
+      .expect(200);
     expect(regularLocationDetails.body.isTest).toBe(false);
     expect(testLocationDetails.body.isTest).toBe(true);
 
@@ -140,18 +151,18 @@ describe("Cats endpoints", () => {
       .get("/api/locations")
       .query({ ownerId: regularAuth.user.id })
       .expect(200);
-    expect(regularLocations.body.data.map((location: { id: string }) => location.id)).toContain(
-      regularLocation.body.id,
-    );
-    expect(regularLocations.body.data.map((location: { id: string }) => location.id)).not.toContain(
-      testLocation.body.id,
-    );
-    expect(testLocations.body.data.map((location: { id: string }) => location.id)).toContain(
-      testLocation.body.id,
-    );
-    expect(testLocations.body.data.map((location: { id: string }) => location.id)).not.toContain(
-      regularLocation.body.id,
-    );
+    expect(
+      regularLocations.body.data.map((location: { id: string }) => location.id),
+    ).toContain(regularLocation.body.id);
+    expect(
+      regularLocations.body.data.map((location: { id: string }) => location.id),
+    ).not.toContain(testLocation.body.id);
+    expect(
+      testLocations.body.data.map((location: { id: string }) => location.id),
+    ).toContain(testLocation.body.id);
+    expect(
+      testLocations.body.data.map((location: { id: string }) => location.id),
+    ).not.toContain(regularLocation.body.id);
 
     const regularCats = await regularAuth.agent
       .get("/api/cats")
@@ -161,19 +172,25 @@ describe("Cats endpoints", () => {
       .get("/api/cats")
       .query({ search: testCat.body.name })
       .expect(200);
-    expect(regularCats.body.data.map((cat: { id: string }) => cat.id)).toContain(
-      regularCat.body.id,
-    );
-    expect(regularCats.body.data.map((cat: { id: string }) => cat.id)).not.toContain(
+    expect(
+      regularCats.body.data.map((cat: { id: string }) => cat.id),
+    ).toContain(regularCat.body.id);
+    expect(
+      regularCats.body.data.map((cat: { id: string }) => cat.id),
+    ).not.toContain(testCat.body.id);
+    expect(testCats.body.data.map((cat: { id: string }) => cat.id)).toContain(
       testCat.body.id,
     );
-    expect(testCats.body.data.map((cat: { id: string }) => cat.id)).toContain(testCat.body.id);
-    expect(testCats.body.data.map((cat: { id: string }) => cat.id)).not.toContain(
-      regularCat.body.id,
-    );
+    expect(
+      testCats.body.data.map((cat: { id: string }) => cat.id),
+    ).not.toContain(regularCat.body.id);
 
-    await regularAuth.agent.get(`/api/locations/${testLocation.body.id}`).expect(404);
-    await testAuth.agent.get(`/api/cats/${regularCat.body.id}/card`).expect(404);
+    await regularAuth.agent
+      .get(`/api/locations/${testLocation.body.id}`)
+      .expect(404);
+    await testAuth.agent
+      .get(`/api/cats/${regularCat.body.id}/card`)
+      .expect(404);
     await regularAuth.agent
       .patch(`/api/cats/${regularCat.body.id}`)
       .send({ currentLocationId: testLocation.body.id })
@@ -242,21 +259,54 @@ describe("Cats endpoints", () => {
       })
       .expect(201);
 
-    expect(created.body).toMatchObject({ catId: cat.id, fileName: "medical record.pdf" });
+    expect(created.body).toMatchObject({
+      catId: cat.id,
+      fileName: "medical record.pdf",
+    });
     expect(created.body.url).toContain(`cats/${cat.id}/documents/`);
 
-    const documents = await authAgent.get(`/api/cats/${cat.id}/documents`).expect(200);
+    const documents = await authAgent
+      .get(`/api/cats/${cat.id}/documents`)
+      .expect(200);
     expect(documents.body).toHaveLength(1);
     expect(documents.body[0].id).toBe(created.body.id);
 
-    await authAgent.delete(`/api/cats/${cat.id}/documents/${created.body.id}`).expect(204);
-    expect((await authAgent.get(`/api/cats/${cat.id}/documents`).expect(200)).body).toEqual([]);
+    await authAgent
+      .delete(`/api/cats/${cat.id}/documents/${created.body.id}`)
+      .expect(204);
+    expect(
+      (await authAgent.get(`/api/cats/${cat.id}/documents`).expect(200)).body,
+    ).toEqual([]);
 
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
-    expect(history.body.data).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventType: "document_created", oldValue: null, newValue: null, document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
-      expect.objectContaining({ eventType: "document_deleted", oldValue: null, newValue: null, document: expect.objectContaining({ id: created.body.id, fileName: "medical record.pdf", link: expect.any(String), status: "DELETED" }) }),
-    ]));
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
+    expect(history.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "document_created",
+          oldValue: null,
+          newValue: null,
+          document: expect.objectContaining({
+            id: created.body.id,
+            fileName: "medical record.pdf",
+            link: expect.any(String),
+            status: "DELETED",
+          }),
+        }),
+        expect.objectContaining({
+          eventType: "document_deleted",
+          oldValue: null,
+          newValue: null,
+          document: expect.objectContaining({
+            id: created.body.id,
+            fileName: "medical record.pdf",
+            link: expect.any(String),
+            status: "DELETED",
+          }),
+        }),
+      ]),
+    );
   });
 
   it("GET /api/cats lists active cat cards with filters", async () => {
@@ -285,25 +335,52 @@ describe("Cats endpoints", () => {
     });
     await prisma.cat.update({
       where: { id: cat.id },
-      data: { adopterName: "Jordan Adopter", adopterAddress: "45 Travel Road", felvFivTestDone: true },
+      data: {
+        adopterName: "Jordan Adopter",
+        adopterAddress: "45 Travel Road",
+        felvFivTestDone: true,
+      },
     });
-    await authAgent.post(`/api/cats/${cat.id}/preventive-treatments`).send({
-      date: "2026-01-01", name: "First dose", type: "FIRST_VACCINE",
-    }).expect(201);
-    await authAgent.post(`/api/cats/${cat.id}/preventive-treatments`).send({
-      date: "2026-02-01", name: "Second dose", type: "SECOND_VACCINE",
-    }).expect(201);
-    await authAgent.post(`/api/cats/${cat.id}/preventive-treatments`).send({
-      date: "2026-03-01", name: "Rabies", type: "RABIES",
-    }).expect(201);
+    await authAgent
+      .post(`/api/cats/${cat.id}/preventive-treatments`)
+      .send({
+        date: "2026-01-01",
+        name: "First dose",
+        type: "FIRST_VACCINE",
+      })
+      .expect(201);
+    await authAgent
+      .post(`/api/cats/${cat.id}/preventive-treatments`)
+      .send({
+        date: "2026-02-01",
+        name: "Second dose",
+        type: "SECOND_VACCINE",
+      })
+      .expect(201);
+    await authAgent
+      .post(`/api/cats/${cat.id}/preventive-treatments`)
+      .send({
+        date: "2026-03-01",
+        name: "Rabies",
+        type: "RABIES",
+      })
+      .expect(201);
 
-    const treatments = await authAgent.get(`/api/cats/${cat.id}/preventive-treatments`).expect(200);
-    expect(treatments.body.map((treatment: { type: string }) => treatment.type)).toEqual(
+    const treatments = await authAgent
+      .get(`/api/cats/${cat.id}/preventive-treatments`)
+      .expect(200);
+    expect(
+      treatments.body.map((treatment: { type: string }) => treatment.type),
+    ).toEqual(
       expect.arrayContaining(["FIRST_VACCINE", "SECOND_VACCINE", "RABIES"]),
     );
 
-    const response = await authAgent.get("/api/cats/flight-candidates").expect(200);
-    const candidate = response.body.find((item: { id: string }) => item.id === cat.id);
+    const response = await authAgent
+      .get("/api/cats/flight-candidates")
+      .expect(200);
+    const candidate = response.body.find(
+      (item: { id: string }) => item.id === cat.id,
+    );
 
     expect(candidate).toMatchObject({
       id: cat.id,
@@ -324,7 +401,9 @@ describe("Cats endpoints", () => {
   it("GET /api/cats/:id/card returns one cat card", async () => {
     const cat = await createCat(prisma, { name: unique("card") });
 
-    const response = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    const response = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
 
     expect(response.body.id).toBe(cat.id);
     expect(response.body.primaryPhotoUrl).toBeNull();
@@ -342,7 +421,9 @@ describe("Cats endpoints", () => {
     expect(response.body.name).toBe("Updated cat");
     expect(response.body.felvFivTestDone).toBe(true);
 
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(history.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -357,13 +438,19 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
-    expect(history.body.data[0].actor).toMatchObject({ id: authUser.id, email: authUser.email });
+    expect(history.body.data[0].actor).toMatchObject({
+      id: authUser.id,
+      email: authUser.email,
+    });
   });
 
   it("PATCH /api/cats/:id rejects a non-boolean FeLV/FIV test status", async () => {
     const cat = await createCat(prisma, { name: unique("invalid-felv-fiv") });
 
-    await authAgent.patch(`/api/cats/${cat.id}`).send({ felvFivTestDone: "true" }).expect(400);
+    await authAgent
+      .patch(`/api/cats/${cat.id}`)
+      .send({ felvFivTestDone: "true" })
+      .expect(400);
   });
 
   it("preserves creator attribution when another user updates a cat", async () => {
@@ -384,7 +471,9 @@ describe("Cats endpoints", () => {
       .send({ name: "Updated by second user" })
       .expect(200);
 
-    const stored = await (prisma as any).cat.findUnique({ where: { id: created.body.id } });
+    const stored = await (prisma as any).cat.findUnique({
+      where: { id: created.body.id },
+    });
     expect(stored.createdByUserId).toBe(authUser.id);
   });
 
@@ -392,7 +481,10 @@ describe("Cats endpoints", () => {
     const cat = await createCat(prisma, { name: unique("history-order") });
     const otherAuth = await createAuthenticatedAgent(app, prisma);
 
-    await authAgent.patch(`/api/cats/${cat.id}`).send({ name: "First history name" }).expect(200);
+    await authAgent
+      .patch(`/api/cats/${cat.id}`)
+      .send({ name: "First history name" })
+      .expect(200);
     await otherAuth.agent
       .patch(`/api/cats/${cat.id}`)
       .send({ name: "Second history name" })
@@ -402,7 +494,9 @@ describe("Cats endpoints", () => {
       .send({ name: "Second history name" })
       .expect(200);
 
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(history.body.total).toBe(2);
     expect(history.body.data.map((event: any) => event.newValue)).toEqual([
       "Second history name",
@@ -415,35 +509,55 @@ describe("Cats endpoints", () => {
     const cat = await createCat(prisma, { name: unique("audit-all") });
     const otherAuth = await createAuthenticatedAgent(app, prisma);
 
-    await authAgent.patch(`/api/cats/${cat.id}`).send({ name: "All history name" }).expect(200);
+    await authAgent
+      .patch(`/api/cats/${cat.id}`)
+      .send({ name: "All history name" })
+      .expect(200);
     await otherAuth.agent
       .patch(`/api/cats/${cat.id}`)
       .send({ name: "Updated by other user" })
       .expect(200);
 
-    const all = await authAgent.get("/api/cats/history").query({ limit: 50 }).expect(200);
+    const all = await authAgent
+      .get("/api/cats/history")
+      .query({ limit: 50 })
+      .expect(200);
     expect(all.body.total).toBeGreaterThanOrEqual(2);
-    const latestCatEvent = all.body.data.find((event: { catId: string | null; catName: string | null; actor: { id: string } }) => event.catId === cat.id);
+    const latestCatEvent = all.body.data.find(
+      (event: {
+        catId: string | null;
+        catName: string | null;
+        actor: { id: string };
+      }) => event.catId === cat.id,
+    );
     expect(latestCatEvent).toMatchObject({
       catId: cat.id,
       actor: expect.objectContaining({ id: otherAuth.user.id }),
     });
     expect(latestCatEvent.catName).toBe("Updated by other user");
-    expect(all.body.data.some((event: any) => event.eventType === "name_changed")).toBe(true);
+    expect(
+      all.body.data.some((event: any) => event.eventType === "name_changed"),
+    ).toBe(true);
 
     const byCat = await authAgent
       .get("/api/cats/history")
       .query({ catId: cat.id, limit: 50 })
       .expect(200);
     expect(byCat.body.data.length).toBeGreaterThanOrEqual(2);
-    expect(byCat.body.data.every((event: any) => event.catId === cat.id)).toBe(true);
+    expect(byCat.body.data.every((event: any) => event.catId === cat.id)).toBe(
+      true,
+    );
 
     const byUser = await authAgent
       .get("/api/cats/history")
       .query({ user: otherAuth.user.email, limit: 50 })
       .expect(200);
     expect(byUser.body.data.length).toBeGreaterThanOrEqual(1);
-    expect(byUser.body.data.every((event: any) => event.actor.id === otherAuth.user.id)).toBe(true);
+    expect(
+      byUser.body.data.every(
+        (event: any) => event.actor.id === otherAuth.user.id,
+      ),
+    ).toBe(true);
 
     const today = new Date().toISOString().slice(0, 10);
     const byDate = await authAgent
@@ -463,11 +577,17 @@ describe("Cats endpoints", () => {
         contentType: "image/jpeg",
       })
       .expect(201);
-    await authAgent.delete(`/api/cats/${cat.id}/photos/${created.body.id}`).expect(200);
+    await authAgent
+      .delete(`/api/cats/${cat.id}/photos/${created.body.id}`)
+      .expect(200);
 
-    const photos = await authAgent.get(`/api/cats/${cat.id}/photos`).expect(200);
+    const photos = await authAgent
+      .get(`/api/cats/${cat.id}/photos`)
+      .expect(200);
     expect(photos.body).toHaveLength(0);
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(history.body.data.map((event: any) => event.eventType)).toEqual([
       "photo_deleted",
       "photo_created",
@@ -510,9 +630,13 @@ describe("Cats endpoints", () => {
     expect(list.body).toHaveLength(1);
     expect(list.body[0].id).toBe(created.body.id);
 
-    await authAgent.delete(`/api/cats/${cat.id}/weights/${created.body.id}`).expect(204);
+    await authAgent
+      .delete(`/api/cats/${cat.id}/weights/${created.body.id}`)
+      .expect(204);
 
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(history.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -530,7 +654,9 @@ describe("Cats endpoints", () => {
       ]),
     );
 
-    await authAgent.delete(`/api/cats/${cat.id}/weights/${created.body.id}`).expect(404);
+    await authAgent
+      .delete(`/api/cats/${cat.id}/weights/${created.body.id}`)
+      .expect(404);
   });
 
   it("manages cat tags and filters cat cards by tag", async () => {
@@ -592,20 +718,35 @@ describe("Cats endpoints", () => {
       where: { tagId: createdTag.body.id },
       orderBy: { createdAt: "asc" },
     });
-    expect(tagAuditEvents.map((event: any) => event.action)).toContain("create");
-    expect(tagAuditEvents.map((event: any) => event.action)).toContain("color_changed");
-    expect(tagAuditEvents.every((event: any) => event.actorUserId === authUser.id)).toBe(true);
+    expect(tagAuditEvents.map((event: any) => event.action)).toContain(
+      "create",
+    );
+    expect(tagAuditEvents.map((event: any) => event.action)).toContain(
+      "color_changed",
+    );
+    expect(
+      tagAuditEvents.every((event: any) => event.actorUserId === authUser.id),
+    ).toBe(true);
 
-    const list = await authAgent.get("/api/cats").query({ tagId: createdTag.body.id }).expect(200);
+    const list = await authAgent
+      .get("/api/cats")
+      .query({ tagId: createdTag.body.id })
+      .expect(200);
 
-    expect(list.body.data.map((item: { id: string }) => item.id)).toEqual([cat.id]);
+    expect(list.body.data.map((item: { id: string }) => item.id)).toEqual([
+      cat.id,
+    ]);
 
     await authAgent.delete(`/api/cats/tags/${createdTag.body.id}`).expect(204);
 
-    const catAfterTagDeletion = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    const catAfterTagDeletion = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
     expect(catAfterTagDeletion.body.tags).toEqual([]);
 
-    const catHistory = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const catHistory = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(catHistory.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -647,9 +788,9 @@ describe("Cats endpoints", () => {
     await authAgent.get(`/api/locations/${created.body.id}`).expect(404);
 
     const locations = await authAgent.get("/api/locations").expect(200);
-    expect(locations.body.data.map((location: { id: string }) => location.id)).not.toContain(
-      created.body.id,
-    );
+    expect(
+      locations.body.data.map((location: { id: string }) => location.id),
+    ).not.toContain(created.body.id);
 
     const audit = await authAgent
       .get("/api/cats/history")
@@ -669,8 +810,14 @@ describe("Cats endpoints", () => {
         }),
         expect.objectContaining({
           eventType: "location_owner_changed",
-          location: expect.objectContaining({ id: created.body.id, name: expect.any(String) }),
-          relatedUser: expect.objectContaining({ id: authUser.id, isDeleted: false }),
+          location: expect.objectContaining({
+            id: created.body.id,
+            name: expect.any(String),
+          }),
+          relatedUser: expect.objectContaining({
+            id: authUser.id,
+            isDeleted: false,
+          }),
         }),
         expect.objectContaining({
           eventType: "location_delete",
@@ -686,7 +833,10 @@ describe("Cats endpoints", () => {
       .post("/api/locations")
       .send({ name: unique("occupied-location") })
       .expect(201);
-    await createCat(prisma, { name: unique("occupied-cat"), currentLocationId: location.body.id });
+    await createCat(prisma, {
+      name: unique("occupied-cat"),
+      currentLocationId: location.body.id,
+    });
 
     await authAgent.delete(`/api/locations/${location.body.id}`).expect(409);
     await authAgent.get(`/api/locations/${location.body.id}`).expect(200);
@@ -713,15 +863,22 @@ describe("Cats endpoints", () => {
       .expect(201);
     expect(archived.body).toEqual({ id: cat.id });
 
-    const archivedCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    const archivedCard = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
     expect(archivedCard.body).toMatchObject({
       archivationReasonId: updatedReason.body.id,
       archivationReasonName: updatedReasonName,
       archivedAt: expect.any(String),
     });
 
-    const archivedSearch = await authAgent.get("/api/cats").query({ archived: true }).expect(200);
-    expect(archivedSearch.body.data.map((item: { id: string }) => item.id)).toContain(cat.id);
+    const archivedSearch = await authAgent
+      .get("/api/cats")
+      .query({ archived: true })
+      .expect(200);
+    expect(
+      archivedSearch.body.data.map((item: { id: string }) => item.id),
+    ).toContain(cat.id);
 
     const reasonEvents = await prisma.catAuditEvent.findMany({
       where: { archivationReasonId: updatedReason.body.id },
@@ -731,15 +888,21 @@ describe("Cats endpoints", () => {
       "archivation_reason_create",
       "archivation_reason_update",
     ]);
-    const dearchived = await authAgent.post(`/api/cats/${cat.id}/dearchive`).expect(201);
+    const dearchived = await authAgent
+      .post(`/api/cats/${cat.id}/dearchive`)
+      .expect(201);
     expect(dearchived.body).toEqual({ id: cat.id });
-    const restoredCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    const restoredCard = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
     expect(restoredCard.body).toMatchObject({
       archivedAt: null,
       archivationReasonId: null,
       archivationReasonName: null,
     });
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(history.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -756,17 +919,23 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
-    await authAgent.delete(`/api/cats/archivation-reasons/${updatedReason.body.id}`).expect(204);
+    await authAgent
+      .delete(`/api/cats/archivation-reasons/${updatedReason.body.id}`)
+      .expect(204);
 
     const unusedReason = await authAgent
       .post("/api/cats/archivation-reasons")
       .send({ name: unique("unused-reason") })
       .expect(201);
-    await authAgent.delete(`/api/cats/archivation-reasons/${unusedReason.body.id}`).expect(204);
-    const reasons = await authAgent.get("/api/cats/archivation-reasons").expect(200);
-    expect(reasons.body.map((reason: { id: string }) => reason.id)).not.toContain(
-      unusedReason.body.id,
-    );
+    await authAgent
+      .delete(`/api/cats/archivation-reasons/${unusedReason.body.id}`)
+      .expect(204);
+    const reasons = await authAgent
+      .get("/api/cats/archivation-reasons")
+      .expect(200);
+    expect(
+      reasons.body.map((reason: { id: string }) => reason.id),
+    ).not.toContain(unusedReason.body.id);
 
     const globalAudit = await authAgent
       .get("/api/cats/history")
@@ -810,10 +979,16 @@ describe("Cats endpoints", () => {
       .send({ replacementReasonId: replacement.body.id })
       .expect(204);
 
-    const updatedCat = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    const updatedCat = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
     expect(updatedCat.body.archivationReasonId).toBe(replacement.body.id);
-    const reasons = await authAgent.get("/api/cats/archivation-reasons").expect(200);
-    expect(reasons.body.map((reason: { id: string }) => reason.id)).not.toContain(source.body.id);
+    const reasons = await authAgent
+      .get("/api/cats/archivation-reasons")
+      .expect(200);
+    expect(
+      reasons.body.map((reason: { id: string }) => reason.id),
+    ).not.toContain(source.body.id);
   });
 
   it("returns validation and not found errors", async () => {
@@ -867,7 +1042,9 @@ describe("Cats endpoints", () => {
       .post(`/api/cats/tasks/${created.body.id}/complete`)
       .expect(201);
     expect(completed.body).toEqual({ id: created.body.id });
-    const completedTasks = await authAgent.get(`/api/cats/${cat.id}/tasks`).expect(200);
+    const completedTasks = await authAgent
+      .get(`/api/cats/${cat.id}/tasks`)
+      .expect(200);
     expect(completedTasks.body).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -877,16 +1054,26 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
-    const beforeDelete = await prisma.catTask.findUniqueOrThrow({ where: { id: created.body.id } });
+    const beforeDelete = await prisma.catTask.findUniqueOrThrow({
+      where: { id: created.body.id },
+    });
     await authAgent.delete(`/api/cats/tasks/${created.body.id}`).expect(204);
-    const deleted = await prisma.catTask.findUniqueOrThrow({ where: { id: created.body.id } });
+    const deleted = await prisma.catTask.findUniqueOrThrow({
+      where: { id: created.body.id },
+    });
     expect(deleted.deletedAt).toEqual(expect.any(Date));
     expect(deleted.concurrencyToken).not.toBe(beforeDelete.concurrencyToken);
-    const tasksAfterDeletion = await authAgent.get(`/api/cats/${cat.id}/tasks`).expect(200);
+    const tasksAfterDeletion = await authAgent
+      .get(`/api/cats/${cat.id}/tasks`)
+      .expect(200);
     expect(tasksAfterDeletion.body).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: created.body.id })]),
+      expect.arrayContaining([
+        expect.objectContaining({ id: created.body.id }),
+      ]),
     );
-    const history = await authAgent.get(`/api/cats/${cat.id}/history`).expect(200);
+    const history = await authAgent
+      .get(`/api/cats/${cat.id}/history`)
+      .expect(200);
     expect(history.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -922,7 +1109,11 @@ describe("Cats endpoints", () => {
       .expect(201);
     const notifications = moduleRef.get(SendDueTaskNotificationsHandler);
     await notifications.handle(new Date(dueDate.getTime() - 1));
-    expect(await prisma.taskNotification.count({ where: { taskId: created.body.id } })).toBe(0);
+    expect(
+      await prisma.taskNotification.count({
+        where: { taskId: created.body.id },
+      }),
+    ).toBe(0);
     await notifications.handle(dueDate);
     expect(
       await prisma.taskNotification.count({
@@ -935,7 +1126,11 @@ describe("Cats endpoints", () => {
       .expect(200);
     expect(response.body).toMatchObject({
       data: expect.arrayContaining([
-        expect.objectContaining({ taskId: created.body.id, catId: cat.id, comment: "Check wound" }),
+        expect.objectContaining({
+          taskId: created.body.id,
+          catId: cat.id,
+          comment: "Check wound",
+        }),
       ]),
       skip: 0,
       limit: 10,
@@ -982,7 +1177,12 @@ async function createLocation(prisma: PrismaClient, prefix: string) {
 
 async function createCat(
   prisma: PrismaClient,
-  data: { name: string; currentLocationId?: string; microchipNumber?: string; passportNumber?: string },
+  data: {
+    name: string;
+    currentLocationId?: string;
+    microchipNumber?: string;
+    passportNumber?: string;
+  },
 ) {
   return prisma.cat.create({
     data: {

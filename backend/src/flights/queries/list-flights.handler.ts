@@ -15,7 +15,10 @@ export type FlightListItem = {
 export class ListFlightsHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(isTest: boolean, includeDeleted: boolean): Promise<FlightListItem[]> {
+  async handle(
+    isTest: boolean,
+    includeDeleted: boolean,
+  ): Promise<FlightListItem[]> {
     const flights = await this.prisma.flight.findMany({
       where: { isTest, deletedAt: includeDeleted ? { not: null } : null },
       select: {

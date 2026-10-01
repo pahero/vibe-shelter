@@ -10,21 +10,32 @@ import {
   HttpStatus,
   UnauthorizedException,
   BadRequestException,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { Response, Request } from 'express';
-import { SessionAuthGuard } from './guards/session-auth.guard';
-import { CurrentUser } from './decorators/current-user.decorator';
-import { ConfigService } from '@nestjs/config';
-import { AuthMeDto, ChangePasswordDto, PasswordLoginDto, ReplaceTemporaryPasswordDto } from './dto';
-import { CreateSessionHandler } from './commands/create-session.handler';
-import { ValidatePasswordCredentialsHandler } from './queries/validate-password-credentials.handler';
-import { ChangePasswordHandler } from './commands/change-password.handler';
-import { ReplaceTemporaryPasswordHandler } from './commands/replace-temporary-password.handler';
-import { RevokeSessionHandler } from './commands/revoke-session.handler';
+} from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+} from "@nestjs/swagger";
+import { Response, Request } from "express";
+import { SessionAuthGuard } from "./session-auth.guard";
+import { CurrentUser } from "./decorators/current-user.decorator";
+import { Public } from "./decorators/public.decorator";
+import { ConfigService } from "@nestjs/config";
+import {
+  AuthMeDto,
+  ChangePasswordDto,
+  PasswordLoginDto,
+  ReplaceTemporaryPasswordDto,
+} from "./dto";
+import { CreateSessionHandler } from "./commands/create-session.handler";
+import { ValidatePasswordCredentialsHandler } from "./queries/validate-password-credentials.handler";
+import { ChangePasswordHandler } from "./commands/change-password.handler";
+import { ReplaceTemporaryPasswordHandler } from "./commands/replace-temporary-password.handler";
+import { RevokeSessionHandler } from "./commands/revoke-session.handler";
 
-@Controller('auth')
+@Controller("auth")
 export class AuthController {
   constructor(
     private readonly createSessionHandler: CreateSessionHandler,
@@ -32,33 +43,37 @@ export class AuthController {
     private readonly changePasswordHandler: ChangePasswordHandler,
     private readonly replaceTemporaryPasswordHandler: ReplaceTemporaryPasswordHandler,
     private readonly revokeSessionHandler: RevokeSessionHandler,
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
   ) {}
 
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  @ApiOperation({ summary: 'Initiate Google OAuth authentication' })
-  @ApiResponse({ status: 302, description: 'Redirects to Google OAuth login' })
+  @Get("google")
+  @UseGuards(AuthGuard("google"))
+  @ApiOperation({ summary: "Initiate Google OAuth authentication" })
+  @ApiResponse({ status: 302, description: "Redirects to Google OAuth login" })
   async googleAuth() {
     // Passport redirects to Google
+    return undefined;
   }
 
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  @ApiOperation({ summary: 'Google OAuth callback endpoint' })
-  @ApiResponse({ status: 302, description: 'Redirects to dashboard or login with error' })
+  @Get("google/callback")
+  @UseGuards(AuthGuard("google"))
+  @ApiOperation({ summary: "Google OAuth callback endpoint" })
+  @ApiResponse({
+    status: 302,
+    description: "Redirects to dashboard or login with error",
+  })
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     try {
       const user = req.user;
 
       if (!user) {
-        throw new UnauthorizedException('Google authentication failed');
+        throw new UnauthorizedException("Google authentication failed");
       }
 
       // Create session
       const session = await this.createSessionHandler.handle(
         user.id,
-        req.get('user-agent'),
+        req.get("user-agent"),
         req.ip,
       );
 
@@ -67,24 +82,42 @@ export class AuthController {
       req.session.sessionId = session.id;
 
       // Redirect to frontend
-      const frontendUrl = this.configService.get<string>('frontendUrl');
+      const frontendUrl = this.configService.get<string>("frontendUrl");
       res.redirect(`${frontendUrl}/dashboard`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-      const frontendUrl = this.configService.get<string>('frontendUrl');
-      res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(errorMessage)}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Authentication failed";
+      const frontendUrl = this.configService.get<string>("frontendUrl");
+      res.redirect(
+        `${frontendUrl}/login?error=${encodeURIComponent(errorMessage)}`,
+      );
     }
   }
 
-  @Post('login')
-  @ApiOperation({ summary: 'Login with email and password' })
+  @Post("login")
+  @ApiOperation({ summary: "Login with email and password" })
   @ApiBody({ type: PasswordLoginDto })
-  @ApiResponse({ status: 201, description: 'Login successful', type: AuthMeDto })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async passwordLogin(@Body() body: PasswordLoginDto, @Req() req: Request): Promise<AuthMeDto> {
+  @ApiResponse({
+    status: 201,
+    description: "Login successful",
+    type: AuthMeDto,
+  })
+  @ApiResponse({ status: 401, description: "Invalid credentials" })
+  @Public()
+  async passwordLogin(
+    @Body() body: PasswordLoginDto,
+    @Req() req: Request,
+  ): Promise<AuthMeDto> {
     const command = body.toCommand();
-    const user = await this.validatePasswordCredentialsHandler.handle(command.email, command.password);
-    const session = await this.createSessionHandler.handle(user.id, req.get('user-agent'), req.ip);
+    const user = await this.validatePasswordCredentialsHandler.handle(
+      command.email,
+      command.password,
+    );
+    const session = await this.createSessionHandler.handle(
+      user.id,
+      req.get("user-agent"),
+      req.ip,
+    );
 
     req.session.userId = user.id;
     req.session.sessionId = session.id;
@@ -93,108 +126,121 @@ export class AuthController {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      role: user.role.toLowerCase() as 'admin' | 'staff',
+      role: user.role.toLowerCase() as "admin" | "staff",
       isTest: user.isTest,
       passwordChangeRequired: user.passwordChangeRequired,
     };
   }
 
-  @Get('me')
+  @Get("me")
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current authenticated user' })
-  @ApiResponse({ status: 200, description: 'Current user info', type: AuthMeDto })
-  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiOperation({ summary: "Get current authenticated user" })
+  @ApiResponse({
+    status: 200,
+    description: "Current user info",
+    type: AuthMeDto,
+  })
+  @ApiResponse({ status: 401, description: "Not authenticated" })
   async getCurrentUser(@CurrentUser() user: Express.User): Promise<AuthMeDto> {
     if (!user) {
-      throw new UnauthorizedException('User not authenticated');
+      throw new UnauthorizedException("User not authenticated");
     }
 
     return {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      role: user.role.toLowerCase() as 'admin' | 'staff',
+      role: user.role.toLowerCase() as "admin" | "staff",
       isTest: user.isTest,
       passwordChangeRequired: user.passwordChangeRequired,
     };
   }
 
-  @Post('change-password')
+  @Post("change-password")
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Change the current user password' })
-  @ApiResponse({ status: 201, description: 'Password changed' })
-  @ApiResponse({ status: 401, description: 'Current password is incorrect' })
-  async changePassword(@CurrentUser() user: Express.User, @Body() body: ChangePasswordDto): Promise<{ id: string }> {
+  @ApiOperation({ summary: "Change the current user password" })
+  @ApiResponse({ status: 201, description: "Password changed" })
+  @ApiResponse({ status: 401, description: "Current password is incorrect" })
+  async changePassword(
+    @CurrentUser() user: Express.User,
+    @Body() body: ChangePasswordDto,
+  ): Promise<{ id: string }> {
     const command = body.toCommand(user.id);
-    await this.changePasswordHandler.handle(command.userId, command.currentPassword, command.newPassword);
+    await this.changePasswordHandler.handle(
+      command.userId,
+      command.currentPassword,
+      command.newPassword,
+    );
     return { id: user.id };
   }
 
-  @Post('replace-temporary-password')
+  @Post("replace-temporary-password")
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Replace the current temporary password' })
-  async replaceTemporaryPassword(@CurrentUser() user: Express.User, @Body() body: ReplaceTemporaryPasswordDto): Promise<{ id: string }> {
+  @ApiOperation({ summary: "Replace the current temporary password" })
+  async replaceTemporaryPassword(
+    @CurrentUser() user: Express.User,
+    @Body() body: ReplaceTemporaryPasswordDto,
+  ): Promise<{ id: string }> {
     const command = body.toCommand(user.id);
-    await this.replaceTemporaryPasswordHandler.handle(command.userId, command.newPassword);
+    await this.replaceTemporaryPasswordHandler.handle(
+      command.userId,
+      command.newPassword,
+    );
     return { id: user.id };
   }
-  @Post('logout')
+  @Post("logout")
   @HttpCode(HttpStatus.OK)
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout current user' })
-  @ApiResponse({ status: 200, description: 'Logout successful' })
-  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiOperation({ summary: "Logout current user" })
+  @ApiResponse({ status: 200, description: "Logout successful" })
+  @ApiResponse({ status: 401, description: "Not authenticated" })
   async logout(@Req() req: Request, @Res() res: Response) {
-    try {
-      const sessionId = req.session.sessionId;
-
-      if (sessionId) {
-        await this.revokeSessionHandler.handle(sessionId);
-      }
-
-      req.session.destroy((err) => {
-        if (err) {
-          return res.status(500).json({ message: 'Logout failed' });
-        }
-        res.clearCookie('connect.sid'); // or your session cookie name
-        res.json({ message: 'Logged out successfully' });
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      res.status(500).json({ message: 'Logout failed', error: message });
-    }
+    const sessionId = req.session.sessionId;
+    await (sessionId
+      ? this.revokeSessionHandler.handle(sessionId)
+      : Promise.resolve());
+    req.session.destroy((error) => {
+      res.clearCookie("connect.sid");
+      res
+        .status(error ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.OK)
+        .json(
+          error
+            ? { message: "Logout failed" }
+            : { message: "Logged out successfully" },
+        );
+    });
   }
 
-  @Post('session/refresh')
+  @Post("session/refresh")
   @UseGuards(SessionAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Refresh current session' })
-  @ApiResponse({ status: 200, description: 'Session refreshed successfully' })
-  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiOperation({ summary: "Refresh current session" })
+  @ApiResponse({ status: 200, description: "Session refreshed successfully" })
+  @ApiResponse({ status: 401, description: "Not authenticated" })
   async refreshSession(@Req() req: Request) {
     try {
       const userId = req.session.userId;
 
       if (!userId) {
-        throw new UnauthorizedException('Invalid session');
+        throw new UnauthorizedException("Invalid session");
       }
 
       // Create new session
       const newSession = await this.createSessionHandler.handle(
         userId,
-        req.get('user-agent'),
+        req.get("user-agent"),
         req.ip,
       );
 
       req.session.sessionId = newSession.id;
 
-      return { message: 'Session refreshed' };
+      return { message: "Session refreshed" };
     } catch (error) {
-      throw new BadRequestException('Failed to refresh session');
+      throw new BadRequestException("Failed to refresh session");
     }
   }
 }

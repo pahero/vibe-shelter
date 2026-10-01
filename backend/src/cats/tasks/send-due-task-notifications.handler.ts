@@ -14,7 +14,11 @@ export class SendDueTaskNotificationsHandler {
         deletedAt: null,
         notificationSentAt: null,
       },
-      select: { id: true, concurrencyToken: true, receivers: { select: { userId: true } } },
+      select: {
+        id: true,
+        concurrencyToken: true,
+        receivers: { select: { userId: true } },
+      },
       take: 50,
     });
 
@@ -22,7 +26,9 @@ export class SendDueTaskNotificationsHandler {
       for (const task of tasks) {
         for (const receiver of task.receivers) {
           await transaction.taskNotification.upsert({
-            where: { taskId_userId: { taskId: task.id, userId: receiver.userId } },
+            where: {
+              taskId_userId: { taskId: task.id, userId: receiver.userId },
+            },
             create: { taskId: task.id, userId: receiver.userId },
             update: {},
           });
@@ -34,9 +40,13 @@ export class SendDueTaskNotificationsHandler {
             notificationSentAt: null,
             concurrencyToken: task.concurrencyToken,
           },
-          data: { notificationSentAt: now, concurrencyToken: crypto.randomUUID() },
+          data: {
+            notificationSentAt: now,
+            concurrencyToken: crypto.randomUUID(),
+          },
         });
-        if (updated.count !== 1) throw new Error("Task was removed while sending notifications");
+        if (updated.count !== 1)
+          throw new Error("Task was removed while sending notifications");
       }
     });
   }

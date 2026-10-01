@@ -1,7 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { runInNewTransaction } from '../../database/helpers';
-import { CAT_AUDIT_EVENT_TYPES } from '../cat-audit-event-types';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { runInNewTransaction } from "../../database/helpers";
+import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 
 export type ArchiveCatInput = {
   catId: string;
@@ -16,19 +20,20 @@ export type ArchiveCatResult = {
 
 @Injectable()
 export class ArchiveCatHandler {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async execute(input: ArchiveCatInput): Promise<ArchiveCatResult> {
     const cat = await this.prisma.cat.findFirst({
       where: { id: input.catId, isTest: input.currentUserIsTest },
     });
-    if (!cat) throw new NotFoundException('Cat not found');
-    if (cat.archivationReasonId) throw new ConflictException('Cat is already archived');
+    if (!cat) throw new NotFoundException("Cat not found");
+    if (cat.archivationReasonId)
+      throw new ConflictException("Cat is already archived");
 
-    const reason = await this.prisma.catArchivationReason.findFirst({ where: { id: input.reasonId, deletedAt: null } });
-    if (!reason) throw new NotFoundException('Archivation reason not found');
+    const reason = await this.prisma.catArchivationReason.findFirst({
+      where: { id: input.reasonId, deletedAt: null },
+    });
+    if (!reason) throw new NotFoundException("Archivation reason not found");
 
     await runInNewTransaction(this.prisma, async (transaction) => {
       await transaction.cat.update({

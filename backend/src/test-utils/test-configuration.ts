@@ -8,7 +8,7 @@ export function generateIntegrationTestConfig(
   s3BucketName: string,
 ): ConfigFactory {
   return () => ({
-    nodeEnv: 'development',
+    nodeEnv: "development",
     port: 4000,
     databaseUrl: databaseUrl,
     s3: {
@@ -17,14 +17,14 @@ export function generateIntegrationTestConfig(
       apiKey: s3ApiKey,
       secret: s3Secret,
     },
-    googleClientId: 'non-essential-for-tests',
-    googleClientSecret: 'non-essential-for-tests',
-    googleCallbackUrl: 'non-essential-for-tests',
-    sessionCookieName: 'shelter_session',
-    sessionSecret: 'session-secret-for-tests',
+    googleClientId: "non-essential-for-tests",
+    googleClientSecret: "non-essential-for-tests",
+    googleCallbackUrl: "non-essential-for-tests",
+    sessionCookieName: "shelter_session",
+    sessionSecret: "session-secret-for-tests",
     sessionTtlHours: 168,
     sessionTtlMs: 168 * 60 * 60 * 1000,
-    frontendUrl: 'non-essential-for-tests',
-    allowedGoogleDomain: 'non-essential-for-tests',
+    frontendUrl: "non-essential-for-tests",
+    allowedGoogleDomain: "non-essential-for-tests",
   });
 }

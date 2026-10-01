@@ -6,7 +6,11 @@ import { runInNewTransaction } from "../../database/helpers";
 export class RestoreFlightHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(flightId: string, actorUserId: string, isTest: boolean): Promise<{ id: string }> {
+  async handle(
+    flightId: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (transaction) => {
       const flight = await transaction.flight.findFirst({
         where: { id: flightId, isTest, deletedAt: { not: null } },
@@ -18,7 +22,11 @@ export class RestoreFlightHandler {
         data: { deletedAt: null, concurrencyToken: crypto.randomUUID() },
       });
       await transaction.flightAuditEvent.create({
-        data: { flightId: flight.id, actorUserId, eventType: "flight_restored" },
+        data: {
+          flightId: flight.id,
+          actorUserId,
+          eventType: "flight_restored",
+        },
       });
       return { id: flight.id };
     });

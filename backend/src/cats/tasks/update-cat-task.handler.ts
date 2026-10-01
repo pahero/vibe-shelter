@@ -27,7 +27,8 @@ export class UpdateCatTaskHandler {
       });
       if (!task) throw new NotFoundException("Task not found");
       const dueDateChanged =
-        payload.dueDate !== undefined && payload.dueDate.getTime() !== task.dueDate.getTime();
+        payload.dueDate !== undefined &&
+        payload.dueDate.getTime() !== task.dueDate.getTime();
 
       if (payload.receiverIds) {
         const receivers = await transaction.user.findMany({
@@ -35,7 +36,9 @@ export class UpdateCatTaskHandler {
           select: { id: true },
         });
         if (receivers.length !== payload.receiverIds.length) {
-          throw new NotFoundException("One or more active notification receivers were not found");
+          throw new NotFoundException(
+            "One or more active notification receivers were not found",
+          );
         }
       }
 
@@ -50,10 +53,14 @@ export class UpdateCatTaskHandler {
                 notificationSentAt: null,
                 receivers: {
                   deleteMany: {},
-                  createMany: { data: payload.receiverIds.map((userId) => ({ userId })) },
+                  createMany: {
+                    data: payload.receiverIds.map((userId) => ({ userId })),
+                  },
                 },
                 notifications: {
-                  deleteMany: dueDateChanged ? {} : { userId: { notIn: payload.receiverIds } },
+                  deleteMany: dueDateChanged
+                    ? {}
+                    : { userId: { notIn: payload.receiverIds } },
                 },
               }
             : dueDateChanged
@@ -89,7 +96,9 @@ export class UpdateCatTaskHandler {
             catId: task.catId,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.taskReceiversChanged,
-            oldValue: task.receivers.map((receiver) => receiver.userId).join(", "),
+            oldValue: task.receivers
+              .map((receiver) => receiver.userId)
+              .join(", "),
             newValue: payload.receiverIds.join(", "),
           },
         });

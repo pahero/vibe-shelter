@@ -21,7 +21,15 @@ export class GetFlightHandler {
             id: true,
             f2fDone: true,
             tracesDone: true,
-            cat: { select: { id: true, name: true, archivedAt: true, microchipNumber: true, passportNumber: true } },
+            cat: {
+              select: {
+                id: true,
+                name: true,
+                archivedAt: true,
+                microchipNumber: true,
+                passportNumber: true,
+              },
+            },
           },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         },

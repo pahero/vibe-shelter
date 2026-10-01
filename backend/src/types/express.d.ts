@@ -1,6 +1,6 @@
-import 'express-session';
+import "express-session";
 
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
     userId?: string;
     sessionId?: string;
@@ -13,10 +13,10 @@ declare global {
       id: string;
       email: string;
       fullName: string | null;
-      role: 'ADMIN' | 'STAFF';
+      role: "ADMIN" | "STAFF";
       isTest: boolean;
       passwordChangeRequired: boolean;
-      status?: 'ACTIVE' | 'INACTIVE';
+      status?: "ACTIVE" | "INACTIVE";
     }
   }
 }

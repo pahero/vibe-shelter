@@ -1,5 +1,36 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
-export type CatPreventiveTreatmentResponse = { id: string; date: string; name: string; type: string; createdAt: string; updatedAt: string };
+export type CatPreventiveTreatmentResponse = {
+  id: string;
+  date: string;
+  name: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+};
 @Injectable()
-export class ListCatPreventiveTreatmentsHandler { constructor(private readonly prisma: PrismaService) {} async handle(catId: string, isTest: boolean): Promise<CatPreventiveTreatmentResponse[]> { const cat = await this.prisma.cat.findFirst({ where: { id: catId, isTest }, select: { id: true } }); if (!cat) throw new NotFoundException("Cat not found"); const treatments = await this.prisma.catPreventiveTreatment.findMany({ where: { catId, deletedAt: null }, orderBy: [{ date: "desc" }, { createdAt: "desc" }] }); return treatments.map((treatment) => ({ id: treatment.id, date: treatment.date.toISOString().slice(0, 10), name: treatment.name, type: treatment.type, createdAt: treatment.createdAt.toISOString(), updatedAt: treatment.updatedAt.toISOString() })); } }
+export class ListCatPreventiveTreatmentsHandler {
+  constructor(private readonly prisma: PrismaService) {}
+  async handle(
+    catId: string,
+    isTest: boolean,
+  ): Promise<CatPreventiveTreatmentResponse[]> {
+    const cat = await this.prisma.cat.findFirst({
+      where: { id: catId, isTest },
+      select: { id: true },
+    });
+    if (!cat) throw new NotFoundException("Cat not found");
+    const treatments = await this.prisma.catPreventiveTreatment.findMany({
+      where: { catId, deletedAt: null },
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    });
+    return treatments.map((treatment) => ({
+      id: treatment.id,
+      date: treatment.date.toISOString().slice(0, 10),
+      name: treatment.name,
+      type: treatment.type,
+      createdAt: treatment.createdAt.toISOString(),
+      updatedAt: treatment.updatedAt.toISOString(),
+    }));
+  }
+}

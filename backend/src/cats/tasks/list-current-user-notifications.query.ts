@@ -13,7 +13,9 @@ export class ListCurrentUserNotificationsQuery {
         select: {
           id: true,
           createdAt: true,
-          task: { select: { id: true, catId: true, comment: true, dueDate: true } },
+          task: {
+            select: { id: true, catId: true, comment: true, dueDate: true },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip,

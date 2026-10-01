@@ -26,7 +26,15 @@ describe("Cat treatment endpoints", () => {
       imports: [
         AppModule,
         ConfigModule.forRoot({
-          load: [generateIntegrationTestConfig(databaseUrl, s3.endpoint, s3.accessKey, s3.secretAccessKey, getIntegrationTestS3Bucket())],
+          load: [
+            generateIntegrationTestConfig(
+              databaseUrl,
+              s3.endpoint,
+              s3.accessKey,
+              s3.secretAccessKey,
+              getIntegrationTestS3Bucket(),
+            ),
+          ],
           isGlobal: true,
         }),
       ],
@@ -45,16 +53,27 @@ describe("Cat treatment endpoints", () => {
   });
 
   it("creates, lists, updates, checks, and unchecks a treatment with audit history", async () => {
-    const cat = await prisma.cat.create({ data: { name: unique("treatment-cat") } });
+    const cat = await prisma.cat.create({
+      data: { name: unique("treatment-cat") },
+    });
     const created = await agent
       .post(`/api/cats/${cat.id}/treatments`)
-      .send({ shortName: "Antibiotic", instructions: "Give with food", startDate: "2026-09-01", endDate: "2026-09-03", dosesPerDay: 2 })
+      .send({
+        shortName: "Antibiotic",
+        instructions: "Give with food",
+        startDate: "2026-09-01",
+        endDate: "2026-09-03",
+        dosesPerDay: 2,
+      })
       .expect(201);
     expect(created.body).toEqual({ id: expect.any(String) });
 
     await agent
       .patch(`/api/cats/treatments/${created.body.id}`)
-      .send({ shortName: "Antibiotic updated", instructions: "Give after food" })
+      .send({
+        shortName: "Antibiotic updated",
+        instructions: "Give after food",
+      })
       .expect(200)
       .expect({ id: created.body.id });
 
@@ -64,7 +83,9 @@ describe("Cat treatment endpoints", () => {
       .expect(200)
       .expect({ id: created.body.id });
 
-    const listed = await agent.get(`/api/cats/${cat.id}/treatments`).expect(200);
+    const listed = await agent
+      .get(`/api/cats/${cat.id}/treatments`)
+      .expect(200);
     expect(listed.body).toEqual([
       expect.objectContaining({
         id: created.body.id,
@@ -73,7 +94,13 @@ describe("Cat treatment endpoints", () => {
         startDate: "2026-09-01",
         endDate: "2026-09-03",
         dosesPerDay: 2,
-        administrations: [{ date: "2026-09-01", doseNumber: 2, checkedBy: { id: userId, fullName: "Treatment Integration User" } }],
+        administrations: [
+          {
+            date: "2026-09-01",
+            doseNumber: 2,
+            checkedBy: { id: userId, fullName: "Treatment Integration User" },
+          },
+        ],
       }),
     ]);
 
@@ -83,18 +110,48 @@ describe("Cat treatment endpoints", () => {
       .expect(200)
       .expect({ id: created.body.id });
 
-    await expect(prisma.catTreatmentAdministration.count({ where: { treatmentId: created.body.id } })).resolves.toBe(0);
+    await expect(
+      prisma.catTreatmentAdministration.count({
+        where: { treatmentId: created.body.id },
+      }),
+    ).resolves.toBe(0);
     await agent.delete(`/api/cats/treatments/${created.body.id}`).expect(204);
-    await expect(prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } })).resolves.toMatchObject({ deletedAt: expect.any(Date) });
+    await expect(
+      prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } }),
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date) });
     const history = await agent.get(`/api/cats/${cat.id}/history`).expect(200);
-    expect(history.body.data).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventType: "treatment_created", actor: expect.objectContaining({ id: userId }), oldValue: null, newValue: null }),
-      expect.objectContaining({ eventType: "treatment_short_name_changed", actor: expect.objectContaining({ id: userId }) }),
-      expect.objectContaining({ eventType: "treatment_instructions_changed", actor: expect.objectContaining({ id: userId }) }),
-      expect.objectContaining({ eventType: "treatment_administration_checked", actor: expect.objectContaining({ id: userId }) }),
-      expect.objectContaining({ eventType: "treatment_administration_unchecked", actor: expect.objectContaining({ id: userId }) }),
-      expect.objectContaining({ eventType: "treatment_deleted", actor: expect.objectContaining({ id: userId }), oldValue: null, newValue: null }),
-    ]));
+    expect(history.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "treatment_created",
+          actor: expect.objectContaining({ id: userId }),
+          oldValue: null,
+          newValue: null,
+        }),
+        expect.objectContaining({
+          eventType: "treatment_short_name_changed",
+          actor: expect.objectContaining({ id: userId }),
+        }),
+        expect.objectContaining({
+          eventType: "treatment_instructions_changed",
+          actor: expect.objectContaining({ id: userId }),
+        }),
+        expect.objectContaining({
+          eventType: "treatment_administration_checked",
+          actor: expect.objectContaining({ id: userId }),
+        }),
+        expect.objectContaining({
+          eventType: "treatment_administration_unchecked",
+          actor: expect.objectContaining({ id: userId }),
+        }),
+        expect.objectContaining({
+          eventType: "treatment_deleted",
+          actor: expect.objectContaining({ id: userId }),
+          oldValue: null,
+          newValue: null,
+        }),
+      ]),
+    );
   });
 });
 
@@ -102,14 +159,26 @@ function unique(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-async function createAuthenticatedAgent(app: INestApplication, prisma: PrismaClient): Promise<{ agent: ReturnType<typeof request.agent>; userId: string }> {
+async function createAuthenticatedAgent(
+  app: INestApplication,
+  prisma: PrismaClient,
+): Promise<{ agent: ReturnType<typeof request.agent>; userId: string }> {
   const email = `${unique("treatment-auth")}@example.com`;
   const password = "treatment-integration-password";
   await prisma.user.create({
-    data: { email, fullName: "Treatment Integration User", role: "STAFF", status: "ACTIVE", passwordHash: await bcrypt.hash(password, 10) },
+    data: {
+      email,
+      fullName: "Treatment Integration User",
+      role: "STAFF",
+      status: "ACTIVE",
+      passwordHash: await bcrypt.hash(password, 10),
+    },
   });
   const agent = request.agent(app.getHttpServer());
   await agent.post("/auth/login").send({ email, password }).expect(201);
-  const user = await prisma.user.findUniqueOrThrow({ where: { email }, select: { id: true } });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { email },
+    select: { id: true },
+  });
   return { agent, userId: user.id };
 }

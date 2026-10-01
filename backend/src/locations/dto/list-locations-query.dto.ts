@@ -6,7 +6,12 @@ export type ListLocationsQuery = {
 };
 
 export class ListLocationsQueryDto {
-  toQuery(input: { ownerId?: string; status?: string; skip?: string; limit?: string }): ListLocationsQuery {
+  toQuery(input: {
+    ownerId?: string;
+    status?: string;
+    skip?: string;
+    limit?: string;
+  }): ListLocationsQuery {
     return {
       ownerId: input.ownerId,
       status: input.status,

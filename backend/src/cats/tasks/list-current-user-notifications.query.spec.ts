@@ -8,15 +8,27 @@ describe("ListCurrentUserNotificationsQuery", () => {
       const user = await transaction.user.create({
         data: { email: `${Date.now()}-user@example.com` },
       });
-      const cat = await transaction.cat.create({ data: { name: `Cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({
+        data: { name: `Cat ${Date.now()}` },
+      });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Medication", dueDate: new Date() },
       });
-      await transaction.taskNotification.create({ data: { taskId: task.id, userId: user.id } });
-      const query = new ListCurrentUserNotificationsQuery(transaction as PrismaService);
+      await transaction.taskNotification.create({
+        data: { taskId: task.id, userId: user.id },
+      });
+      const query = new ListCurrentUserNotificationsQuery(
+        transaction as PrismaService,
+      );
 
       await expect(query.handle(user.id, false, 0, 10)).resolves.toEqual({
-        data: [expect.objectContaining({ taskId: task.id, catId: cat.id, comment: "Medication" })],
+        data: [
+          expect.objectContaining({
+            taskId: task.id,
+            catId: cat.id,
+            comment: "Medication",
+          }),
+        ],
         total: 1,
         skip: 0,
         limit: 10,
@@ -35,8 +47,12 @@ describe("ListCurrentUserNotificationsQuery", () => {
       const task = await transaction.catTask.create({
         data: { catId: testCat.id, comment: "Test", dueDate: new Date() },
       });
-      await transaction.taskNotification.create({ data: { taskId: task.id, userId: user.id } });
-      const query = new ListCurrentUserNotificationsQuery(transaction as PrismaService);
+      await transaction.taskNotification.create({
+        data: { taskId: task.id, userId: user.id },
+      });
+      const query = new ListCurrentUserNotificationsQuery(
+        transaction as PrismaService,
+      );
 
       await expect(query.handle(user.id, false, 0, 10)).resolves.toEqual({
         data: [],
