@@ -12,7 +12,6 @@ import { ChangePasswordHandler } from './commands/change-password.handler';
 import { ReplaceTemporaryPasswordHandler } from './commands/replace-temporary-password.handler';
 import { CreateSessionHandler } from './commands/create-session.handler';
 import { RevokeSessionHandler } from './commands/revoke-session.handler';
-import { CleanupExpiredSessionsHandler } from './commands/cleanup-expired-sessions.handler';
 
 @Module({
   imports: [PassportModule, DatabaseModule],
@@ -28,7 +27,6 @@ import { CleanupExpiredSessionsHandler } from './commands/cleanup-expired-sessio
     ReplaceTemporaryPasswordHandler,
     CreateSessionHandler,
     RevokeSessionHandler,
-    CleanupExpiredSessionsHandler,
   ],
   exports: [SessionAuthGuard, AdminRoleGuard, ValidateSessionHandler],
 })

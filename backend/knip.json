@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "jest": false,
+  "project": [
+    "src/**/*.ts",
+    "prisma/**/*.ts",
+    "prisma/**/*.prisma",
+    "!src/**/*.spec.ts",
+    "!src/test/**",
+    "!src/test-utils/**",
+    "!src/flights/flight-test-fixtures.ts"
+  ],
+  "ignoreDependencies": [
+    "@nestjs/testing",
+    "@testcontainers/postgresql",
+    "@types/supertest",
+    "supertest",
+    "testcontainers",
+    "ts-jest"
+  ]
+}

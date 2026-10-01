@@ -3,9 +3,6 @@ import { ensureTestDatabaseEnv, getGarageTestConnection, getUnitTestDatabaseUrl 
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { CreateBucketCommand, DeleteBucketCommand, DeleteObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
-import { Test } from '@nestjs/testing';
-import { AppModule } from '@/app.module';
-import { setupApp } from '@/app.setup';
 
 export async function startTestDatabase(): Promise<PrismaService> {
   ensureTestDatabaseEnv();
@@ -38,15 +35,6 @@ export function getS3Client() {
       secretAccessKey: connection.secretAccessKey,
     },
   });
-}
-
-export async function getTestApplication() {
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-  const app = moduleRef.createNestApplication();
-  setupApp(app);
-  return app;
 }
 
 export async function createBucket(prefix: string, s3Client: S3Client): Promise<string> {

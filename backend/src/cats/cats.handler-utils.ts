@@ -5,7 +5,7 @@ import { CAT_AUDIT_EDITABLE_FIELDS, CAT_AUDIT_FIELD_EVENT_TYPES } from './cat-au
 import { formatCatAuditValue } from './cat-audit-values';
 import { CatWithLocation } from './cats.types';
 
-export const VALID_TAG_COLORS = [
+const VALID_TAG_COLORS = [
   '#ffb38a', '#f5a3ad', '#ffd166', '#9ee6a8', '#8ecaff', '#b8a7ff', '#eda6f0',
   '#95d8c8', '#ffd6a5', '#f7e36d', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff',
   '#ffc6ff', '#e7c6ff', '#cdeac0', '#f2a7b7', '#bde0fe', '#d8b996',
@@ -55,7 +55,7 @@ export function validateCatUpdate(data: UpdateCatCommand): void {
   if (data.intakeDate instanceof Date && Number.isNaN(data.intakeDate.getTime())) throw new BadRequestException('intakeDate must be a valid date');
 }
 
-export function validateWeight(value: number): void {
+function validateWeight(value: number): void {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) throw new BadRequestException('weightKg must be a positive number');
 }
 

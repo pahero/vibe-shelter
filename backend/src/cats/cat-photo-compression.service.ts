@@ -4,7 +4,7 @@ import type { PrimaryPhotoUpload } from './cats.types';
 const MAX_PHOTO_DIMENSION = 1920;
 const PREVIEW_PHOTO_DIMENSION = 640;
 
-export type CompressedCatPhoto = Required<Pick<PrimaryPhotoUpload, 'buffer' | 'mimetype' | 'originalname'>>;
+type CompressedCatPhoto = Required<Pick<PrimaryPhotoUpload, 'buffer' | 'mimetype' | 'originalname'>>;
 export type CompressedCatPhotoVariants = { full: CompressedCatPhoto; preview: CompressedCatPhoto };
 
 export class CatPhotoCompressionService {

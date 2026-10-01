@@ -1,16 +1,16 @@
-export type CatHistoryActorDto = {
+type CatHistoryActorDto = {
   id: string;
   displayName: string;
   email: string;
 };
 
-export type CatHistoryPhotoDto = {
+type CatHistoryPhotoDto = {
   id: string;
   link: string | null;
   status: 'ACTIVE' | 'DELETED';
 };
 
-export type CatHistoryDocumentDto = {
+type CatHistoryDocumentDto = {
   id: string;
   link: string | null;
   fileName: string;
