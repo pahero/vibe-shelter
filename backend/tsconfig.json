@@ -10,7 +10,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["jest", "node"],
+    "types": ["vitest/globals", "node"],
     "strict": true,
     "preserveConstEnums": true,
     "esModuleInterop": true,

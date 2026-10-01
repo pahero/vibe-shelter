@@ -46,7 +46,7 @@ describe("CatPhotoCleanupService", () => {
   it("deletes unreferenced S3 cat photos and keeps referenced photos", async () => {
     const catId = `cleanup-${Date.now()}`;
     const prefix = `cats/${catId}/photos/`;
-    jest.spyOn(config, "get").mockImplementation((name: string) => {
+    vi.spyOn(config, "get").mockImplementation((name: string) => {
       if (name === "S3_DANGLING_PHOTO_CLEANUP_GRACE_MS") return "1";
       if (name === "S3_DANGLING_PHOTO_CLEANUP_PREFIX") return prefix;
       return process.env[name];
@@ -87,7 +87,7 @@ describe("CatPhotoCleanupService", () => {
   it("keeps document objects referenced by active and soft-deleted documents", async () => {
     const catId = `cleanup-document-${Date.now()}`;
     const prefix = `cats/${catId}/`;
-    jest.spyOn(config, "get").mockImplementation((name: string) => {
+    vi.spyOn(config, "get").mockImplementation((name: string) => {
       if (name === "S3_DANGLING_PHOTO_CLEANUP_GRACE_MS") return "1";
       if (name === "S3_DANGLING_PHOTO_CLEANUP_PREFIX") return prefix;
       return process.env[name];

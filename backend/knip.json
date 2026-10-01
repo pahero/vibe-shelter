@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "jest": false,
+  "vitest": false,
   "project": [
     "src/**/*.ts",
     "prisma/**/*.ts",
@@ -15,7 +15,6 @@
     "@testcontainers/postgresql",
     "@types/supertest",
     "supertest",
-    "testcontainers",
-    "ts-jest"
+    "testcontainers"
   ]
 }
