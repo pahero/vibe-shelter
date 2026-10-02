@@ -15,7 +15,6 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiOperation, ApiQuery, ApiResponse } from "@nestjs/swagger";
 import { CurrentUser, SessionAuthGuard } from "../auth";
 import { PrimaryPhotoUpload } from "./cats.types";
 import { ListCatsHandler } from "./queries/list-cats.handler";
@@ -122,17 +121,6 @@ export class CatsController {
   }
 
   @Get("history")
-  @ApiOperation({ summary: "List all cat audit history with filters" })
-  @ApiQuery({ name: "user", required: false })
-  @ApiQuery({ name: "catId", required: false })
-  @ApiQuery({ name: "from", required: false })
-  @ApiQuery({ name: "to", required: false })
-  @ApiQuery({ name: "skip", required: false })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiResponse({
-    status: 200,
-    description: "All cat history entries, newest first",
-  })
   async listAllHistory(
     @Query("user") user?: string,
     @Query("catId") catId?: string,
@@ -186,13 +174,6 @@ export class CatsController {
   }
 
   @Get(":id/history")
-  @ApiOperation({ summary: "List cat audit history" })
-  @ApiQuery({ name: "skip", required: false })
-  @ApiQuery({ name: "limit", required: false })
-  @ApiResponse({
-    status: 200,
-    description: "Cat history entries, newest first",
-  })
   async listHistory(
     @Param("id") id: string,
     @Query("skip") skip?: string,

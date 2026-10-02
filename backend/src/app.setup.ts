@@ -1,7 +1,6 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { ConfigService } from "@nestjs/config";
 import type { Express } from "express";
 
@@ -54,19 +53,4 @@ export function setupApp(app: INestApplication) {
       transform: true,
     }),
   );
-
-  // OpenAPI/Swagger configuration
-  const config = new DocumentBuilder()
-    .setTitle("Shelter Backend API")
-    .setDescription("API documentation for Shelter Backend")
-    .setVersion("1.0.0")
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("api/docs", app, document);
-
-  // Expose OpenAPI JSON at /api/openapi.json
-  app.getHttpAdapter().get("/api/openapi.json", (req, res) => {
-    res.json(document);
-  });
 }

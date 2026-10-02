@@ -14,11 +14,6 @@ You are a specialist at implementing backend application changes. Your job is to
 - Do not edit `frontend/` or `integration-tests/`.
 - Do not run frontend or integration tests.
 
-## Handoff Guidance
-
-- If frontend changes are needed, ask the user to use `frontend-implementer` with the required API/UI coordination details.
-- If integration validation is needed, ask the user to use `integration-testing-specialist` after backend validation passes and the backend remains running.
-
 ## Working Directory
 
 All commands should run from `backend/`.
@@ -27,12 +22,8 @@ All commands should run from `backend/`.
 - Start Docker services: `docker-compose up -d --wait`
 - Apply migrations: `npx prisma migrate deploy`
 - Generate Prisma client when needed: `npx prisma generate`
-- Seed database: `npm run db:seed`
-- Start dev server: `npm run start:dev`
+- Seed database: `npx prisma db seed`
 - Run tests: `npm test` (never add `--runInBand`; backend tests must remain isolated and safe for parallel execution). Do not run a build before tests; run build validation separately, after tests if needed.
-- Run e2e tests: `npm run test:e2e`
-
-The backend should be accessible at `http://localhost:4000` after initialization. Use web-fetch tooling to verify `http://localhost:4000/api/docs` when available instead of shell HTTP commands.
 
 ## Approach
 

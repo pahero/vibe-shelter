@@ -14,9 +14,6 @@ async function bootstrap() {
 
   await app.listen(port, () => {
     console.log(`✅ Shelter backend listening on port ${port}`);
-    console.log(
-      `📖 OpenAPI documentation available at http://localhost:${port}/api/docs`,
-    );
   });
 }
 

@@ -12,11 +12,7 @@
     "start:dev": "nest start --watch",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
-    "knip": "knip",
-    "doctor": "nestjs-doctor . --verbose",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:prod": "prisma migrate deploy",
-    "db:seed": "ts-node prisma/seed.ts"
+    "knip": "knip"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",
@@ -27,9 +23,8 @@
     "@nestjs/passport": "^12.0.0",
     "@nestjs/platform-express": "^12.1.2",
     "@nestjs/schedule": "^12.0.2",
-    "@nestjs/swagger": "^12.0.2",
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
+    "@prisma/adapter-pg": "^8.1.0-dev.7",
+    "@prisma/client": "^8.1.0-dev.7",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -56,14 +51,13 @@
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/supertest": "^7.2.1",
     "knip": "^6.39.0",
-    "nestjs-doctor": "^0.9.10",
     "oxfmt": "^0.70.0",
-    "prisma": "^7.10.0",
+    "prisma": "^8.1.0-dev.7",
     "supertest": "^7.3.0",
     "testcontainers": "^12.2.0",
-    "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "tsx": "^4.23.15"
   },
   "overrides": {
     "brace-expansion": "5.0.8",
