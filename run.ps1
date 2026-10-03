@@ -26,7 +26,7 @@ if (-not $?) {
     throw "Backend migration failed."
 }
 
-npm run db:seed
+npx prisma db seed 
 if (-not $?) {
     throw "Backend seed failed."
 }

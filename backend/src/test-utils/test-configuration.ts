@@ -1,4 +1,4 @@
-import { ConfigFactory } from "@nestjs/config/dist/interfaces/config-factory.interface";
+import { ConfigFactory } from "@nestjs/config";
 
 export function generateIntegrationTestConfig(
   databaseUrl: string,

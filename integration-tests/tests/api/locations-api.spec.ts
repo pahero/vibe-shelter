@@ -26,14 +26,18 @@ test.describe("locations API", () => {
     });
 
     expect(response.status()).toBe(201);
-    const body = (await response.json()) as {
+    const created = (await response.json()) as { id?: string };
+    expect(created.id).toBeDefined();
+    const readResponse = await request.get(`/api/locations/${created.id}`);
+    expect(readResponse.ok()).toBeTruthy();
+    const body = (await readResponse.json()) as {
       id?: string;
       name?: string;
       status?: string;
       isTest?: boolean;
       description?: string | null;
     };
-    expect(body.id).toBeDefined();
+    expect(body.id).toBe(created.id);
     expect(body.name).toBe(name);
     expect(body.status).toBe("ACTIVE");
     expect(body.isTest).toBe(true);
@@ -56,7 +60,9 @@ test.describe("locations API", () => {
     });
 
     expect(response.status()).toBe(201);
-    const body = (await response.json()) as { name?: string; ownerId?: string | null };
+    const created = (await response.json()) as { id?: string };
+    const readResponse = await request.get(`/api/locations/${created.id}`);
+    const body = (await readResponse.json()) as { name?: string; ownerId?: string | null };
     expect(body.name).toBe(name);
     expect(body.ownerId).toBe(userId);
   });
@@ -206,7 +212,8 @@ test.describe("locations API", () => {
     });
 
     expect(updateResponse.ok()).toBeTruthy();
-    const body = (await updateResponse.json()) as {
+    const readResponse = await request.get(`/api/locations/${createBody.id}`);
+    const body = (await readResponse.json()) as {
       id?: string;
       name?: string;
       description?: string | null;
@@ -226,7 +233,8 @@ test.describe("locations API", () => {
     });
     expect(updateResponse.ok()).toBeTruthy();
 
-    const body = (await updateResponse.json()) as { status?: string };
+    const readResponse = await request.get(`/api/locations/${createBody.id}`);
+    const body = (await readResponse.json()) as { status?: string };
     expect(body.status).toBe("INACTIVE");
   });
 
