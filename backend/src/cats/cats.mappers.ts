@@ -23,6 +23,7 @@ export async function toCatCard(
   return {
     id: cat.id,
     name: cat.name,
+    nameNumber: cat.nameNumber,
     sex: cat.sex,
     color: cat.color,
     estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,

@@ -82,6 +82,85 @@ test.describe("cats UI", () => {
     await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
   });
 
+  test(
+    "cat name numbers display, increment on rename, and can be edited uniquely",
+    async ({ page }) => {
+      const catName = uniqueName("Numbered Cat");
+      const otherName = uniqueName("Other Cat");
+
+      await authenticateAsStaff(page);
+      const location = await createLocationViaApi(
+        page,
+        uniqueName("Cat numbering location"),
+      );
+      const firstCat = await createCatViaApi(page, { name: catName });
+      const secondCat = await createCatViaApi(page, {
+        name: otherName,
+        locationId: location.id,
+      });
+
+      await page.goto(`/cats/${secondCat.id}`);
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: `${otherName} #1`,
+          exact: true,
+        }),
+      ).toBeVisible();
+
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      await page.getByLabel("Cat name").fill(catName);
+      await page.getByRole("button", { name: "Save details" }).click();
+      await expect(page.getByText("Cat details were updated.")).toBeVisible();
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: `${catName} #2`,
+          exact: true,
+        }),
+      ).toBeVisible();
+
+      await page.getByRole("button", { name: "Edit cat name number" }).click();
+      await page.getByLabel("Cat name number").fill("1");
+      const conflictResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes(`/api/cats/${secondCat.id}/name-number`) &&
+          response.request().method() === "PATCH",
+      );
+      await page.getByRole("button", { name: "Save number" }).click();
+      expect((await conflictResponse).status()).toBe(409);
+      await expect(page.locator("p[role='alert']")).toContainText(
+        "already in use",
+      );
+
+      await page.getByLabel("Cat name number").fill("3");
+      const updateResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes(`/api/cats/${secondCat.id}/name-number`) &&
+          response.request().method() === "PATCH",
+      );
+      await page.getByRole("button", { name: "Save number" }).click();
+      expect((await updateResponse).status()).toBe(200);
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: `${catName} #3`,
+          exact: true,
+        }),
+      ).toBeVisible();
+
+      await page.goto("/");
+      await page.getByLabel("Search cats").fill(catName);
+      await expect(
+        page.getByRole("heading", { name: `${catName} #1`, exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: `${catName} #3`, exact: true }),
+      ).toBeVisible();
+      expect(firstCat.id).not.toBe(secondCat.id);
+    },
+  );
+
   test("user can edit cat details and see them reflected on the profile", async ({ page }) => {
     const locationName = uniqueName("Edit Location");
     const catName = uniqueName("Original Name");

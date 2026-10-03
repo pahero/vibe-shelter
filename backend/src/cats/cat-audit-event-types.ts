@@ -6,6 +6,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   archivationReasonUpdate: "archivation_reason_update",
   archivationReasonDelete: "archivation_reason_delete",
   name: "name_changed",
+  nameNumber: "name_number_changed",
   sex: "sex_changed",
   color: "color_changed",
   estimatedBirthDate: "estimated_birth_date_changed",

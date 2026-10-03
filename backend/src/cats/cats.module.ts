@@ -57,6 +57,7 @@ import { ListCatWeightsHandler } from "./queries/list-cat-weights.handler";
 import { ListCatPhotosHandler } from "./queries/list-cat-photos.handler";
 import { ListCatDocumentsHandler } from "./queries/list-cat-documents.handler";
 import { UpdateCatHandler } from "./commands/update-cat.handler";
+import { UpdateCatNameNumberHandler } from "./commands/update-cat-name-number.handler";
 import { CreateCatTagHandler } from "./commands/create-cat-tag.handler";
 import { UpdateCatTagHandler } from "./commands/update-cat-tag.handler";
 import { DeleteCatTagHandler } from "./commands/delete-cat-tag.handler";
@@ -130,6 +131,7 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     ListCatPhotosHandler,
     ListCatDocumentsHandler,
     UpdateCatHandler,
+    UpdateCatNameNumberHandler,
     CreateCatTagHandler,
     UpdateCatTagHandler,
     DeleteCatTagHandler,

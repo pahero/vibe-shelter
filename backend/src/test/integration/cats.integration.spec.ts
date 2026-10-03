@@ -99,6 +99,33 @@ describe("Cats endpoints", () => {
     );
   });
 
+  it("numbers matching cats and supports editing a cat name number", async () => {
+    const name = unique("Tom");
+    const first = await authAgent
+      .post("/api/cats")
+      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN" })
+      .expect(201);
+    const second = await authAgent
+      .post("/api/cats")
+      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN" })
+      .expect(201);
+
+    expect(first.body.nameNumber).toBe(1);
+    expect(second.body.nameNumber).toBe(2);
+    await authAgent
+      .patch(`/api/cats/${second.body.id}/name-number`)
+      .send({ nameNumber: 1 })
+      .expect(409);
+    await authAgent
+      .patch(`/api/cats/${second.body.id}/name-number`)
+      .send({ nameNumber: 5 })
+      .expect(200);
+    const card = await authAgent
+      .get(`/api/cats/${second.body.id}/card`)
+      .expect(200);
+    expect(card.body.nameNumber).toBe(5);
+  });
+
   it("isolates cats and locations by authenticated user test status", async () => {
     const regularAuth = await createAuthenticatedAgent(app, prisma, false);
     const testAuth = await createAuthenticatedAgent(app, prisma, true);
@@ -480,18 +507,20 @@ describe("Cats endpoints", () => {
   it("returns newest-first multi-user history and suppresses no-op history", async () => {
     const cat = await createCat(prisma, { name: unique("history-order") });
     const otherAuth = await createAuthenticatedAgent(app, prisma);
+    const firstName = unique("First history name");
+    const secondName = unique("Second history name");
 
     await authAgent
       .patch(`/api/cats/${cat.id}`)
-      .send({ name: "First history name" })
+      .send({ name: firstName })
       .expect(200);
     await otherAuth.agent
       .patch(`/api/cats/${cat.id}`)
-      .send({ name: "Second history name" })
+      .send({ name: secondName })
       .expect(200);
     await otherAuth.agent
       .patch(`/api/cats/${cat.id}`)
-      .send({ name: "Second history name" })
+      .send({ name: secondName })
       .expect(200);
 
     const history = await authAgent
@@ -499,8 +528,8 @@ describe("Cats endpoints", () => {
       .expect(200);
     expect(history.body.total).toBe(2);
     expect(history.body.data.map((event: any) => event.newValue)).toEqual([
-      "Second history name",
-      "First history name",
+      secondName,
+      firstName,
     ]);
     expect(history.body.data[0].actor.id).toBe(otherAuth.user.id);
   });

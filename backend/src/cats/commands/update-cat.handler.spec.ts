@@ -26,8 +26,10 @@ describe("UpdateCatHandler", () => {
           name: `Location ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
+      const originalName = `Mila ${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const nextName = `Luna ${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const cat = await tx.cat.create({
-        data: { name: "Mila", adopterName: null },
+        data: { name: originalName, adopterName: null },
       });
       const result = await new UpdateCatHandler(
         tx as PrismaService,
@@ -35,7 +37,7 @@ describe("UpdateCatHandler", () => {
       ).handle(
         cat.id,
         {
-          name: "Luna",
+          name: nextName,
           sex: "FEMALE",
           color: "Black",
           estimatedBirthDate: new Date("2020-01-02"),
@@ -54,7 +56,8 @@ describe("UpdateCatHandler", () => {
       );
       expect(result).toMatchObject({
         id: cat.id,
-        name: "Luna",
+        name: nextName,
+        nameNumber: 1,
         sex: "FEMALE",
         color: "Black",
         adopterName: "Foster",
@@ -77,8 +80,8 @@ describe("UpdateCatHandler", () => {
         expect.arrayContaining([
           expect.objectContaining({
             eventType: "name_changed",
-            oldValue: "Mila",
-            newValue: "Luna",
+            oldValue: originalName,
+            newValue: nextName,
           }),
           expect.objectContaining({
             eventType: "adopter_name_changed",
@@ -97,6 +100,20 @@ describe("UpdateCatHandler", () => {
           }),
         ]),
       );
+    });
+  });
+
+  it("assigns the next number when a cat is renamed", async () => {
+    await runInTestTransaction(async (tx) => {
+      const name = `Tom ${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await tx.cat.create({ data: { name, nameNumber: 1 } });
+      const target = await tx.cat.create({ data: { name: `Other ${name}` } });
+      const result = await new UpdateCatHandler(
+        tx as PrismaService,
+        urls,
+      ).handle(target.id, { name }, undefined, false);
+
+      expect(result).toMatchObject({ name, nameNumber: 2 });
     });
   });
 

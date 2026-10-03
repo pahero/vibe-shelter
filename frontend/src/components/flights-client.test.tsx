@@ -65,7 +65,7 @@ describe("FlightsClient", () => {
     assignCat.mockResolvedValue({ id: "assignment-new" });
     updateAssignment.mockResolvedValue({ id: "assignment-1" });
     listCats.mockResolvedValue({ data: [{
-      id: "cat-2", name: "Luna", sex: "FEMALE", color: null, estimatedBirthDate: null, intakeDate: null, archivedAt: null,
+      id: "cat-2", name: "Luna", nameNumber: 1, sex: "FEMALE", color: null, estimatedBirthDate: null, intakeDate: null, archivedAt: null,
       sterilizationStatus: "UNKNOWN", currentLocationId: null, currentLocationName: null, createdByUserId: null, isTest: false,
       primaryPhotoUrl: null, microchipNumber: null, passportNumber: null, adopterName: null, adopterAddress: null, felvFivTestDone: false,
       rescueSource: null, updatedAt: "2026-10-10T00:00:00.000Z", tags: [],

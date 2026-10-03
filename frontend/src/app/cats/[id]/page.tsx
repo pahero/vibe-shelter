@@ -3,7 +3,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPen, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
@@ -91,6 +91,10 @@ export default function CatProfilePage() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [detailsSuccess, setDetailsSuccess] = useState<string | null>(null);
+  const [isEditingNameNumber, setIsEditingNameNumber] = useState(false);
+  const [nameNumberValue, setNameNumberValue] = useState(1);
+  const [isSavingNameNumber, setIsSavingNameNumber] = useState(false);
+  const [nameNumberError, setNameNumberError] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<CatEditForm | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
@@ -477,6 +481,33 @@ export default function CatProfilePage() {
     setDetailsError(null);
   };
 
+  const startEditingNameNumber = () => {
+    if (!cat) return;
+    setNameNumberValue(cat.nameNumber);
+    setNameNumberError(null);
+    setIsEditingNameNumber(true);
+  };
+
+  const saveNameNumber = async () => {
+    if (!cat) return;
+    if (!Number.isInteger(nameNumberValue) || nameNumberValue < 1) {
+      setNameNumberError("Number must be a positive integer.");
+      return;
+    }
+    setIsSavingNameNumber(true);
+    setNameNumberError(null);
+    try {
+      await catsApi.updateCatNameNumber(cat.id, nameNumberValue);
+      setCat(await catsApi.getCatCard(cat.id));
+      setIsEditingNameNumber(false);
+      await refreshHistory();
+    } catch (err) {
+      setNameNumberError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSavingNameNumber(false);
+    }
+  };
+
   const openArchiveForm = async () => {
     setArchiveError(null);
     try {
@@ -780,7 +811,40 @@ export default function CatProfilePage() {
                       className="mt-1 w-full border-b border-[#d4c7b4] bg-transparent text-4xl font-semibold text-gray-900 focus:border-[#d05a2c] focus:outline-none"
                     />
                   ) : (
-                    <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name}</h1>
+                    <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name} <span className="text-[#6d6a66]">#{cat.nameNumber}</span></h1>
+                  )}
+                  {!isEditingDetails && (
+                    isEditingNameNumber ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="cat-name-number">Name number</label>
+                        <input
+                          id="cat-name-number"
+                          aria-label="Cat name number"
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={nameNumberValue}
+                          onChange={(event) => setNameNumberValue(Number(event.target.value))}
+                          disabled={isSavingNameNumber}
+                          className="w-24 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                        />
+                        <button type="button" onClick={() => void saveNameNumber()} disabled={isSavingNameNumber} className="rounded-lg bg-[#d05a2c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                          {isSavingNameNumber ? "Saving…" : "Save number"}
+                        </button>
+                        <button type="button" onClick={() => { setIsEditingNameNumber(false); setNameNumberError(null); }} disabled={isSavingNameNumber} className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold disabled:opacity-50">Cancel</button>
+                        {nameNumberError && <p role="alert" className="basis-full text-sm text-red-700">{nameNumberError}</p>}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={startEditingNameNumber}
+                        aria-label="Edit cat name number"
+                        title="Edit cat name number"
+                        className="mt-1 rounded-md p-2 text-[#a83f1a] hover:bg-[#f7e7db]"
+                      >
+                        <FontAwesomeIcon icon={faPen} />
+                      </button>
+                    )
                   )}
                 </div>
                 {!isEditingDetails && !cat.archivationReasonId && (

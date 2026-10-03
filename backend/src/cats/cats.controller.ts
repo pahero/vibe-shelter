@@ -24,6 +24,7 @@ import { ListCatWeightsHandler } from "./queries/list-cat-weights.handler";
 import { ListCatPhotosHandler } from "./queries/list-cat-photos.handler";
 import { ListCatDocumentsHandler } from "./queries/list-cat-documents.handler";
 import { UpdateCatHandler } from "./commands/update-cat.handler";
+import { UpdateCatNameNumberHandler } from "./commands/update-cat-name-number.handler";
 import { CreateCatTagHandler } from "./commands/create-cat-tag.handler";
 import { UpdateCatTagHandler } from "./commands/update-cat-tag.handler";
 import { DeleteCatTagHandler } from "./commands/delete-cat-tag.handler";
@@ -52,6 +53,7 @@ import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
 import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
 import { ListCatsQueryDto } from "./dto/list-cats-query.dto";
+import { UpdateCatNameNumberDto } from "./dto/update-cat-name-number.dto";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -66,6 +68,7 @@ export class CatsController {
     private readonly listCatPhotosHandler: ListCatPhotosHandler,
     private readonly listCatDocumentsHandler: ListCatDocumentsHandler,
     private readonly updateCatHandler: UpdateCatHandler,
+    private readonly updateCatNameNumberHandler: UpdateCatNameNumberHandler,
     private readonly createCatTagHandler: CreateCatTagHandler,
     private readonly updateCatTagHandler: UpdateCatTagHandler,
     private readonly deleteCatTagHandler: DeleteCatTagHandler,
@@ -261,6 +264,20 @@ export class CatsController {
       dto.toCommand(),
       user.id,
       user.isTest,
+    );
+  }
+
+  @Patch(":id/name-number")
+  async updateCatNameNumber(
+    @Param("id") id: string,
+    @Body() dto: UpdateCatNameNumberDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.updateCatNameNumberHandler.handle(
+      id,
+      dto.toCommand().nameNumber,
+      user.isTest,
+      user.id,
     );
   }
 

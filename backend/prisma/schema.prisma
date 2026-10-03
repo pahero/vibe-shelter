@@ -118,6 +118,7 @@ enum CatAuditEventType {
   archivation_reason_update
   archivation_reason_delete
   name_changed
+  name_number_changed
   sex_changed
   color_changed
   estimated_birth_date_changed
@@ -216,6 +217,7 @@ model LocationAuditEvent {
 model Cat {
   id                  String              @id @default(cuid())
   name                String
+  nameNumber          Int                 @default(1)
   sex                 CatSex              @default(UNKNOWN)
   color               String?
   estimatedBirthDate  DateTime?
@@ -257,6 +259,7 @@ model Cat {
   @@index([archivedAt])
   @@index([archivationReasonId])
   @@index([name])
+  @@unique([name, nameNumber, isTest])
   @@index([intakeDate])
 }
 

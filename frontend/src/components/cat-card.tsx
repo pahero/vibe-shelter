@@ -72,7 +72,7 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#d05a2c]/25 bg-white/55 shadow-sm">
               <span className="text-4xl" aria-hidden="true">🐾</span>
             </div>
-            <span className="max-w-[85%] rounded-full bg-white/85 px-3 py-1 text-center text-sm font-semibold shadow-sm">{cat.name}</span>
+            <span className="max-w-[85%] rounded-full bg-white/85 px-3 py-1 text-center text-sm font-semibold shadow-sm">{cat.name} #{cat.nameNumber}</span>
           </div>
         )}
       </div>
@@ -81,7 +81,7 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
       <div className="space-y-2.5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900">{cat.name}</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{cat.name} #{cat.nameNumber}</h3>
             <p className="text-sm text-[#6d6a66]">{[sexLabels[cat.sex], cat.color].filter(Boolean).join(" • ")}</p>
           </div>
         </div>

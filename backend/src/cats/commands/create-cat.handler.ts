@@ -10,6 +10,7 @@ import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 import { CatCard } from "../cats.types";
 import { CreateCatCommand } from "./create-cat.command";
 import { WriteCatAuditEventCommand } from "./write-cat-audit-event.command";
+import { runInNewTransaction } from "@/database/helpers";
 
 const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
@@ -24,7 +25,12 @@ export class CreateCatHandler {
   ) {}
 
   async execute(command: CreateCatCommand): Promise<CatCard> {
-    const cat = await this.prisma.$transaction(async (transaction) => {
+    const cat = await runInNewTransaction(this.prisma, async (transaction) => {
+      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${command.isTest}:${command.name}`}))`;
+      const highestNumber = await transaction.cat.aggregate({
+        where: { name: command.name, isTest: command.isTest },
+        _max: { nameNumber: true },
+      });
       if (command.currentLocationId) {
         const location = await transaction.location.findUnique({
           where: { id: command.currentLocationId },
@@ -69,6 +75,7 @@ export class CreateCatHandler {
       const created = await transaction.cat.create({
         data: {
           name: command.name,
+          nameNumber: (highestNumber._max.nameNumber ?? 0) + 1,
           sex: command.sex,
           color: command.color,
           estimatedBirthDate: command.estimatedBirthDate,
@@ -96,6 +103,7 @@ export class CreateCatHandler {
     return {
       id: cat.id,
       name: cat.name,
+      nameNumber: cat.nameNumber,
       sex: cat.sex,
       color: cat.color,
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,

@@ -31,6 +31,7 @@ export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
 export type CatCard = {
   id: string;
   name: string;
+  nameNumber: number;
   sex: CatSex;
   color: string | null;
   estimatedBirthDate: string | null;
@@ -721,6 +722,16 @@ export const catsApi = {
       body: JSON.stringify(data),
     });
     return handleResponse<CatCard>(response);
+  },
+
+  async updateCatNameNumber(id: string, nameNumber: number): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/name-number`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nameNumber }),
+    });
+    return handleResponse<MutationResult>(response);
   },
 
   async updatePrimaryPhoto(id: string, photo: File): Promise<CatCard> {

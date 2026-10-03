@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 export type CatCard = {
   id: string;
   name: string;
+  nameNumber: number;
   sex: string;
   color: string | null;
   estimatedBirthDate: string | null;

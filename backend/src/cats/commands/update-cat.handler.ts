@@ -74,9 +74,24 @@ export class UpdateCatHandler {
       if (Object.keys(updateData).length === 0)
         return toCatCard(existing, this.photoUrls);
 
+      let assignedNameNumber: number | undefined;
+      if (updateData.name !== undefined && updateData.name !== existing.name) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${isTest}:${updateData.name}`}))`;
+        const highestNumber = await tx.cat.aggregate({
+          where: { name: updateData.name, isTest },
+          _max: { nameNumber: true },
+        });
+        assignedNameNumber = (highestNumber._max.nameNumber ?? 0) + 1;
+      }
+
       const updated = await tx.cat.update({
         where: { id },
-        data: updateData,
+        data: {
+          ...updateData,
+          ...(assignedNameNumber !== undefined
+            ? { nameNumber: assignedNameNumber }
+            : {}),
+        },
         include: CAT_CARD_INCLUDE,
       });
       if (
@@ -102,6 +117,15 @@ export class UpdateCatHandler {
               }
             : event,
         );
+        if (existing.nameNumber !== updated.nameNumber) {
+          events.push({
+            catId: id,
+            actorUserId,
+            eventType: "name_number_changed",
+            oldValue: String(existing.nameNumber),
+            newValue: String(updated.nameNumber),
+          });
+        }
         if (events.length) await tx.catAuditEvent.createMany({ data: events });
       }
       return toCatCard(updated, this.photoUrls);
