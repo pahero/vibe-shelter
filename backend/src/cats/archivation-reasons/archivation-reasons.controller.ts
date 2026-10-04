@@ -34,8 +34,8 @@ export class ArchivationReasonsController {
   ) {}
 
   @Get()
-  async list() {
-    return this.listReasonsQuery.execute();
+  async list(@CurrentUser() user: AuthenticatedUser) {
+    return this.listReasonsQuery.execute(user.isTest);
   }
 
   @Post()
@@ -43,7 +43,7 @@ export class ArchivationReasonsController {
     @Body() dto: CreateCatArchivationReasonDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.createReasonCommand.execute(dto.name, user.id);
+    return this.createReasonCommand.execute(dto.name, user.id, user.isTest);
   }
 
   @Patch(":id")
@@ -52,7 +52,7 @@ export class ArchivationReasonsController {
     @Body() dto: UpdateCatArchivationReasonDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.updateReasonCommand.execute(id, dto.name, user.id);
+    return this.updateReasonCommand.execute(id, dto.name, user.id, user.isTest);
   }
 
   @Delete(":id")
@@ -66,6 +66,7 @@ export class ArchivationReasonsController {
       id,
       user.id,
       dto.replacementReasonId,
+      user.isTest,
     );
   }
 }

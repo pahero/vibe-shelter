@@ -266,13 +266,16 @@ model Cat {
 model CatArchivationReason {
   id          String   @id @default(cuid())
   name        String
+  isTest      Boolean  @default(false)
   deletedAt   DateTime?
+  version     Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   cats        Cat[]
   auditEvents CatAuditEvent[]
 
   @@index([deletedAt])
+  @@index([isTest])
 }
 
 model CatPhoto {

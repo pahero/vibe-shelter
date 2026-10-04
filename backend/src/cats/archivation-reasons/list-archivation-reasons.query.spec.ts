@@ -15,13 +15,29 @@ describe("ListArchivationReasonsQuery", () => {
           deletedAt: new Date(),
         },
       });
+      const testOnly = await tx.catArchivationReason.create({
+        data: {
+          name: `Test-only ${Date.now()}-${Math.random()}`,
+          isTest: true,
+        },
+      });
 
-      const reasons = await query.execute();
+      const reasons = await query.execute(false);
       expect(reasons).toEqual(
         expect.arrayContaining([{ id: active.id, name: active.name }]),
       );
       expect(reasons).not.toEqual(
         expect.arrayContaining([{ id: deleted.id, name: deleted.name }]),
+      );
+      expect(reasons).not.toEqual(
+        expect.arrayContaining([{ id: testOnly.id, name: testOnly.name }]),
+      );
+      const testReasons = await query.execute(true);
+      expect(testReasons).toEqual(
+        expect.arrayContaining([{ id: testOnly.id, name: testOnly.name }]),
+      );
+      expect(testReasons).not.toEqual(
+        expect.arrayContaining([{ id: active.id, name: active.name }]),
       );
     });
   });

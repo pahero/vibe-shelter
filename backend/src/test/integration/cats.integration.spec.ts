@@ -871,6 +871,86 @@ describe("Cats endpoints", () => {
     await authAgent.get(`/api/locations/${location.body.id}`).expect(200);
   });
 
+  it("enforces active location name uniqueness within each test partition", async () => {
+    const testAuth = await createAuthenticatedAgent(app, prisma, true);
+    const name = unique("partitioned-location");
+    const regularLocation = await authAgent
+      .post("/api/locations")
+      .send({ name })
+      .expect(201);
+    const testLocation = await testAuth.agent
+      .post("/api/locations")
+      .send({ name })
+      .expect(201);
+    const regularOnlyName = unique("regular-only-location");
+    await authAgent
+      .post("/api/locations")
+      .send({ name: regularOnlyName })
+      .expect(201);
+
+    await authAgent.post("/api/locations").send({ name }).expect(409);
+    const testTarget = await testAuth.agent
+      .post("/api/locations")
+      .send({ name: unique("test-target") })
+      .expect(201);
+    await testAuth.agent
+      .patch(`/api/locations/${testTarget.body.id}`)
+      .send({ name: regularOnlyName })
+      .expect(200);
+
+    expect(regularLocation.body.id).not.toBe(testLocation.body.id);
+  });
+
+  it("partitions active archivation reason names and lists by test group", async () => {
+    const testAuth = await createAuthenticatedAgent(app, prisma, true);
+    const name = unique("partitioned-reason");
+    const regularReason = await authAgent
+      .post("/api/cats/archivation-reasons")
+      .send({ name })
+      .expect(201);
+    const testReason = await testAuth.agent
+      .post("/api/cats/archivation-reasons")
+      .send({ name })
+      .expect(201);
+    const regularOnlyName = unique("regular-only-reason");
+    await authAgent
+      .post("/api/cats/archivation-reasons")
+      .send({ name: regularOnlyName })
+      .expect(201);
+
+    await authAgent
+      .post("/api/cats/archivation-reasons")
+      .send({ name })
+      .expect(409);
+    const testTarget = await testAuth.agent
+      .post("/api/cats/archivation-reasons")
+      .send({ name: unique("test-target-reason") })
+      .expect(201);
+    await testAuth.agent
+      .patch(`/api/cats/archivation-reasons/${testTarget.body.id}`)
+      .send({ name: regularOnlyName })
+      .expect(200);
+
+    const regularReasons = await authAgent
+      .get("/api/cats/archivation-reasons")
+      .expect(200);
+    const testReasons = await testAuth.agent
+      .get("/api/cats/archivation-reasons")
+      .expect(200);
+    expect(
+      regularReasons.body.map((reason: { id: string }) => reason.id),
+    ).toContain(regularReason.body.id);
+    expect(
+      regularReasons.body.map((reason: { id: string }) => reason.id),
+    ).not.toContain(testReason.body.id);
+    expect(
+      testReasons.body.map((reason: { id: string }) => reason.id),
+    ).toContain(testReason.body.id);
+    expect(
+      testReasons.body.map((reason: { id: string }) => reason.id),
+    ).not.toContain(regularReason.body.id);
+  });
+
   it("archives cats with audited archivation reasons and filters archived cats", async () => {
     const cat = await createCat(prisma, { name: unique("archived-cat") });
     const reasonName = unique("adopted-cy");

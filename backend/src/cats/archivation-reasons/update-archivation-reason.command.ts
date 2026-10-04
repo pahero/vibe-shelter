@@ -19,26 +19,28 @@ export class UpdateArchivationReasonCommand {
     id: string,
     nameInput: string,
     actorUserId: string,
+    isTest: boolean,
   ): Promise<MutationResultDto> {
     const name = validateArchivationReasonName(nameInput);
-    const existing = await this.prisma.catArchivationReason.findFirst({
-      where: { id, deletedAt: null },
-    });
-    if (!existing) throw new NotFoundException("Archivation reason not found");
-    const duplicate = await this.prisma.catArchivationReason.findFirst({
-      where: { name, deletedAt: null, id: { not: id } },
-    });
-    if (duplicate)
-      throw new ConflictException(
-        "An archivation reason with this name already exists",
-      );
-
     const reason = await runInNewTransaction(
       this.prisma,
       async (transaction) => {
+        const existing = await transaction.catArchivationReason.findFirst({
+          where: { id, isTest, deletedAt: null },
+        });
+        if (!existing)
+          throw new NotFoundException("Archivation reason not found");
+        const duplicate = await transaction.catArchivationReason.findFirst({
+          where: { name, deletedAt: null, isTest, id: { not: id } },
+          select: { id: true },
+        });
+        if (duplicate)
+          throw new ConflictException(
+            "An archivation reason with this name already exists",
+          );
         const updated = await transaction.catArchivationReason.update({
           where: { id },
-          data: { name },
+          data: { name, version: { increment: 1 } },
         });
         await transaction.catAuditEvent.create({
           data: {

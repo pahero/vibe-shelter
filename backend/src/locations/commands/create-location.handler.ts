@@ -32,7 +32,7 @@ export class CreateLocationHandler {
           throw new BadRequestException("Specified owner user does not exist");
       }
       const duplicate = await tx.location.findFirst({
-        where: { name: normalizedName, deletedAt: null },
+        where: { name: normalizedName, isTest, deletedAt: null },
         select: { id: true },
       });
       if (duplicate)

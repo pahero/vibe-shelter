@@ -14,21 +14,22 @@ export class CreateArchivationReasonCommand {
   async execute(
     nameInput: string,
     actorUserId: string,
+    isTest: boolean,
   ): Promise<MutationResultDto> {
     const name = validateArchivationReasonName(nameInput);
-    const existing = await this.prisma.catArchivationReason.findFirst({
-      where: { name, deletedAt: null },
-    });
-    if (existing)
-      throw new ConflictException(
-        "An archivation reason with this name already exists",
-      );
-
     const reason = await runInNewTransaction(
       this.prisma,
       async (transaction) => {
+        const existing = await transaction.catArchivationReason.findFirst({
+          where: { name, isTest, deletedAt: null },
+          select: { id: true },
+        });
+        if (existing)
+          throw new ConflictException(
+            "An archivation reason with this name already exists",
+          );
         const created = await transaction.catArchivationReason.create({
-          data: { name },
+          data: { name, isTest },
         });
         await transaction.catAuditEvent.create({
           data: {

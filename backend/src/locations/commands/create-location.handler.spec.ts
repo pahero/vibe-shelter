@@ -101,6 +101,21 @@ describe("CreateLocationHandler", () => {
     });
   });
 
+  it("allows the same active name in the other test partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const name = `Location ${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await tx.location.create({ data: { name, isTest: false } });
+      await expect(
+        new CreateLocationHandler(tx as PrismaService).handle(
+          name,
+          undefined,
+          undefined,
+          true,
+        ),
+      ).resolves.toMatchObject({ id: expect.any(String) });
+    });
+  });
+
   it("allows reusing a deleted name", async () => {
     await runInTestTransaction(async (tx) => {
       const name = `Location ${Date.now()}-${Math.random().toString(36).slice(2)}`;

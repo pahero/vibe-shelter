@@ -148,6 +148,26 @@ describe("UpdateLocationHandler", () => {
     });
   });
 
+  it("allows a name used only in the other test partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const name = `Partitioned ${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await tx.location.create({ data: { name, isTest: false } });
+      const target = await tx.location.create({
+        data: {
+          name: `Target ${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          isTest: true,
+        },
+      });
+      await expect(
+        new UpdateLocationHandler(tx as PrismaService).handle(
+          target.id,
+          { name },
+          true,
+        ),
+      ).resolves.toEqual({ id: target.id });
+    });
+  });
+
   it("hides locations outside the current partition", async () => {
     await runInTestTransaction(async (tx) => {
       const target = await tx.location.create({

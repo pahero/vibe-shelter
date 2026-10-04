@@ -6,9 +6,9 @@ import { ArchivationReasonDto } from "./archivation-reason.types";
 export class ListArchivationReasonsQuery {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(): Promise<ArchivationReasonDto[]> {
+  async execute(isTest: boolean): Promise<ArchivationReasonDto[]> {
     const reasons = await this.prisma.catArchivationReason.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, isTest },
       orderBy: [{ name: "asc" }, { id: "asc" }],
     });
     return reasons.map((reason) => ({ id: reason.id, name: reason.name }));

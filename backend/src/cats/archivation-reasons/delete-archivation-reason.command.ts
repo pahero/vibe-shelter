@@ -16,34 +16,36 @@ export class DeleteArchivationReasonCommand {
     id: string,
     actorUserId: string,
     replacementReasonId?: string,
+    isTest = false,
   ): Promise<void> {
-    const existing = await this.prisma.catArchivationReason.findFirst({
-      where: { id, deletedAt: null },
-    });
-    if (!existing) throw new NotFoundException("Archivation reason not found");
-    const used = await this.prisma.cat.count({
-      where: { archivationReasonId: id },
-    });
-    if (used > 0 && !replacementReasonId)
-      throw new ConflictException(
-        "Choose a replacement archivation reason for assigned cats",
-      );
-    if (replacementReasonId === id)
-      throw new BadRequestException(
-        "Replacement archivation reason must be different",
-      );
-    const replacement = replacementReasonId
-      ? await this.prisma.catArchivationReason.findFirst({
-          where: { id: replacementReasonId, deletedAt: null },
-        })
-      : null;
-    if (replacementReasonId && !replacement)
-      throw new NotFoundException("Replacement archivation reason not found");
-
     await runInNewTransaction(this.prisma, async (transaction) => {
+      const existing = await transaction.catArchivationReason.findFirst({
+        where: { id, isTest, deletedAt: null },
+        select: { id: true },
+      });
+      if (!existing)
+        throw new NotFoundException("Archivation reason not found");
+      const used = await transaction.cat.count({
+        where: { archivationReasonId: id, isTest },
+      });
+      if (used > 0 && !replacementReasonId)
+        throw new ConflictException(
+          "Choose a replacement archivation reason for assigned cats",
+        );
+      if (replacementReasonId === id)
+        throw new BadRequestException(
+          "Replacement archivation reason must be different",
+        );
+      const replacement = replacementReasonId
+        ? await transaction.catArchivationReason.findFirst({
+            where: { id: replacementReasonId, isTest, deletedAt: null },
+          })
+        : null;
+      if (replacementReasonId && !replacement)
+        throw new NotFoundException("Replacement archivation reason not found");
       if (replacement) {
         await transaction.cat.updateMany({
-          where: { archivationReasonId: id },
+          where: { archivationReasonId: id, isTest },
           data: { archivationReasonId: replacement.id },
         });
       }
@@ -56,7 +58,7 @@ export class DeleteArchivationReasonCommand {
       });
       await transaction.catArchivationReason.update({
         where: { id },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: new Date(), version: { increment: 1 } },
       });
     });
   }

@@ -69,7 +69,12 @@ export class UpdateLocationHandler {
       }
       if (data.name !== undefined) {
         const duplicate = await tx.location.findFirst({
-          where: { id: { not: id }, name: data.name.trim(), deletedAt: null },
+          where: {
+            id: { not: id },
+            name: data.name.trim(),
+            isTest,
+            deletedAt: null,
+          },
           select: { id: true },
         });
         if (duplicate)

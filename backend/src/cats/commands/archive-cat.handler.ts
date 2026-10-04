@@ -31,7 +31,11 @@ export class ArchiveCatHandler {
       throw new ConflictException("Cat is already archived");
 
     const reason = await this.prisma.catArchivationReason.findFirst({
-      where: { id: input.reasonId, deletedAt: null },
+      where: {
+        id: input.reasonId,
+        isTest: input.currentUserIsTest,
+        deletedAt: null,
+      },
     });
     if (!reason) throw new NotFoundException("Archivation reason not found");
 

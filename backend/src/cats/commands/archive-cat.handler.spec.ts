@@ -1,4 +1,5 @@
 import { PrismaService } from "../../database/prisma.service";
+import { NotFoundException } from "@nestjs/common";
 import { runInTestTransaction } from "../../test-utils/test-db";
 import { ArchiveCatHandler } from "./archive-cat.handler";
 
@@ -41,6 +42,39 @@ describe("ArchiveCatHandler", () => {
         oldValue: null,
         newValue: null,
       });
+    });
+  });
+
+  it("does not allow using a reason from the other test partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const handler = new ArchiveCatHandler(tx as PrismaService);
+      const actor = await tx.user.create({
+        data: {
+          email: `${Date.now()}-${Math.random()}@example.com`,
+          status: "ACTIVE",
+        },
+      });
+      const cat = await tx.cat.create({
+        data: {
+          name: `Regular cat ${Date.now()}-${Math.random()}`,
+          isTest: false,
+        },
+      });
+      const reason = await tx.catArchivationReason.create({
+        data: {
+          name: `Test reason ${Date.now()}-${Math.random()}`,
+          isTest: true,
+        },
+      });
+
+      await expect(
+        handler.execute({
+          catId: cat.id,
+          reasonId: reason.id,
+          actorUserId: actor.id,
+          currentUserIsTest: false,
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
