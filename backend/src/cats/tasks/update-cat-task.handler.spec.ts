@@ -64,8 +64,15 @@ describe("UpdateCatTaskHandler", () => {
       ).resolves.toEqual({ id: task.id });
 
       await expect(
-        transaction.taskNotification.count({ where: { taskId: task.id } }),
+        transaction.taskNotification.count({
+          where: { taskId: task.id, deletedAt: null },
+        }),
       ).resolves.toBe(0);
+      await expect(
+        transaction.taskNotification.findFirstOrThrow({
+          where: { taskId: task.id },
+        }),
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
       await expect(
         transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
       ).resolves.toMatchObject({ notificationSentAt: null });
@@ -86,6 +93,9 @@ describe("UpdateCatTaskHandler", () => {
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
       });
+      await transaction.catTaskReceiver.create({
+        data: { taskId: task.id, userId: actor.id },
+      });
       await transaction.taskNotification.create({
         data: { taskId: task.id, userId: actor.id },
       });
@@ -104,8 +114,20 @@ describe("UpdateCatTaskHandler", () => {
         }),
       ).resolves.toBeDefined();
       await expect(
-        transaction.taskNotification.count({ where: { taskId: task.id } }),
+        transaction.taskNotification.count({
+          where: { taskId: task.id, deletedAt: null },
+        }),
       ).resolves.toBe(0);
+      await expect(
+        transaction.taskNotification.findFirstOrThrow({
+          where: { taskId: task.id },
+        }),
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
+      await expect(
+        transaction.catTaskReceiver.findUniqueOrThrow({
+          where: { taskId_userId: { taskId: task.id, userId: actor.id } },
+        }),
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
     });
   });
 

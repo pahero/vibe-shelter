@@ -18,17 +18,26 @@ export class DeleteCatTaskHandler {
         select: { id: true, catId: true },
       });
       if (!task) throw new NotFoundException("Task not found");
+      const deletedAt = new Date();
       await transaction.catTask.update({
         where: { id: task.id },
         data: {
-          deletedAt: new Date(),
+          deletedAt,
           concurrencyToken: crypto.randomUUID(),
-          notifications: { deleteMany: {} },
         },
+      });
+      await transaction.taskNotification.updateMany({
+        where: { taskId: task.id, deletedAt: null },
+        data: { deletedAt, version: { increment: 1 } },
+      });
+      await transaction.catTaskReceiver.updateMany({
+        where: { taskId: task.id, deletedAt: null },
+        data: { deletedAt, version: { increment: 1 } },
       });
       await transaction.auditEvent.create({
         data: {
           catId: task.catId,
+          taskId: task.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.taskDeleted,
         },

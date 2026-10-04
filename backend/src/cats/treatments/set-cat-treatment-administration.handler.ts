@@ -48,26 +48,42 @@ export class SetCatTreatmentAdministrationHandler {
       };
       const existing = await transaction.catTreatmentAdministration.findUnique({
         where,
-        select: { treatmentId: true },
+        select: { deletedAt: true },
       });
-      if (input.checked && !existing)
-        await transaction.catTreatmentAdministration.create({
-          data: {
-            treatmentId,
-            administeredOn: input.date,
-            doseNumber: input.doseNumber,
-            checkedByUserId: actorUserId,
-          },
+      const wasChecked = existing !== null && existing.deletedAt === null;
+      if (input.checked && !wasChecked) {
+        if (existing) {
+          await transaction.catTreatmentAdministration.update({
+            where,
+            data: {
+              checkedByUserId: actorUserId,
+              deletedAt: null,
+              version: { increment: 1 },
+            },
+          });
+        } else {
+          await transaction.catTreatmentAdministration.create({
+            data: {
+              treatmentId,
+              administeredOn: input.date,
+              doseNumber: input.doseNumber,
+              checkedByUserId: actorUserId,
+            },
+          });
+        }
+      }
+      if (!input.checked && wasChecked)
+        await transaction.catTreatmentAdministration.update({
+          where,
+          data: { deletedAt: new Date(), version: { increment: 1 } },
         });
-      if (!input.checked && existing)
-        await transaction.catTreatmentAdministration.delete({ where });
-      if (input.checked !== Boolean(existing)) {
+      if (input.checked !== wasChecked) {
         await transaction.catTreatment.update({
           where: { id: treatment.id },
           data: { concurrencyToken: crypto.randomUUID() },
         });
       }
-      if (input.checked !== Boolean(existing)) {
+      if (input.checked !== wasChecked) {
         await transaction.auditEvent.create({
           data: {
             catId: treatment.catId,

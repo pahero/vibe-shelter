@@ -27,21 +27,26 @@ export class CompleteCatTaskHandler {
 
       const receiver = await transaction.catTaskReceiver.findUnique({
         where: { taskId_userId: { taskId, userId } },
-        select: { taskId: true },
+        select: { deletedAt: true },
       });
-      if (!receiver) throw new NotFoundException("Task receiver not found");
+      if (!receiver || receiver.deletedAt !== null)
+        throw new NotFoundException("Task receiver not found");
 
       await transaction.catTask.update({
         where: { id: task.id },
         data: {
           completedAt: new Date(),
           completedByUserId: userId,
-          notifications: { deleteMany: {} },
         },
+      });
+      await transaction.taskNotification.updateMany({
+        where: { taskId: task.id, deletedAt: null },
+        data: { deletedAt: new Date(), version: { increment: 1 } },
       });
       await transaction.auditEvent.create({
         data: {
           catId: task.catId,
+          taskId: task.id,
           actorUserId: userId,
           eventType: CAT_AUDIT_EVENT_TYPES.taskCompleted,
           oldValue: "not completed",

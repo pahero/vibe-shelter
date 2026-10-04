@@ -4,7 +4,7 @@ import { runInTestTransaction } from "../../test-utils/test-db";
 import { DeleteCatWeightHandler } from "./delete-cat-weight.handler";
 
 describe("DeleteCatWeightHandler", () => {
-  it("deletes the weight and writes a value-free audit event", async () => {
+  it("soft-deletes and versions the weight and writes a value-free audit event", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
         data: {
@@ -27,7 +27,10 @@ describe("DeleteCatWeightHandler", () => {
       );
       await expect(
         tx.catWeight.findUnique({ where: { id: weight.id } }),
-      ).resolves.toBeNull();
+      ).resolves.toMatchObject({
+        deletedAt: expect.any(Date),
+        version: 1,
+      });
       await expect(
         tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({

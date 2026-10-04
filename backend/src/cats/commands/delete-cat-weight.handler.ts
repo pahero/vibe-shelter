@@ -23,15 +23,19 @@ export class DeleteCatWeightHandler {
       });
       if (!cat) throw new NotFoundException("Cat not found");
       const weight = await tx.catWeight.findFirst({
-        where: { id: weightId, catId },
+        where: { id: weightId, catId, deletedAt: null },
         select: { id: true },
       });
       if (!weight) throw new NotFoundException("Weight entry not found");
-      await tx.catWeight.delete({ where: { id: weightId } });
+      await tx.catWeight.update({
+        where: { id: weightId },
+        data: { deletedAt: new Date(), version: { increment: 1 } },
+      });
       if (actorUserId)
         await tx.auditEvent.create({
           data: {
             catId,
+            weightId: weight.id,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.weightDeleted,
           },

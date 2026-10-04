@@ -42,12 +42,19 @@ export class ListCatHistoryQuery {
         where,
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
-          photo: { select: { id: true, key: true, deletedAt: true } },
+          photo: { select: { id: true, key: true, deletedAt: true, createdAt: true } },
           document: {
             select: { id: true, key: true, fileName: true, deletedAt: true },
           },
           treatment: { select: { id: true, shortName: true, deletedAt: true } },
           tag: { select: { id: true, name: true, deletedAt: true } },
+          weight: { select: { id: true, measuredAt: true, weightKg: true, deletedAt: true } },
+          task: { select: { id: true, comment: true, dueDate: true, deletedAt: true } },
+          medicalNote: { select: { id: true, date: true, comment: true, deletedAt: true } },
+          preventiveTreatment: { select: { id: true, date: true, name: true, type: true, deletedAt: true } },
+          note: { select: { id: true, date: true, comment: true, deletedAt: true } },
+          archivingReason: { select: { id: true, name: true, deletedAt: true } },
+          location: { select: { id: true, name: true, deletedAt: true } },
           cat: { select: { name: true } },
         },
         orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
@@ -134,11 +141,32 @@ export class ListCatHistoryQuery {
             isDeleted: Boolean(event.tag.deletedAt),
           }
         : null,
-      location: null,
+      weight: event.weight
+        ? { id: event.weight.id, measuredAt: event.weight.measuredAt.toISOString().slice(0, 10), weightKg: event.weight.weightKg, isDeleted: Boolean(event.weight.deletedAt) }
+        : null,
+      task: event.task
+        ? { id: event.task.id, comment: event.task.comment, dueDate: event.task.dueDate.toISOString(), isDeleted: Boolean(event.task.deletedAt) }
+        : null,
+      medicalNote: event.medicalNote
+        ? { id: event.medicalNote.id, date: event.medicalNote.date.toISOString().slice(0, 10), comment: event.medicalNote.comment, isDeleted: Boolean(event.medicalNote.deletedAt) }
+        : null,
+      preventiveTreatment: event.preventiveTreatment
+        ? { id: event.preventiveTreatment.id, date: event.preventiveTreatment.date.toISOString().slice(0, 10), name: event.preventiveTreatment.name, type: event.preventiveTreatment.type, isDeleted: Boolean(event.preventiveTreatment.deletedAt) }
+        : null,
+      note: event.note
+        ? { id: event.note.id, date: event.note.date.toISOString().slice(0, 10), comment: event.note.comment, isDeleted: Boolean(event.note.deletedAt) }
+        : null,
+      archivingReason: event.archivingReason
+        ? { id: event.archivingReason.id, name: event.archivingReason.name, isDeleted: Boolean(event.archivingReason.deletedAt) }
+        : null,
+      location: event.location
+        ? { id: event.location.id, name: event.location.name, isDeleted: Boolean(event.location.deletedAt) }
+        : null,
       relatedUser: null,
       photo: event.photo
         ? {
             id: event.photo.id,
+            createdAt: event.photo.createdAt.toISOString().slice(0, 10),
             link: await this.photoUrls.getPhotoUrl(event.photo.key),
             status: event.photo.deletedAt ? "DELETED" : "ACTIVE",
           }
@@ -187,6 +215,12 @@ export class ListCatHistoryQuery {
       treatmentAdministrationDate: null,
       treatment: null,
       tag: null,
+      weight: null,
+      task: null,
+      medicalNote: null,
+      preventiveTreatment: null,
+      note: null,
+      archivingReason: null,
       location: null,
       relatedUser: null,
       photo: null,

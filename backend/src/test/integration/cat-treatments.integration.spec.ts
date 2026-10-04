@@ -111,10 +111,22 @@ describe("Cat treatment endpoints", () => {
       .expect({ id: created.body.id });
 
     await expect(
-      prisma.catTreatmentAdministration.count({
+      prisma.catTreatmentAdministration.findFirstOrThrow({
         where: { treatmentId: created.body.id },
       }),
-    ).resolves.toBe(0);
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
+    const afterUncheck = await agent.get(`/api/cats/${cat.id}/treatments`).expect(200);
+    expect(afterUncheck.body[0].administrations).toEqual([]);
+
+    await agent
+      .put(`/api/cats/treatments/${created.body.id}/administrations`)
+      .send({ date: "2026-09-01", doseNumber: 2, checked: true })
+      .expect(200);
+    await expect(
+      prisma.catTreatmentAdministration.findFirstOrThrow({
+        where: { treatmentId: created.body.id },
+      }),
+    ).resolves.toMatchObject({ deletedAt: null, version: 2 });
     await agent.delete(`/api/cats/treatments/${created.body.id}`).expect(204);
     await expect(
       prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } }),

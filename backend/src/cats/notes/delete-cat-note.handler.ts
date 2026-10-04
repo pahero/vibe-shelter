@@ -23,6 +23,7 @@ export class DeleteCatNoteHandler {
       await transaction.auditEvent.create({
         data: {
           catId: note.catId,
+          noteId: note.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.noteDeleted,
         },

@@ -26,7 +26,8 @@ export class ListCatsHandler {
       archivingReasonId: filters.archived ? { not: null } : null,
     };
     if (filters.locationId) where.currentLocationId = filters.locationId;
-    if (filters.tagId) where.tags = { some: { tagId: filters.tagId } };
+    if (filters.tagId)
+      where.tags = { some: { tagId: filters.tagId, deletedAt: null } };
     const search = filters.search?.trim();
     if (search)
       where.OR = [

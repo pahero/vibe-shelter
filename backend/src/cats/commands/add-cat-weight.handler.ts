@@ -37,6 +37,7 @@ export class AddCatWeightHandler {
         await tx.auditEvent.create({
           data: {
             catId,
+            weightId: weight.id,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.weightCreated,
           },

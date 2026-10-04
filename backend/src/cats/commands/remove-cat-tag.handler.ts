@@ -33,14 +33,20 @@ export class RemoveCatTagHandler {
         select: { id: true },
       });
       if (!tag) throw new NotFoundException("Tag not found");
-      const removed = await tx.catTagOnCat.deleteMany({
-        where: { catId, tagId },
+      const assignment = await tx.catTagOnCat.findUnique({
+        where: { catId_tagId: { catId, tagId } },
+        select: { deletedAt: true },
       });
-      if (removed.count > 0)
+      if (assignment && assignment.deletedAt === null) {
+        await tx.catTagOnCat.update({
+          where: { catId_tagId: { catId, tagId } },
+          data: { deletedAt: new Date(), version: { increment: 1 } },
+        });
         await tx.catTag.update({
           where: { id: tagId },
           data: { version: { increment: 1 } },
         });
+      }
       if (actorUserId)
         await tx.auditEvent.create({
           data: {

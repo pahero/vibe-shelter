@@ -17,14 +17,17 @@ export class DeleteCatTagHandler {
       });
       if (!tag) throw new NotFoundException("Tag not found");
       const assignments = await tx.catTagOnCat.findMany({
-        where: { tagId: id, cat: { isTest } },
+        where: { tagId: id, cat: { isTest }, deletedAt: null },
         select: { catId: true },
       });
       if (actorUserId)
         await tx.auditEvent.create({
           data: { tagId: id, actorUserId, action: "delete" },
         });
-      await tx.catTagOnCat.deleteMany({ where: { tagId: id, cat: { isTest } } });
+      await tx.catTagOnCat.updateMany({
+        where: { tagId: id, cat: { isTest }, deletedAt: null },
+        data: { deletedAt: new Date(), version: { increment: 1 } },
+      });
       if (actorUserId) {
         await Promise.all(
           assignments.map(({ catId }) =>

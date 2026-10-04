@@ -15,7 +15,7 @@ export class ListCatWeightsHandler {
     });
     if (!cat) throw new NotFoundException("Cat not found");
     const weights = await this.prisma.catWeight.findMany({
-      where: { catId },
+      where: { catId, deletedAt: null },
       orderBy: [{ measuredAt: "desc" }, { createdAt: "desc" }],
     });
     return weights.map(toCatWeight);

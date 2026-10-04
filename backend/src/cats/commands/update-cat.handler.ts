@@ -112,6 +112,8 @@ export class UpdateCatHandler {
           event.eventType === "current_location_changed"
             ? {
                 ...event,
+                locationId:
+                  updated.currentLocationId ?? existing.currentLocationId,
                 oldValue: existing.currentLocation?.name ?? "Not set",
                 newValue: nextLocationName ?? "Not set",
               }

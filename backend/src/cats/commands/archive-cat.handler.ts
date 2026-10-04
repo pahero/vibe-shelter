@@ -42,11 +42,16 @@ export class ArchiveCatHandler {
     await runInNewTransaction(this.prisma, async (transaction) => {
       await transaction.cat.update({
         where: { id: cat.id },
-        data: { archivedAt: new Date(), archivingReasonId: reason.id },
+        data: {
+          archivedAt: new Date(),
+          archivingReasonId: reason.id,
+          version: { increment: 1 },
+        },
       });
       await transaction.auditEvent.create({
         data: {
           catId: cat.id,
+          archivingReasonId: reason.id,
           actorUserId: input.actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.catArchived,
         },

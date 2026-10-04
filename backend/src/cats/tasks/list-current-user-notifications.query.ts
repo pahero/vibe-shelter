@@ -6,7 +6,7 @@ export class ListCurrentUserNotificationsQuery {
   constructor(private readonly prisma: PrismaService) {}
 
   async handle(userId: string, isTest: boolean, skip: number, limit: number) {
-    const where = { userId, task: { cat: { isTest } } };
+    const where = { userId, deletedAt: null, task: { deletedAt: null, cat: { isTest } } };
     const [notifications, total] = await Promise.all([
       this.prisma.taskNotification.findMany({
         where,

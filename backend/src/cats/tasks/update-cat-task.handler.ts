@@ -22,7 +22,7 @@ export class UpdateCatTaskHandler {
           catId: true,
           comment: true,
           dueDate: true,
-          receivers: { select: { userId: true } },
+          receivers: { select: { userId: true, deletedAt: true } },
         },
       });
       if (!task) throw new NotFoundException("Task not found");
@@ -42,6 +42,73 @@ export class UpdateCatTaskHandler {
         }
       }
 
+      if (payload.receiverIds !== undefined) {
+        const requestedReceiverIds = new Set(payload.receiverIds);
+        const activeReceiverIds = task.receivers
+          .filter((receiver) => receiver.deletedAt === null)
+          .map((receiver) => receiver.userId);
+        const allReceiverIds = new Set(
+          task.receivers.map((receiver) => receiver.userId),
+        );
+        const deletedAt = new Date();
+        const removedReceiverIds = activeReceiverIds.filter(
+          (userId) => !requestedReceiverIds.has(userId),
+        );
+        if (removedReceiverIds.length > 0) {
+          await transaction.catTaskReceiver.updateMany({
+            where: {
+              taskId: task.id,
+              userId: { in: removedReceiverIds },
+              deletedAt: null,
+            },
+            data: { deletedAt, version: { increment: 1 } },
+          });
+        }
+        const restoredReceiverIds = payload.receiverIds.filter((userId) =>
+          task.receivers.some(
+            (receiver) => receiver.userId === userId && receiver.deletedAt,
+          ),
+        );
+        if (restoredReceiverIds.length > 0) {
+          await transaction.catTaskReceiver.updateMany({
+            where: {
+              taskId: task.id,
+              userId: { in: restoredReceiverIds },
+              deletedAt: { not: null },
+            },
+            data: { deletedAt: null, version: { increment: 1 } },
+          });
+        }
+        const newReceiverIds = payload.receiverIds.filter(
+          (userId) => !allReceiverIds.has(userId),
+        );
+        if (newReceiverIds.length > 0) {
+          await transaction.catTaskReceiver.createMany({
+            data: newReceiverIds.map((userId) => ({
+              taskId: task.id,
+              userId,
+            })),
+          });
+        }
+      }
+
+      const notificationDeletedAt = new Date();
+      if (payload.receiverIds !== undefined || dueDateChanged) {
+        await transaction.taskNotification.updateMany({
+          where: {
+            taskId: task.id,
+            deletedAt: null,
+            ...(payload.receiverIds !== undefined && !dueDateChanged
+              ? { userId: { notIn: payload.receiverIds } }
+              : {}),
+          },
+          data: {
+            deletedAt: notificationDeletedAt,
+            version: { increment: 1 },
+          },
+        });
+      }
+
       await transaction.catTask.update({
         where: { id: task.id },
         data: {
@@ -51,20 +118,9 @@ export class UpdateCatTaskHandler {
             ? {
                 concurrencyToken: crypto.randomUUID(),
                 notificationSentAt: null,
-                receivers: {
-                  deleteMany: {},
-                  createMany: {
-                    data: payload.receiverIds.map((userId) => ({ userId })),
-                  },
-                },
-                notifications: {
-                  deleteMany: dueDateChanged
-                    ? {}
-                    : { userId: { notIn: payload.receiverIds } },
-                },
               }
             : dueDateChanged
-              ? { notificationSentAt: null, notifications: { deleteMany: {} } }
+              ? { notificationSentAt: null }
               : {}),
         },
       });
@@ -72,6 +128,7 @@ export class UpdateCatTaskHandler {
         await transaction.auditEvent.create({
           data: {
             catId: task.catId,
+            taskId: task.id,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.taskCommentChanged,
             oldValue: task.comment,
@@ -83,6 +140,7 @@ export class UpdateCatTaskHandler {
         await transaction.auditEvent.create({
           data: {
             catId: task.catId,
+            taskId: task.id,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.taskDueDateChanged,
             oldValue: task.dueDate.toISOString(),
@@ -94,9 +152,11 @@ export class UpdateCatTaskHandler {
         await transaction.auditEvent.create({
           data: {
             catId: task.catId,
+            taskId: task.id,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.taskReceiversChanged,
             oldValue: task.receivers
+              .filter((receiver) => receiver.deletedAt === null)
               .map((receiver) => receiver.userId)
               .join(", "),
             newValue: payload.receiverIds.join(", "),

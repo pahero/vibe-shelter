@@ -17,7 +17,7 @@ export class SendDueTaskNotificationsHandler {
       select: {
         id: true,
         concurrencyToken: true,
-        receivers: { select: { userId: true } },
+        receivers: { where: { deletedAt: null }, select: { userId: true } },
       },
       take: 50,
     });
@@ -30,7 +30,7 @@ export class SendDueTaskNotificationsHandler {
               taskId_userId: { taskId: task.id, userId: receiver.userId },
             },
             create: { taskId: task.id, userId: receiver.userId },
-            update: {},
+            update: { deletedAt: null, version: { increment: 1 } },
           });
         }
         const updated = await transaction.catTask.updateMany({

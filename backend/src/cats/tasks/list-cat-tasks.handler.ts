@@ -27,7 +27,7 @@ export class ListCatTasksHandler {
     const tasks = await this.prisma.catTask.findMany({
       where: { catId, deletedAt: null },
       include: {
-        receivers: { select: { userId: true } },
+        receivers: { where: { deletedAt: null }, select: { userId: true } },
         completedByUser: { select: { id: true, fullName: true } },
       },
       orderBy: [{ completedAt: "asc" }, { dueDate: "asc" }],

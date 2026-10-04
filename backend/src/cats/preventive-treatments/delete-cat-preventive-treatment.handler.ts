@@ -24,6 +24,7 @@ export class DeleteCatPreventiveTreatmentHandler {
       await transaction.auditEvent.create({
         data: {
           catId: treatment.catId,
+          preventiveTreatmentId: treatment.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.preventiveTreatmentDeleted,
         },

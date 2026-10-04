@@ -38,6 +38,11 @@ describe("RemoveCatTagHandler", () => {
       ).handle(cat.id, tag.id, actor.id, false);
       expect(result.tags).toEqual([]);
       await expect(
+        tx.catTagOnCat.findUniqueOrThrow({
+          where: { catId_tagId: { catId: cat.id, tagId: tag.id } },
+        }),
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
+      await expect(
         tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, tagId: tag.id },
         }),
@@ -87,7 +92,9 @@ describe("RemoveCatTagHandler", () => {
         ),
       ).rejects.toThrow(NotFoundException);
       await expect(
-        tx.catTagOnCat.count({ where: { catId: cat.id, tagId: tag.id } }),
+        tx.catTagOnCat.count({
+          where: { catId: cat.id, tagId: tag.id, deletedAt: null },
+        }),
       ).resolves.toBe(1);
     });
   });

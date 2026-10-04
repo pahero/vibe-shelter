@@ -47,6 +47,7 @@ export class CreateCatTaskHandler {
       await transaction.auditEvent.create({
         data: {
           catId,
+          taskId: task.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.taskCreated,
         },

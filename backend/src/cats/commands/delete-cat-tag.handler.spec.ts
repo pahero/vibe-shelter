@@ -40,8 +40,13 @@ describe("DeleteCatTagHandler", () => {
         newValue: null,
       });
       await expect(
-        tx.catTagOnCat.count({ where: { tagId: tag.id } }),
+        tx.catTagOnCat.count({ where: { tagId: tag.id, deletedAt: null } }),
       ).resolves.toBe(0);
+      await expect(
+        tx.catTagOnCat.findUniqueOrThrow({
+          where: { catId_tagId: { catId: cat.id, tagId: tag.id } },
+        }),
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
       await expect(
         tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, tagId: tag.id },

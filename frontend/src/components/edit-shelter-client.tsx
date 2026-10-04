@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatArchivingReason, CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
-import { eventLabels, historyValueText } from "@/components/cat-history";
+import { auditEventLabel, historyValueText } from "@/components/cat-history";
 import { UserRegistrationClient } from "@/components/user-registration-client";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
 
@@ -681,7 +681,7 @@ export function EditShelterClient() {
                     <li key={event.id} className="py-2.5">
                       <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                         <p className="min-w-0 text-gray-800">
-                          <span className="font-semibold text-gray-900">{eventLabels[event.eventType] ?? event.eventType}</span>
+                          <span className="font-semibold text-gray-900">{auditEventLabel(event)}</span>
                           <span className="text-[#6d6a66]">{event.catName ? ` on ${event.catName}` : ""} by {event.actor.displayName || event.actor.email}</span>
                         </p>
                         <time className="shrink-0 text-xs font-medium text-[#6d6a66]">{auditDateLabel(event.occurredAt)}</time>

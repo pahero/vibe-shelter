@@ -68,7 +68,11 @@ export type PrimaryPhotoUpload = {
 export const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
   archivingReason: { select: { name: true } },
-  tags: { include: { tag: true }, orderBy: { tag: { name: "asc" } } },
+  tags: {
+    where: { deletedAt: null },
+    include: { tag: true },
+    orderBy: { tag: { name: "asc" } },
+  },
 } satisfies Prisma.CatInclude;
 
 export type CatWithLocation = Prisma.CatGetPayload<{

@@ -97,7 +97,7 @@ export function auditEventStyle(eventType: string): string {
   return "border-l-4 border-l-amber-600 bg-amber-50/70";
 }
 
-function eventLabel(event: CatHistoryEvent): string {
+export function auditEventLabel(event: CatHistoryEvent): string {
   if (event.flight) {
     const label = eventLabels[event.eventType] ?? event.eventType;
     return `Flight ${event.flight.flightNumber} · ${label}`;
@@ -119,6 +119,52 @@ function eventLabel(event: CatHistoryEvent): string {
     const action = treatmentActions[event.eventType];
     if (action) return `Treatment ${event.treatment.shortName} ${action}`;
   }
+  if (event.tag) {
+    const action = ({
+      tag_added_to_cat: "Added to cat",
+      tag_removed_from_cat: "Removed from cat",
+      tag_create: "Created",
+      tag_update: "Updated",
+      tag_name_changed: "Name changed",
+      tag_color_changed: "Color changed",
+      tag_delete: "Deleted",
+    } as Record<string, string>)[event.eventType] ?? eventLabels[event.eventType] ?? event.eventType;
+    return `Tag ${event.tag.name} ${action}`;
+  }
+  if (event.weight) {
+    const action = event.eventType === "weight_created" ? "added" : event.eventType === "weight_deleted" ? "deleted" : "changed";
+    return `Weight ${event.weight.measuredAt} (${event.weight.weightKg} kg) ${action}`;
+  }
+  if (event.preventiveTreatment) {
+    const action = event.eventType.replace("preventive_treatment_", "").replaceAll("_", " ");
+    return `${event.preventiveTreatment.name} ${event.preventiveTreatment.date} · ${action}`;
+  }
+  if (event.medicalNote) {
+    const action = event.eventType.replace("medical_note_", "").replaceAll("_", " ");
+    return `Medical note ${event.medicalNote.date} · ${action}`;
+  }
+  if (event.note) {
+    const action = event.eventType.replace("note_", "").replaceAll("_", " ");
+    return `Note ${event.note.date} · ${action}`;
+  }
+  if (event.task) {
+    const action = event.eventType.replace("task_", "").replaceAll("_", " ");
+    return `Task “${event.task.comment}” · ${action}`;
+  }
+  if (event.archivingReason) {
+    const action = event.eventType.replace("archiving_reason_", "");
+    return `Archiving reason ${event.archivingReason.name} · ${action}`;
+  }
+  if (event.location) {
+    const action = event.eventType.replace("location_", "").replaceAll("_", " ");
+    return `Location ${event.location.name} · ${action}`;
+  }
+  if (event.relatedUser)
+    return `User ${event.relatedUser.displayName} · ${eventLabels[event.eventType] ?? event.eventType}`;
+  if (event.photo && event.photo.createdAt)
+    return `Photo ${event.photo.createdAt} · ${eventLabels[event.eventType] ?? event.eventType}`;
+  if (event.document)
+    return `Document ${event.document.fileName} · ${eventLabels[event.eventType] ?? event.eventType}`;
   return eventLabels[event.eventType] ?? event.eventType;
 }
 
@@ -160,7 +206,7 @@ export function CatHistory({ events, isLoading, error, total = events.length, sk
                 <li key={event.id} className={`px-3 py-2.5 ${auditEventStyle(event.eventType)}`}>
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                     <p className="min-w-0 text-gray-800">
-                      <span className="font-semibold text-gray-900">{eventLabel(event)}</span>
+                      <span className="font-semibold text-gray-900">{auditEventLabel(event)}</span>
                       <span className="text-[#6d6a66]"> by {event.actor.displayName || event.actor.email}</span>
                     </p>
                      <div className="flex shrink-0 items-center gap-2"><time className="text-xs font-medium text-[#6d6a66]" dateTime={event.occurredAt}>{formatDate(event.occurredAt)}</time>{event.eventType === "treatment_deleted" && event.treatment?.isDeleted && onRestoreTreatment && <button type="button" disabled={restoringTreatmentId === event.treatment.id} onClick={() => void restoreTreatment(event.treatment!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringTreatmentId === event.treatment.id ? "Restoring..." : "Restore"}</button>}{event.flight?.isDeleted && flightRestoreEventIds.has(event.id) && onRestoreFlight && <button type="button" disabled={restoringFlightId === event.flight.id} onClick={() => void restoreFlight(event.flight!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringFlightId === event.flight.id ? "Restoring..." : "Restore flight"}</button>}</div>

@@ -8,7 +8,7 @@ export class RevokeSessionHandler {
   async handle(sessionId: string): Promise<void> {
     await this.prisma.session.update({
       where: { id: sessionId },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), version: { increment: 1 } },
     });
   }
 }

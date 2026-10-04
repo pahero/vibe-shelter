@@ -35,6 +35,7 @@ describe("DearchiveCatHandler", () => {
       ).resolves.toMatchObject({
         archivedAt: null,
         archivingReasonId: null,
+        version: 1,
       });
       await expect(
         tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),

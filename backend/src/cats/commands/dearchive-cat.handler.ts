@@ -28,11 +28,16 @@ export class DearchiveCatHandler {
     await runInNewTransaction(this.prisma, async (transaction) => {
       await transaction.cat.update({
         where: { id: cat.id },
-        data: { archivedAt: null, archivingReasonId: null },
+        data: {
+          archivedAt: null,
+          archivingReasonId: null,
+          version: { increment: 1 },
+        },
       });
       await transaction.auditEvent.create({
         data: {
           catId: cat.id,
+          archivingReasonId: cat.archivingReasonId,
           actorUserId: input.actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.catDearchived,
         },

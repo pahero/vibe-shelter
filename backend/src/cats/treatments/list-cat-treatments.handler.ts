@@ -35,6 +35,7 @@ export class ListCatTreatmentsHandler {
       orderBy: { createdAt: "asc" },
       include: {
         administrations: {
+          where: { deletedAt: null },
           orderBy: [{ administeredOn: "asc" }, { doseNumber: "asc" }],
           include: { checkedByUser: { select: { id: true, fullName: true } } },
         },

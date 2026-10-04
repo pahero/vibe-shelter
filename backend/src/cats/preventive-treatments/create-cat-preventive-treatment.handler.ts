@@ -24,6 +24,7 @@ export class CreateCatPreventiveTreatmentHandler {
       await transaction.auditEvent.create({
         data: {
           catId,
+          preventiveTreatmentId: treatment.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.preventiveTreatmentCreated,
         },

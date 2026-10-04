@@ -154,7 +154,7 @@ describe("SetCatTreatmentAdministrationHandler", () => {
     });
   });
 
-  it("removes an administration and audits the unchecked state", async () => {
+  it("soft-deletes an administration and audits the unchecked state", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-remove-admin@example.com` },
@@ -187,10 +187,16 @@ describe("SetCatTreatmentAdministrationHandler", () => {
         false,
       );
       await expect(
-        tx.catTreatmentAdministration.count({
-          where: { treatmentId: treatment.id },
+        tx.catTreatmentAdministration.findUniqueOrThrow({
+          where: {
+            treatmentId_administeredOn_doseNumber: {
+              treatmentId: treatment.id,
+              administeredOn: day("2026-09-01"),
+              doseNumber: 1,
+            },
+          },
         }),
-      ).resolves.toBe(0);
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
       await expect(
         tx.auditEvent.findFirstOrThrow({
           where: {
@@ -204,6 +210,59 @@ describe("SetCatTreatmentAdministrationHandler", () => {
         oldValue: "checked",
         newValue: "unchecked",
       });
+    });
+  });
+
+  it("restores a soft-deleted administration when checked again", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({
+        data: { email: `${Date.now()}-restore-admin@example.com` },
+      });
+      const cat = await tx.cat.create({ data: { name: "Restore admin cat" } });
+      const treatment = await tx.catTreatment.create({
+        data: {
+          catId: cat.id,
+          shortName: "Drug",
+          startDate: day("2026-09-01"),
+          endDate: null,
+          dosesPerDay: 1,
+        },
+      });
+      const key = {
+        treatmentId_administeredOn_doseNumber: {
+          treatmentId: treatment.id,
+          administeredOn: day("2026-09-01"),
+          doseNumber: 1,
+        },
+      };
+      await tx.catTreatmentAdministration.create({
+        data: {
+          treatmentId: treatment.id,
+          administeredOn: day("2026-09-01"),
+          doseNumber: 1,
+          checkedByUserId: actor.id,
+          deletedAt: new Date(),
+          version: 1,
+        },
+      });
+
+      await new SetCatTreatmentAdministrationHandler(
+        tx as PrismaService,
+      ).handle(
+        treatment.id,
+        { date: day("2026-09-01"), doseNumber: 1, checked: true },
+        actor.id,
+        false,
+      );
+
+      await expect(
+        tx.catTreatmentAdministration.findUniqueOrThrow({ where: key }),
+      ).resolves.toMatchObject({ deletedAt: null, version: 2 });
+      await expect(
+        tx.auditEvent.findMany({
+          where: { catId: cat.id, eventType: "treatment_administration_checked" },
+        }),
+      ).resolves.toHaveLength(1);
     });
   });
 

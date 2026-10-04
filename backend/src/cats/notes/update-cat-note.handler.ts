@@ -42,6 +42,7 @@ export class UpdateCatNoteHandler {
         await transaction.auditEvent.createMany({
           data: changes.map((change) => ({
             catId: note.catId,
+            noteId: note.id,
             actorUserId,
             ...change,
           })),

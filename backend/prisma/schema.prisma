@@ -53,6 +53,7 @@ model Session {
   createdAt        DateTime  @default(now())
   expiresAt        DateTime
   revokedAt        DateTime?
+  version          Int       @default(0)
 
   @@index([userId])
   @@index([expiresAt])
@@ -132,6 +133,8 @@ model Cat {
   felvFivTestDone     Boolean             @default(false)
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   archivedAt          DateTime?
+  deletedAt           DateTime?
+  version             Int                 @default(0)
   archivingReasonId String?
   archivingReason   CatArchivingReason? @relation(fields: [archivingReasonId], references: [id], onDelete: Restrict)
   isTest              Boolean             @default(false)
@@ -159,6 +162,7 @@ model Cat {
   @@index([currentLocationId])
   @@index([isTest])
   @@index([archivedAt])
+  @@index([deletedAt])
   @@index([archivingReasonId])
   @@index([name])
   @@unique([name, nameNumber, isTest])
@@ -244,13 +248,16 @@ model CatTag {
 
 
 model CatTagOnCat {
-  catId String
-  tagId String
-  cat   Cat    @relation(fields: [catId], references: [id], onDelete: Cascade)
-  tag   CatTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  catId     String
+  tagId     String
+  cat       Cat       @relation(fields: [catId], references: [id], onDelete: Cascade)
+  tag       CatTag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  deletedAt DateTime?
+  version   Int       @default(0)
 
   @@id([catId, tagId])
   @@index([tagId])
+  @@index([deletedAt])
 }
 
 model CatWeight {
@@ -259,10 +266,14 @@ model CatWeight {
   cat        Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   weightKg   Float
   measuredAt DateTime
+  deletedAt  DateTime?
+  version    Int      @default(0)
   createdAt  DateTime @default(now())
+  auditEvents AuditEvent[] @relation("auditWeights")
 
   @@index([catId])
   @@index([measuredAt])
+  @@index([deletedAt])
 }
 
 model CatTreatment {
@@ -293,11 +304,14 @@ model CatTreatmentAdministration {
   doseNumber      Int
   checkedByUserId String
   checkedByUser   User @relation("treatmentAdministrationCheckers", fields: [checkedByUserId], references: [id], onDelete: Restrict)
+  deletedAt       DateTime?
+  version         Int      @default(0)
   createdAt       DateTime @default(now())
 
   @@id([treatmentId, administeredOn, doseNumber])
   @@index([checkedByUserId])
   @@index([treatmentId, administeredOn])
+  @@index([deletedAt])
 }
 
 model Flight {
@@ -359,10 +373,21 @@ model AuditEvent {
   photo CatPhoto? @relation(fields: [photoId], references: [id], onDelete: SetNull)
   documentId String?
   document CatDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  weightId String?
+  weight CatWeight? @relation("auditWeights", fields: [weightId], references: [id], onDelete: SetNull)
+  taskId String?
+  task CatTask? @relation("auditTasks", fields: [taskId], references: [id], onDelete: SetNull)
+  medicalNoteId String?
+  medicalNote CatMedicalNote? @relation("auditMedicalNotes", fields: [medicalNoteId], references: [id], onDelete: SetNull)
+  preventiveTreatmentId String?
+  preventiveTreatment CatPreventiveTreatment? @relation("auditPreventiveTreatments", fields: [preventiveTreatmentId], references: [id], onDelete: SetNull)
+  noteId String?
+  note CatNote? @relation("auditNotes", fields: [noteId], references: [id], onDelete: SetNull)
   actorUserId String
   actorUser User @relation("auditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
   relatedUserId String?
   relatedUser User? @relation("auditRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
+  isTest Boolean @default(false)
   eventType String?
   action String?
   oldValue String?
@@ -377,6 +402,12 @@ model AuditEvent {
   @@index([actorUserId])
   @@index([createdAt])
   @@index([eventType])
+  @@index([isTest])
+  @@index([weightId])
+  @@index([taskId])
+  @@index([medicalNoteId])
+  @@index([preventiveTreatmentId])
+  @@index([noteId])
 }
 model CatMedicalNote {
   id               String   @id @default(cuid())
@@ -388,6 +419,7 @@ model CatMedicalNote {
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  auditEvents      AuditEvent[] @relation("auditMedicalNotes")
 
   @@index([catId, date])
   @@index([deletedAt])
@@ -404,6 +436,7 @@ model CatPreventiveTreatment {
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  auditEvents      AuditEvent[] @relation("auditPreventiveTreatments")
 
   @@index([catId, date])
   @@index([deletedAt])
@@ -419,6 +452,7 @@ model CatNote {
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  auditEvents      AuditEvent[] @relation("auditNotes")
 
   @@index([catId, date])
   @@index([deletedAt])
@@ -440,6 +474,7 @@ model CatTask {
   updatedAt         DateTime          @updatedAt
   receivers         CatTaskReceiver[]
   notifications     TaskNotification[]
+  auditEvents       AuditEvent[] @relation("auditTasks")
 
   @@index([catId, dueDate])
   @@index([deletedAt, completedAt, dueDate])
@@ -449,24 +484,30 @@ model CatTask {
 }
 
 model CatTaskReceiver {
-  taskId String
-  userId String
-  task   CatTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user   User    @relation("taskReceivers", fields: [userId], references: [id], onDelete: Restrict)
+  taskId    String
+  userId    String
+  task      CatTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User      @relation("taskReceivers", fields: [userId], references: [id], onDelete: Restrict)
+  deletedAt DateTime?
+  version   Int       @default(0)
 
   @@id([taskId, userId])
   @@index([userId])
+  @@index([deletedAt])
 }
 
 model TaskNotification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   taskId    String
   userId    String
-  task      CatTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  task      CatTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deletedAt DateTime?
+  version   Int       @default(0)
+  createdAt DateTime  @default(now())
 
   @@unique([taskId, userId])
   @@index([userId, createdAt])
+  @@index([deletedAt])
 }
 

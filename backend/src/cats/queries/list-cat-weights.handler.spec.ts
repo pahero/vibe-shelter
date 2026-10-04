@@ -14,6 +14,14 @@ describe("ListCatWeightsHandler", () => {
       const weight = await tx.catWeight.create({
         data: { catId: cat.id, weightKg: 3.2, measuredAt: new Date() },
       });
+      const deleted = await tx.catWeight.create({
+        data: {
+          catId: cat.id,
+          weightKg: 5,
+          measuredAt: new Date(Date.now() - 86_400_000),
+          deletedAt: new Date(),
+        },
+      });
       const result = await new ListCatWeightsHandler(
         tx as PrismaService,
       ).handle(cat.id, false);
@@ -22,6 +30,7 @@ describe("ListCatWeightsHandler", () => {
         weightKg: 3.2,
         catId: cat.id,
       });
+      expect(result.map((entry) => entry.id)).not.toContain(deleted.id);
     });
   });
 

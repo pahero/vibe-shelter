@@ -24,6 +24,7 @@ export class CreateCatNoteHandler {
       await transaction.auditEvent.create({
         data: {
           catId,
+          noteId: note.id,
           actorUserId,
           eventType: CAT_AUDIT_EVENT_TYPES.noteCreated,
         },

@@ -33,6 +33,7 @@ export class UpdateCatTreatmentHandler {
           await transaction.catTreatmentAdministration.findFirst({
             where: {
               treatmentId,
+              deletedAt: null,
               OR: [
                 { administeredOn: { lt: startDate } },
                 ...(endDate ? [{ administeredOn: { gt: endDate } }] : []),
@@ -52,7 +53,11 @@ export class UpdateCatTreatmentHandler {
       ) {
         const higherDoseExists =
           await transaction.catTreatmentAdministration.findFirst({
-            where: { treatmentId, doseNumber: { gt: payload.dosesPerDay } },
+            where: {
+              treatmentId,
+              doseNumber: { gt: payload.dosesPerDay },
+              deletedAt: null,
+            },
             select: { treatmentId: true },
           });
         if (higherDoseExists)

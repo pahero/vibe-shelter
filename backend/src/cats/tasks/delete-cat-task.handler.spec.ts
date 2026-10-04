@@ -42,8 +42,15 @@ describe("DeleteCatTaskHandler", () => {
         }),
       ).resolves.toMatchObject({ actorUserId: actor.id });
       await expect(
-        transaction.taskNotification.count({ where: { taskId: task.id } }),
+        transaction.taskNotification.count({
+          where: { taskId: task.id, deletedAt: null },
+        }),
       ).resolves.toBe(0);
+      await expect(
+        transaction.taskNotification.findFirstOrThrow({
+          where: { taskId: task.id },
+        }),
+      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
     });
   });
 });

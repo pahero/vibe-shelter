@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { auditEventStyle, CatHistory } from "./cat-history";
+import { auditEventStyle, auditEventLabel, CatHistory } from "./cat-history";
 import { CatHistoryEvent } from "@/lib/api";
 
 const baseEvent = {
@@ -80,22 +80,37 @@ describe("CatHistory", () => {
         id: "tag-added",
         eventType: "tag_added_to_cat",
         oldValue: null,
-        newValue: "Needs foster",
+        newValue: null,
+        tag: { id: "tag-1", name: "Needs foster", isDeleted: false },
         photo: null,
       } as CatHistoryEvent,
       {
         ...baseEvent,
         id: "tag-removed",
         eventType: "tag_removed_from_cat",
-        oldValue: "Needs foster",
+        oldValue: null,
+        tag: { id: "tag-1", name: "Needs foster", isDeleted: false },
         newValue: null,
         photo: null,
       } as CatHistoryEvent,
     ]} isLoading={false} error={null} />);
 
     fireEvent.click(screen.getByRole("button", { name: /audit/i }));
-    expect(screen.getByText("Tag added")).toBeVisible();
-    expect(screen.getByText("Tag removed")).toBeVisible();
+    expect(screen.getByText("Tag Needs foster Added to cat")).toBeVisible();
+    expect(screen.getByText("Tag Needs foster Removed from cat")).toBeVisible();
+  });
+
+  it("identifies weights and linked child records in audit labels", () => {
+    expect(auditEventLabel({
+      ...baseEvent,
+      eventType: "weight_created",
+      weight: { id: "weight-1", measuredAt: "2026-09-12", weightKg: 3.4, isDeleted: false },
+    } as CatHistoryEvent)).toBe("Weight 2026-09-12 (3.4 kg) added");
+    expect(auditEventLabel({
+      ...baseEvent,
+      eventType: "note_created",
+      note: { id: "note-1", date: "2026-09-10", comment: "Checkup", isDeleted: false },
+    } as CatHistoryEvent)).toBe("Note 2026-09-10 · created");
   });
 
   it("shows next-page controls when more audit events are available", () => {

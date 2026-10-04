@@ -49,6 +49,7 @@ export class UpdateCatPreventiveTreatmentHandler {
         await transaction.auditEvent.createMany({
           data: changes.map((change) => ({
             catId: treatment.catId,
+            preventiveTreatmentId: treatment.id,
             actorUserId,
             ...change,
           })),

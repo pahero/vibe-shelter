@@ -33,6 +33,7 @@ describe("ArchiveCatHandler", () => {
       ).resolves.toMatchObject({
         archivingReasonId: reason.id,
         archivedAt: expect.any(Date),
+        version: 1,
       });
       await expect(
         tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),

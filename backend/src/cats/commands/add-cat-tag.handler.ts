@@ -35,10 +35,19 @@ export class AddCatTagHandler {
       if (!tag) throw new NotFoundException("Tag not found");
       const assignment = await tx.catTagOnCat.findUnique({
         where: { catId_tagId: { catId, tagId } },
-        select: { catId: true },
+        select: { deletedAt: true },
       });
       if (!assignment) {
         await tx.catTagOnCat.create({ data: { catId, tagId } });
+        await tx.catTag.update({
+          where: { id: tagId },
+          data: { version: { increment: 1 } },
+        });
+      } else if (assignment.deletedAt) {
+        await tx.catTagOnCat.update({
+          where: { catId_tagId: { catId, tagId } },
+          data: { deletedAt: null, version: { increment: 1 } },
+        });
         await tx.catTag.update({
           where: { id: tagId },
           data: { version: { increment: 1 } },
