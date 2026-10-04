@@ -56,7 +56,7 @@ export class AddCatDocumentHandler {
           where: { id: catId },
           data: { updatedAt: new Date() },
         });
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

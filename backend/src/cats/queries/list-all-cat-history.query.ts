@@ -73,7 +73,7 @@ export class ListAllCatHistoryQuery {
 
     const reasonWhere: any = {
       ...tagWhere,
-      archivationReasonId: { not: null },
+      archivingReasonId: { not: null },
     };
     if (reasonWhere.createdAt) {
       reasonWhere.occurredAt = reasonWhere.createdAt;
@@ -98,10 +98,10 @@ export class ListAllCatHistoryQuery {
       catEvents,
       tagEvents,
       locationEvents,
-      archivationReasonEvents,
+      archivingReasonEvents,
       flightEvents,
     ] = await Promise.all([
-      (this.prisma as any).catAuditEvent.findMany({
+      (this.prisma as any).auditEvent.findMany({
         where,
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
@@ -117,7 +117,7 @@ export class ListAllCatHistoryQuery {
       }),
       input.catId?.trim()
         ? []
-        : (this.prisma as any).tagAuditEvent.findMany({
+        : (this.prisma as any).auditEvent.findMany({
             where: tagWhere,
             include: {
               actorUser: { select: { id: true, fullName: true, email: true } },
@@ -126,7 +126,7 @@ export class ListAllCatHistoryQuery {
           }),
       input.catId?.trim()
         ? []
-        : (this.prisma as any).locationAuditEvent.findMany({
+        : (this.prisma as any).auditEvent.findMany({
             where: tagWhere,
             include: {
               actorUser: { select: { id: true, fullName: true, email: true } },
@@ -143,13 +143,13 @@ export class ListAllCatHistoryQuery {
           }),
       input.catId?.trim()
         ? []
-        : this.prisma.catAuditEvent.findMany({
+        : this.prisma.auditEvent.findMany({
             where: reasonWhere,
             include: {
               actorUser: { select: { id: true, fullName: true, email: true } },
             },
           }),
-      this.prisma.flightAuditEvent.findMany({
+      this.prisma.auditEvent.findMany({
         where: flightWhere,
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
@@ -183,8 +183,8 @@ export class ListAllCatHistoryQuery {
         event,
         occurredAt: event.createdAt,
       })),
-      ...archivationReasonEvents.map((event: any) => ({
-        source: "archivationReason" as const,
+      ...archivingReasonEvents.map((event: any) => ({
+        source: "archivingReason" as const,
         event,
         occurredAt: event.occurredAt,
       })),
@@ -206,7 +206,7 @@ export class ListAllCatHistoryQuery {
           if (source === "tag") return this.toTagDto(event);
           if (source === "location") return this.toLocationDto(event);
           if (source === "flight") return this.toFlightDto(event);
-          return this.toArchivationReasonDto(event);
+          return this.toArchivingReasonDto(event);
         }),
       ),
       total: events.length,
@@ -378,9 +378,9 @@ export class ListAllCatHistoryQuery {
     };
   }
 
-  private toArchivationReasonDto(event: any): CatHistoryEventDto {
+  private toArchivingReasonDto(event: any): CatHistoryEventDto {
     return {
-      id: `archivation-reason-${event.id}`,
+      id: `archiving-reason-${event.id}`,
       catId: null,
       catName: null,
       eventType: event.eventType,

@@ -28,7 +28,7 @@ describe("AddCatWeightHandler", () => {
         measuredAt: expect.stringContaining("2026-07-30"),
       });
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "weight_created",
         oldValue: null,

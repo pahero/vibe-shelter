@@ -20,4 +20,24 @@ describe("ListCatTagsHandler", () => {
       expect(result.map((tag) => tag.name)).not.toContain(`${suffix} deleted`);
     });
   });
+
+  it("only lists active tags from the requested test partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const testTag = await tx.catTag.create({
+        data: { name: `${suffix} test`, isTest: true },
+      });
+      const regularTag = await tx.catTag.create({
+        data: { name: `${suffix} regular`, isTest: false },
+      });
+
+      const testTags = await new ListCatTagsHandler(tx as PrismaService).handle(true);
+      const regularTags = await new ListCatTagsHandler(tx as PrismaService).handle(false);
+
+      expect(testTags.map((tag) => tag.id)).toContain(testTag.id);
+      expect(testTags.map((tag) => tag.id)).not.toContain(regularTag.id);
+      expect(regularTags.map((tag) => tag.id)).toContain(regularTag.id);
+      expect(regularTags.map((tag) => tag.id)).not.toContain(testTag.id);
+    });
+  });
 });

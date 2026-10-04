@@ -12,7 +12,7 @@ export class ListFlightHistoryHandler {
     });
     if (!flight) throw new NotFoundException("Flight not found");
 
-    const events = await this.prisma.flightAuditEvent.findMany({
+    const events = await this.prisma.auditEvent.findMany({
       where: { flightId },
       include: {
         actorUser: { select: { id: true, fullName: true, email: true } },
@@ -58,11 +58,11 @@ export class ListFlightHistoryHandler {
           }
         : null,
       flight: {
-        id: event.flight.id,
-        flightNumber: event.flight.flightNumber,
-        airport: event.flight.airport,
-        date: event.flight.date.toISOString().slice(0, 10),
-        isDeleted: event.flight.deletedAt !== null,
+        id: event.flight!.id,
+        flightNumber: event.flight!.flightNumber,
+        airport: event.flight!.airport,
+        date: event.flight!.date.toISOString().slice(0, 10),
+        isDeleted: event.flight!.deletedAt !== null,
       },
       assignment: event.assignment
         ? {

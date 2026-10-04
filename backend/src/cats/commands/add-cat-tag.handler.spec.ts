@@ -39,7 +39,7 @@ describe("AddCatTagHandler", () => {
         { id: tag.id, name: tag.name, color: tag.color },
       ]);
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, tagId: tag.id },
         }),
       ).resolves.toMatchObject({ eventType: "tag_added_to_cat" });
@@ -62,6 +62,29 @@ describe("AddCatTagHandler", () => {
           false,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  it("rejects a tag from the other partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const cat = await tx.cat.create({
+        data: { name: `Test ${Date.now()}`, isTest: true },
+      });
+      const tag = await tx.catTag.create({
+        data: { name: `Regular ${Date.now()}`, isTest: false },
+      });
+
+      await expect(
+        new AddCatTagHandler(tx as PrismaService, urls).handle(
+          cat.id,
+          tag.id,
+          undefined,
+          true,
+        ),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        tx.catTagOnCat.count({ where: { catId: cat.id, tagId: tag.id } }),
+      ).resolves.toBe(0);
     });
   });
 });

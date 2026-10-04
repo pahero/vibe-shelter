@@ -30,7 +30,7 @@ export class DeleteFlightCatAssignmentHandler {
         where: { id: assignment.flightId },
         data: { concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.flightAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           flightId: assignment.flightId,
           catId: assignment.catId,

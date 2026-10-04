@@ -56,7 +56,7 @@ describe("AddCatDocumentHandler", () => {
       expect(result).toMatchObject({ catId: cat.id, fileName: "record.pdf" });
       expect(result.url).toContain(`cats/${cat.id}/documents/`);
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "document_created",
         oldValue: null,

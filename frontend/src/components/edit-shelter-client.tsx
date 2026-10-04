@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatArchivationReason, CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
+import { CatArchivingReason, CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
 import { eventLabels, historyValueText } from "@/components/cat-history";
 import { UserRegistrationClient } from "@/components/user-registration-client";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
@@ -26,7 +26,7 @@ type EditingTag = {
   color: string;
 };
 
-type ShelterSection = "locations" | "tags" | "users" | "archivation" | "audit";
+type ShelterSection = "locations" | "tags" | "users" | "archiving" | "audit";
 
 type CatCardOptions = {
   id: string;
@@ -42,10 +42,10 @@ function auditDateLabel(value: string): string {
 export function EditShelterClient() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
-  const [archivationReasons, setArchivationReasons] = useState<CatArchivationReason[]>([]);
+  const [archivingReasons, setArchivingReasons] = useState<CatArchivingReason[]>([]);
   const [newReasonName, setNewReasonName] = useState("");
-  const [editingReason, setEditingReason] = useState<CatArchivationReason | null>(null);
-  const [reasonToDelete, setReasonToDelete] = useState<CatArchivationReason | null>(null);
+  const [editingReason, setEditingReason] = useState<CatArchivingReason | null>(null);
+  const [reasonToDelete, setReasonToDelete] = useState<CatArchivingReason | null>(null);
   const [replacementReasonId, setReplacementReasonId] = useState("");
   const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [locationDraft, setLocationDraft] = useState<LocationDraft>(emptyLocation);
@@ -92,8 +92,8 @@ export function EditShelterClient() {
     if (section === "users") {
       return;
     }
-    if (section === "archivation") {
-      await loadArchivationReasons();
+    if (section === "archiving") {
+      await loadArchivingReasons();
       return;
     }
     await Promise.all([loadAuditCats(), loadAudit()]);
@@ -124,11 +124,11 @@ export function EditShelterClient() {
     }
   }
 
-  async function loadArchivationReasons() {
+  async function loadArchivingReasons() {
     setIsLoading(true);
     setError(null);
     try {
-      setArchivationReasons(await catsApi.listArchivationReasons());
+      setArchivingReasons(await catsApi.listArchivingReasons());
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -332,18 +332,18 @@ export function EditShelterClient() {
   async function saveReason() {
     const name = (editingReason?.name ?? newReasonName).trim();
     if (!name) {
-      setError("Archivation reason name is required.");
+      setError("Archiving reason name is required.");
       return;
     }
     setIsSaving(true);
     setError(null);
     try {
-      if (editingReason) await catsApi.updateArchivationReason(editingReason.id, name);
-      else await catsApi.createArchivationReason(name);
+      if (editingReason) await catsApi.updateArchivingReason(editingReason.id, name);
+      else await catsApi.createArchivingReason(name);
       setEditingReason(null);
       setNewReasonName("");
       setIsAddingReason(false);
-      setMessage(editingReason ? "Archivation reason updated." : "Archivation reason added.");
+      setMessage(editingReason ? "Archiving reason updated." : "Archiving reason added.");
       await loadEditors();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
@@ -352,14 +352,14 @@ export function EditShelterClient() {
     }
   }
 
-  async function removeReason(reason: CatArchivationReason, replacementId?: string) {
+  async function removeReason(reason: CatArchivingReason, replacementId?: string) {
     setIsSaving(true);
     setError(null);
     try {
-      await catsApi.deleteArchivationReason(reason.id, replacementId);
+      await catsApi.deleteArchivingReason(reason.id, replacementId);
       setReasonToDelete(null);
       setReplacementReasonId("");
-      setMessage("Archivation reason removed.");
+      setMessage("Archiving reason removed.");
       await loadEditors();
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
@@ -368,8 +368,8 @@ export function EditShelterClient() {
     }
   }
 
-  function startRemovingReason(reason: CatArchivationReason) {
-    const replacement = archivationReasons.find((candidate) => candidate.id !== reason.id);
+  function startRemovingReason(reason: CatArchivingReason) {
+    const replacement = archivingReasons.find((candidate) => candidate.id !== reason.id);
     setReasonToDelete(reason);
     setReplacementReasonId(replacement?.id ?? "");
     setError(null);
@@ -397,7 +397,7 @@ export function EditShelterClient() {
               ["locations", "Locations"],
               ["tags", "Tags"],
               ["users", "Users"],
-              ["archivation", "Archivation reasons"],
+              ["archiving", "Archiving reasons"],
               ["audit", "Audit history"],
             ].map(([id, label]) => <button key={id} type="button" onClick={() => selectSection(id as ShelterSection)} className={`min-h-11 whitespace-nowrap rounded-xl px-3 text-left text-sm font-semibold transition ${activeSection === id ? "bg-[#d05a2c] text-white" : "text-[#1f2320] hover:bg-[#d05a2c]/10"}`}>{label}</button>)}
           </nav>
@@ -597,10 +597,10 @@ export function EditShelterClient() {
           {activeSection === "users" && <UserRegistrationClient />}
 
 
-          {activeSection === "archivation" && <section className="space-y-2 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
+          {activeSection === "archiving" && <section className="space-y-2 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Archivation reasons</h2>
-              <button type="button" onClick={() => { setIsAddingReason((isOpen) => !isOpen); setNewReasonName(""); setError(null); }} disabled={isSaving} aria-label={isAddingReason ? "Close add reason form" : "Add archivation reason"} title={isAddingReason ? "Close add reason form" : "Add archivation reason"} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:opacity-60">{isAddingReason ? "×" : "+"}</button>
+              <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Archiving reasons</h2>
+              <button type="button" onClick={() => { setIsAddingReason((isOpen) => !isOpen); setNewReasonName(""); setError(null); }} disabled={isSaving} aria-label={isAddingReason ? "Close add reason form" : "Add archiving reason"} title={isAddingReason ? "Close add reason form" : "Add archiving reason"} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:opacity-60">{isAddingReason ? "×" : "+"}</button>
             </div>
             <div className="grid gap-2">
               {isAddingReason && <div className="order-2 rounded-xl border border-[#d4c7b4] bg-[#fff8ee]/70 p-3">
@@ -611,9 +611,9 @@ export function EditShelterClient() {
                 </div>
               </div>}
               <div className="order-1">
-                {archivationReasons.length === 0 && <p className="mt-2 text-sm text-gray-600">No archivation reasons found.</p>}
+                {archivingReasons.length === 0 && <p className="mt-2 text-sm text-gray-600">No archiving reasons found.</p>}
                 <div className="grid gap-2">
-                {archivationReasons.map((reason) => (
+                {archivingReasons.map((reason) => (
                 <div key={reason.id} className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#d4c7b4] bg-white/75 p-3">
                   {editingReason?.id === reason.id ? (
                     <input value={editingReason.name} onChange={(event) => setEditingReason({ ...editingReason, name: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm" />
@@ -634,11 +634,11 @@ export function EditShelterClient() {
               <div className="rounded-lg border border-red-200 bg-red-50 p-3">
                 <p className="text-sm font-medium text-gray-900">Remove &quot;{reasonToDelete.name}&quot;</p>
                 <label className="mt-2 grid gap-1 text-sm text-gray-700">Replacement for assigned cats
-                  <select value={replacementReasonId} onChange={(event) => setReplacementReasonId(event.target.value)} disabled={archivationReasons.length < 2} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 disabled:opacity-60">
-                    {archivationReasons.filter((reason) => reason.id !== reasonToDelete.id).map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
+                  <select value={replacementReasonId} onChange={(event) => setReplacementReasonId(event.target.value)} disabled={archivingReasons.length < 2} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 disabled:opacity-60">
+                    {archivingReasons.filter((reason) => reason.id !== reasonToDelete.id).map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
                   </select>
                 </label>
-                {archivationReasons.length < 2 && <p className="mt-2 text-sm text-red-700">Add another reason before removing one assigned to cats.</p>}
+                {archivingReasons.length < 2 && <p className="mt-2 text-sm text-red-700">Add another reason before removing one assigned to cats.</p>}
                 <div className="mt-2 flex gap-2">
                   <button type="button" onClick={() => removeReason(reasonToDelete, replacementReasonId || undefined)} disabled={isSaving} className="rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? "Removing..." : "Confirm removal"}</button>
                   <button type="button" onClick={() => { setReasonToDelete(null); setReplacementReasonId(""); }} className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold">Cancel</button>

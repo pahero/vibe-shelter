@@ -23,8 +23,8 @@ export type CatCard = {
   updatedAt: string;
   tags: CatTag[];
   archivedAt: string | null;
-  archivationReasonId: string | null;
-  archivationReasonName: string | null;
+  archivingReasonId: string | null;
+  archivingReasonName: string | null;
 };
 
 export type CatTag = { id: string; name: string; color: string };
@@ -67,7 +67,7 @@ export type PrimaryPhotoUpload = {
 
 export const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
-  archivationReason: { select: { name: true } },
+  archivingReason: { select: { name: true } },
   tags: { include: { tag: true }, orderBy: { tag: { name: "asc" } } },
 } satisfies Prisma.CatInclude;
 

@@ -174,7 +174,7 @@ describe("UpdateCatTreatmentHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.count({ where: { catId: cat.id } }),
+        tx.auditEvent.count({ where: { catId: cat.id } }),
       ).resolves.toBe(0);
     });
   });
@@ -202,7 +202,7 @@ describe("UpdateCatTreatmentHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "treatment_end_date_changed" },
         }),
       ).resolves.toMatchObject({ oldValue: "2026-09-02", newValue: "none" });
@@ -234,7 +234,7 @@ describe("UpdateCatTreatmentHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "treatment_instructions_changed" },
         }),
       ).resolves.toMatchObject({ oldValue: "With food", newValue: "none" });
@@ -266,7 +266,7 @@ describe("UpdateCatTreatmentHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "treatment_instructions_changed" },
         }),
       ).resolves.toMatchObject({ oldValue: "none", newValue: "With food" });
@@ -311,7 +311,7 @@ describe("UpdateCatTreatmentHandler", () => {
         dosesPerDay: 2,
       });
       await expect(
-        tx.catAuditEvent.count({
+        tx.auditEvent.count({
           where: {
             catId: cat.id,
             eventType: {

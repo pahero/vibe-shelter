@@ -37,7 +37,7 @@ describe("DeleteCatTaskHandler", () => {
         transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
       ).resolves.toMatchObject({ deletedAt: expect.any(Date) });
       await expect(
-        transaction.catAuditEvent.findFirstOrThrow({
+        transaction.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "task_deleted" },
         }),
       ).resolves.toMatchObject({ actorUserId: actor.id });

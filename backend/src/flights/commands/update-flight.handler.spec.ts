@@ -37,7 +37,7 @@ describe("UpdateFlightHandler", () => {
         flightParent: "Taylor Parent",
       });
       expect(saved.concurrencyToken).not.toBe(flight.concurrencyToken);
-      const events = await transaction.flightAuditEvent.findMany({
+      const events = await transaction.auditEvent.findMany({
         where: { flightId: flight.id },
       });
       expect(events).toHaveLength(4);
@@ -96,7 +96,7 @@ describe("UpdateFlightHandler", () => {
         }),
       ).toMatchObject({ concurrencyToken: flight.concurrencyToken });
       await expect(
-        transaction.flightAuditEvent.count({ where: { flightId: flight.id } }),
+        transaction.auditEvent.count({ where: { flightId: flight.id } }),
       ).resolves.toBe(0);
     });
   });
@@ -127,7 +127,7 @@ describe("UpdateFlightHandler", () => {
         ).concurrencyToken,
       ).toBe(flight.concurrencyToken);
       await expect(
-        transaction.flightAuditEvent.count({ where: { flightId: flight.id } }),
+        transaction.auditEvent.count({ where: { flightId: flight.id } }),
       ).resolves.toBe(0);
     });
   });

@@ -23,7 +23,7 @@ export class CreateCatTreatmentHandler {
       const treatment = await transaction.catTreatment.create({
         data: { catId, ...payload },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId,
           treatmentId: treatment.id,

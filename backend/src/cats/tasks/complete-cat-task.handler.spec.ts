@@ -85,7 +85,7 @@ describe("CompleteCatTaskHandler", () => {
         completedByUserId: receiver.id,
       });
       await expect(
-        transaction.catAuditEvent.findFirstOrThrow({
+        transaction.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "task_completed" },
         }),
       ).resolves.toMatchObject({ actorUserId: receiver.id });

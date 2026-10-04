@@ -134,7 +134,7 @@ export class UpdateLocationHandler {
             : []),
         ];
         if (fields.length)
-          await tx.locationAuditEvent.createMany({
+          await tx.auditEvent.createMany({
             data: fields.map((field) => ({
               locationId: id,
               actorUserId,

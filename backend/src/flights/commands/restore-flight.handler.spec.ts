@@ -26,7 +26,7 @@ describe("RestoreFlightHandler", () => {
       expect(saved.deletedAt).toBeNull();
       expect(saved.concurrencyToken).not.toBe(flight.concurrencyToken);
       expect(
-        await transaction.flightAuditEvent.findFirstOrThrow({
+        await transaction.auditEvent.findFirstOrThrow({
           where: { flightId: flight.id },
         }),
       ).toMatchObject({

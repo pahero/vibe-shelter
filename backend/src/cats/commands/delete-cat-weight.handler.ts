@@ -29,7 +29,7 @@ export class DeleteCatWeightHandler {
       if (!weight) throw new NotFoundException("Weight entry not found");
       await tx.catWeight.delete({ where: { id: weightId } });
       if (actorUserId)
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

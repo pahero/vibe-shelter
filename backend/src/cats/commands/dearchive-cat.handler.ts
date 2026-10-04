@@ -22,15 +22,15 @@ export class DearchiveCatHandler {
       where: { id: input.catId, isTest: input.currentUserIsTest },
     });
     if (!cat) throw new NotFoundException("Cat not found");
-    if (!cat.archivationReasonId)
+    if (!cat.archivingReasonId)
       throw new ConflictException("Cat is not archived");
 
     await runInNewTransaction(this.prisma, async (transaction) => {
       await transaction.cat.update({
         where: { id: cat.id },
-        data: { archivedAt: null, archivationReasonId: null },
+        data: { archivedAt: null, archivingReasonId: null },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId: cat.id,
           actorUserId: input.actorUserId,

@@ -54,7 +54,7 @@ describe("UpdateLocationHandler", () => {
       await expect(
         tx.user.findUniqueOrThrow({ where: { id: owner.id } }),
       ).resolves.toMatchObject({ version: 1 });
-      const events = await tx.locationAuditEvent.findMany({
+      const events = await tx.auditEvent.findMany({
         where: { locationId: location.id },
       });
       expect(events).toHaveLength(4);
@@ -205,7 +205,7 @@ describe("UpdateLocationHandler", () => {
         actor.id,
       );
       await expect(
-        tx.locationAuditEvent.count({ where: { locationId: location.id } }),
+        tx.auditEvent.count({ where: { locationId: location.id } }),
       ).resolves.toBe(0);
     });
   });

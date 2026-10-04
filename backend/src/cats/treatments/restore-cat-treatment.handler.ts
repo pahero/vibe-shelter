@@ -31,7 +31,7 @@ export class RestoreCatTreatmentHandler {
         where: { id: treatment.id },
         data: { deletedAt: null, concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId: treatment.catId,
           treatmentId: treatment.id,

@@ -17,7 +17,7 @@ describe("CreateCatTagHandler", () => {
       );
       expect(result).toMatchObject({ name: "Foster", color: "#8ecaff" });
       await expect(
-        tx.tagAuditEvent.findFirstOrThrow({ where: { tagId: result.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { tagId: result.id } }),
       ).resolves.toMatchObject({
         action: "create",
         oldValue: null,
@@ -33,6 +33,24 @@ describe("CreateCatTagHandler", () => {
         name: " Existing ",
       });
       expect(result.id).toBe(tag.id);
+    });
+  });
+
+  it("keeps active tag names unique within each partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const handler = new CreateCatTagHandler(tx as PrismaService);
+      const testTag = await handler.handle({ name: "Partitioned" }, undefined, true);
+      const regularTag = await handler.handle({ name: "Partitioned" }, undefined, false);
+      const reusedTestTag = await handler.handle({ name: "Partitioned" }, undefined, true);
+
+      expect(testTag.id).not.toBe(regularTag.id);
+      expect(reusedTestTag.id).toBe(testTag.id);
+      await expect(
+        tx.catTag.findUniqueOrThrow({ where: { id: testTag.id } }),
+      ).resolves.toMatchObject({ isTest: true });
+      await expect(
+        tx.catTag.findUniqueOrThrow({ where: { id: regularTag.id } }),
+      ).resolves.toMatchObject({ isTest: false });
     });
   });
 

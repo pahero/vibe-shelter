@@ -69,7 +69,7 @@ export class UpdateCatTaskHandler {
         },
       });
       if (payload.comment !== undefined && payload.comment !== task.comment) {
-        await transaction.catAuditEvent.create({
+        await transaction.auditEvent.create({
           data: {
             catId: task.catId,
             actorUserId,
@@ -80,7 +80,7 @@ export class UpdateCatTaskHandler {
         });
       }
       if (payload.dueDate !== undefined && dueDateChanged) {
-        await transaction.catAuditEvent.create({
+        await transaction.auditEvent.create({
           data: {
             catId: task.catId,
             actorUserId,
@@ -91,7 +91,7 @@ export class UpdateCatTaskHandler {
         });
       }
       if (payload.receiverIds !== undefined) {
-        await transaction.catAuditEvent.create({
+        await transaction.auditEvent.create({
           data: {
             catId: task.catId,
             actorUserId,

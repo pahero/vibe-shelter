@@ -16,7 +16,7 @@ describe("ArchiveCatHandler", () => {
       const cat = await tx.cat.create({
         data: { name: `Archive ${Date.now()}-${Math.random()}` },
       });
-      const reason = await tx.catArchivationReason.create({
+      const reason = await tx.catArchivingReason.create({
         data: { name: `Adopted ${Date.now()}-${Math.random()}` },
       });
 
@@ -31,11 +31,11 @@ describe("ArchiveCatHandler", () => {
       await expect(
         tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
       ).resolves.toMatchObject({
-        archivationReasonId: reason.id,
+        archivingReasonId: reason.id,
         archivedAt: expect.any(Date),
       });
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "cat_archived",
         actorUserId: actor.id,
@@ -60,7 +60,7 @@ describe("ArchiveCatHandler", () => {
           isTest: false,
         },
       });
-      const reason = await tx.catArchivationReason.create({
+      const reason = await tx.catArchivingReason.create({
         data: {
           name: `Test reason ${Date.now()}-${Math.random()}`,
           isTest: true,

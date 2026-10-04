@@ -37,8 +37,8 @@ export type CatCard = {
   estimatedBirthDate: string | null;
   intakeDate: string | null;
   archivedAt?: string | null;
-  archivationReasonId?: string | null;
-  archivationReasonName?: string | null;
+  archivingReasonId?: string | null;
+  archivingReasonName?: string | null;
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string | null;
   currentLocationName: string | null;
@@ -61,7 +61,7 @@ export type CatTag = {
   color: string;
 };
 
-export type CatArchivationReason = {
+export type CatArchivingReason = {
   id: string;
   name: string;
 };
@@ -611,27 +611,27 @@ export const catsApi = {
     return handleResponse<CatTag[]>(response);
   },
 
-  async listArchivationReasons(): Promise<CatArchivationReason[]> {
-    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons`, { method: "GET", credentials: "include" });
-    return handleResponse<CatArchivationReason[]>(response);
+  async listArchivingReasons(): Promise<CatArchivingReason[]> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archiving-reasons`, { method: "GET", credentials: "include" });
+    return handleResponse<CatArchivingReason[]>(response);
   },
 
-  async createArchivationReason(name: string): Promise<MutationResult> {
-    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons`, {
+  async createArchivingReason(name: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archiving-reasons`, {
       method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
     });
     return handleResponse<MutationResult>(response);
   },
 
-  async updateArchivationReason(id: string, name: string): Promise<MutationResult> {
-    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons/${id}`, {
+  async updateArchivingReason(id: string, name: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archiving-reasons/${id}`, {
       method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
     });
     return handleResponse<MutationResult>(response);
   },
 
-  async deleteArchivationReason(id: string, replacementReasonId?: string): Promise<void> {
-    const response = await fetch(`${BACKEND_URL}/api/cats/archivation-reasons/${id}`, {
+  async deleteArchivingReason(id: string, replacementReasonId?: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/archiving-reasons/${id}`, {
       method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(replacementReasonId ? { replacementReasonId } : {}),
     });

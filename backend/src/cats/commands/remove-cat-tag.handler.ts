@@ -29,7 +29,7 @@ export class RemoveCatTagHandler {
       });
       if (!cat) throw new NotFoundException("Cat not found");
       const tag = await tx.catTag.findFirst({
-        where: { id: tagId, deletedAt: null },
+        where: { id: tagId, deletedAt: null, isTest },
         select: { id: true },
       });
       if (!tag) throw new NotFoundException("Tag not found");
@@ -42,7 +42,7 @@ export class RemoveCatTagHandler {
           data: { version: { increment: 1 } },
         });
       if (actorUserId)
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

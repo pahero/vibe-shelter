@@ -72,7 +72,7 @@ describe("UpdateCatHandler", () => {
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: location.id } }),
       ).resolves.toMatchObject({ version: 1 });
-      const events = await tx.catAuditEvent.findMany({
+      const events = await tx.auditEvent.findMany({
         where: { catId: cat.id },
       });
       expect(events).toHaveLength(13);
@@ -137,7 +137,7 @@ describe("UpdateCatHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "color_changed",
         oldValue: "Black",
@@ -228,7 +228,7 @@ describe("UpdateCatHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.count({ where: { catId: cat.id } }),
+        tx.auditEvent.count({ where: { catId: cat.id } }),
       ).resolves.toBe(0);
     });
   });

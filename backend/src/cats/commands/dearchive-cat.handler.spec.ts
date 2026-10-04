@@ -12,14 +12,14 @@ describe("DearchiveCatHandler", () => {
           status: "ACTIVE",
         },
       });
-      const reason = await tx.catArchivationReason.create({
+      const reason = await tx.catArchivingReason.create({
         data: { name: `Reason ${Date.now()}-${Math.random()}` },
       });
       const cat = await tx.cat.create({
         data: {
           name: `Archived ${Date.now()}-${Math.random()}`,
           archivedAt: new Date(),
-          archivationReasonId: reason.id,
+          archivingReasonId: reason.id,
         },
       });
 
@@ -34,10 +34,10 @@ describe("DearchiveCatHandler", () => {
         tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
       ).resolves.toMatchObject({
         archivedAt: null,
-        archivationReasonId: null,
+        archivingReasonId: null,
       });
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "cat_dearchived",
         actorUserId: actor.id,

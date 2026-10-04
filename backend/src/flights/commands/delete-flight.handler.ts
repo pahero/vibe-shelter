@@ -21,7 +21,7 @@ export class DeleteFlightHandler {
         where: { id: flight.id },
         data: { deletedAt: new Date(), concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.flightAuditEvent.create({
+      await transaction.auditEvent.create({
         data: { flightId: flight.id, actorUserId, eventType: "flight_deleted" },
       });
     });

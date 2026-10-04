@@ -50,7 +50,7 @@ export class AddCatPhotoHandler {
           data: { primaryPhotoKey: key },
         });
       if (actorUserId)
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

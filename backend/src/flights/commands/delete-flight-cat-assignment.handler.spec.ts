@@ -39,7 +39,7 @@ describe("DeleteFlightCatAssignmentHandler", () => {
         ).concurrencyToken,
       ).not.toBe(flight.concurrencyToken);
       expect(
-        await transaction.flightAuditEvent.findFirstOrThrow({
+        await transaction.auditEvent.findFirstOrThrow({
           where: { assignmentId: assignment.id },
         }),
       ).toMatchObject({

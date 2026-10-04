@@ -33,7 +33,7 @@ describe("DeleteCatDocumentHandler", () => {
         deletedByUserId: actor.id,
       });
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { documentId: document.id },
         }),
       ).resolves.toMatchObject({

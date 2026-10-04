@@ -20,7 +20,7 @@ export class DeleteCatMedicalNoteHandler {
         where: { id: note.id },
         data: { deletedAt: new Date(), concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId: note.catId,
           actorUserId,

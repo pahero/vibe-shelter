@@ -56,7 +56,7 @@ export class CreateLocationHandler {
           data: { version: { increment: 1 } },
         });
       if (actorUserId) {
-        await tx.locationAuditEvent.create({
+        await tx.auditEvent.create({
           data: { locationId: location.id, actorUserId, action: "create" },
         });
       }

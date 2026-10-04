@@ -16,7 +16,7 @@ describe("ListFlightHistoryHandler", () => {
         deletedAt: new Date(),
       });
       const cat = await createFlightTestCat(transaction);
-      await transaction.flightAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           flightId: flight.id,
           catId: cat.id,

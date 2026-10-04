@@ -21,7 +21,7 @@ export class CreateCatNoteHandler {
       const note = await transaction.catNote.create({
         data: { catId, ...payload },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId,
           actorUserId,

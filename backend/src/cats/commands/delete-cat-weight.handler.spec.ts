@@ -29,7 +29,7 @@ describe("DeleteCatWeightHandler", () => {
         tx.catWeight.findUnique({ where: { id: weight.id } }),
       ).resolves.toBeNull();
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "weight_deleted",
         oldValue: null,

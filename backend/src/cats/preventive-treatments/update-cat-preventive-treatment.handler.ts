@@ -46,7 +46,7 @@ export class UpdateCatPreventiveTreatmentHandler {
           newValue: payload.type,
         });
       if (changes.length)
-        await transaction.catAuditEvent.createMany({
+        await transaction.auditEvent.createMany({
           data: changes.map((change) => ({
             catId: treatment.catId,
             actorUserId,

@@ -67,7 +67,7 @@ describe("ListCatsHandler", () => {
 
   it("returns archived cats only when the archived filter is enabled", async () => {
     await runInTestTransaction(async (tx) => {
-      const reason = await tx.catArchivationReason.create({
+      const reason = await tx.catArchivingReason.create({
         data: {
           name: `Reason ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
@@ -75,7 +75,7 @@ describe("ListCatsHandler", () => {
       const cat = await tx.cat.create({
         data: {
           name: `Archived ${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          archivationReasonId: reason.id,
+          archivingReasonId: reason.id,
         },
       });
       const result = await new ListCatsHandler(

@@ -25,7 +25,7 @@ describe("ArchiveLocationHandler", () => {
         tx.location.findUniqueOrThrow({ where: { id: location.id } }),
       ).resolves.toMatchObject({ status: "ARCHIVED", version: 1 });
       await expect(
-        tx.locationAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { locationId: location.id },
         }),
       ).resolves.toMatchObject({

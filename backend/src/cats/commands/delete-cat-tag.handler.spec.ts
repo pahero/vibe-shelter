@@ -30,10 +30,20 @@ describe("DeleteCatTagHandler", () => {
         tx.catTag.findUniqueOrThrow({ where: { id: tag.id } }),
       ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
       await expect(
+        tx.auditEvent.findFirstOrThrow({
+          where: { tagId: tag.id, action: "delete" },
+        }),
+      ).resolves.toMatchObject({
+        tagId: tag.id,
+        actorUserId: actor.id,
+        oldValue: null,
+        newValue: null,
+      });
+      await expect(
         tx.catTagOnCat.count({ where: { tagId: tag.id } }),
       ).resolves.toBe(0);
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, tagId: tag.id },
         }),
       ).resolves.toMatchObject({
@@ -49,6 +59,21 @@ describe("DeleteCatTagHandler", () => {
       await expect(
         new DeleteCatTagHandler(tx as PrismaService).handle("missing"),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  it("does not expose tags from the other partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const tag = await tx.catTag.create({
+        data: { name: `Regular ${Date.now()}`, isTest: false },
+      });
+
+      await expect(
+        new DeleteCatTagHandler(tx as PrismaService).handle(tag.id, undefined, true),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        tx.catTag.findUniqueOrThrow({ where: { id: tag.id } }),
+      ).resolves.toMatchObject({ deletedAt: null, version: 0 });
     });
   });
 });

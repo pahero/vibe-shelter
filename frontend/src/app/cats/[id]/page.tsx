@@ -15,7 +15,7 @@ import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatPreventiveTreatments } from "@/components/cat-preventive-treatments";
 import { CatNotes } from "@/components/cat-notes";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
-import { CatArchivationReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
+import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -134,8 +134,8 @@ export default function CatProfilePage() {
   const [removingTagId, setRemovingTagId] = useState<string | null>(null);
   const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
   const [isArchiveFormOpen, setIsArchiveFormOpen] = useState(false);
-  const [archivationReasons, setArchivationReasons] = useState<CatArchivationReason[]>([]);
-  const [archivationReasonId, setArchivationReasonId] = useState("");
+  const [archivingReasons, setArchivingReasons] = useState<CatArchivingReason[]>([]);
+  const [archivingReasonId, setArchivingReasonId] = useState("");
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
 
@@ -511,9 +511,9 @@ export default function CatProfilePage() {
   const openArchiveForm = async () => {
     setArchiveError(null);
     try {
-      const reasons = await catsApi.listArchivationReasons();
-      setArchivationReasons(reasons);
-      setArchivationReasonId(reasons[0]?.id ?? "");
+      const reasons = await catsApi.listArchivingReasons();
+      setArchivingReasons(reasons);
+      setArchivingReasonId(reasons[0]?.id ?? "");
       setIsArchiveFormOpen(true);
     } catch (err) {
       setArchiveError(ApiErrorHandler.handle(err));
@@ -521,14 +521,14 @@ export default function CatProfilePage() {
   };
 
   const archiveCat = async () => {
-    if (!cat || !archivationReasonId) {
-      setArchiveError("Choose an archivation reason.");
+    if (!cat || !archivingReasonId) {
+      setArchiveError("Choose an archiving reason.");
       return;
     }
     setIsArchiving(true);
     setArchiveError(null);
     try {
-      await catsApi.archiveCat(cat.id, archivationReasonId);
+      await catsApi.archiveCat(cat.id, archivingReasonId);
       const updated = await catsApi.getCatCard(cat.id);
       setCat(updated);
       setIsArchiveFormOpen(false);
@@ -847,7 +847,7 @@ export default function CatProfilePage() {
                     )
                   )}
                 </div>
-                {!isEditingDetails && !cat.archivationReasonId && (
+                {!isEditingDetails && !cat.archivingReasonId && (
                   <div className="flex gap-2">
                     <button type="button" onClick={openArchiveForm} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-700 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50">
                       Archive
@@ -857,7 +857,7 @@ export default function CatProfilePage() {
                     </button>
                   </div>
                 )}
-                {!isEditingDetails && cat.archivationReasonId && (
+                {!isEditingDetails && cat.archivingReasonId && (
                   <button type="button" onClick={dearchiveCat} disabled={isArchiving} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#31734b] bg-[#31734b] px-5 text-sm font-semibold text-white transition hover:bg-[#255a3a] disabled:opacity-50">
                     {isArchiving ? "Restoring..." : "Restore cat"}
                   </button>
@@ -868,15 +868,15 @@ export default function CatProfilePage() {
 
               {isArchiveFormOpen && (
                 <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
-                  <label className="grid gap-1 text-sm font-medium text-gray-800">Archivation reason
-                    <select value={archivationReasonId} onChange={(event) => setArchivationReasonId(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2">
-                      {archivationReasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
+                  <label className="grid gap-1 text-sm font-medium text-gray-800">Archiving reason
+                    <select value={archivingReasonId} onChange={(event) => setArchivingReasonId(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2">
+                      {archivingReasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
                     </select>
                   </label>
-                  {archivationReasons.length === 0 && <p className="mt-2 text-sm text-red-700">Create an archivation reason in shelter settings first.</p>}
+                  {archivingReasons.length === 0 && <p className="mt-2 text-sm text-red-700">Create an archiving reason in shelter settings first.</p>}
                   {archiveError && <p className="mt-2 text-sm text-red-700">{archiveError}</p>}
                   <div className="mt-3 flex gap-2">
-                    <button type="button" onClick={archiveCat} disabled={isArchiving || !archivationReasonId} className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isArchiving ? "Archiving..." : "Confirm archive"}</button>
+                    <button type="button" onClick={archiveCat} disabled={isArchiving || !archivingReasonId} className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isArchiving ? "Archiving..." : "Confirm archive"}</button>
                     <button type="button" onClick={() => setIsArchiveFormOpen(false)} className="rounded-lg border border-[#d4c7b4] px-4 py-2 text-sm font-semibold">Cancel</button>
                   </div>
                 </div>
@@ -1108,7 +1108,7 @@ export default function CatProfilePage() {
                   {[
                     ["Current location", cat.currentLocationName || "Not assigned"],
                     ["Sex", sexLabels[cat.sex]],
-                    ...(cat.archivationReasonName ? [["Archivation reason", cat.archivationReasonName] as const] : []),
+                    ...(cat.archivingReasonName ? [["Archiving reason", cat.archivingReasonName] as const] : []),
                     ["Neutering", sterilizationLabels[cat.sterilizationStatus]],
                     ["Color", cat.color || "Not set"],
                     ["Microchip number", cat.microchipNumber || "Not set"],
@@ -1120,7 +1120,7 @@ export default function CatProfilePage() {
                     ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
                     ["Rescue source", cat.rescueSource || "Not set"],
                   ].map(([label, value]) => (
-                    <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Rescue source" ? "border-t sm:col-span-2" : ""} ${label === "Birth date" && !cat.archivationReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivationReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
+                    <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Rescue source" ? "border-t sm:col-span-2" : ""} ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
                       <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66] sm:whitespace-nowrap">{label}</dt>
                       <dd className={`mt-0.5 font-semibold text-gray-900 ${label === "Rescue source" ? "whitespace-pre-wrap break-words" : "truncate"}`}>{value}</dd>
                     </div>

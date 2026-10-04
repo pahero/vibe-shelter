@@ -6,9 +6,9 @@ import { toCatTag } from "../cats.mappers";
 export class ListCatTagsHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle() {
+  async handle(isTest = false) {
     const tags = await this.prisma.catTag.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, isTest },
       orderBy: [{ name: "asc" }, { id: "asc" }],
     });
     return tags.map(toCatTag);

@@ -114,8 +114,8 @@ export class CatsController {
   }
 
   @Get("tags")
-  async listTags() {
-    return this.listCatTagsHandler.handle();
+  async listTags(@CurrentUser() user: AuthenticatedUser) {
+    return this.listCatTagsHandler.handle(user.isTest);
   }
 
   @Get("flight-candidates")
@@ -232,7 +232,7 @@ export class CatsController {
     @Body() dto: CreateCatTagDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.createCatTagHandler.handle(dto.toCommand(), user.id);
+    return this.createCatTagHandler.handle(dto.toCommand(), user.id, user.isTest);
   }
 
   @Patch("tags/:tagId")
@@ -241,7 +241,7 @@ export class CatsController {
     @Body() dto: UpdateCatTagDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.updateCatTagHandler.handle(tagId, dto.toCommand(), user.id);
+    return this.updateCatTagHandler.handle(tagId, dto.toCommand(), user.id, user.isTest);
   }
 
   @Delete("tags/:tagId")
@@ -250,7 +250,7 @@ export class CatsController {
     @Param("tagId") tagId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.deleteCatTagHandler.handle(tagId, user.id);
+    await this.deleteCatTagHandler.handle(tagId, user.id, user.isTest);
   }
 
   @Patch(":id")

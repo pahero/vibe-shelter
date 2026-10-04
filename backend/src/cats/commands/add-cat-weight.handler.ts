@@ -34,7 +34,7 @@ export class AddCatWeightHandler {
         data: { catId, weightKg: data.weightKg, measuredAt },
       });
       if (actorUserId)
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

@@ -20,6 +20,7 @@ export class UpdateCatTagHandler {
     id: string,
     data: UpdateCatTagCommand,
     actorUserId?: string,
+    isTest = false,
   ): Promise<CatTag> {
     validateCatId(id, "Tag ID");
     if (data.name === undefined && data.color === undefined)
@@ -30,12 +31,12 @@ export class UpdateCatTagHandler {
       data.color === undefined ? undefined : validateTagColor(data.color);
     return runInNewTransaction(this.prisma, async (tx) => {
       const existing = await tx.catTag.findFirst({
-        where: { id, deletedAt: null },
+        where: { id, deletedAt: null, isTest },
       });
       if (!existing) throw new NotFoundException("Tag not found");
       if (name && name !== existing.name) {
         const duplicate = await tx.catTag.findFirst({
-          where: { name, deletedAt: null, id: { not: id } },
+          where: { name, deletedAt: null, isTest, id: { not: id } },
           select: { id: true },
         });
         if (duplicate)
@@ -71,7 +72,7 @@ export class UpdateCatTagHandler {
             : []),
         ];
         if (events.length)
-          await tx.tagAuditEvent.createMany({
+          await tx.auditEvent.createMany({
             data: events.map((event) => ({ tagId: id, actorUserId, ...event })),
           });
       }

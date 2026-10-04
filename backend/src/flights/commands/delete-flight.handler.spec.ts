@@ -22,7 +22,7 @@ describe("DeleteFlightHandler", () => {
       expect(saved.deletedAt).toBeInstanceOf(Date);
       expect(saved.concurrencyToken).not.toBe(flight.concurrencyToken);
       expect(
-        await transaction.flightAuditEvent.findFirstOrThrow({
+        await transaction.auditEvent.findFirstOrThrow({
           where: { flightId: flight.id },
         }),
       ).toMatchObject({

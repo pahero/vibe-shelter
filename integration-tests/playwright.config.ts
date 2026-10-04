@@ -16,7 +16,7 @@ export default defineConfig({
   globalTeardown: path.resolve(__dirname, "global-teardown.ts"),
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 4,
   timeout: 30_000,
   expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],

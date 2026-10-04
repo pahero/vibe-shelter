@@ -33,7 +33,7 @@ describe("CreateFlightHandler", () => {
         isTest: true,
       });
       expect(
-        await transaction.flightAuditEvent.findFirstOrThrow({
+        await transaction.auditEvent.findFirstOrThrow({
           where: { flightId: result.id },
         }),
       ).toMatchObject({

@@ -35,7 +35,7 @@ describe("CreateCatPreventiveTreatmentHandler", () => {
         deletedAt: null,
       });
       expect(
-        await transaction.catAuditEvent.findFirstOrThrow({
+        await transaction.auditEvent.findFirstOrThrow({
           where: { catId: cat.id },
         }),
       ).toMatchObject({

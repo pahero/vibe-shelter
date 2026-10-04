@@ -126,7 +126,7 @@ export class UpdateCatHandler {
             newValue: String(updated.nameNumber),
           });
         }
-        if (events.length) await tx.catAuditEvent.createMany({ data: events });
+        if (events.length) await tx.auditEvent.createMany({ data: events });
       }
       return toCatCard(updated, this.photoUrls);
     });

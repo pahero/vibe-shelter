@@ -38,7 +38,7 @@ export class ListCatHistoryQuery {
 
     const where = { catId: input.catId };
     const [catEvents, flightEvents] = await Promise.all([
-      (this.prisma as any).catAuditEvent.findMany({
+      (this.prisma as any).auditEvent.findMany({
         where,
         include: {
           actorUser: { select: { id: true, fullName: true, email: true } },
@@ -52,7 +52,7 @@ export class ListCatHistoryQuery {
         },
         orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
       }),
-      this.prisma.flightAuditEvent.findMany({
+      this.prisma.auditEvent.findMany({
         where: {
           catId: input.catId,
           flight: { isTest: input.currentUserIsTest ?? false },

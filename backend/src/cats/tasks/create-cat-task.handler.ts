@@ -44,7 +44,7 @@ export class CreateCatTaskHandler {
         where: { id: task.id },
         data: { concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId,
           actorUserId,

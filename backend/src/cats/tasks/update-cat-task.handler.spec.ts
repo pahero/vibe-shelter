@@ -129,7 +129,7 @@ describe("UpdateCatTaskHandler", () => {
         transaction.catTask.findUniqueOrThrow({ where: { id: task.id } }),
       ).resolves.toMatchObject({ comment: "After" });
       await expect(
-        transaction.catAuditEvent.findFirstOrThrow({
+        transaction.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "task_comment_changed" },
         }),
       ).resolves.toMatchObject({ actorUserId: actor.id });

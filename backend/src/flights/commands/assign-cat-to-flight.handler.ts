@@ -42,7 +42,7 @@ export class AssignCatToFlightHandler {
         where: { id: flight.id },
         data: { concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.flightAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           flightId: flight.id,
           catId: cat.id,

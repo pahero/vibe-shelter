@@ -68,7 +68,7 @@ export class SetCatTreatmentAdministrationHandler {
         });
       }
       if (input.checked !== Boolean(existing)) {
-        await transaction.catAuditEvent.create({
+        await transaction.auditEvent.create({
           data: {
             catId: treatment.catId,
             treatmentId: treatment.id,

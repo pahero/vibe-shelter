@@ -48,7 +48,7 @@ describe("UpdateFlightCatAssignmentHandler", () => {
         ).concurrencyToken,
       ).not.toBe(flight.concurrencyToken);
       expect(
-        await transaction.flightAuditEvent.findMany({
+        await transaction.auditEvent.findMany({
           where: { assignmentId: assignment.id },
         }),
       ).toEqual(
@@ -111,7 +111,7 @@ describe("UpdateFlightCatAssignmentHandler", () => {
         ).concurrencyToken,
       ).toBe(flight.concurrencyToken);
       await expect(
-        transaction.flightAuditEvent.count({ where: { flightId: flight.id } }),
+        transaction.auditEvent.count({ where: { flightId: flight.id } }),
       ).resolves.toBe(0);
     });
   });
@@ -148,7 +148,7 @@ describe("UpdateFlightCatAssignmentHandler", () => {
         ).concurrencyToken,
       ).toBe(assignment.concurrencyToken);
       await expect(
-        transaction.flightAuditEvent.count({ where: { flightId: flight.id } }),
+        transaction.auditEvent.count({ where: { flightId: flight.id } }),
       ).resolves.toBe(0);
     });
   });

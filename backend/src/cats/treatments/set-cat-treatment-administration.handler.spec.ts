@@ -138,7 +138,7 @@ describe("SetCatTreatmentAdministrationHandler", () => {
         }),
       ).resolves.toMatchObject({ checkedByUserId: actor.id });
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: {
             catId: cat.id,
             eventType: "treatment_administration_checked",
@@ -192,7 +192,7 @@ describe("SetCatTreatmentAdministrationHandler", () => {
         }),
       ).resolves.toBe(0);
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: {
             catId: cat.id,
             eventType: "treatment_administration_unchecked",
@@ -232,7 +232,7 @@ describe("SetCatTreatmentAdministrationHandler", () => {
         false,
       );
       await expect(
-        tx.catAuditEvent.count({ where: { catId: cat.id } }),
+        tx.auditEvent.count({ where: { catId: cat.id } }),
       ).resolves.toBe(0);
     });
   });

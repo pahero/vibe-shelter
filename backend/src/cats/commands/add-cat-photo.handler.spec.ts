@@ -60,7 +60,7 @@ describe("AddCatPhotoHandler", () => {
         primaryPhotoKey: expect.stringContaining(cat.id),
       });
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: cat.id } }),
       ).resolves.toMatchObject({
         eventType: "photo_created",
         photoId: result.id,

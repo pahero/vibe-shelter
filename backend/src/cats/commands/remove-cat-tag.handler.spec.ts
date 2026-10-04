@@ -38,7 +38,7 @@ describe("RemoveCatTagHandler", () => {
       ).handle(cat.id, tag.id, actor.id, false);
       expect(result.tags).toEqual([]);
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, tagId: tag.id },
         }),
       ).resolves.toMatchObject({
@@ -65,6 +65,30 @@ describe("RemoveCatTagHandler", () => {
           false,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  it("rejects a tag from the other partition", async () => {
+    await runInTestTransaction(async (tx) => {
+      const cat = await tx.cat.create({
+        data: { name: `Test ${Date.now()}`, isTest: true },
+      });
+      const tag = await tx.catTag.create({
+        data: { name: `Regular ${Date.now()}`, isTest: false },
+      });
+      await tx.catTagOnCat.create({ data: { catId: cat.id, tagId: tag.id } });
+
+      await expect(
+        new RemoveCatTagHandler(tx as PrismaService, urls).handle(
+          cat.id,
+          tag.id,
+          undefined,
+          true,
+        ),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        tx.catTagOnCat.count({ where: { catId: cat.id, tagId: tag.id } }),
+      ).resolves.toBe(1);
     });
   });
 });

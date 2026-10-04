@@ -33,7 +33,7 @@ describe("CreateCatHandler", () => {
       expect(card.nameNumber).toBe(1);
       expect(card.primaryPhotoUrl).toBeNull();
       await expect(
-        tx.catAuditEvent.findFirstOrThrow({ where: { catId: card.id } }),
+        tx.auditEvent.findFirstOrThrow({ where: { catId: card.id } }),
       ).resolves.toMatchObject({
         eventType: "cat_created",
         actorUserId,

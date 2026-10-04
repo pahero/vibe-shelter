@@ -39,7 +39,7 @@ export class CompleteCatTaskHandler {
           notifications: { deleteMany: {} },
         },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId: task.catId,
           actorUserId: userId,

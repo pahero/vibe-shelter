@@ -8,27 +8,27 @@ import { validateCatId } from "../cats.handler-utils";
 export class DeleteCatTagHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(id: string, actorUserId?: string): Promise<void> {
+  async handle(id: string, actorUserId?: string, isTest = false): Promise<void> {
     validateCatId(id, "Tag ID");
     await runInNewTransaction(this.prisma, async (tx) => {
       const tag = await tx.catTag.findFirst({
-        where: { id, deletedAt: null },
+        where: { id, deletedAt: null, isTest },
         select: { id: true },
       });
       if (!tag) throw new NotFoundException("Tag not found");
       const assignments = await tx.catTagOnCat.findMany({
-        where: { tagId: id },
+        where: { tagId: id, cat: { isTest } },
         select: { catId: true },
       });
       if (actorUserId)
-        await tx.tagAuditEvent.create({
+        await tx.auditEvent.create({
           data: { tagId: id, actorUserId, action: "delete" },
         });
-      await tx.catTagOnCat.deleteMany({ where: { tagId: id } });
+      await tx.catTagOnCat.deleteMany({ where: { tagId: id, cat: { isTest } } });
       if (actorUserId) {
         await Promise.all(
           assignments.map(({ catId }) =>
-            tx.catAuditEvent.create({
+            tx.auditEvent.create({
               data: {
                 catId,
                 actorUserId,

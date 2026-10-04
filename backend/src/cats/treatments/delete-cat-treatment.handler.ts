@@ -22,7 +22,7 @@ export class DeleteCatTreatmentHandler {
         where: { id: treatment.id },
         data: { deletedAt: new Date(), concurrencyToken: crypto.randomUUID() },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId: treatment.catId,
           treatmentId: treatment.id,

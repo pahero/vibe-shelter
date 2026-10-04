@@ -64,7 +64,7 @@ describe("DeleteCatTreatmentHandler", () => {
         }),
       ).resolves.toBe(1);
       await expect(
-        transaction.catAuditEvent.findFirstOrThrow({
+        transaction.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "treatment_deleted" },
         }),
       ).resolves.toMatchObject({

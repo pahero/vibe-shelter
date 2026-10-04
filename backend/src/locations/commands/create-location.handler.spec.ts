@@ -29,7 +29,7 @@ describe("CreateLocationHandler", () => {
         status: "ACTIVE",
       });
       await expect(
-        tx.locationAuditEvent.findFirstOrThrow({
+        tx.auditEvent.findFirstOrThrow({
           where: { locationId: result.id },
         }),
       ).resolves.toMatchObject({

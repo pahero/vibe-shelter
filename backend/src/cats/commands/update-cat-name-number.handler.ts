@@ -31,7 +31,7 @@ export class UpdateCatNameNumberHandler {
         throw new ConflictException("This cat name number is already in use");
       if (cat.nameNumber !== nameNumber) {
         await tx.cat.update({ where: { id }, data: { nameNumber } });
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId: id,
             actorUserId,

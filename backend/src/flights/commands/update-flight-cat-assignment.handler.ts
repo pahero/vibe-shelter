@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { FlightAuditEventType } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { runInNewTransaction } from "../../database/helpers";
 import { UpdateFlightCatAssignmentCommand } from "./update-flight-cat-assignment.command";
@@ -31,7 +30,7 @@ export class UpdateFlightCatAssignmentHandler {
 
       const data: { f2fDone?: boolean; tracesDone?: boolean } = {};
       const changes: {
-        eventType: FlightAuditEventType;
+        eventType: string;
         oldValue: string;
         newValue: string;
       }[] = [];
@@ -67,7 +66,7 @@ export class UpdateFlightCatAssignmentHandler {
           where: { id: assignment.flightId },
           data: { concurrencyToken: crypto.randomUUID() },
         });
-        await transaction.flightAuditEvent.createMany({
+        await transaction.auditEvent.createMany({
           data: changes.map((change) => ({
             flightId: assignment.flightId,
             catId: assignment.catId,

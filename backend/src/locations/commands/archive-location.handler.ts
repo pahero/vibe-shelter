@@ -37,7 +37,7 @@ export class ArchiveLocationHandler {
         },
       });
       if (actorUserId)
-        await tx.locationAuditEvent.create({
+        await tx.auditEvent.create({
           data: { locationId: id, actorUserId, action: "delete" },
         });
     });

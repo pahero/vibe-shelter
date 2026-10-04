@@ -39,7 +39,7 @@ export class UpdateCatNoteHandler {
           newValue: payload.comment,
         });
       if (changes.length)
-        await transaction.catAuditEvent.createMany({
+        await transaction.auditEvent.createMany({
           data: changes.map((change) => ({
             catId: note.catId,
             actorUserId,

@@ -19,7 +19,7 @@ export class CreateFlightHandler {
         },
         select: { id: true },
       });
-      await transaction.flightAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           flightId: flight.id,
           actorUserId: command.actorUserId,

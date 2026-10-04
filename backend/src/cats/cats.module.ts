@@ -13,11 +13,11 @@ import { WriteCatAuditEventCommand } from "./commands/write-cat-audit-event.comm
 import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
 import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
-import { ArchivationReasonsController } from "./archivation-reasons/archivation-reasons.controller";
-import { CreateArchivationReasonCommand } from "./archivation-reasons/create-archivation-reason.command";
-import { DeleteArchivationReasonCommand } from "./archivation-reasons/delete-archivation-reason.command";
-import { ListArchivationReasonsQuery } from "./archivation-reasons/list-archivation-reasons.query";
-import { UpdateArchivationReasonCommand } from "./archivation-reasons/update-archivation-reason.command";
+import { ArchivingReasonsController } from "./archiving-reasons/archiving-reasons.controller";
+import { CreateArchivingReasonCommand } from "./archiving-reasons/create-archiving-reason.command";
+import { DeleteArchivingReasonCommand } from "./archiving-reasons/delete-archiving-reason.command";
+import { ListArchivingReasonsQuery } from "./archiving-reasons/list-archiving-reasons.query";
+import { UpdateArchivingReasonCommand } from "./archiving-reasons/update-archiving-reason.command";
 import { CompleteCatTaskHandler } from "./tasks/complete-cat-task.handler";
 import { CreateCatTaskHandler } from "./tasks/create-cat-task.handler";
 import { DeleteCatTaskHandler } from "./tasks/delete-cat-task.handler";
@@ -75,7 +75,7 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
   controllers: [
-    ArchivationReasonsController,
+    ArchivingReasonsController,
     CatsController,
     CatTasksController,
     TaskNotificationsController,
@@ -94,10 +94,10 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     ListCatHistoryQuery,
     ListAllCatHistoryQuery,
     ListFlightCandidatesHandler,
-    ListArchivationReasonsQuery,
-    CreateArchivationReasonCommand,
-    UpdateArchivationReasonCommand,
-    DeleteArchivationReasonCommand,
+    ListArchivingReasonsQuery,
+    CreateArchivingReasonCommand,
+    UpdateArchivingReasonCommand,
+    DeleteArchivingReasonCommand,
     ListCatTasksHandler,
     CreateCatTaskHandler,
     UpdateCatTaskHandler,

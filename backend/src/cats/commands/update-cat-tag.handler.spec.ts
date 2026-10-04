@@ -27,7 +27,7 @@ describe("UpdateCatTagHandler", () => {
         actor.id,
       );
       expect(result).toMatchObject({ name: "After", color: "#ffd166" });
-      const events = await tx.tagAuditEvent.findMany({
+      const events = await tx.auditEvent.findMany({
         where: { tagId: tag.id },
       });
       expect(events).toHaveLength(2);
@@ -75,6 +75,25 @@ describe("UpdateCatTagHandler", () => {
           name: "Taken",
         }),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  it("allows renaming to a name used in the other partition and scopes tag lookup", async () => {
+    await runInTestTransaction(async (tx) => {
+      const regular = await tx.catTag.create({
+        data: { name: "Shared name", isTest: false },
+      });
+      const testTag = await tx.catTag.create({
+        data: { name: "Test tag", isTest: true },
+      });
+      const handler = new UpdateCatTagHandler(tx as PrismaService);
+
+      await expect(
+        handler.handle(testTag.id, { name: regular.name }, undefined, true),
+      ).resolves.toMatchObject({ id: testTag.id, name: regular.name });
+      await expect(
+        handler.handle(regular.id, { color: "#8ecaff" }, undefined, true),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

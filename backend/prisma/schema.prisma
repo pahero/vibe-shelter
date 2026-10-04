@@ -1,10 +1,12 @@
 // prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
+  extensions = [citext]
 }
 
 model User {
@@ -28,15 +30,12 @@ model User {
   deletedPhotos  CatPhoto[] @relation("deletedPhotos")
   createdDocuments CatDocument[] @relation("createdDocuments")
   deletedDocuments CatDocument[] @relation("deletedDocuments")
-  catAuditEvents CatAuditEvent[] @relation("catAuditActors")
-  tagAuditEvents TagAuditEvent[] @relation("tagAuditActors")
-  locationAuditEvents LocationAuditEvent[] @relation("locationAuditActors")
-  relatedLocationAuditEvents LocationAuditEvent[] @relation("locationRelatedUsers")
+  auditEvents AuditEvent[] @relation("auditActors")
+  relatedAuditEvents AuditEvent[] @relation("auditRelatedUsers")
   taskReceivers      CatTaskReceiver[]    @relation("taskReceivers")
   completedTasks     CatTask[]            @relation("completedTasks")
   taskNotifications  TaskNotification[]
   checkedTreatmentAdministrations CatTreatmentAdministration[] @relation("treatmentAdministrationCheckers")
-  flightAuditEvents FlightAuditEvent[] @relation("flightAuditActors")
 
   @@index([status])
   @@index([role])
@@ -95,85 +94,6 @@ enum PreventiveTreatmentType {
   OTHER
 }
 
-enum FlightAuditEventType {
-  flight_created
-  flight_deleted
-  flight_restored
-  flight_date_changed
-  flight_airport_changed
-  flight_number_changed
-  flight_parent_changed
-  flight_cat_assigned
-  flight_cat_unassigned
-  flight_cat_restored
-  flight_cat_f2f_changed
-  flight_cat_traces_changed
-}
-
-enum CatAuditEventType {
-  cat_created
-  cat_archived
-  cat_dearchived
-  archivation_reason_create
-  archivation_reason_update
-  archivation_reason_delete
-  name_changed
-  name_number_changed
-  sex_changed
-  color_changed
-  estimated_birth_date_changed
-  intake_date_changed
-  rescue_source_changed
-  microchip_number_changed
-  passport_number_changed
-  adopter_name_changed
-  adopter_address_changed
-  felv_fiv_test_done_changed
-  traces_changed
-  fit_to_fly_changed
-  sterilization_status_changed
-  status_changed
-  current_location_changed
-  photo_created
-  photo_deleted
-  document_created
-  document_deleted
-  weight_created
-  weight_deleted
-  tag_added_to_cat
-  tag_removed_from_cat
-  task_created
-  task_updated
-  task_comment_changed
-  task_due_date_changed
-  task_receivers_changed
-  task_deleted
-  task_completed
-  treatment_created
-  treatment_deleted
-  treatment_restored
-  treatment_short_name_changed
-  treatment_start_date_changed
-  treatment_end_date_changed
-  treatment_doses_per_day_changed
-  treatment_instructions_changed
-  treatment_administration_checked
-  treatment_administration_unchecked
-  medical_note_created
-  medical_note_deleted
-  medical_note_date_changed
-  medical_note_comment_changed
-  preventive_treatment_created
-  preventive_treatment_deleted
-  preventive_treatment_date_changed
-  preventive_treatment_name_changed
-  preventive_treatment_type_changed
-  note_created
-  note_deleted
-  note_date_changed
-  note_comment_changed
-}
-
 model Location {
   id          String         @id @default(cuid())
   name        String
@@ -187,7 +107,7 @@ model Location {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
-  auditEvents LocationAuditEvent[]
+  auditEvents AuditEvent[]
 
   @@index([ownerId])
   @@index([isTest])
@@ -195,24 +115,6 @@ model Location {
   @@index([deletedAt])
 }
 
-model LocationAuditEvent {
-  id          String   @id @default(cuid())
-  locationId  String?
-  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  relatedUserId String?
-  relatedUser User? @relation("locationRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
-  actorUserId String
-  actorUser   User     @relation("locationAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
-  action      String
-  oldValue    String?
-  newValue    String?
-  createdAt   DateTime @default(now())
-
-  @@index([locationId])
-  @@index([actorUserId])
-  @@index([createdAt])
-  @@index([relatedUserId])
-}
 
 model Cat {
   id                  String              @id @default(cuid())
@@ -230,8 +132,8 @@ model Cat {
   felvFivTestDone     Boolean             @default(false)
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   archivedAt          DateTime?
-  archivationReasonId String?
-  archivationReason   CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: Restrict)
+  archivingReasonId String?
+  archivingReason   CatArchivingReason? @relation(fields: [archivingReasonId], references: [id], onDelete: Restrict)
   isTest              Boolean             @default(false)
   currentLocationId   String?
   currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
@@ -244,26 +146,26 @@ model Cat {
   tags                CatTagOnCat[]
   photos              CatPhoto[]
   documents           CatDocument[]
-  auditEvents         CatAuditEvent[]
+  auditEvents         AuditEvent[] @relation("auditCats")
   tasks               CatTask[]
   treatments          CatTreatment[]
   medicalNotes        CatMedicalNote[]
   preventiveTreatments CatPreventiveTreatment[]
   notes               CatNote[]
   flightAssignments  FlightCatAssignment[]
-  flightAuditEvents  FlightAuditEvent[]
+
 
   @@index([createdByUserId])
   @@index([currentLocationId])
   @@index([isTest])
   @@index([archivedAt])
-  @@index([archivationReasonId])
+  @@index([archivingReasonId])
   @@index([name])
   @@unique([name, nameNumber, isTest])
   @@index([intakeDate])
 }
 
-model CatArchivationReason {
+model CatArchivingReason {
   id          String   @id @default(cuid())
   name        String
   isTest      Boolean  @default(false)
@@ -272,7 +174,7 @@ model CatArchivationReason {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   cats        Cat[]
-  auditEvents CatAuditEvent[]
+  auditEvents AuditEvent[] @relation("auditArchivingReasons")
 
   @@index([deletedAt])
   @@index([isTest])
@@ -291,7 +193,7 @@ model CatPhoto {
   deletedAt       DateTime?
   version         Int      @default(0)
   createdAt       DateTime @default(now())
-  auditEvents     CatAuditEvent[]
+  auditEvents     AuditEvent[]
 
   @@index([catId])
   @@index([createdByUserId])
@@ -314,7 +216,7 @@ model CatDocument {
   version         Int      @default(1)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  auditEvents     CatAuditEvent[]
+  auditEvents     AuditEvent[]
 
   @@index([catId])
   @@index([createdByUserId])
@@ -323,68 +225,23 @@ model CatDocument {
   @@index([createdAt])
 }
 
-model CatAuditEvent {
-  id          String            @id @default(cuid())
-  catId       String?
-  cat         Cat?              @relation(fields: [catId], references: [id], onDelete: Cascade)
-  archivationReasonId String?
-  archivationReason CatArchivationReason? @relation(fields: [archivationReasonId], references: [id], onDelete: SetNull)
-  actorUserId String
-  actorUser   User              @relation("catAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
-  eventType   CatAuditEventType
-  occurredAt  DateTime          @default(now())
-  oldValue    String?
-  newValue    String?
-  treatmentAdministrationDate DateTime? @db.Date
-  treatmentId String?
-  treatment   CatTreatment?      @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
-  photoId     String?
-  photo       CatPhoto?         @relation(fields: [photoId], references: [id], onDelete: SetNull)
-  documentId  String?
-  document    CatDocument?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
-  tagId       String?
-  tag         CatTag?           @relation("catAuditTag", fields: [tagId], references: [id], onDelete: SetNull)
-
-  @@index([catId, occurredAt])
-  @@index([archivationReasonId, occurredAt])
-  @@index([actorUserId])
-  @@index([photoId])
-  @@index([documentId])
-  @@index([treatmentId])
-  @@index([tagId])
-  @@index([eventType])
-}
 
 model CatTag {
   id        String        @id @default(cuid())
   name      String
   color     String        @default("#ffb38a")
+  isTest    Boolean       @default(false)
   deletedAt DateTime?
   version   Int           @default(0)
   createdAt DateTime      @default(now())
   cats      CatTagOnCat[]
-  auditEvents TagAuditEvent[]
-  catAuditEvents CatAuditEvent[] @relation("catAuditTag")
+  auditEvents AuditEvent[] @relation("auditTags")
 
   @@index([name])
+  @@index([isTest])
   @@index([deletedAt])
 }
 
-model TagAuditEvent {
-  id          String   @id @default(cuid())
-  tagId       String?
-  tag         CatTag?  @relation(fields: [tagId], references: [id], onDelete: SetNull)
-  actorUserId String
-  actorUser   User     @relation("tagAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
-  action      String
-  oldValue    String?
-  newValue    String?
-  createdAt   DateTime @default(now())
-
-  @@index([tagId])
-  @@index([actorUserId])
-  @@index([createdAt])
-}
 
 model CatTagOnCat {
   catId String
@@ -422,7 +279,7 @@ model CatTreatment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   administrations CatTreatmentAdministration[]
-  auditEvents     CatAuditEvent[]
+  auditEvents     AuditEvent[]
 
   @@index([catId, createdAt])
   @@index([catId, startDate, endDate])
@@ -455,7 +312,7 @@ model Flight {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   assignments       FlightCatAssignment[]
-  auditEvents       FlightAuditEvent[]
+  auditEvents       AuditEvent[] @relation("auditFlights")
 
   @@index([date])
   @@index([deletedAt])
@@ -474,35 +331,53 @@ model FlightCatAssignment {
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  auditEvents      FlightAuditEvent[]
+  auditEvents      AuditEvent[] @relation("auditAssignments")
 
   @@index([flightId, deletedAt])
   @@index([catId, deletedAt])
   @@index([concurrencyToken])
 }
 
-model FlightAuditEvent {
-  id             String                @id @default(cuid())
-  flightId       String
-  flight         Flight                @relation(fields: [flightId], references: [id], onDelete: Restrict)
-  catId          String?
-  cat            Cat?                  @relation(fields: [catId], references: [id], onDelete: SetNull)
-  assignmentId   String?
-  assignment     FlightCatAssignment?  @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
-  actorUserId    String
-  actorUser      User                  @relation("flightAuditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
-  eventType      FlightAuditEventType
-  oldValue       String?
-  newValue       String?
-  createdAt      DateTime              @default(now())
 
+model AuditEvent {
+  id String @id @default(cuid())
+  catId String?
+  cat Cat? @relation("auditCats", fields: [catId], references: [id], onDelete: Cascade)
+  flightId String?
+  flight Flight? @relation("auditFlights", fields: [flightId], references: [id], onDelete: SetNull)
+  assignmentId String?
+  assignment FlightCatAssignment? @relation("auditAssignments", fields: [assignmentId], references: [id], onDelete: SetNull)
+  locationId String?
+  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  tagId String?
+  tag CatTag? @relation("auditTags", fields: [tagId], references: [id], onDelete: SetNull)
+  archivingReasonId String?
+  archivingReason CatArchivingReason? @relation("auditArchivingReasons", fields: [archivingReasonId], references: [id], onDelete: SetNull)
+  treatmentId String?
+  treatment CatTreatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+  photoId String?
+  photo CatPhoto? @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  documentId String?
+  document CatDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  actorUserId String
+  actorUser User @relation("auditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  relatedUserId String?
+  relatedUser User? @relation("auditRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
+  eventType String?
+  action String?
+  oldValue String?
+  newValue String?
+  occurredAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  treatmentAdministrationDate DateTime? @db.Date
+  @@index([catId, occurredAt])
   @@index([flightId, createdAt])
-  @@index([catId, createdAt])
-  @@index([assignmentId])
+  @@index([locationId])
+  @@index([tagId])
   @@index([actorUserId])
+  @@index([createdAt])
   @@index([eventType])
 }
-
 model CatMedicalNote {
   id               String   @id @default(cuid())
   catId            String

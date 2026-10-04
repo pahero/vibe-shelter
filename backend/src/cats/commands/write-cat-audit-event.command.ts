@@ -18,7 +18,7 @@ export class WriteCatAuditEventCommand {
     transaction: Prisma.TransactionClient,
     input: WriteCatAuditEventInput,
   ): Promise<void> {
-    await transaction.catAuditEvent.create({
+    await transaction.auditEvent.create({
       data: {
         catId: input.catId,
         actorUserId: input.actorUserId,

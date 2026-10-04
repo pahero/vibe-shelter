@@ -51,7 +51,7 @@ export class UpdatePrimaryCatPhotoHandler {
         include: CAT_CARD_INCLUDE,
       });
       if (actorUserId)
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

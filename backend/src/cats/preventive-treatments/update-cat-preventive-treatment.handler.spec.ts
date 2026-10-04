@@ -46,7 +46,7 @@ describe("UpdateCatPreventiveTreatmentHandler", () => {
         type: "RABIES",
       });
       expect(saved.concurrencyToken).not.toBe(treatment.concurrencyToken);
-      const events = await transaction.catAuditEvent.findMany({
+      const events = await transaction.auditEvent.findMany({
         where: { catId: cat.id },
         orderBy: { occurredAt: "asc" },
       });
@@ -103,7 +103,7 @@ describe("UpdateCatPreventiveTreatmentHandler", () => {
       );
 
       await expect(
-        transaction.catAuditEvent.count({ where: { catId: cat.id } }),
+        transaction.auditEvent.count({ where: { catId: cat.id } }),
       ).resolves.toBe(0);
     });
   });

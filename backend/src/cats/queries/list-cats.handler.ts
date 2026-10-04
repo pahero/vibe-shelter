@@ -23,7 +23,7 @@ export class ListCatsHandler {
       );
     const where: Prisma.CatWhereInput = {
       isTest,
-      archivationReasonId: filters.archived ? { not: null } : null,
+      archivingReasonId: filters.archived ? { not: null } : null,
     };
     if (filters.locationId) where.currentLocationId = filters.locationId;
     if (filters.tagId) where.tags = { some: { tagId: filters.tagId } };

@@ -52,7 +52,7 @@ export class DeleteCatPhotoHandler {
         });
       }
       if (actorUserId)
-        await tx.catAuditEvent.create({
+        await tx.auditEvent.create({
           data: {
             catId,
             actorUserId,

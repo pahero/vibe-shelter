@@ -34,7 +34,7 @@ describe("RestoreCatTreatmentHandler", () => {
         }),
       ).resolves.toMatchObject({ deletedAt: null });
       await expect(
-        transaction.catAuditEvent.findFirstOrThrow({
+        transaction.auditEvent.findFirstOrThrow({
           where: { catId: cat.id, eventType: "treatment_restored" },
         }),
       ).resolves.toMatchObject({

@@ -743,7 +743,7 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
-    const tagAuditEvents = await (prisma as any).tagAuditEvent.findMany({
+    const tagAuditEvents = await (prisma as any).auditEvent.findMany({
       where: { tagId: createdTag.body.id },
       orderBy: { createdAt: "asc" },
     });
@@ -800,6 +800,68 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
+  });
+
+  it("partitions active tag names, lists tags, and assignments by test group", async () => {
+    const testAuth = await createAuthenticatedAgent(app, prisma, true);
+    const name = unique("tag");
+    const regularTag = await authAgent
+      .post("/api/cats/tags")
+      .send({ name })
+      .expect(201);
+    const testTag = await testAuth.agent
+      .post("/api/cats/tags")
+      .send({ name })
+      .expect(201);
+
+    expect(testTag.body.id).not.toBe(regularTag.body.id);
+    const reusedRegularTag = await authAgent
+      .post("/api/cats/tags")
+      .send({ name })
+      .expect(201);
+    const reusedTestTag = await testAuth.agent
+      .post("/api/cats/tags")
+      .send({ name })
+      .expect(201);
+    expect(reusedRegularTag.body.id).toBe(regularTag.body.id);
+    expect(reusedTestTag.body.id).toBe(testTag.body.id);
+
+    const regularTags = await authAgent.get("/api/cats/tags").expect(200);
+    const testTags = await testAuth.agent.get("/api/cats/tags").expect(200);
+    expect(regularTags.body.map((tag: { id: string }) => tag.id)).toContain(
+      regularTag.body.id,
+    );
+    expect(regularTags.body.map((tag: { id: string }) => tag.id)).not.toContain(
+      testTag.body.id,
+    );
+    expect(testTags.body.map((tag: { id: string }) => tag.id)).toContain(
+      testTag.body.id,
+    );
+    expect(testTags.body.map((tag: { id: string }) => tag.id)).not.toContain(
+      regularTag.body.id,
+    );
+
+    const testCat = await prisma.cat.create({
+      data: { name: unique("test-tag-cat"), isTest: true },
+    });
+    await testAuth.agent
+      .post(`/api/cats/${testCat.id}/tags/${regularTag.body.id}`)
+      .expect(404);
+    const assigned = await testAuth.agent
+      .post(`/api/cats/${testCat.id}/tags/${testTag.body.id}`)
+      .expect(201);
+    expect(assigned.body.tags).toContainEqual(
+      expect.objectContaining({ id: testTag.body.id }),
+    );
+
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: { catId: testCat.id, tagId: testTag.body.id },
+      }),
+    ).resolves.toMatchObject({
+      eventType: "tag_added_to_cat",
+      tagId: testTag.body.id,
+    });
   });
 
   it("audits location mutations and soft deletes locations", async () => {
@@ -901,41 +963,41 @@ describe("Cats endpoints", () => {
     expect(regularLocation.body.id).not.toBe(testLocation.body.id);
   });
 
-  it("partitions active archivation reason names and lists by test group", async () => {
+  it("partitions active archiving reason names and lists by test group", async () => {
     const testAuth = await createAuthenticatedAgent(app, prisma, true);
     const name = unique("partitioned-reason");
     const regularReason = await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name })
       .expect(201);
     const testReason = await testAuth.agent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name })
       .expect(201);
     const regularOnlyName = unique("regular-only-reason");
     await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name: regularOnlyName })
       .expect(201);
 
     await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name })
       .expect(409);
     const testTarget = await testAuth.agent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name: unique("test-target-reason") })
       .expect(201);
     await testAuth.agent
-      .patch(`/api/cats/archivation-reasons/${testTarget.body.id}`)
+      .patch(`/api/cats/archiving-reasons/${testTarget.body.id}`)
       .send({ name: regularOnlyName })
       .expect(200);
 
     const regularReasons = await authAgent
-      .get("/api/cats/archivation-reasons")
+      .get("/api/cats/archiving-reasons")
       .expect(200);
     const testReasons = await testAuth.agent
-      .get("/api/cats/archivation-reasons")
+      .get("/api/cats/archiving-reasons")
       .expect(200);
     expect(
       regularReasons.body.map((reason: { id: string }) => reason.id),
@@ -951,17 +1013,17 @@ describe("Cats endpoints", () => {
     ).not.toContain(regularReason.body.id);
   });
 
-  it("archives cats with audited archivation reasons and filters archived cats", async () => {
+  it("archives cats with audited archiving reasons and filters archived cats", async () => {
     const cat = await createCat(prisma, { name: unique("archived-cat") });
     const reasonName = unique("adopted-cy");
     const createdReason = await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name: reasonName })
       .expect(201);
     expect(createdReason.body).toEqual({ id: expect.any(String) });
     const updatedReasonName = `${reasonName} updated`;
     const updatedReason = await authAgent
-      .patch(`/api/cats/archivation-reasons/${createdReason.body.id}`)
+      .patch(`/api/cats/archiving-reasons/${createdReason.body.id}`)
       .send({ name: updatedReasonName })
       .expect(200);
     expect(updatedReason.body).toEqual({ id: createdReason.body.id });
@@ -976,8 +1038,8 @@ describe("Cats endpoints", () => {
       .get(`/api/cats/${cat.id}/card`)
       .expect(200);
     expect(archivedCard.body).toMatchObject({
-      archivationReasonId: updatedReason.body.id,
-      archivationReasonName: updatedReasonName,
+      archivingReasonId: updatedReason.body.id,
+      archivingReasonName: updatedReasonName,
       archivedAt: expect.any(String),
     });
 
@@ -989,13 +1051,13 @@ describe("Cats endpoints", () => {
       archivedSearch.body.data.map((item: { id: string }) => item.id),
     ).toContain(cat.id);
 
-    const reasonEvents = await prisma.catAuditEvent.findMany({
-      where: { archivationReasonId: updatedReason.body.id },
+    const reasonEvents = await prisma.auditEvent.findMany({
+      where: { archivingReasonId: updatedReason.body.id },
       orderBy: { occurredAt: "asc" },
     });
     expect(reasonEvents.map((event) => event.eventType)).toEqual([
-      "archivation_reason_create",
-      "archivation_reason_update",
+      "archiving_reason_create",
+      "archiving_reason_update",
     ]);
     const dearchived = await authAgent
       .post(`/api/cats/${cat.id}/dearchive`)
@@ -1006,8 +1068,8 @@ describe("Cats endpoints", () => {
       .expect(200);
     expect(restoredCard.body).toMatchObject({
       archivedAt: null,
-      archivationReasonId: null,
-      archivationReasonName: null,
+      archivingReasonId: null,
+      archivingReasonName: null,
     });
     const history = await authAgent
       .get(`/api/cats/${cat.id}/history`)
@@ -1029,18 +1091,18 @@ describe("Cats endpoints", () => {
       ]),
     );
     await authAgent
-      .delete(`/api/cats/archivation-reasons/${updatedReason.body.id}`)
+      .delete(`/api/cats/archiving-reasons/${updatedReason.body.id}`)
       .expect(204);
 
     const unusedReason = await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name: unique("unused-reason") })
       .expect(201);
     await authAgent
-      .delete(`/api/cats/archivation-reasons/${unusedReason.body.id}`)
+      .delete(`/api/cats/archiving-reasons/${unusedReason.body.id}`)
       .expect(204);
     const reasons = await authAgent
-      .get("/api/cats/archivation-reasons")
+      .get("/api/cats/archiving-reasons")
       .expect(200);
     expect(
       reasons.body.map((reason: { id: string }) => reason.id),
@@ -1053,47 +1115,47 @@ describe("Cats endpoints", () => {
     expect(globalAudit.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          eventType: "archivation_reason_create",
+          eventType: "archiving_reason_create",
           actor: expect.objectContaining({ id: authUser.id }),
         }),
         expect.objectContaining({
-          eventType: "archivation_reason_update",
+          eventType: "archiving_reason_update",
           actor: expect.objectContaining({ id: authUser.id }),
         }),
         expect.objectContaining({
-          eventType: "archivation_reason_delete",
+          eventType: "archiving_reason_delete",
           actor: expect.objectContaining({ id: authUser.id }),
         }),
       ]),
     );
   });
 
-  it("reassigns cats when deleting an assigned archivation reason", async () => {
+  it("reassigns cats when deleting an assigned archiving reason", async () => {
     const source = await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name: unique("replace-source") })
       .expect(201);
     const replacement = await authAgent
-      .post("/api/cats/archivation-reasons")
+      .post("/api/cats/archiving-reasons")
       .send({ name: unique("replace-target") })
       .expect(201);
     const cat = await createCat(prisma, { name: unique("replace-cat") });
     await prisma.cat.update({
       where: { id: cat.id },
-      data: { archivationReasonId: source.body.id },
+      data: { archivingReasonId: source.body.id },
     });
 
     await authAgent
-      .delete(`/api/cats/archivation-reasons/${source.body.id}`)
+      .delete(`/api/cats/archiving-reasons/${source.body.id}`)
       .send({ replacementReasonId: replacement.body.id })
       .expect(204);
 
     const updatedCat = await authAgent
       .get(`/api/cats/${cat.id}/card`)
       .expect(200);
-    expect(updatedCat.body.archivationReasonId).toBe(replacement.body.id);
+    expect(updatedCat.body.archivingReasonId).toBe(replacement.body.id);
     const reasons = await authAgent
-      .get("/api/cats/archivation-reasons")
+      .get("/api/cats/archiving-reasons")
       .expect(200);
     expect(
       reasons.body.map((reason: { id: string }) => reason.id),

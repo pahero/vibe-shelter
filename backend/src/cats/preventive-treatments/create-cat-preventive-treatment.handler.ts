@@ -21,7 +21,7 @@ export class CreateCatPreventiveTreatmentHandler {
       const treatment = await transaction.catPreventiveTreatment.create({
         data: { catId, ...payload },
       });
-      await transaction.catAuditEvent.create({
+      await transaction.auditEvent.create({
         data: {
           catId,
           actorUserId,
