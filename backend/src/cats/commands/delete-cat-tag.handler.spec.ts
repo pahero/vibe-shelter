@@ -4,7 +4,7 @@ import { runInTestTransaction } from "../../test-utils/test-db";
 import { DeleteCatTagHandler } from "./delete-cat-tag.handler";
 
 describe("DeleteCatTagHandler", () => {
-  it("soft-deletes and versions the tag, detaches cats, and records linked value-free history", async () => {
+  it("soft-deletes and versions only the tag, preserving associations and recording linked value-free history", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
         data: {
@@ -40,22 +40,11 @@ describe("DeleteCatTagHandler", () => {
         newValue: null,
       });
       await expect(
-        tx.catTagOnCat.count({ where: { tagId: tag.id, deletedAt: null } }),
-      ).resolves.toBe(0);
-      await expect(
         tx.catTagOnCat.findUniqueOrThrow({
           where: { catId_tagId: { catId: cat.id, tagId: tag.id } },
         }),
-      ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
-      await expect(
-        tx.auditEvent.findFirstOrThrow({
-          where: { catId: cat.id, tagId: tag.id },
-        }),
-      ).resolves.toMatchObject({
-        eventType: "tag_removed_from_cat",
-        oldValue: null,
-        newValue: null,
-      });
+      ).resolves.toMatchObject({ deletedAt: null, version: 0 });
+      await expect(tx.auditEvent.count({ where: { catId: cat.id, tagId: tag.id } })).resolves.toBe(0);
     });
   });
 

@@ -50,9 +50,9 @@ export class ListCatHistoryQuery {
           tag: { select: { id: true, name: true, deletedAt: true } },
           weight: { select: { id: true, measuredAt: true, weightKg: true, deletedAt: true } },
           task: { select: { id: true, comment: true, dueDate: true, deletedAt: true } },
-          medicalNote: { select: { id: true, date: true, comment: true, deletedAt: true } },
+          medicalNote: { select: { id: true, date: true, comment: true, deletedAt: true, createdByUser: { select: { fullName: true, email: true } } } },
           preventiveTreatment: { select: { id: true, date: true, name: true, type: true, deletedAt: true } },
-          note: { select: { id: true, date: true, comment: true, deletedAt: true } },
+          note: { select: { id: true, date: true, comment: true, deletedAt: true, createdByUser: { select: { fullName: true, email: true } } } },
           archivingReason: { select: { id: true, name: true, deletedAt: true } },
           location: { select: { id: true, name: true, deletedAt: true } },
           cat: { select: { name: true } },
@@ -148,13 +148,13 @@ export class ListCatHistoryQuery {
         ? { id: event.task.id, comment: event.task.comment, dueDate: event.task.dueDate.toISOString(), isDeleted: Boolean(event.task.deletedAt) }
         : null,
       medicalNote: event.medicalNote
-        ? { id: event.medicalNote.id, date: event.medicalNote.date.toISOString().slice(0, 10), comment: event.medicalNote.comment, isDeleted: Boolean(event.medicalNote.deletedAt) }
+        ? { id: event.medicalNote.id, date: event.medicalNote.date.toISOString().slice(0, 10), comment: event.medicalNote.comment, author: event.medicalNote.createdByUser ? (event.medicalNote.createdByUser.fullName || event.medicalNote.createdByUser.email) : null, isDeleted: Boolean(event.medicalNote.deletedAt) }
         : null,
       preventiveTreatment: event.preventiveTreatment
         ? { id: event.preventiveTreatment.id, date: event.preventiveTreatment.date.toISOString().slice(0, 10), name: event.preventiveTreatment.name, type: event.preventiveTreatment.type, isDeleted: Boolean(event.preventiveTreatment.deletedAt) }
         : null,
       note: event.note
-        ? { id: event.note.id, date: event.note.date.toISOString().slice(0, 10), comment: event.note.comment, isDeleted: Boolean(event.note.deletedAt) }
+         ? { id: event.note.id, date: event.note.date.toISOString().slice(0, 10), comment: event.note.comment, author: event.note.createdByUser ? (event.note.createdByUser.fullName || event.note.createdByUser.email) : null, isDeleted: Boolean(event.note.deletedAt) }
         : null,
       archivingReason: event.archivingReason
         ? { id: event.archivingReason.id, name: event.archivingReason.name, isDeleted: Boolean(event.archivingReason.deletedAt) }

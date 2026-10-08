@@ -28,7 +28,7 @@ export class ListFlightCandidatesHandler {
 
   async handle(isTest: boolean): Promise<FlightCandidate[]> {
     const cats = await this.prisma.cat.findMany({
-      where: { isTest },
+      where: { isTest, archivedAt: null, deletedAt: null },
       select: {
         id: true,
         name: true,

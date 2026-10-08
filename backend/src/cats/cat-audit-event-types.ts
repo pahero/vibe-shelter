@@ -45,6 +45,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   treatmentAdministrationUnchecked: "treatment_administration_unchecked",
   medicalNoteCreated: "medical_note_created",
   medicalNoteDeleted: "medical_note_deleted",
+  medicalNoteRestored: "medical_note_restored",
   medicalNoteDateChanged: "medical_note_date_changed",
   medicalNoteCommentChanged: "medical_note_comment_changed",
   preventiveTreatmentCreated: "preventive_treatment_created",
@@ -54,6 +55,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   preventiveTreatmentTypeChanged: "preventive_treatment_type_changed",
   noteCreated: "note_created",
   noteDeleted: "note_deleted",
+  noteRestored: "note_restored",
   noteDateChanged: "note_date_changed",
   noteCommentChanged: "note_comment_changed",
 } as const;

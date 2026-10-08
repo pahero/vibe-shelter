@@ -29,30 +29,35 @@ export class UpdateCatTaskHandler {
       const dueDateChanged =
         payload.dueDate !== undefined &&
         payload.dueDate.getTime() !== task.dueDate.getTime();
+      const currentReceiverIds = task.receivers
+        .filter((receiver) => receiver.deletedAt === null)
+        .map((receiver) => receiver.userId);
+      const requestedReceiverIds = payload.receiverIds;
+      const receiversChanged =
+        requestedReceiverIds !== undefined &&
+        (new Set(currentReceiverIds).size !== new Set(requestedReceiverIds).size ||
+          currentReceiverIds.some((userId) => !requestedReceiverIds.includes(userId)));
 
-      if (payload.receiverIds) {
+      if (receiversChanged && requestedReceiverIds) {
         const receivers = await transaction.user.findMany({
-          where: { id: { in: payload.receiverIds }, isTest, status: "ACTIVE" },
+          where: { id: { in: requestedReceiverIds }, isTest, status: "ACTIVE" },
           select: { id: true },
         });
-        if (receivers.length !== payload.receiverIds.length) {
+        if (receivers.length !== requestedReceiverIds.length) {
           throw new NotFoundException(
             "One or more active notification receivers were not found",
           );
         }
       }
 
-      if (payload.receiverIds !== undefined) {
-        const requestedReceiverIds = new Set(payload.receiverIds);
-        const activeReceiverIds = task.receivers
-          .filter((receiver) => receiver.deletedAt === null)
-          .map((receiver) => receiver.userId);
+      if (receiversChanged && requestedReceiverIds !== undefined) {
+        const requestedReceiverIdSet = new Set(requestedReceiverIds);
         const allReceiverIds = new Set(
           task.receivers.map((receiver) => receiver.userId),
         );
         const deletedAt = new Date();
-        const removedReceiverIds = activeReceiverIds.filter(
-          (userId) => !requestedReceiverIds.has(userId),
+        const removedReceiverIds = currentReceiverIds.filter(
+          (userId) => !requestedReceiverIdSet.has(userId),
         );
         if (removedReceiverIds.length > 0) {
           await transaction.catTaskReceiver.updateMany({
@@ -64,7 +69,7 @@ export class UpdateCatTaskHandler {
             data: { deletedAt, version: { increment: 1 } },
           });
         }
-        const restoredReceiverIds = payload.receiverIds.filter((userId) =>
+        const restoredReceiverIds = requestedReceiverIds.filter((userId) =>
           task.receivers.some(
             (receiver) => receiver.userId === userId && receiver.deletedAt,
           ),
@@ -79,7 +84,7 @@ export class UpdateCatTaskHandler {
             data: { deletedAt: null, version: { increment: 1 } },
           });
         }
-        const newReceiverIds = payload.receiverIds.filter(
+        const newReceiverIds = requestedReceiverIds.filter(
           (userId) => !allReceiverIds.has(userId),
         );
         if (newReceiverIds.length > 0) {
@@ -93,13 +98,13 @@ export class UpdateCatTaskHandler {
       }
 
       const notificationDeletedAt = new Date();
-      if (payload.receiverIds !== undefined || dueDateChanged) {
+      if (receiversChanged || dueDateChanged) {
         await transaction.taskNotification.updateMany({
           where: {
             taskId: task.id,
             deletedAt: null,
-            ...(payload.receiverIds !== undefined && !dueDateChanged
-              ? { userId: { notIn: payload.receiverIds } }
+            ...(receiversChanged && requestedReceiverIds !== undefined && !dueDateChanged
+              ? { userId: { notIn: requestedReceiverIds } }
               : {}),
           },
           data: {
@@ -114,7 +119,7 @@ export class UpdateCatTaskHandler {
         data: {
           comment: payload.comment,
           dueDate: payload.dueDate,
-          ...(payload.receiverIds
+          ...(receiversChanged
             ? {
                 concurrencyToken: crypto.randomUUID(),
                 notificationSentAt: null,
@@ -148,18 +153,15 @@ export class UpdateCatTaskHandler {
           },
         });
       }
-      if (payload.receiverIds !== undefined) {
+       if (receiversChanged && requestedReceiverIds !== undefined) {
         await transaction.auditEvent.create({
           data: {
             catId: task.catId,
             taskId: task.id,
             actorUserId,
             eventType: CAT_AUDIT_EVENT_TYPES.taskReceiversChanged,
-            oldValue: task.receivers
-              .filter((receiver) => receiver.deletedAt === null)
-              .map((receiver) => receiver.userId)
-              .join(", "),
-            newValue: payload.receiverIds.join(", "),
+            oldValue: [...currentReceiverIds].sort().join(", "),
+            newValue: [...requestedReceiverIds].sort().join(", "),
           },
         });
       }
@@ -167,3 +169,4 @@ export class UpdateCatTaskHandler {
     });
   }
 }
+

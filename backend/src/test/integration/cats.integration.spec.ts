@@ -813,24 +813,13 @@ describe("Cats endpoints", () => {
       .get(`/api/cats/${cat.id}/card`)
       .expect(200);
     expect(catAfterTagDeletion.body.tags).toEqual([]);
+    await expect(prisma.catTagOnCat.findUniqueOrThrow({ where: { catId_tagId: { catId: cat.id, tagId: createdTag.body.id } } })).resolves.toMatchObject({ deletedAt: null });
 
     const catHistory = await authAgent
       .get(`/api/cats/${cat.id}/history`)
       .expect(200);
-    expect(catHistory.body.data).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          eventType: "tag_removed_from_cat",
-          tag: expect.objectContaining({
-            id: createdTag.body.id,
-            name: createdTag.body.name,
-            isDeleted: true,
-          }),
-          oldValue: null,
-          newValue: null,
-          actor: expect.objectContaining({ id: authUser.id }),
-        }),
-      ]),
+    expect(catHistory.body.data).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventType: "tag_removed_from_cat", tag: expect.objectContaining({ id: createdTag.body.id }) })]),
     );
 
     const auditAfterDeletion = await authAgent
@@ -846,6 +835,13 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
+
+    const restoredTag = await authAgent.post("/api/cats/tags").send({ name: createdTag.body.name }).expect(201);
+    expect(restoredTag.body.id).toBe(createdTag.body.id);
+    const restoredCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    expect(restoredCard.body.tags).toEqual(expect.arrayContaining([expect.objectContaining({ id: createdTag.body.id })]));
+    const restoreAudit = await (prisma as any).auditEvent.findFirstOrThrow({ where: { tagId: createdTag.body.id, action: "restore" } });
+    expect(restoreAudit).toMatchObject({ actorUserId: authUser.id, oldValue: null, newValue: null });
   });
 
   it("partitions active tag names, lists tags, and assignments by test group", async () => {

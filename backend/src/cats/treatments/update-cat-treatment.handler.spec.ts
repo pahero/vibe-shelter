@@ -48,6 +48,44 @@ describe("UpdateCatTreatmentHandler", () => {
     });
   });
 
+  it("rejects changing the short name to an existing active name and start date tuple", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({
+        data: { email: `${Date.now()}-duplicate-update@example.com` },
+      });
+      const cat = await tx.cat.create({ data: { name: "Duplicate treatment cat" } });
+      const date = day("2026-09-10");
+      await tx.catTreatment.create({
+        data: {
+          catId: cat.id,
+          shortName: "Existing",
+          instructions: null,
+          startDate: date,
+          endDate: null,
+          dosesPerDay: 1,
+        },
+      });
+      const treatment = await tx.catTreatment.create({
+        data: {
+          catId: cat.id,
+          shortName: "Other",
+          instructions: null,
+          startDate: date,
+          endDate: null,
+          dosesPerDay: 1,
+        },
+      });
+      await expect(
+        new UpdateCatTreatmentHandler(tx as PrismaService).handle(
+          treatment.id,
+          { shortName: "Existing" },
+          actor.id,
+          false,
+        ),
+      ).rejects.toThrow("active treatment with this name and start date");
+    });
+  });
+
   it("preserves the validity of recorded administrations when changing dates or doses", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({

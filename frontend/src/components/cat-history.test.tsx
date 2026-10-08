@@ -109,7 +109,7 @@ describe("CatHistory", () => {
     expect(auditEventLabel({
       ...baseEvent,
       eventType: "note_created",
-      note: { id: "note-1", date: "2026-09-10", comment: "Checkup", isDeleted: false },
+      note: { id: "note-1", date: "2026-09-10", comment: "Checkup", author: "Test User", isDeleted: false },
     } as CatHistoryEvent)).toBe("Note 2026-09-10 · created");
   });
 

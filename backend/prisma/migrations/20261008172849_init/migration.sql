@@ -48,6 +48,7 @@ CREATE TABLE "Session" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "revokedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
@@ -85,6 +86,8 @@ CREATE TABLE "Cat" (
     "felvFivTestDone" BOOLEAN NOT NULL DEFAULT false,
     "sterilizationStatus" "SterilizationStatus" NOT NULL DEFAULT 'UNKNOWN',
     "archivedAt" TIMESTAMP(3),
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
     "archivingReasonId" TEXT,
     "isTest" BOOLEAN NOT NULL DEFAULT false,
     "currentLocationId" TEXT,
@@ -145,6 +148,7 @@ CREATE TABLE "CatTag" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "color" TEXT NOT NULL DEFAULT '#ffb38a',
+    "isTest" BOOLEAN NOT NULL DEFAULT false,
     "deletedAt" TIMESTAMP(3),
     "version" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -156,6 +160,8 @@ CREATE TABLE "CatTag" (
 CREATE TABLE "CatTagOnCat" (
     "catId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "CatTagOnCat_pkey" PRIMARY KEY ("catId","tagId")
 );
@@ -166,6 +172,8 @@ CREATE TABLE "CatWeight" (
     "catId" TEXT NOT NULL,
     "weightKg" DOUBLE PRECISION NOT NULL,
     "measuredAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "CatWeight_pkey" PRIMARY KEY ("id")
@@ -194,6 +202,8 @@ CREATE TABLE "CatTreatmentAdministration" (
     "administeredOn" DATE NOT NULL,
     "doseNumber" INTEGER NOT NULL,
     "checkedByUserId" TEXT NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "CatTreatmentAdministration_pkey" PRIMARY KEY ("treatmentId","administeredOn","doseNumber")
@@ -242,8 +252,14 @@ CREATE TABLE "AuditEvent" (
     "treatmentId" TEXT,
     "photoId" TEXT,
     "documentId" TEXT,
+    "weightId" TEXT,
+    "taskId" TEXT,
+    "medicalNoteId" TEXT,
+    "preventiveTreatmentId" TEXT,
+    "noteId" TEXT,
     "actorUserId" TEXT NOT NULL,
     "relatedUserId" TEXT,
+    "isTest" BOOLEAN NOT NULL DEFAULT false,
     "eventType" TEXT,
     "action" TEXT,
     "oldValue" TEXT,
@@ -261,6 +277,7 @@ CREATE TABLE "CatMedicalNote" (
     "catId" TEXT NOT NULL,
     "date" DATE NOT NULL,
     "comment" TEXT NOT NULL,
+    "createdByUserId" TEXT,
     "deletedAt" TIMESTAMP(3),
     "concurrencyToken" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -290,6 +307,7 @@ CREATE TABLE "CatNote" (
     "catId" TEXT NOT NULL,
     "date" DATE NOT NULL,
     "comment" TEXT NOT NULL,
+    "createdByUserId" TEXT,
     "deletedAt" TIMESTAMP(3),
     "concurrencyToken" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -319,6 +337,8 @@ CREATE TABLE "CatTask" (
 CREATE TABLE "CatTaskReceiver" (
     "taskId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "CatTaskReceiver_pkey" PRIMARY KEY ("taskId","userId")
 );
@@ -328,6 +348,8 @@ CREATE TABLE "TaskNotification" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "version" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TaskNotification_pkey" PRIMARY KEY ("id")
@@ -391,6 +413,9 @@ CREATE INDEX "Cat_isTest_idx" ON "Cat"("isTest");
 CREATE INDEX "Cat_archivedAt_idx" ON "Cat"("archivedAt");
 
 -- CreateIndex
+CREATE INDEX "Cat_deletedAt_idx" ON "Cat"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "Cat_archivingReasonId_idx" ON "Cat"("archivingReasonId");
 
 -- CreateIndex
@@ -448,16 +473,25 @@ CREATE INDEX "CatDocument_createdAt_idx" ON "CatDocument"("createdAt");
 CREATE INDEX "CatTag_name_idx" ON "CatTag"("name");
 
 -- CreateIndex
+CREATE INDEX "CatTag_isTest_idx" ON "CatTag"("isTest");
+
+-- CreateIndex
 CREATE INDEX "CatTag_deletedAt_idx" ON "CatTag"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "CatTagOnCat_tagId_idx" ON "CatTagOnCat"("tagId");
 
 -- CreateIndex
+CREATE INDEX "CatTagOnCat_deletedAt_idx" ON "CatTagOnCat"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "CatWeight_catId_idx" ON "CatWeight"("catId");
 
 -- CreateIndex
 CREATE INDEX "CatWeight_measuredAt_idx" ON "CatWeight"("measuredAt");
+
+-- CreateIndex
+CREATE INDEX "CatWeight_deletedAt_idx" ON "CatWeight"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "CatTreatment_catId_createdAt_idx" ON "CatTreatment"("catId", "createdAt");
@@ -473,6 +507,9 @@ CREATE INDEX "CatTreatmentAdministration_checkedByUserId_idx" ON "CatTreatmentAd
 
 -- CreateIndex
 CREATE INDEX "CatTreatmentAdministration_treatmentId_administeredOn_idx" ON "CatTreatmentAdministration"("treatmentId", "administeredOn");
+
+-- CreateIndex
+CREATE INDEX "CatTreatmentAdministration_deletedAt_idx" ON "CatTreatmentAdministration"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "Flight_date_idx" ON "Flight"("date");
@@ -514,10 +551,34 @@ CREATE INDEX "AuditEvent_createdAt_idx" ON "AuditEvent"("createdAt");
 CREATE INDEX "AuditEvent_eventType_idx" ON "AuditEvent"("eventType");
 
 -- CreateIndex
+CREATE INDEX "AuditEvent_isTest_idx" ON "AuditEvent"("isTest");
+
+-- CreateIndex
+CREATE INDEX "AuditEvent_weightId_idx" ON "AuditEvent"("weightId");
+
+-- CreateIndex
+CREATE INDEX "AuditEvent_taskId_idx" ON "AuditEvent"("taskId");
+
+-- CreateIndex
+CREATE INDEX "AuditEvent_medicalNoteId_idx" ON "AuditEvent"("medicalNoteId");
+
+-- CreateIndex
+CREATE INDEX "AuditEvent_preventiveTreatmentId_idx" ON "AuditEvent"("preventiveTreatmentId");
+
+-- CreateIndex
+CREATE INDEX "AuditEvent_noteId_idx" ON "AuditEvent"("noteId");
+
+-- CreateIndex
 CREATE INDEX "CatMedicalNote_catId_date_idx" ON "CatMedicalNote"("catId", "date");
 
 -- CreateIndex
+CREATE INDEX "CatMedicalNote_createdByUserId_idx" ON "CatMedicalNote"("createdByUserId");
+
+-- CreateIndex
 CREATE INDEX "CatMedicalNote_deletedAt_idx" ON "CatMedicalNote"("deletedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CatMedicalNote_catId_createdByUserId_date_key" ON "CatMedicalNote"("catId", "createdByUserId", "date");
 
 -- CreateIndex
 CREATE INDEX "CatPreventiveTreatment_catId_date_idx" ON "CatPreventiveTreatment"("catId", "date");
@@ -529,7 +590,13 @@ CREATE INDEX "CatPreventiveTreatment_deletedAt_idx" ON "CatPreventiveTreatment"(
 CREATE INDEX "CatNote_catId_date_idx" ON "CatNote"("catId", "date");
 
 -- CreateIndex
+CREATE INDEX "CatNote_createdByUserId_idx" ON "CatNote"("createdByUserId");
+
+-- CreateIndex
 CREATE INDEX "CatNote_deletedAt_idx" ON "CatNote"("deletedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CatNote_catId_createdByUserId_date_key" ON "CatNote"("catId", "createdByUserId", "date");
 
 -- CreateIndex
 CREATE INDEX "CatTask_catId_dueDate_idx" ON "CatTask"("catId", "dueDate");
@@ -550,7 +617,13 @@ CREATE INDEX "CatTask_notificationSentAt_idx" ON "CatTask"("notificationSentAt")
 CREATE INDEX "CatTaskReceiver_userId_idx" ON "CatTaskReceiver"("userId");
 
 -- CreateIndex
+CREATE INDEX "CatTaskReceiver_deletedAt_idx" ON "CatTaskReceiver"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "TaskNotification_userId_createdAt_idx" ON "TaskNotification"("userId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "TaskNotification_deletedAt_idx" ON "TaskNotification"("deletedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TaskNotification_taskId_userId_key" ON "TaskNotification"("taskId", "userId");
@@ -640,6 +713,21 @@ ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_photoId_fkey" FOREIGN KEY ("
 ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "CatDocument"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_weightId_fkey" FOREIGN KEY ("weightId") REFERENCES "CatWeight"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "CatTask"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_medicalNoteId_fkey" FOREIGN KEY ("medicalNoteId") REFERENCES "CatMedicalNote"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_preventiveTreatmentId_fkey" FOREIGN KEY ("preventiveTreatmentId") REFERENCES "CatPreventiveTreatment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_noteId_fkey" FOREIGN KEY ("noteId") REFERENCES "CatNote"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -649,10 +737,16 @@ ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_relatedUserId_fkey" FOREIGN 
 ALTER TABLE "CatMedicalNote" ADD CONSTRAINT "CatMedicalNote_catId_fkey" FOREIGN KEY ("catId") REFERENCES "Cat"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "CatMedicalNote" ADD CONSTRAINT "CatMedicalNote_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "CatPreventiveTreatment" ADD CONSTRAINT "CatPreventiveTreatment_catId_fkey" FOREIGN KEY ("catId") REFERENCES "Cat"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CatNote" ADD CONSTRAINT "CatNote_catId_fkey" FOREIGN KEY ("catId") REFERENCES "Cat"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CatNote" ADD CONSTRAINT "CatNote_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CatTask" ADD CONSTRAINT "CatTask_catId_fkey" FOREIGN KEY ("catId") REFERENCES "Cat"("id") ON DELETE CASCADE ON UPDATE CASCADE;

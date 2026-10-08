@@ -70,7 +70,7 @@ describe("ListFlightCandidatesHandler", () => {
     });
   });
 
-  it("returns incomplete and archived cats with false checks in the test partition", async () => {
+  it("returns incomplete active cats but excludes archived cats in the test partition", async () => {
     await runInTestTransaction(async (transaction) => {
       const cat = await transaction.cat.create({
         data: {
@@ -83,17 +83,21 @@ describe("ListFlightCandidatesHandler", () => {
       const regularCat = await transaction.cat.create({
         data: { name: `Regular partition ${Date.now()}` },
       });
+      const activeCat = await transaction.cat.create({
+        data: { name: `Active test cat ${Date.now()}`, isTest: true },
+      });
 
       const handler = new ListFlightCandidatesHandler(
         transaction as PrismaService,
       );
       const candidates = await handler.handle(true);
 
+      expect(candidates.map(({ id }) => id)).not.toContain(cat.id);
       expect(candidates).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            id: cat.id,
-            archivedAt: new Date("2026-05-01").toISOString(),
+            id: activeCat.id,
+            archivedAt: null,
             requirements: {
               firstVaccine: false,
               secondVaccine: false,

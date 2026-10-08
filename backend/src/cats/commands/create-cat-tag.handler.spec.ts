@@ -54,16 +54,20 @@ describe("CreateCatTagHandler", () => {
     });
   });
 
-  it("allows reusing a soft-deleted tag name", async () => {
+  it("restores a soft-deleted tag with the same name in its partition", async () => {
     await runInTestTransaction(async (tx) => {
       const tag = await tx.catTag.create({
         data: { name: "Reusable", deletedAt: new Date() },
       });
-      const result = await new CreateCatTagHandler(tx as PrismaService).handle({
-        name: tag.name,
-      });
-      expect(result.id).not.toBe(tag.id);
-      expect(result.color).toBe("#ffb38a");
+      const actor = await tx.user.create({ data: { email: `${Date.now()}-restore-tag@example.com` } });
+      const result = await new CreateCatTagHandler(tx as PrismaService).handle(
+        { name: tag.name, color: "#8ecaff" },
+        actor.id,
+      );
+      expect(result.id).toBe(tag.id);
+      expect(result.color).toBe("#8ecaff");
+      await expect(tx.catTag.findUniqueOrThrow({ where: { id: tag.id } })).resolves.toMatchObject({ deletedAt: null, version: 1 });
+      await expect(tx.auditEvent.findFirstOrThrow({ where: { tagId: tag.id } })).resolves.toMatchObject({ action: "restore", actorUserId: actor.id, oldValue: null, newValue: null });
     });
   });
 

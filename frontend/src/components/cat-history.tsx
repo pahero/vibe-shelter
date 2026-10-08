@@ -141,11 +141,11 @@ export function auditEventLabel(event: CatHistoryEvent): string {
   }
   if (event.medicalNote) {
     const action = event.eventType.replace("medical_note_", "").replaceAll("_", " ");
-    return `Medical note ${event.medicalNote.date} · ${action}`;
+    return `Medical note ${event.medicalNote.date}${event.medicalNote.author ? ` · ${event.medicalNote.author}` : ""} · ${action}`;
   }
   if (event.note) {
     const action = event.eventType.replace("note_", "").replaceAll("_", " ");
-    return `Note ${event.note.date} · ${action}`;
+     return `Note ${event.note.date}${event.note.author ? ` · ${event.note.author}` : ""} · ${action}`;
   }
   if (event.task) {
     const action = event.eventType.replace("task_", "").replaceAll("_", " ");

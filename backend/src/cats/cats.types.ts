@@ -69,7 +69,7 @@ export const CAT_CARD_INCLUDE = {
   currentLocation: { select: { name: true } },
   archivingReason: { select: { name: true } },
   tags: {
-    where: { deletedAt: null },
+    where: { deletedAt: null, tag: { deletedAt: null } },
     include: { tag: true },
     orderBy: { tag: { name: "asc" } },
   },

@@ -131,6 +131,39 @@ describe("UpdateCatTaskHandler", () => {
     });
   });
 
+  it("does not create a receiver-change audit event when the receiver set is unchanged", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const actor = await transaction.user.create({
+        data: { email: `${Date.now()}-same-receivers-actor@example.com` },
+      });
+      const receiver = await transaction.user.create({
+        data: { email: `${Date.now()}-same-receivers@example.com` },
+      });
+      const cat = await transaction.cat.create({
+        data: { name: `Same receivers cat ${Date.now()}` },
+      });
+      const task = await transaction.catTask.create({
+        data: { catId: cat.id, comment: "Task", dueDate: new Date() },
+      });
+      await transaction.catTaskReceiver.createMany({
+        data: [actor.id, receiver.id].map((userId) => ({ taskId: task.id, userId })),
+      });
+
+      await new UpdateCatTaskHandler(transaction as PrismaService).handle(
+        task.id,
+        { receiverIds: [receiver.id, actor.id] },
+        actor.id,
+        false,
+      );
+
+      await expect(
+        transaction.auditEvent.count({
+          where: { taskId: task.id, eventType: "task_receivers_changed" },
+        }),
+      ).resolves.toBe(0);
+    });
+  });
+
   it("updates a task and audits the action", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
@@ -158,3 +191,4 @@ describe("UpdateCatTaskHandler", () => {
     });
   });
 });
+

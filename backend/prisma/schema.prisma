@@ -36,6 +36,8 @@ model User {
   completedTasks     CatTask[]            @relation("completedTasks")
   taskNotifications  TaskNotification[]
   checkedTreatmentAdministrations CatTreatmentAdministration[] @relation("treatmentAdministrationCheckers")
+  createdNotes CatNote[] @relation("createdNotes")
+  createdMedicalNotes CatMedicalNote[] @relation("createdMedicalNotes")
 
   @@index([status])
   @@index([role])
@@ -415,6 +417,8 @@ model CatMedicalNote {
   cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   date             DateTime @db.Date
   comment          String
+  createdByUserId String?
+  createdByUser   User?    @relation("createdMedicalNotes", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedAt        DateTime?
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
@@ -422,6 +426,8 @@ model CatMedicalNote {
   auditEvents      AuditEvent[] @relation("auditMedicalNotes")
 
   @@index([catId, date])
+  @@index([createdByUserId])
+  @@unique([catId, createdByUserId, date])
   @@index([deletedAt])
 }
 
@@ -448,6 +454,8 @@ model CatNote {
   cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   date             DateTime @db.Date
   comment          String
+  createdByUserId String?
+  createdByUser   User?    @relation("createdNotes", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedAt        DateTime?
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
@@ -455,6 +463,8 @@ model CatNote {
   auditEvents      AuditEvent[] @relation("auditNotes")
 
   @@index([catId, date])
+  @@index([createdByUserId])
+  @@unique([catId, createdByUserId, date])
   @@index([deletedAt])
 }
 

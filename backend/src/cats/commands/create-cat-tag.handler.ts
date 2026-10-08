@@ -19,8 +19,19 @@ export class CreateCatTagHandler {
     const color = validateTagColor(data.color);
     return runInNewTransaction(this.prisma, async (tx) => {
       const existing = await tx.catTag.findFirst({
-        where: { name, isTest, deletedAt: null },
+        where: { name, isTest },
       });
+      if (existing?.deletedAt) {
+        const tag = await tx.catTag.update({
+          where: { id: existing.id },
+          data: { deletedAt: null, color, version: { increment: 1 } },
+        });
+        if (actorUserId)
+          await tx.auditEvent.create({
+            data: { tagId: tag.id, actorUserId, action: "restore" },
+          });
+        return toCatTag(tag);
+      }
       if (existing) return toCatTag(existing);
       const tag = await tx.catTag.create({ data: { name, color, isTest } });
       if (actorUserId)

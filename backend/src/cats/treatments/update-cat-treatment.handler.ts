@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -24,6 +25,26 @@ export class UpdateCatTreatmentHandler {
       });
       if (!treatment) throw new NotFoundException("Treatment not found");
       const startDate = payload.startDate ?? treatment.startDate;
+      const shortName = payload.shortName ?? treatment.shortName;
+      if (
+        shortName !== treatment.shortName ||
+        startDate.getTime() !== treatment.startDate.getTime()
+      ) {
+        const duplicate = await transaction.catTreatment.findFirst({
+          where: {
+            catId: treatment.catId,
+            shortName,
+            startDate,
+            deletedAt: null,
+            id: { not: treatment.id },
+          },
+          select: { id: true },
+        });
+        if (duplicate)
+          throw new ConflictException(
+            "An active treatment with this name and start date already exists for this cat",
+          );
+      }
       const endDate =
         payload.endDate === undefined ? treatment.endDate : payload.endDate;
       if (endDate && endDate < startDate)
