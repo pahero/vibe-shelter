@@ -102,7 +102,7 @@ services:
     build:
       context: ./backend
       target: migration
-    command: ["npm", "run", "db:seed"]
+    command: ["npx", "prisma", "db", "seed"]
     restart: "no"
     environment:
       <<: *backend-environment
