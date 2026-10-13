@@ -110,6 +110,36 @@ protect the production GitHub Environment and do not deploy untrusted pull
 requests. The runner also requires Bash and `curl`. Only one production
 deployment runs at a time.
 
+## Production backups
+
+`.github/workflows/backup.yml` runs daily at 03:17 UTC and can also be started
+manually. It writes a custom-format PostgreSQL dump and an archive of the Garage
+data volume to an independent Restic repository on S3-compatible storage.
+Restic encrypts and deduplicates the data. Garage is stopped briefly while its
+volume is archived and is restarted even if the archive step fails. The runner
+needs enough free disk space for temporary plaintext backup files.
+
+Configure these production Environment Variables:
+
+- `BACKUP_S3_ENDPOINT` (for example, `https://s3.example.com`)
+- `BACKUP_S3_BUCKET`
+- `BACKUP_S3_REGION` (optional; defaults to `us-east-1`)
+- `BACKUP_S3_PREFIX` (optional; defaults to `shelter/production`)
+
+Configure these production Environment Secrets:
+
+- `BACKUP_S3_ACCESS_KEY_ID`
+- `BACKUP_S3_SECRET_ACCESS_KEY`
+- `BACKUP_RESTIC_PASSWORD` (keep this separately from the repository)
+
+Use credentials scoped to the repository prefix with list, read, write, and
+delete permissions (Restic needs delete access to prune). Each run checks the
+repository and keeps 7 daily, 4 weekly, and 12 monthly snapshots; Restic prunes
+data no longer needed by those snapshots. Do not apply an S3 lifecycle rule that
+deletes Restic repository objects. Keep `BACKUP_RESTIC_PASSWORD` separately,
+never change it without migrating the repository key, and periodically test
+restoring both files with `restic snapshots` and `restic restore`.
+
 After installing Docker, grant the runner access and restart its service so the
 new group membership is applied:
 
