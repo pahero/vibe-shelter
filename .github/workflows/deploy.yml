@@ -62,19 +62,46 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
-      - name: Build and push migration image
-        uses: docker/build-push-action@v6
+  migrate:
+    name: Run database migrations
+    needs: build
+    runs-on: [self-hosted, Linux, X64]
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          context: ./backend
-          target: migration
-          push: true
-          tags: ${{ env.IMAGE_PREFIX }}/migration:${{ github.sha }}
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Start PostgreSQL and migrate
+        shell: bash
+        env:
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
+          SEED_ADMIN: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_admin || false }}
+          SEED_ADMIN_PASSWORD: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_admin && secrets.SEED_ADMIN_PASSWORD || '' }}
+        run: |
+          set -euo pipefail
+          POSTGRES_USER="${POSTGRES_USER:-shelter}"
+          POSTGRES_DB="${POSTGRES_DB:-shelter}"
+          POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+          : "${POSTGRES_PASSWORD:?Missing GitHub production secret: POSTGRES_PASSWORD}"
+          export POSTGRES_USER POSTGRES_DB POSTGRES_PORT POSTGRES_PASSWORD
+          docker compose -f compose.postgres.yml up -d --wait postgres
+          export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_PORT}/${POSTGRES_DB}"
+          (cd "${GITHUB_WORKSPACE}/backend" && sh ./scripts/migrate.sh)
 
   deploy:
     name: Deploy production
-    needs: build
+    needs: migrate
     runs-on: [self-hosted, Linux, X64]
     environment: production
     timeout-minutes: 15
@@ -82,7 +109,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Pull and deploy images
+      - name: Pull and deploy built images
         shell: bash
         env:
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
@@ -92,9 +119,9 @@ jobs:
           POSTGRES_USER: ${{ vars.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           SESSION_TTL_HOURS: ${{ vars.SESSION_TTL_HOURS }}
-          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
           GARAGE_RPC_SECRET: ${{ secrets.GARAGE_RPC_SECRET }}
           GARAGE_ACCESS_KEY: ${{ secrets.GARAGE_ACCESS_KEY }}
           GARAGE_SECRET_KEY: ${{ secrets.GARAGE_SECRET_KEY }}
@@ -104,50 +131,28 @@ jobs:
           GOOGLE_CALLBACK_URL: ${{ vars.GOOGLE_CALLBACK_URL }}
           ALLOWED_GOOGLE_DOMAIN: ${{ vars.ALLOWED_GOOGLE_DOMAIN }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SEED_ADMIN: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_admin || false }}
         run: |
           set -euo pipefail
           umask 077
-
           deploy_env_file="${RUNNER_TEMP}/shelter-production-${GITHUB_RUN_ID}.env"
-          cleanup() {
-            rm -f -- "${deploy_env_file}"
-            docker logout ghcr.io > /dev/null 2>&1 || true
-          }
+          cleanup() { rm -f -- "${deploy_env_file}"; docker logout ghcr.io > /dev/null 2>&1 || true; }
           trap cleanup EXIT
-
-          HTTP_PORT="${HTTP_PORT:-80}"
-          HTTPS_PORT="${HTTPS_PORT:-443}"
-          POSTGRES_USER="${POSTGRES_USER:-shelter}"
-          POSTGRES_DB="${POSTGRES_DB:-shelter}"
-          SESSION_TTL_HOURS="${SESSION_TTL_HOURS:-168}"
-          GARAGE_BUCKET="${GARAGE_BUCKET:-shelter}"
+          HTTP_PORT="${HTTP_PORT:-80}"; HTTPS_PORT="${HTTPS_PORT:-443}"
+          POSTGRES_USER="${POSTGRES_USER:-shelter}"; POSTGRES_DB="${POSTGRES_DB:-shelter}"
+          SESSION_TTL_HOURS="${SESSION_TTL_HOURS:-168}"; GARAGE_BUCKET="${GARAGE_BUCKET:-shelter}"
           GOOGLE_CALLBACK_URL="${GOOGLE_CALLBACK_URL:-https://${APP_DOMAIN}/auth/google/callback}"
           ALLOWED_GOOGLE_DOMAIN="${ALLOWED_GOOGLE_DOMAIN:-}"
           FRONTEND_IMAGE="${IMAGE_PREFIX}/frontend:${GITHUB_SHA}"
           BACKEND_IMAGE="${IMAGE_PREFIX}/backend:${GITHUB_SHA}"
-          MIGRATION_IMAGE="${IMAGE_PREFIX}/migration:${GITHUB_SHA}"
-
-          required=(
-            APP_DOMAIN STORAGE_DOMAIN POSTGRES_PASSWORD SESSION_SECRET
-            SEED_ADMIN_PASSWORD GARAGE_RPC_SECRET GARAGE_ACCESS_KEY
-            GARAGE_SECRET_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET
-          )
+          required=(APP_DOMAIN STORAGE_DOMAIN POSTGRES_PASSWORD SESSION_SECRET GARAGE_RPC_SECRET GARAGE_ACCESS_KEY GARAGE_SECRET_KEY)
           for name in "${required[@]}"; do
             if [[ -z "${!name:-}" ]]; then
               echo "Missing required GitHub production variable or secret: ${name}" >&2
               exit 1
             fi
           done
-
-          names=(
-            APP_DOMAIN STORAGE_DOMAIN HTTP_PORT HTTPS_PORT POSTGRES_USER
-            POSTGRES_PASSWORD POSTGRES_DB SESSION_SECRET SESSION_TTL_HOURS
-            SEED_ADMIN_PASSWORD GARAGE_RPC_SECRET GARAGE_ACCESS_KEY
-            GARAGE_SECRET_KEY GARAGE_BUCKET GOOGLE_CLIENT_ID
-            GOOGLE_CLIENT_SECRET GOOGLE_CALLBACK_URL ALLOWED_GOOGLE_DOMAIN
-            FRONTEND_IMAGE BACKEND_IMAGE MIGRATION_IMAGE
-          )
+          POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+          names=(APP_DOMAIN STORAGE_DOMAIN HTTP_PORT HTTPS_PORT POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB POSTGRES_PORT SESSION_SECRET SESSION_TTL_HOURS GARAGE_RPC_SECRET GARAGE_ACCESS_KEY GARAGE_SECRET_KEY GARAGE_BUCKET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_CALLBACK_URL ALLOWED_GOOGLE_DOMAIN FRONTEND_IMAGE BACKEND_IMAGE)
           : > "${deploy_env_file}"
           for name in "${names[@]}"; do
             value="${!name:-}"
@@ -157,64 +162,10 @@ jobs:
             fi
             printf '%s=%s\n' "${name}" "${value}" >> "${deploy_env_file}"
           done
-
           printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
-
-          compose=(docker compose --env-file "${deploy_env_file}" -f compose.prod.yml)
-          "${compose[@]}" config > /dev/null
-          "${compose[@]}" pull
-          "${compose[@]}" up -d --remove-orphans
-
-          if [[ "${SEED_ADMIN}" == 'true' ]]; then
-            "${compose[@]}" --profile bootstrap run --rm seed
-          fi
-
-          health_services=(postgres garage backend frontend)
-          healthy=false
-          for _ in {1..60}; do
-            healthy=true
-            for service in "${health_services[@]}"; do
-              container_id="$("${compose[@]}" ps -q "${service}")"
-              if [[ -z "${container_id}" ]]; then
-                healthy=false
-                continue
-              fi
-              if ! status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_id}" 2>/dev/null)"; then
-                healthy=false
-                continue
-              fi
-              if [[ "${status}" != 'healthy' ]]; then healthy=false; fi
-            done
-            if [[ "${healthy}" == 'true' ]]; then break; fi
-            sleep 5
-          done
-
-          if [[ "${healthy}" != 'true' ]]; then
-            "${compose[@]}" ps -a
-            for service in "${health_services[@]}"; do
-              container_id="$("${compose[@]}" ps -q "${service}" 2>/dev/null || true)"
-              echo "Health details for ${service}:"
-              if [[ -n "${container_id}" ]]; then
-                docker inspect --format '{{json .State.Health}}' "${container_id}" 2>/dev/null || true
-              else
-                echo 'Container not found'
-              fi
-            done
-            "${compose[@]}" logs --no-color --tail 200
+          if ! docker compose --env-file "${deploy_env_file}" -f compose.prod.yml up \
+            -d --no-build --remove-orphans --wait --wait-timeout 300; then
+            docker compose --env-file "${deploy_env_file}" -f compose.prod.yml ps -a
+            docker compose --env-file "${deploy_env_file}" -f compose.prod.yml logs --no-color --tail 200
             exit 1
           fi
-
-          migration_id="$("${compose[@]}" ps -a -q migrate)"
-          if [[ -z "${migration_id}" ]]; then
-            echo 'Migration container was not found' >&2
-            exit 1
-          fi
-          migration_exit_code="$(docker inspect --format '{{.State.ExitCode}}' "${migration_id}")"
-          if [[ "${migration_exit_code}" != '0' ]]; then
-            echo "Migration failed with exit code ${migration_exit_code}" >&2
-            exit 1
-          fi
-
-          health_response="$(curl --fail --silent --show-error --max-time 30 "https://${APP_DOMAIN}/health")"
-          grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"' <<< "${health_response}"
-          "${compose[@]}" ps -a

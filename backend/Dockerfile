@@ -11,22 +11,13 @@ COPY . .
 RUN DATABASE_URL=postgresql://unused:unused@localhost:5432/unused npx prisma generate
 RUN npm run build
 
-# This target intentionally retains the Prisma CLI for the one-shot migration
-# service in compose.prod.yml.
-FROM builder AS migration
-
-ENV NODE_ENV=production
-CMD ["npx", "prisma", "migrate", "deploy"]
-
 FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV PORT=4000
+ENV NODE_ENV=production PORT=4000
 
-COPY package*.json ./
-COPY prisma ./prisma
+COPY package*.json prisma ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist

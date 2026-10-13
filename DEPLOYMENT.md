@@ -40,22 +40,30 @@ From the repository root on the VM:
 ```text
 docker compose --env-file .env.production -f compose.prod.yml config
 docker compose --env-file .env.production -f compose.prod.yml build
-docker compose --env-file .env.production -f compose.prod.yml up -d
+docker compose --env-file .env.production -f compose.postgres.yml up -d --wait postgres
+DATABASE_URL="postgresql://shelter:<password>@127.0.0.1:5432/shelter" sh ./backend/scripts/migrate.sh
+docker compose --env-file .env.production -f compose.prod.yml up -d caddy backend frontend
 docker compose --env-file .env.production -f compose.prod.yml ps
 ```
 
-The one-shot `migrate` service applies Prisma migrations before the backend is
-started. It is expected to show an exited status with exit code 0 afterward.
 Caddy obtains and renews public TLS certificates automatically.
+
+PostgreSQL is attached to both `public` and the internal `private` Compose
+networks, and its port is published on all host interfaces (default host port
+`5432`; override with `POSTGRES_PORT`). The scripts connect directly to
+`127.0.0.1`. Restrict port 5432 with your host firewall before exposing the
+server to untrusted networks. Containers on either Compose network can also
+connect to PostgreSQL.
 
 On the first deployment, create the initial `admin@shelter.local` account:
 
 ```text
-docker compose --env-file .env.production -f compose.prod.yml --profile bootstrap run --rm seed
+DATABASE_URL="postgresql://shelter:<password>@127.0.0.1:5432/shelter" SEED_ADMIN_PASSWORD="<seed-admin-password>" sh ./backend/scripts/seed.sh
 ```
 
 The seed is idempotent, but running it again resets that admin account to
-`SEED_ADMIN_PASSWORD`, so it is not part of normal startup.
+`SEED_ADMIN_PASSWORD`, so it is not part of normal startup. Run it only after
+migrations have completed.
 
 Inspect service output with:
 
@@ -69,21 +77,31 @@ Pull the new source and run:
 
 ```text
 docker compose --env-file .env.production -f compose.prod.yml build
-docker compose --env-file .env.production -f compose.prod.yml up -d --remove-orphans
+docker compose --env-file .env.production -f compose.postgres.yml up -d --wait postgres
+DATABASE_URL="postgresql://shelter:<password>@127.0.0.1:5432/shelter" sh ./backend/scripts/migrate.sh
+docker compose --env-file .env.production -f compose.prod.yml up -d --remove-orphans caddy backend frontend
 ```
 
-Compose reruns the migration service and only starts the new backend after the
-migrations complete successfully.
+For a local source deployment, build the images, run the migration command
+above, then start the app services. The GitHub Actions workflow instead builds
+and pushes immutable commit-SHA-tagged app images once. The migration job starts
+only Postgres from `compose.postgres.yml`, then runs `backend/scripts/migrate.sh`
+directly on the self-hosted runner using Node.js 22. If the `seed_admin`
+workflow input is enabled, that script also calls `backend/scripts/seed.sh`
+after migrations. Both scripts use the same installed dependencies. Deploy
+only pulls the built app images and uses `up --no-build`.
 
 ## GitHub Actions deployment
 
-`.github/workflows/deploy.yml` has two jobs for every push to `main`:
+`.github/workflows/deploy.yml` has three jobs for every push to `main`:
 
-1. `build` runs on GitHub-hosted Ubuntu, builds immutable frontend, backend,
-   and migration images, and pushes them to GHCR with the commit SHA as the
-   image tag.
-2. `deploy` runs on the Ubuntu x64 self-hosted runner, pulls those images,
-   starts `compose.prod.yml`, and verifies migrations and service health.
+1. `build` runs on GitHub-hosted Ubuntu, builds immutable frontend and backend
+   images, and pushes them to GHCR with the commit SHA as the image tag.
+2. `migrate` runs the checked-in shell script against the host-published
+   PostgreSQL port.
+3. `deploy` pulls the built app images, starts `compose.prod.yml` without
+   building, and verifies service health. An explicitly requested seed runs
+   during the migration job, before deployment.
 
 The deployment host does not build application images. Its runner account must
 be a member of the `docker` group and able to invoke `docker` and
@@ -114,11 +132,12 @@ Variables:
 
 - `APP_DOMAIN`
 - `STORAGE_DOMAIN`
-- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_ID` (optional; leave unset to disable Google sign-in)
 - `HTTP_PORT` (optional; defaults to `80`)
 - `HTTPS_PORT` (optional; defaults to `443`)
 - `POSTGRES_USER` (optional; defaults to `shelter`)
 - `POSTGRES_DB` (optional; defaults to `shelter`)
+- `POSTGRES_PORT` (optional host port; defaults to `5432`)
 - `SESSION_TTL_HOURS` (optional; defaults to `168`)
 - `GARAGE_BUCKET` (optional; defaults to `shelter`)
 - `GOOGLE_CALLBACK_URL` (optional; derived from `APP_DOMAIN`)
@@ -128,20 +147,19 @@ Configure these Environment Secrets:
 
 - `POSTGRES_PASSWORD` (URL-safe)
 - `SESSION_SECRET`
-- `SEED_ADMIN_PASSWORD`
 - `GARAGE_RPC_SECRET`
 - `GARAGE_ACCESS_KEY`
 - `GARAGE_SECRET_KEY`
-- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CLIENT_SECRET` (optional; leave unset to disable Google sign-in)
+- `SEED_ADMIN_PASSWORD` (required only when `seed_admin` is enabled)
 
-The workflow writes these values to a temporary runner file without logging
-them, deploys `compose.prod.yml`, verifies migrations and service health, and
-deletes the file when the deployment step exits. Do not use `compose.local.yml`
-for an actual environment.
+The workflow writes values to temporary runner files without logging them and
+deletes them when each step exits. Migration, deployment, and optional seeding
+are separate jobs. Do not use `compose.local.yml` for an actual environment.
 
 The `workflow_dispatch` trigger has a `seed_admin` option. Enable it only for
 the first deployment or when intentionally resetting `admin@shelter.local` to
-`SEED_ADMIN_PASSWORD`.
+`SEED_ADMIN_PASSWORD`. Seeding occurs after migrations and before app deploy.
 
 ## Back up
 
