@@ -60,18 +60,6 @@ export class CreateCatHandler {
         }
       }
 
-      if (command.passportNumber) {
-        const catWithPassport = await transaction.cat.findUnique({
-          where: { passportNumber: command.passportNumber },
-          select: { id: true },
-        });
-        if (catWithPassport) {
-          throw new ConflictException(
-            "A cat with this passport number already exists",
-          );
-        }
-      }
-
       const created = await transaction.cat.create({
         data: {
           name: command.name,
@@ -82,9 +70,6 @@ export class CreateCatHandler {
           intakeDate: command.intakeDate,
           rescueSource: command.rescueSource,
           microchipNumber: command.microchipNumber,
-          passportNumber: command.passportNumber,
-          adopterName: command.adopterName,
-          adopterAddress: command.adopterAddress,
           sterilizationStatus: command.sterilizationStatus,
           currentLocationId: command.currentLocationId,
           createdByUserId: command.createdByUserId,
@@ -96,6 +81,7 @@ export class CreateCatHandler {
         catId: created.id,
         actorUserId: command.createdByUserId,
         eventType: CAT_AUDIT_EVENT_TYPES.catCreated,
+        isTest: command.isTest,
       });
       return created;
     });

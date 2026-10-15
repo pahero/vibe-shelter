@@ -6,6 +6,7 @@ import { ApiErrorHandler } from "@/lib/utils";
 import { CatArchivingReason, CatHistoryEvent, CatTag, Location, catsApi, locationsApi } from "@/lib/api";
 import { auditEventLabel, historyValueText } from "@/components/cat-history";
 import { UserRegistrationClient } from "@/components/user-registration-client";
+import { AddNewButton } from "@/components/add-new-button";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
 
 type LocationDraft = {
@@ -405,18 +406,15 @@ export function EditShelterClient() {
           {activeSection === "locations" && <section className="space-y-2 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
             <div className="flex items-start justify-between gap-2">
               <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Locations</h2>
-              <button
-                type="button"
+              <AddNewButton
+                label="Add location"
                 onClick={() => {
                   setIsAddingLocation((isOpen) => !isOpen);
                   setLocationDraft(emptyLocation);
                   setError(null);
                 }}
                 disabled={isSaving}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isAddingLocation ? "Cancel" : "+ New Location"}
-              </button>
+              />
             </div>
 
             {isAddingLocation && (
@@ -477,7 +475,7 @@ export function EditShelterClient() {
           {activeSection === "tags" && <section className="space-y-2 rounded-2xl border border-[#d4c7b4] bg-white/55 p-4">
             <div className="flex items-start justify-between gap-2">
               <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Tags</h2>
-              <button type="button" onClick={() => { setIsAddingTag((isOpen) => !isOpen); setTagName(""); setTagColor(DEFAULT_TAG_COLOR); setShowAllNewTagColors(false); setError(null); }} disabled={isSaving} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:opacity-60">{isAddingTag ? "Cancel" : "+ New Tag"}</button>
+              <AddNewButton label={isAddingTag ? "Cancel adding tag" : "Add tag"} isOpen={isAddingTag} onClick={() => { setIsAddingTag((isOpen) => !isOpen); setTagName(""); setTagColor(DEFAULT_TAG_COLOR); setShowAllNewTagColors(false); setError(null); }} disabled={isSaving} />
             </div>
             <div className="grid gap-2">
               {isAddingTag && <div className="order-2 rounded-xl border border-[#d4c7b4] bg-[#fff8ee]/70 p-3">

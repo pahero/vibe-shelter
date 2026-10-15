@@ -31,18 +31,6 @@ export class CreateCatDto {
   @IsOptional()
   microchipNumber?: string | null;
 
-  @IsString()
-  @IsOptional()
-  passportNumber?: string | null;
-
-  @IsString()
-  @IsOptional()
-  adopterName?: string | null;
-
-  @IsString()
-  @IsOptional()
-  adopterAddress?: string | null;
-
   @IsIn(["STERILIZED", "NOT_STERILIZED", "UNKNOWN"])
   sterilizationStatus!: string;
 
@@ -67,7 +55,6 @@ export class CreateCatDto {
       this.parseOptionalDate(this.intakeDate, "intakeDate"),
       this.optionalTrim(this.rescueSource),
       this.optionalTrim(this.microchipNumber),
-      this.optionalTrim(this.passportNumber),
       this.parseEnum(
         this.sterilizationStatus,
         SterilizationStatus,
@@ -76,8 +63,6 @@ export class CreateCatDto {
       this.optionalTrim(this.currentLocationId),
       createdByUserId,
       currentUserIsTest,
-      this.optionalTrim(this.adopterName),
-      this.optionalTrim(this.adopterAddress),
     );
   }
 

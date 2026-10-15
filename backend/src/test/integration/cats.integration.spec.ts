@@ -65,8 +65,6 @@ describe("Cats endpoints", () => {
         sex: "FEMALE",
         sterilizationStatus: "STERILIZED",
         currentLocationId: location.id,
-        adopterName: "Taylor Adopter",
-        adopterAddress: "123 Cat Street",
       })
       .expect(201);
 
@@ -75,8 +73,9 @@ describe("Cats endpoints", () => {
     expect(response.body.primaryPhotoUrl).toBeNull();
     expect(response.body.primaryPhotoKey).toBeUndefined();
     expect(response.body).toMatchObject({
-      adopterName: "Taylor Adopter",
-      adopterAddress: "123 Cat Street",
+      passportNumber: null,
+      adopterName: null,
+      adopterAddress: null,
     });
     const stored = await (prisma as any).cat.findUnique({
       where: { id: response.body.id },

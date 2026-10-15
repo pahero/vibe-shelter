@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
+import { AddNewButton } from "@/components/add-new-button";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatCard as CatCardType, CatSex, CatTag, CreateCatDto, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
@@ -16,9 +17,6 @@ function emptyCatForm(locationId = "") {
     estimatedBirthDate: "",
     intakeDate: "",
     microchipNumber: "",
-    passportNumber: "",
-    adopterName: "",
-    adopterAddress: "",
     rescueSource: "",
     sterilizationStatus: "UNKNOWN" as SterilizationStatus,
     currentLocationId: locationId,
@@ -179,9 +177,6 @@ export function HomeCatsList() {
       intakeDate: createForm.intakeDate || null,
       rescueSource: createForm.rescueSource.trim() || null,
       microchipNumber: createForm.microchipNumber.trim() || null,
-      passportNumber: createForm.passportNumber.trim() || null,
-      adopterName: createForm.adopterName.trim() || null,
-      adopterAddress: createForm.adopterAddress.trim() || null,
       sterilizationStatus: createForm.sterilizationStatus,
       currentLocationId: createForm.currentLocationId || null,
     };
@@ -210,19 +205,15 @@ export function HomeCatsList() {
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cats list</p>
         </div>
-        <button
-          type="button"
+        <AddNewButton
+          label={showCreateForm ? "Close add cat form" : "Add cat"}
+          isOpen={showCreateForm}
           onClick={() => {
             setShowCreateForm((isOpen) => !isOpen);
             setCreateSuccess(null);
             setError(null);
           }}
-          aria-label={showCreateForm ? "Close add cat form" : "Add cat"}
-          title={showCreateForm ? "Close add cat form" : "Add cat"}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
-        >
-          {showCreateForm ? "×" : "+"}
-        </button>
+        />
       </div>
 
       {createSuccess && <p className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800">{createSuccess}</p>}
@@ -273,18 +264,6 @@ export function HomeCatsList() {
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Microchip number
               <input value={createForm.microchipNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, microchipNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Passport number
-              <input value={createForm.passportNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, passportNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Adopter name
-              <input value={createForm.adopterName} onChange={(event) => setCreateForm((prev) => ({ ...prev, adopterName: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Adopter address
-              <input value={createForm.adopterAddress} onChange={(event) => setCreateForm((prev) => ({ ...prev, adopterAddress: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
               Rescue source

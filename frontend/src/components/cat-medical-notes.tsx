@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CatMedicalNote, catsApi, MedicalNoteInput } from "@/lib/api";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
@@ -34,7 +36,7 @@ export function CatMedicalNotes({ catId, onChanged }: { catId: string; onChanged
       {error && <p className="mt-3 text-sm font-medium text-red-700">{error}</p>}
       {isLoading && <p className="mt-4 text-sm text-[#6d6a66]">Loading medical notes...</p>}
       {!isLoading && notes.length === 0 && <p className="mt-4 rounded-xl border border-dashed border-[#d4c7b4] p-4 text-sm text-[#6d6a66]">No medical notes yet.</p>}
-      <ol className="mt-4 space-y-3">{notes.map((note) => <li key={note.id} className="rounded-xl border border-[#d4c7b4] bg-white/60 p-4"><div className="flex items-start justify-between gap-3"><div><time className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">{formatDate(note.date)}</time><p className="mt-1 whitespace-pre-wrap break-words text-gray-900">{note.comment}</p></div><div className="flex shrink-0 gap-1"><button type="button" onClick={() => edit(note)} aria-label="Edit medical note" title="Edit medical note" className="rounded-lg p-2 text-amber-700 hover:bg-amber-100">РІСљР‹</button><button type="button" disabled={actionId === note.id} onClick={() => void remove(note.id)} aria-label="Delete medical note" title="Delete medical note" className="rounded-lg p-2 text-red-700 hover:bg-red-100 disabled:opacity-50">СЂСџвЂ”вЂ</button></div></div></li>)}</ol>
+      <ol className="mt-4 space-y-3">{notes.map((note) => <li key={note.id} className="rounded-xl border border-[#d4c7b4] bg-white/60 p-4"><div className="flex items-center justify-between gap-3"><time className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">{formatDate(note.date)}</time><div className="flex shrink-0 gap-1"><button type="button" onClick={() => edit(note)} aria-label="Edit medical note" title="Edit medical note" className="rounded-lg p-2 text-amber-700 hover:bg-amber-100"><FontAwesomeIcon icon={faPen} /></button><button type="button" disabled={actionId === note.id} onClick={() => void remove(note.id)} aria-label="Delete medical note" title="Delete medical note" className="rounded-lg p-2 text-red-700 hover:bg-red-100 disabled:opacity-50"><FontAwesomeIcon icon={faTrash} /></button></div></div><p className="mt-2 whitespace-pre-wrap break-words text-gray-900">{note.comment}</p></li>)}</ol>
     </>}
   </section>;
 }

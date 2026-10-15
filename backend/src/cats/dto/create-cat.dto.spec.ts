@@ -11,9 +11,6 @@ describe("CreateCatDto", () => {
     dto.intakeDate = "2026-04-01";
     dto.rescueSource = "  Found near clinic  ";
     dto.microchipNumber = "  900123456789012  ";
-    dto.passportNumber = "  AB123456  ";
-    dto.adopterName = "  Taylor Adopter  ";
-    dto.adopterAddress = "  123 Cat Street  ";
     dto.sterilizationStatus = "STERILIZED";
     dto.currentLocationId = "  location-1  ";
 
@@ -27,9 +24,6 @@ describe("CreateCatDto", () => {
       intakeDate: new Date("2026-04-01"),
       rescueSource: "Found near clinic",
       microchipNumber: "900123456789012",
-      passportNumber: "AB123456",
-      adopterName: "Taylor Adopter",
-      adopterAddress: "123 Cat Street",
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-1",
       createdByUserId: "user-1",
@@ -48,9 +42,6 @@ describe("CreateCatDto", () => {
     dto.intakeDate = value;
     dto.rescueSource = value;
     dto.microchipNumber = value;
-    dto.passportNumber = value;
-    dto.adopterName = value;
-    dto.adopterAddress = value;
     dto.currentLocationId = value;
 
     expect(dto.toCommand("user-1", false)).toMatchObject({
@@ -59,9 +50,6 @@ describe("CreateCatDto", () => {
       intakeDate: null,
       rescueSource: null,
       microchipNumber: null,
-      passportNumber: null,
-      adopterName: null,
-      adopterAddress: null,
       currentLocationId: null,
     });
   });

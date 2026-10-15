@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
+import { AddNewButton } from "@/components/add-new-button";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatCard as CatCardType, CatSex, CreateCatDto, Location, catsApi, locationsApi, SterilizationStatus } from "@/lib/api";
@@ -21,9 +22,6 @@ function emptyForm(locationId: string) {
     estimatedBirthDate: "",
     intakeDate: "",
     microchipNumber: "",
-    passportNumber: "",
-    adopterName: "",
-    adopterAddress: "",
     rescueSource: "",
     sterilizationStatus: "UNKNOWN" as SterilizationStatus,
     currentLocationId: locationId,
@@ -129,9 +127,6 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
       intakeDate: form.intakeDate || null,
       rescueSource: form.rescueSource.trim() || null,
       microchipNumber: form.microchipNumber.trim() || null,
-      passportNumber: form.passportNumber.trim() || null,
-      adopterName: form.adopterName.trim() || null,
-      adopterAddress: form.adopterAddress.trim() || null,
       sterilizationStatus: form.sterilizationStatus,
       currentLocationId: form.currentLocationId || null,
     };
@@ -164,15 +159,7 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
           <h2 className="mt-1 text-2xl font-semibold text-gray-900">Cat cards</h2>
           <p className="mt-1 text-sm text-[#6d6a66]">Active cats assigned to {locationName}.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowForm((value) => !value)}
-          aria-label={showForm ? "Close add cat form" : "Add cat"}
-          title={showForm ? "Close add cat form" : "Add cat"}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:-translate-y-px hover:bg-[#b24a20]"
-        >
-          {showForm ? "×" : "+"}
-        </button>
+        <AddNewButton label={showForm ? "Close add cat form" : "Add cat"} isOpen={showForm} onClick={() => setShowForm((value) => !value)} />
       </div>
 
       {(error || success) && (
@@ -269,30 +256,6 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               <input
                 value={form.microchipNumber}
                 onChange={(event) => setForm((prev) => ({ ...prev, microchipNumber: event.target.value }))}
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Passport number
-              <input
-                value={form.passportNumber}
-                onChange={(event) => setForm((prev) => ({ ...prev, passportNumber: event.target.value }))}
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Adopter name
-              <input
-                value={form.adopterName}
-                onChange={(event) => setForm((prev) => ({ ...prev, adopterName: event.target.value }))}
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Adopter address
-              <input
-                value={form.adopterAddress}
-                onChange={(event) => setForm((prev) => ({ ...prev, adopterAddress: event.target.value }))}
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               />
             </label>

@@ -6,6 +6,7 @@ export type WriteCatAuditEventInput = {
   catId: string;
   actorUserId: string;
   eventType: CatAuditEventType;
+  isTest: boolean;
   oldValue?: string | null;
   newValue?: string | null;
   photoId?: string | null;
@@ -23,6 +24,7 @@ export class WriteCatAuditEventCommand {
         catId: input.catId,
         actorUserId: input.actorUserId,
         eventType: input.eventType,
+        isTest: input.isTest,
         oldValue: input.oldValue ?? null,
         newValue: input.newValue ?? null,
         photoId: input.photoId ?? null,
