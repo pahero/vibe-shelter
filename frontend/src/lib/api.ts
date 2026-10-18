@@ -471,6 +471,13 @@ export const notificationsApi = {
     });
     return handleResponse<ListNotificationsResponse>(response);
   },
+  async dismiss(notificationId: string): Promise<void> {
+    const response = await fetch(`${BACKEND_URL}/api/notifications/${notificationId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return handleResponse<void>(response);
+  },
 };
 
 export const catsApi = {

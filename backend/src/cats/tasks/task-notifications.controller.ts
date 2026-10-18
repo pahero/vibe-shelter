@@ -1,13 +1,15 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Query, UseGuards } from "@nestjs/common";
 import { CurrentUser, SessionAuthGuard } from "../../auth";
 import { ListCurrentUserNotificationsDto } from "./list-current-user-notifications.dto";
 import { ListCurrentUserNotificationsQuery } from "./list-current-user-notifications.query";
+import { DismissNotificationHandler } from "./dismiss-notification.handler";
 
 @Controller("api/notifications")
 @UseGuards(SessionAuthGuard)
 export class TaskNotificationsController {
   constructor(
     private readonly listCurrentUserNotificationsQuery: ListCurrentUserNotificationsQuery,
+    private readonly dismissNotificationHandler: DismissNotificationHandler,
   ) {}
 
   @Get()
@@ -22,5 +24,14 @@ export class TaskNotificationsController {
       query.skip,
       query.limit,
     );
+  }
+
+  @Delete(":notificationId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async dismiss(
+    @Param("notificationId") notificationId: string,
+    @CurrentUser() user: { id: string },
+  ): Promise<void> {
+    await this.dismissNotificationHandler.handle(notificationId, user.id);
   }
 }

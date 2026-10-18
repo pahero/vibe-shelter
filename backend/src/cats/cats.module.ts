@@ -27,6 +27,7 @@ import { SendDueTaskNotificationsHandler } from "./tasks/send-due-task-notificat
 import { TaskNotificationCronService } from "./tasks/task-notification-cron.service";
 import { ListCurrentUserNotificationsQuery } from "./tasks/list-current-user-notifications.query";
 import { TaskNotificationsController } from "./tasks/task-notifications.controller";
+import { DismissNotificationHandler } from "./tasks/dismiss-notification.handler";
 import { CatTasksController } from "./tasks/cat-tasks.controller";
 import { CatTreatmentsController } from "./treatments/cat-treatments.controller";
 import { CreateCatTreatmentHandler } from "./treatments/create-cat-treatment.handler";
@@ -114,6 +115,7 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     SendDueTreatmentNotificationsHandler,
     TaskNotificationCronService,
     ListCurrentUserNotificationsQuery,
+    DismissNotificationHandler,
     ListCatTreatmentsHandler,
     CreateCatTreatmentHandler,
     DeleteCatTreatmentHandler,

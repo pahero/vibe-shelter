@@ -1401,6 +1401,29 @@ describe("Cats endpoints", () => {
       limit: 10,
     });
   });
+
+  it("allows an owner to dismiss their notification", async () => {
+    const cat = await createCat(prisma, { name: unique("dismiss-notification-cat") });
+    const treatment = await prisma.catTreatment.create({
+      data: {
+        catId: cat.id,
+        createdByUserId: authUser.id,
+        shortName: "Dismiss me",
+        startDate: new Date(),
+        dosesPerDay: 1,
+      },
+    });
+    const notification = await prisma.taskNotification.create({
+      data: { treatmentId: treatment.id, userId: authUser.id },
+    });
+
+    await authAgent.delete(`/api/notifications/${notification.id}`).expect(204);
+    expect(await prisma.taskNotification.findUniqueOrThrow({ where: { id: notification.id } })).toMatchObject({
+      deletedAt: expect.any(Date),
+      version: 1,
+    });
+    await authAgent.delete(`/api/notifications/${notification.id}`).expect(404);
+  });
 });
 
 function unique(prefix: string): string {
