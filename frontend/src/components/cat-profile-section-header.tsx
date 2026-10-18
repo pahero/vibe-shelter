@@ -9,9 +9,10 @@ type CatProfileSectionHeaderProps = {
   onToggle: () => void;
   onAdd?: () => void;
   addLabel?: string;
+  className?: string;
 };
 
-export function CatProfileSectionHeader({ title, isExpanded, onToggle, onAdd, addLabel }: CatProfileSectionHeaderProps) {
+export function CatProfileSectionHeader({ title, isExpanded, onToggle, onAdd, addLabel, className = "" }: CatProfileSectionHeaderProps) {
   return <div
     role="button"
     tabIndex={0}
@@ -23,7 +24,7 @@ export function CatProfileSectionHeader({ title, isExpanded, onToggle, onAdd, ad
         onToggle();
       }
     }}
-    className={`-mx-6 -mt-6 flex cursor-pointer items-center justify-between gap-2 bg-[#f1d8c7]/65 px-6 py-3 transition-colors hover:bg-[#ead0bd] focus:outline-none ${isExpanded ? "" : "-mb-6"}`}
+    className={`-mx-6 -mt-6 flex cursor-pointer items-center justify-between gap-2 bg-[#f1d8c7]/65 px-6 py-3 transition-colors hover:bg-[#ead0bd] focus:outline-none ${isExpanded ? "" : "-mb-6"} ${className}`}
   >
     <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">{title}</p>
     <div className="flex items-center gap-2">

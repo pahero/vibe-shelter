@@ -3,10 +3,11 @@
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { faPen, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
+import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
@@ -14,13 +15,13 @@ import { CatTreatments } from "@/components/cat-treatments";
 import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatPreventiveTreatments } from "@/components/cat-preventive-treatments";
 import { CatNotes } from "@/components/cat-notes";
-import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
 type CatEditForm = {
   name: string;
+  nameNumber: number;
   sex: CatSex;
   color: string;
   estimatedBirthDate: string;
@@ -60,6 +61,7 @@ function todayInputValue(): string {
 function catToEditForm(cat: CatCardType): CatEditForm {
   return {
     name: cat.name,
+    nameNumber: cat.nameNumber,
     sex: cat.sex,
     color: cat.color ?? "",
     estimatedBirthDate: dateInputValue(cat.estimatedBirthDate),
@@ -91,10 +93,7 @@ export default function CatProfilePage() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [detailsSuccess, setDetailsSuccess] = useState<string | null>(null);
-  const [isEditingNameNumber, setIsEditingNameNumber] = useState(false);
-  const [nameNumberValue, setNameNumberValue] = useState(1);
-  const [isSavingNameNumber, setIsSavingNameNumber] = useState(false);
-  const [nameNumberError, setNameNumberError] = useState<string | null>(null);
+  const [isCatProfileExpanded, setIsCatProfileExpanded] = useState(false);
   const [editForm, setEditForm] = useState<CatEditForm | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
@@ -125,6 +124,13 @@ export default function CatProfilePage() {
   const [historySkip, setHistorySkip] = useState(0);
   const [treatmentRefreshVersion, setTreatmentRefreshVersion] = useState(0);
   const historyLimit = 50;
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const syncProfileVisibility = () => setIsCatProfileExpanded(desktopQuery.matches);
+    syncProfileVisibility();
+    desktopQuery.addEventListener("change", syncProfileVisibility);
+    return () => desktopQuery.removeEventListener("change", syncProfileVisibility);
+  }, []);
   const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
   const [settingPrimaryPhotoId, setSettingPrimaryPhotoId] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<CatTag[]>([]);
@@ -481,33 +487,6 @@ export default function CatProfilePage() {
     setDetailsError(null);
   };
 
-  const startEditingNameNumber = () => {
-    if (!cat) return;
-    setNameNumberValue(cat.nameNumber);
-    setNameNumberError(null);
-    setIsEditingNameNumber(true);
-  };
-
-  const saveNameNumber = async () => {
-    if (!cat) return;
-    if (!Number.isInteger(nameNumberValue) || nameNumberValue < 1) {
-      setNameNumberError("Number must be a positive integer.");
-      return;
-    }
-    setIsSavingNameNumber(true);
-    setNameNumberError(null);
-    try {
-      await catsApi.updateCatNameNumber(cat.id, nameNumberValue);
-      setCat(await catsApi.getCatCard(cat.id));
-      setIsEditingNameNumber(false);
-      await refreshHistory();
-    } catch (err) {
-      setNameNumberError(ApiErrorHandler.handle(err));
-    } finally {
-      setIsSavingNameNumber(false);
-    }
-  };
-
   const openArchiveForm = async () => {
     setArchiveError(null);
     try {
@@ -564,6 +543,10 @@ export default function CatProfilePage() {
       setDetailsError("Cat name is required.");
       return;
     }
+    if (!Number.isInteger(editForm.nameNumber) || editForm.nameNumber < 1) {
+      setDetailsError("Number must be a positive integer.");
+      return;
+    }
     if (!locations.some((location) => location.id === editForm.currentLocationId)) {
       setDetailsError("Choose an active location for this cat.");
       return;
@@ -574,6 +557,9 @@ export default function CatProfilePage() {
     setDetailsSuccess(null);
 
     try {
+      if (editForm.nameNumber !== cat.nameNumber) {
+        await catsApi.updateCatNameNumber(cat.id, editForm.nameNumber);
+      }
       const updated = await catsApi.updateCat(cat.id, {
         name,
         sex: editForm.sex,
@@ -799,9 +785,13 @@ export default function CatProfilePage() {
               </section>
             </div>
             <section className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+              <div className="md:hidden">
+                <CatProfileSectionHeader title="Cat profile" isExpanded={isCatProfileExpanded} onToggle={() => setIsCatProfileExpanded((expanded) => !expanded)} className={isCatProfileExpanded ? "rounded-t-[22px]" : "rounded-[22px]"} />
+              </div>
+              <div className={`${isCatProfileExpanded ? "block" : "hidden"} md:block`}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</p>
+                  <p className="hidden font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c] md:block">Cat profile</p>
                   {isEditingDetails && editForm ? (
                     <input
                       form="cat-details-form"
@@ -812,39 +802,6 @@ export default function CatProfilePage() {
                     />
                   ) : (
                     <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name} <span className="text-[#6d6a66]">#{cat.nameNumber}</span></h1>
-                  )}
-                  {!isEditingDetails && (
-                    isEditingNameNumber ? (
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <label className="text-sm font-medium text-gray-700" htmlFor="cat-name-number">Name number</label>
-                        <input
-                          id="cat-name-number"
-                          aria-label="Cat name number"
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={nameNumberValue}
-                          onChange={(event) => setNameNumberValue(Number(event.target.value))}
-                          disabled={isSavingNameNumber}
-                          className="w-24 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
-                        />
-                        <button type="button" onClick={() => void saveNameNumber()} disabled={isSavingNameNumber} className="rounded-lg bg-[#d05a2c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                          {isSavingNameNumber ? "Saving…" : "Save number"}
-                        </button>
-                        <button type="button" onClick={() => { setIsEditingNameNumber(false); setNameNumberError(null); }} disabled={isSavingNameNumber} className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold disabled:opacity-50">Cancel</button>
-                        {nameNumberError && <p role="alert" className="basis-full text-sm text-red-700">{nameNumberError}</p>}
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={startEditingNameNumber}
-                        aria-label="Edit cat name number"
-                        title="Edit cat name number"
-                        className="mt-1 rounded-md p-2 text-[#a83f1a] hover:bg-[#f7e7db]"
-                      >
-                        <FontAwesomeIcon icon={faPen} />
-                      </button>
-                    )
                   )}
                 </div>
                 {!isEditingDetails && !cat.archivingReasonId && (
@@ -964,6 +921,19 @@ export default function CatProfilePage() {
               {isEditingDetails && editForm ? (
                 <form id="cat-details-form" onSubmit={handleDetailsSubmit} className="mt-6 space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Cat number
+                      <input
+                        aria-label="Cat number"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={editForm.nameNumber}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, nameNumber: Number(event.target.value) })}
+                        disabled={isSavingDetails}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Current location
                       <select
@@ -1127,6 +1097,7 @@ export default function CatProfilePage() {
                   ))}
                 </dl>
               )}
+              </div>
             </section>
             <CatTasks catId={cat.id} onChanged={refreshHistory} />
             <CatTreatments catId={cat.id} onChanged={refreshHistory} refreshVersion={treatmentRefreshVersion} />
