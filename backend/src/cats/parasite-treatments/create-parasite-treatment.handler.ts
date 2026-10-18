@@ -14,7 +14,15 @@ export class CreateParasiteTreatmentHandler {
       if (!cat) throw new NotFoundException("Cat not found");
       const versionUpdated = await transaction.cat.updateMany({ where: { id: cat.id, version: cat.version, deletedAt: null }, data: { version: { increment: 1 } } });
       if (versionUpdated.count !== 1) throw new NotFoundException("Cat not found");
-      const treatment = await transaction.parasiteTreatment.create({ data: { catId, ...payload }, select: { id: true } });
+      const treatment = await transaction.parasiteTreatment.create({
+        data: {
+          catId,
+          createdByUserId: actorUserId,
+          updatedByUserId: actorUserId,
+          ...payload,
+        },
+        select: { id: true },
+      });
       await transaction.auditEvent.create({ data: { catId, parasiteTreatmentId: treatment.id, actorUserId, isTest, eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentCreated } });
       return { id: treatment.id };
     });

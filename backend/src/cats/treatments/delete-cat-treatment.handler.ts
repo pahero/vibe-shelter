@@ -20,7 +20,11 @@ export class DeleteCatTreatmentHandler {
       if (!treatment) throw new NotFoundException("Treatment not found");
       await transaction.catTreatment.update({
         where: { id: treatment.id },
-        data: { deletedAt: new Date(), concurrencyToken: crypto.randomUUID() },
+        data: {
+          deletedAt: new Date(),
+          updatedByUserId: actorUserId,
+          concurrencyToken: crypto.randomUUID(),
+        },
       });
       await transaction.auditEvent.create({
         data: {

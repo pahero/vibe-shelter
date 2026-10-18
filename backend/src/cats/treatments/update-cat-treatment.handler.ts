@@ -88,7 +88,11 @@ export class UpdateCatTreatmentHandler {
       }
       await transaction.catTreatment.update({
         where: { id: treatmentId },
-        data: { ...payload, concurrencyToken: crypto.randomUUID() },
+        data: {
+          ...payload,
+          updatedByUserId: actorUserId,
+          concurrencyToken: crypto.randomUUID(),
+        },
       });
       const changes: {
         eventType: (typeof CAT_AUDIT_EVENT_TYPES)[keyof typeof CAT_AUDIT_EVENT_TYPES];

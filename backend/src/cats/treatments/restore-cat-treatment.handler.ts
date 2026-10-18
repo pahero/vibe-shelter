@@ -41,7 +41,11 @@ export class RestoreCatTreatmentHandler {
         throw new ConflictException("An active treatment with this name and start date already exists for this cat");
       await transaction.catTreatment.update({
         where: { id: treatment.id },
-        data: { deletedAt: null, concurrencyToken: crypto.randomUUID() },
+        data: {
+          deletedAt: null,
+          updatedByUserId: actorUserId,
+          concurrencyToken: crypto.randomUUID(),
+        },
       });
       await transaction.auditEvent.create({
         data: {

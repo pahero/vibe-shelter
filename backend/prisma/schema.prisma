@@ -38,6 +38,12 @@ model User {
   checkedTreatmentAdministrations CatTreatmentAdministration[] @relation("treatmentAdministrationCheckers")
   createdNotes CatNote[] @relation("createdNotes")
   createdMedicalNotes CatMedicalNote[] @relation("createdMedicalNotes")
+  createdVaccinations Vaccination[] @relation("createdVaccinations")
+  updatedVaccinations Vaccination[] @relation("updatedVaccinations")
+  createdParasiteTreatments ParasiteTreatment[] @relation("createdParasiteTreatments")
+  updatedParasiteTreatments ParasiteTreatment[] @relation("updatedParasiteTreatments")
+  createdCatTreatments CatTreatment[] @relation("createdCatTreatments")
+  updatedCatTreatments CatTreatment[] @relation("updatedCatTreatments")
 
   @@index([status])
   @@index([role])
@@ -290,6 +296,10 @@ model CatTreatment {
   id          String   @id @default(cuid())
   catId       String
   cat         Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  createdByUserId String?
+  createdByUser User? @relation("createdCatTreatments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId String?
+  updatedByUser User? @relation("updatedCatTreatments", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   shortName   String
   instructions String?
   startDate   DateTime @db.Date
@@ -305,6 +315,8 @@ model CatTreatment {
   @@index([catId, createdAt])
   @@index([catId, startDate, endDate])
   @@index([deletedAt])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
 }
 
 model CatTreatmentAdministration {
@@ -446,6 +458,10 @@ model Vaccination {
   id               String   @id @default(cuid())
   catId            String
   cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  createdByUserId  String?
+  createdByUser    User?    @relation("createdVaccinations", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId  String?
+  updatedByUser    User?    @relation("updatedVaccinations", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   type             VaccinationType
   date             DateTime @db.Date
   nextDueDate      DateTime? @db.Date
@@ -458,12 +474,18 @@ model Vaccination {
 
   @@index([catId, date])
   @@index([deletedAt])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
 }
 
 model ParasiteTreatment {
   id               String   @id @default(cuid())
   catId            String
   cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  createdByUserId  String?
+  createdByUser    User?    @relation("createdParasiteTreatments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId  String?
+  updatedByUser    User?    @relation("updatedParasiteTreatments", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   type             ParasiteTreatmentType
   date             DateTime @db.Date
   nextDueDate      DateTime? @db.Date
@@ -476,6 +498,8 @@ model ParasiteTreatment {
 
   @@index([catId, date])
   @@index([deletedAt])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
 }
 
 model CatNote {

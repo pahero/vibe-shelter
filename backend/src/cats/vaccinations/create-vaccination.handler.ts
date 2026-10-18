@@ -22,7 +22,12 @@ export class CreateVaccinationHandler {
       });
       if (versionUpdated.count !== 1) throw new NotFoundException("Cat not found");
       const vaccination = await transaction.vaccination.create({
-        data: { catId, ...payload },
+        data: {
+          catId,
+          createdByUserId: actorUserId,
+          updatedByUserId: actorUserId,
+          ...payload,
+        },
         select: { id: true },
       });
       await transaction.auditEvent.create({

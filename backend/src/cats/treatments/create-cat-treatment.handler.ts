@@ -37,7 +37,12 @@ export class CreateCatTreatmentHandler {
       if (duplicate) {
         await transaction.catTreatment.update({
           where: { id: duplicate.id },
-          data: { ...payload, deletedAt: null, concurrencyToken: crypto.randomUUID() },
+          data: {
+            ...payload,
+            deletedAt: null,
+            updatedByUserId: actorUserId,
+            concurrencyToken: crypto.randomUUID(),
+          },
         });
         const changes: {
           eventType: (typeof CAT_AUDIT_EVENT_TYPES)[keyof typeof CAT_AUDIT_EVENT_TYPES];
@@ -59,7 +64,12 @@ export class CreateCatTreatmentHandler {
         return { id: duplicate.id };
       }
       const treatment = await transaction.catTreatment.create({
-        data: { catId, ...payload },
+        data: {
+          catId,
+          createdByUserId: actorUserId,
+          updatedByUserId: actorUserId,
+          ...payload,
+        },
       });
       await transaction.auditEvent.create({
         data: {

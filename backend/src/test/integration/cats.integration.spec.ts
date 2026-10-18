@@ -446,10 +446,18 @@ describe("Cats endpoints", () => {
       .send({ type: "CORE", date: "2026-01-01", vaccineName: "Vaccine A" })
       .expect(201);
     expect(vaccination.body).toHaveProperty("id");
+    await expect(prisma.vaccination.findUniqueOrThrow({ where: { id: vaccination.body.id } })).resolves.toMatchObject({
+      createdByUserId: authUser.id,
+      updatedByUserId: authUser.id,
+    });
     await authAgent
       .patch(`/api/cats/vaccinations/${vaccination.body.id}`)
       .send({ nextDueDate: "2027-01-01", vaccineName: "Vaccine B" })
       .expect(200);
+    await expect(prisma.vaccination.findUniqueOrThrow({ where: { id: vaccination.body.id } })).resolves.toMatchObject({
+      createdByUserId: authUser.id,
+      updatedByUserId: authUser.id,
+    });
     const vaccinationList = await authAgent.get(`/api/cats/${cat.id}/vaccinations`).expect(200);
     expect(vaccinationList.body).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "CORE", date: "2026-01-01", nextDueDate: "2027-01-01", vaccineName: "Vaccine B" }),
@@ -461,10 +469,18 @@ describe("Cats endpoints", () => {
       .send({ type: "FLEAS_TICKS", date: "2026-02-01", productName: "Spot-on" })
       .expect(201);
     expect(parasiteTreatment.body).toHaveProperty("id");
+    await expect(prisma.parasiteTreatment.findUniqueOrThrow({ where: { id: parasiteTreatment.body.id } })).resolves.toMatchObject({
+      createdByUserId: authUser.id,
+      updatedByUserId: authUser.id,
+    });
     await authAgent
       .patch(`/api/cats/parasite-treatments/${parasiteTreatment.body.id}`)
       .send({ type: "COMBINED", nextDueDate: "2026-05-01", productName: "Combo" })
       .expect(200);
+    await expect(prisma.parasiteTreatment.findUniqueOrThrow({ where: { id: parasiteTreatment.body.id } })).resolves.toMatchObject({
+      createdByUserId: authUser.id,
+      updatedByUserId: authUser.id,
+    });
     const parasiteList = await authAgent.get(`/api/cats/${cat.id}/parasite-treatments`).expect(200);
     expect(parasiteList.body).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "COMBINED", date: "2026-02-01", nextDueDate: "2026-05-01", productName: "Combo" }),

@@ -18,7 +18,14 @@ export class UpdateParasiteTreatmentHandler {
       if (payload.date !== undefined && payload.date.getTime() !== current.date.getTime()) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentDateChanged, oldValue: current.date.toISOString().slice(0, 10), newValue: payload.date.toISOString().slice(0, 10) });
       if (payload.nextDueDate !== undefined && payload.nextDueDate?.getTime() !== current.nextDueDate?.getTime()) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentNextDueDateChanged, oldValue: current.nextDueDate?.toISOString().slice(0, 10) ?? "Not set", newValue: payload.nextDueDate?.toISOString().slice(0, 10) ?? "Not set" });
       if (payload.productName !== undefined && payload.productName !== current.productName) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.productNameChanged, oldValue: current.productName, newValue: payload.productName });
-      await transaction.parasiteTreatment.update({ where: { id }, data: { ...payload, concurrencyToken: randomUUID() } });
+      await transaction.parasiteTreatment.update({
+        where: { id },
+        data: {
+          ...payload,
+          updatedByUserId: actorUserId,
+          concurrencyToken: randomUUID(),
+        },
+      });
       if (changes.length) await transaction.auditEvent.createMany({ data: changes.map((change) => ({ catId: current.catId, parasiteTreatmentId: id, actorUserId, isTest, ...change })) });
       return { id };
     });

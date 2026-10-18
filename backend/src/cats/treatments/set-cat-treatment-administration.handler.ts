@@ -80,7 +80,10 @@ export class SetCatTreatmentAdministrationHandler {
       if (input.checked !== wasChecked) {
         await transaction.catTreatment.update({
           where: { id: treatment.id },
-          data: { concurrencyToken: crypto.randomUUID() },
+          data: {
+            updatedByUserId: actorUserId,
+            concurrencyToken: crypto.randomUUID(),
+          },
         });
       }
       if (input.checked !== wasChecked) {

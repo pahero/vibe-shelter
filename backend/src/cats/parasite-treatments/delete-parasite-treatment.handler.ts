@@ -12,7 +12,14 @@ export class DeleteParasiteTreatmentHandler {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const treatment = await transaction.parasiteTreatment.findFirst({ where: { id, deletedAt: null, cat: { isTest, deletedAt: null } }, select: { id: true, catId: true } });
       if (!treatment) throw new NotFoundException("Parasite treatment not found");
-      await transaction.parasiteTreatment.update({ where: { id }, data: { deletedAt: new Date(), concurrencyToken: randomUUID() } });
+      await transaction.parasiteTreatment.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          updatedByUserId: actorUserId,
+          concurrencyToken: randomUUID(),
+        },
+      });
       await transaction.auditEvent.create({ data: { catId: treatment.catId, parasiteTreatmentId: id, actorUserId, isTest, eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentDeleted } });
     });
   }

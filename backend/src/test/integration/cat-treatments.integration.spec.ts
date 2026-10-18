@@ -67,6 +67,10 @@ describe("Cat treatment endpoints", () => {
       })
       .expect(201);
     expect(created.body).toEqual({ id: expect.any(String) });
+    await expect(prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } })).resolves.toMatchObject({
+      createdByUserId: userId,
+      updatedByUserId: userId,
+    });
 
     await agent
       .patch(`/api/cats/treatments/${created.body.id}`)
@@ -76,6 +80,10 @@ describe("Cat treatment endpoints", () => {
       })
       .expect(200)
       .expect({ id: created.body.id });
+    await expect(prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } })).resolves.toMatchObject({
+      createdByUserId: userId,
+      updatedByUserId: userId,
+    });
 
     await agent
       .put(`/api/cats/treatments/${created.body.id}/administrations`)

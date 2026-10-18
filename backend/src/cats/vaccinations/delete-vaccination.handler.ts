@@ -15,7 +15,14 @@ export class DeleteVaccinationHandler {
         select: { id: true, catId: true },
       });
       if (!vaccination) throw new NotFoundException("Vaccination not found");
-      await transaction.vaccination.update({ where: { id }, data: { deletedAt: new Date(), concurrencyToken: randomUUID() } });
+      await transaction.vaccination.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          updatedByUserId: actorUserId,
+          concurrencyToken: randomUUID(),
+        },
+      });
       await transaction.auditEvent.create({
         data: { catId: vaccination.catId, vaccinationId: id, actorUserId, isTest, eventType: CAT_AUDIT_EVENT_TYPES.vaccinationDeleted },
       });

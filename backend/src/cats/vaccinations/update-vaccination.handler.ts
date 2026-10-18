@@ -20,7 +20,14 @@ export class UpdateVaccinationHandler {
       if (payload.date !== undefined && payload.date.getTime() !== current.date.getTime()) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.vaccinationDateChanged, oldValue: current.date.toISOString().slice(0, 10), newValue: payload.date.toISOString().slice(0, 10) });
       if (payload.nextDueDate !== undefined && payload.nextDueDate?.getTime() !== current.nextDueDate?.getTime()) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.vaccinationNextDueDateChanged, oldValue: current.nextDueDate?.toISOString().slice(0, 10) ?? "Not set", newValue: payload.nextDueDate?.toISOString().slice(0, 10) ?? "Not set" });
       if (payload.vaccineName !== undefined && payload.vaccineName !== current.vaccineName) changes.push({ eventType: CAT_AUDIT_EVENT_TYPES.vaccineNameChanged, oldValue: current.vaccineName ?? "Not set", newValue: payload.vaccineName ?? "Not set" });
-      await transaction.vaccination.update({ where: { id }, data: { ...payload, concurrencyToken: randomUUID() } });
+      await transaction.vaccination.update({
+        where: { id },
+        data: {
+          ...payload,
+          updatedByUserId: actorUserId,
+          concurrencyToken: randomUUID(),
+        },
+      });
       if (changes.length) await transaction.auditEvent.createMany({ data: changes.map((change) => ({ catId: current.catId, vaccinationId: id, actorUserId, isTest, ...change })) });
       return { id };
     });

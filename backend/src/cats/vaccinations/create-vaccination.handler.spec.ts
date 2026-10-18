@@ -12,7 +12,7 @@ describe("CreateVaccinationHandler", () => {
         type: "CORE", date: new Date("2026-01-01"), nextDueDate: null, vaccineName: "Core vaccine",
       }, actor.id, true);
       expect(result.id).toBeTruthy();
-      await expect(tx.vaccination.findUniqueOrThrow({ where: { id: result.id } })).resolves.toMatchObject({ catId: cat.id, type: "CORE", date: new Date("2026-01-01"), nextDueDate: null, vaccineName: "Core vaccine" });
+      await expect(tx.vaccination.findUniqueOrThrow({ where: { id: result.id } })).resolves.toMatchObject({ catId: cat.id, createdByUserId: actor.id, updatedByUserId: actor.id, type: "CORE", date: new Date("2026-01-01"), nextDueDate: null, vaccineName: "Core vaccine" });
       await expect(tx.cat.findUniqueOrThrow({ where: { id: cat.id } })).resolves.toMatchObject({ version: 1 });
       await expect(tx.auditEvent.findFirstOrThrow({ where: { vaccinationId: result.id } })).resolves.toMatchObject({ catId: cat.id, actorUserId: actor.id, isTest: true, eventType: "vaccination_created", oldValue: null, newValue: null });
     });
