@@ -395,37 +395,25 @@ describe("Cats endpoints", () => {
       },
     });
     await authAgent
-      .post(`/api/cats/${cat.id}/preventive-treatments`)
-      .send({
-        date: "2026-01-01",
-        name: "First dose",
-        type: "FIRST_VACCINE",
-      })
+      .post(`/api/cats/${cat.id}/vaccinations`)
+      .send({ date: "2026-01-01", type: "CORE", vaccineName: "Core 1" })
       .expect(201);
     await authAgent
-      .post(`/api/cats/${cat.id}/preventive-treatments`)
-      .send({
-        date: "2026-02-01",
-        name: "Second dose",
-        type: "SECOND_VACCINE",
-      })
+      .post(`/api/cats/${cat.id}/vaccinations`)
+      .send({ date: "2026-02-01", type: "CORE", vaccineName: "Core 2" })
       .expect(201);
     await authAgent
-      .post(`/api/cats/${cat.id}/preventive-treatments`)
-      .send({
-        date: "2026-03-01",
-        name: "Rabies",
-        type: "RABIES",
-      })
+      .post(`/api/cats/${cat.id}/vaccinations`)
+      .send({ date: "2026-03-01", type: "RABIES" })
       .expect(201);
 
-    const treatments = await authAgent
-      .get(`/api/cats/${cat.id}/preventive-treatments`)
+    const vaccinations = await authAgent
+      .get(`/api/cats/${cat.id}/vaccinations`)
       .expect(200);
     expect(
-      treatments.body.map((treatment: { type: string }) => treatment.type),
+      vaccinations.body.map((vaccination: { type: string }) => vaccination.type),
     ).toEqual(
-      expect.arrayContaining(["FIRST_VACCINE", "SECOND_VACCINE", "RABIES"]),
+      expect.arrayContaining(["CORE", "RABIES"]),
     );
 
     const response = await authAgent
@@ -449,6 +437,39 @@ describe("Cats endpoints", () => {
         felvFivTestDone: true,
       },
     });
+  });
+
+  it("supports vaccination and parasite-treatment CRUD with separate data fields", async () => {
+    const cat = await createCat(prisma, { name: unique("preventive-crud") });
+    const vaccination = await authAgent
+      .post(`/api/cats/${cat.id}/vaccinations`)
+      .send({ type: "CORE", date: "2026-01-01", vaccineName: "Vaccine A" })
+      .expect(201);
+    expect(vaccination.body).toHaveProperty("id");
+    await authAgent
+      .patch(`/api/cats/vaccinations/${vaccination.body.id}`)
+      .send({ nextDueDate: "2027-01-01", vaccineName: "Vaccine B" })
+      .expect(200);
+    const vaccinationList = await authAgent.get(`/api/cats/${cat.id}/vaccinations`).expect(200);
+    expect(vaccinationList.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "CORE", date: "2026-01-01", nextDueDate: "2027-01-01", vaccineName: "Vaccine B" }),
+    ]));
+    await authAgent.delete(`/api/cats/vaccinations/${vaccination.body.id}`).expect(204);
+
+    const parasiteTreatment = await authAgent
+      .post(`/api/cats/${cat.id}/parasite-treatments`)
+      .send({ type: "FLEAS_TICKS", date: "2026-02-01", productName: "Spot-on" })
+      .expect(201);
+    expect(parasiteTreatment.body).toHaveProperty("id");
+    await authAgent
+      .patch(`/api/cats/parasite-treatments/${parasiteTreatment.body.id}`)
+      .send({ type: "COMBINED", nextDueDate: "2026-05-01", productName: "Combo" })
+      .expect(200);
+    const parasiteList = await authAgent.get(`/api/cats/${cat.id}/parasite-treatments`).expect(200);
+    expect(parasiteList.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "COMBINED", date: "2026-02-01", nextDueDate: "2026-05-01", productName: "Combo" }),
+    ]));
+    await authAgent.delete(`/api/cats/parasite-treatments/${parasiteTreatment.body.id}`).expect(204);
   });
 
   it("GET /api/cats/:id/card returns one cat card", async () => {

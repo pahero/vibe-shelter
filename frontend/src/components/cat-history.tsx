@@ -65,11 +65,18 @@ export const eventLabels: Record<string, string> = {
   medical_note_deleted: "Medical note deleted",
   medical_note_date_changed: "Medical note date changed",
   medical_note_comment_changed: "Medical note comment changed",
-  preventive_treatment_created: "Vaccination or parasite treatment created",
-  preventive_treatment_deleted: "Vaccination or parasite treatment deleted",
-  preventive_treatment_date_changed: "Vaccination or parasite treatment date changed",
-  preventive_treatment_name_changed: "Vaccine or medicine changed",
-  preventive_treatment_type_changed: "Vaccination or treatment type changed",
+  vaccination_created: "Vaccination created",
+  vaccination_deleted: "Vaccination deleted",
+  vaccination_type_changed: "Vaccination type changed",
+  vaccination_date_changed: "Vaccination date changed",
+  vaccination_next_due_date_changed: "Vaccination next due date changed",
+  vaccine_name_changed: "Vaccine name changed",
+  parasite_treatment_created: "Parasite treatment created",
+  parasite_treatment_deleted: "Parasite treatment deleted",
+  parasite_treatment_type_changed: "Parasite treatment type changed",
+  parasite_treatment_date_changed: "Parasite treatment date changed",
+  parasite_treatment_next_due_date_changed: "Parasite treatment next due date changed",
+  product_name_changed: "Product name changed",
   note_created: "Note created",
   note_deleted: "Note deleted",
   note_date_changed: "Note date changed",
@@ -136,9 +143,13 @@ export function auditEventLabel(event: CatHistoryEvent): string {
     const action = event.eventType === "weight_created" ? "added" : event.eventType === "weight_deleted" ? "deleted" : "changed";
     return `Weight ${event.weight.measuredAt} (${event.weight.weightKg} kg) ${action}`;
   }
-  if (event.preventiveTreatment) {
-    const action = event.eventType.replace("preventive_treatment_", "").replaceAll("_", " ");
-    return `${event.preventiveTreatment.name} ${event.preventiveTreatment.date} · ${action}`;
+  if (event.vaccination) {
+    const action = event.eventType.replace("vaccination_", "").replaceAll("_", " ");
+    return `Vaccination ${event.vaccination.vaccineName || event.vaccination.type} ${event.vaccination.date} · ${action}`;
+  }
+  if (event.parasiteTreatment) {
+    const action = event.eventType.replace("parasite_treatment_", "").replaceAll("_", " ");
+    return `Parasite treatment ${event.parasiteTreatment.productName} ${event.parasiteTreatment.date} · ${action}`;
   }
   if (event.medicalNote) {
     const action = event.eventType.replace("medical_note_", "").replaceAll("_", " ");

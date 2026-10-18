@@ -13,7 +13,8 @@ import { CatHistory } from "@/components/cat-history";
 import { CatTasks } from "@/components/cat-tasks";
 import { CatTreatments } from "@/components/cat-treatments";
 import { CatMedicalNotes } from "@/components/cat-medical-notes";
-import { CatPreventiveTreatments } from "@/components/cat-preventive-treatments";
+import { CatVaccinations } from "@/components/cat-vaccinations";
+import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
 import { CatNotes } from "@/components/cat-notes";
 import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
@@ -1075,7 +1076,8 @@ export default function CatProfilePage() {
             <CatTasks catId={cat.id} onChanged={refreshHistory} />
             <CatTreatments catId={cat.id} onChanged={refreshHistory} refreshVersion={treatmentRefreshVersion} />
             <CatMedicalNotes catId={cat.id} onChanged={refreshHistory} />
-            <CatPreventiveTreatments catId={cat.id} onChanged={refreshHistory} />
+            <CatVaccinations catId={cat.id} onChanged={refreshHistory} />
+            <CatParasiteTreatments catId={cat.id} onChanged={refreshHistory} />
             <CatNotes catId={cat.id} onChanged={refreshHistory} />
             <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
               <CatProfileSectionHeader title="Weight history" isExpanded={isWeightExpanded} onToggle={() => { setIsWeightFormOpen(false); setIsWeightExpanded((current) => !current); }} onAdd={() => setIsWeightFormOpen(true)} addLabel="Add weight" />

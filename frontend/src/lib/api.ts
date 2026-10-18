@@ -123,9 +123,12 @@ export type TreatmentInput = {
 
 export type CatMedicalNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
 export type MedicalNoteInput = { date: string; comment: string };
-export type PreventiveTreatmentType = "FIRST_VACCINE" | "SECOND_VACCINE" | "RABIES" | "OTHER";
-export type CatPreventiveTreatment = { id: string; date: string; name: string; type: PreventiveTreatmentType; createdAt: string; updatedAt: string };
-export type PreventiveTreatmentInput = { date: string; name: string; type: PreventiveTreatmentType };
+export type VaccinationType = "CORE" | "RABIES" | "OTHER";
+export type CatVaccination = { id: string; type: VaccinationType; date: string; nextDueDate: string | null; vaccineName: string | null; createdAt: string; updatedAt: string };
+export type VaccinationInput = { type: VaccinationType; date: string; nextDueDate?: string | null; vaccineName?: string | null };
+export type ParasiteTreatmentType = "FLEAS_TICKS" | "DEWORMING" | "COMBINED" | "OTHER";
+export type CatParasiteTreatment = { id: string; type: ParasiteTreatmentType; date: string; nextDueDate: string | null; productName: string; createdAt: string; updatedAt: string };
+export type ParasiteTreatmentInput = { type: ParasiteTreatmentType; date: string; nextDueDate?: string | null; productName: string };
 export type CatNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
 export type NoteInput = { date: string; comment: string };
 
@@ -190,7 +193,8 @@ export type CatHistoryEvent = {
   weight?: { id: string; measuredAt: string; weightKg: number; isDeleted: boolean } | null;
   task?: { id: string; comment: string; dueDate: string; isDeleted: boolean } | null;
   medicalNote?: { id: string; date: string; comment: string; author: string | null; isDeleted: boolean } | null;
-  preventiveTreatment?: { id: string; date: string; name: string; type: string; isDeleted: boolean } | null;
+  vaccination?: { id: string; date: string; nextDueDate: string | null; vaccineName: string | null; type: string; isDeleted: boolean } | null;
+  parasiteTreatment?: { id: string; date: string; nextDueDate: string | null; productName: string; type: string; isDeleted: boolean } | null;
    note?: { id: string; date: string; comment: string; author: string | null; isDeleted: boolean } | null;
   archivingReason?: { id: string; name: string; isDeleted: boolean } | null;
   location?: { id: string; name: string; isDeleted: boolean } | null;
@@ -463,10 +467,14 @@ export const catsApi = {
   async createNote(catId: string, data: NoteInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
   async updateNote(id: string, data: Partial<NoteInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
   async deleteNote(id: string): Promise<void> { const response = await fetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "DELETE", credentials: "include" }); return handleResponse<void>(response); },
-  async listPreventiveTreatments(catId: string): Promise<CatPreventiveTreatment[]> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/preventive-treatments`, { method: "GET", credentials: "include" }); return handleResponse<CatPreventiveTreatment[]>(response); },
-  async createPreventiveTreatment(catId: string, data: PreventiveTreatmentInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/preventive-treatments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async updatePreventiveTreatment(id: string, data: Partial<PreventiveTreatmentInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/preventive-treatments/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async deletePreventiveTreatment(id: string): Promise<void> { const response = await fetch(`${BACKEND_URL}/api/cats/preventive-treatments/${id}`, { method: "DELETE", credentials: "include" }); return handleResponse<void>(response); },
+  async listVaccinations(catId: string): Promise<CatVaccination[]> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/vaccinations`, { method: "GET", credentials: "include" }); return handleResponse<CatVaccination[]>(response); },
+  async createVaccination(catId: string, data: VaccinationInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/vaccinations`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async updateVaccination(id: string, data: Partial<VaccinationInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/vaccinations/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async deleteVaccination(id: string): Promise<void> { const response = await fetch(`${BACKEND_URL}/api/cats/vaccinations/${id}`, { method: "DELETE", credentials: "include" }); return handleResponse<void>(response); },
+  async listParasiteTreatments(catId: string): Promise<CatParasiteTreatment[]> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/parasite-treatments`, { method: "GET", credentials: "include" }); return handleResponse<CatParasiteTreatment[]>(response); },
+  async createParasiteTreatment(catId: string, data: ParasiteTreatmentInput): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/parasite-treatments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async updateParasiteTreatment(id: string, data: Partial<ParasiteTreatmentInput>): Promise<MutationResult> { const response = await fetch(`${BACKEND_URL}/api/cats/parasite-treatments/${id}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
+  async deleteParasiteTreatment(id: string): Promise<void> { const response = await fetch(`${BACKEND_URL}/api/cats/parasite-treatments/${id}`, { method: "DELETE", credentials: "include" }); return handleResponse<void>(response); },
   async listMedicalNotes(catId: string): Promise<CatMedicalNote[]> {
     const response = await fetch(`${BACKEND_URL}/api/cats/${catId}/medical-notes`, { method: "GET", credentials: "include" });
     return handleResponse<CatMedicalNote[]>(response);

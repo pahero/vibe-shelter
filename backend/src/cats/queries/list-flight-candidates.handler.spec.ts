@@ -17,22 +17,19 @@ describe("ListFlightCandidatesHandler", () => {
           adopterName: "Taylor Adopter",
           adopterAddress: "123 Cat Street",
           felvFivTestDone: true,
-          preventiveTreatments: {
+          vaccinations: {
             create: [
               {
                 date: new Date("2026-01-01"),
-                name: "Vaccine 1",
-                type: "FIRST_VACCINE",
+                type: "CORE",
               },
               {
                 date: new Date("2026-02-01"),
-                name: "Vaccine 2",
-                type: "SECOND_VACCINE",
+                type: "CORE",
               },
-              { date: new Date("2026-03-01"), name: "Rabies", type: "RABIES" },
+              { date: new Date("2026-03-01"), type: "RABIES" },
               {
                 date: new Date("2026-04-01"),
-                name: "Deleted rabies",
                 type: "RABIES",
                 deletedAt: new Date(),
               },

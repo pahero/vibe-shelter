@@ -40,11 +40,16 @@ import { CreateCatMedicalNoteHandler } from "./medical-notes/create-cat-medical-
 import { DeleteCatMedicalNoteHandler } from "./medical-notes/delete-cat-medical-note.handler";
 import { ListCatMedicalNotesHandler } from "./medical-notes/list-cat-medical-notes.handler";
 import { UpdateCatMedicalNoteHandler } from "./medical-notes/update-cat-medical-note.handler";
-import { CatPreventiveTreatmentsController } from "./preventive-treatments/cat-preventive-treatments.controller";
-import { CreateCatPreventiveTreatmentHandler } from "./preventive-treatments/create-cat-preventive-treatment.handler";
-import { DeleteCatPreventiveTreatmentHandler } from "./preventive-treatments/delete-cat-preventive-treatment.handler";
-import { ListCatPreventiveTreatmentsHandler } from "./preventive-treatments/list-cat-preventive-treatments.handler";
-import { UpdateCatPreventiveTreatmentHandler } from "./preventive-treatments/update-cat-preventive-treatment.handler";
+import { VaccinationsController } from "./vaccinations/vaccinations.controller";
+import { CreateVaccinationHandler } from "./vaccinations/create-vaccination.handler";
+import { DeleteVaccinationHandler } from "./vaccinations/delete-vaccination.handler";
+import { ListVaccinationsHandler } from "./vaccinations/list-vaccinations.handler";
+import { UpdateVaccinationHandler } from "./vaccinations/update-vaccination.handler";
+import { ParasiteTreatmentsController } from "./parasite-treatments/parasite-treatments.controller";
+import { CreateParasiteTreatmentHandler } from "./parasite-treatments/create-parasite-treatment.handler";
+import { DeleteParasiteTreatmentHandler } from "./parasite-treatments/delete-parasite-treatment.handler";
+import { ListParasiteTreatmentsHandler } from "./parasite-treatments/list-parasite-treatments.handler";
+import { UpdateParasiteTreatmentHandler } from "./parasite-treatments/update-parasite-treatment.handler";
 import { CatNotesController } from "./notes/cat-notes.controller";
 import { CreateCatNoteHandler } from "./notes/create-cat-note.handler";
 import { DeleteCatNoteHandler } from "./notes/delete-cat-note.handler";
@@ -81,7 +86,8 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     TaskNotificationsController,
     CatTreatmentsController,
     CatMedicalNotesController,
-    CatPreventiveTreatmentsController,
+    VaccinationsController,
+    ParasiteTreatmentsController,
     CatNotesController,
   ],
   providers: [
@@ -116,10 +122,14 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     CreateCatMedicalNoteHandler,
     UpdateCatMedicalNoteHandler,
     DeleteCatMedicalNoteHandler,
-    ListCatPreventiveTreatmentsHandler,
-    CreateCatPreventiveTreatmentHandler,
-    UpdateCatPreventiveTreatmentHandler,
-    DeleteCatPreventiveTreatmentHandler,
+    ListVaccinationsHandler,
+    CreateVaccinationHandler,
+    UpdateVaccinationHandler,
+    DeleteVaccinationHandler,
+    ListParasiteTreatmentsHandler,
+    CreateParasiteTreatmentHandler,
+    UpdateParasiteTreatmentHandler,
+    DeleteParasiteTreatmentHandler,
     ListCatNotesHandler,
     CreateCatNoteHandler,
     UpdateCatNoteHandler,

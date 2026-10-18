@@ -90,10 +90,16 @@ enum SterilizationStatus {
   UNKNOWN
 }
 
-enum PreventiveTreatmentType {
-  FIRST_VACCINE
-  SECOND_VACCINE
+enum VaccinationType {
   RABIES
+  CORE
+  OTHER
+}
+
+enum ParasiteTreatmentType {
+  FLEAS_TICKS
+  DEWORMING
+  COMBINED
   OTHER
 }
 
@@ -156,7 +162,8 @@ model Cat {
   tasks               CatTask[]
   treatments          CatTreatment[]
   medicalNotes        CatMedicalNote[]
-  preventiveTreatments CatPreventiveTreatment[]
+  vaccinations        Vaccination[]
+  parasiteTreatments  ParasiteTreatment[]
   notes               CatNote[]
   flightAssignments  FlightCatAssignment[]
 
@@ -382,8 +389,10 @@ model AuditEvent {
   task CatTask? @relation("auditTasks", fields: [taskId], references: [id], onDelete: SetNull)
   medicalNoteId String?
   medicalNote CatMedicalNote? @relation("auditMedicalNotes", fields: [medicalNoteId], references: [id], onDelete: SetNull)
-  preventiveTreatmentId String?
-  preventiveTreatment CatPreventiveTreatment? @relation("auditPreventiveTreatments", fields: [preventiveTreatmentId], references: [id], onDelete: SetNull)
+  vaccinationId String?
+  vaccination Vaccination? @relation("auditVaccinations", fields: [vaccinationId], references: [id], onDelete: SetNull)
+  parasiteTreatmentId String?
+  parasiteTreatment ParasiteTreatment? @relation("auditParasiteTreatments", fields: [parasiteTreatmentId], references: [id], onDelete: SetNull)
   noteId String?
   note CatNote? @relation("auditNotes", fields: [noteId], references: [id], onDelete: SetNull)
   actorUserId String
@@ -409,7 +418,8 @@ model AuditEvent {
   @@index([weightId])
   @@index([taskId])
   @@index([medicalNoteId])
-  @@index([preventiveTreatmentId])
+  @@index([vaccinationId])
+  @@index([parasiteTreatmentId])
   @@index([noteId])
 }
 model CatMedicalNote {
@@ -432,18 +442,37 @@ model CatMedicalNote {
   @@index([deletedAt])
 }
 
-model CatPreventiveTreatment {
+model Vaccination {
   id               String   @id @default(cuid())
   catId            String
   cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  type             VaccinationType
   date             DateTime @db.Date
-  name             String
-  type             PreventiveTreatmentType @default(OTHER)
+  nextDueDate      DateTime? @db.Date
+  vaccineName      String?
   deletedAt        DateTime?
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  auditEvents      AuditEvent[] @relation("auditPreventiveTreatments")
+  auditEvents      AuditEvent[] @relation("auditVaccinations")
+
+  @@index([catId, date])
+  @@index([deletedAt])
+}
+
+model ParasiteTreatment {
+  id               String   @id @default(cuid())
+  catId            String
+  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  type             ParasiteTreatmentType
+  date             DateTime @db.Date
+  nextDueDate      DateTime? @db.Date
+  productName      String
+  deletedAt        DateTime?
+  concurrencyToken String   @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  auditEvents      AuditEvent[] @relation("auditParasiteTreatments")
 
   @@index([catId, date])
   @@index([deletedAt])

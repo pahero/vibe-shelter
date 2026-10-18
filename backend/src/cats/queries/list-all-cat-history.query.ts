@@ -117,7 +117,8 @@ export class ListAllCatHistoryQuery {
           weight: { select: { id: true, measuredAt: true, weightKg: true, deletedAt: true } },
           task: { select: { id: true, comment: true, dueDate: true, deletedAt: true } },
           medicalNote: { select: { id: true, date: true, comment: true, deletedAt: true, createdByUser: { select: { fullName: true, email: true } } } },
-          preventiveTreatment: { select: { id: true, date: true, name: true, type: true, deletedAt: true } },
+          vaccination: { select: { id: true, date: true, nextDueDate: true, vaccineName: true, type: true, deletedAt: true } },
+          parasiteTreatment: { select: { id: true, date: true, nextDueDate: true, productName: true, type: true, deletedAt: true } },
           note: { select: { id: true, date: true, comment: true, deletedAt: true, createdByUser: { select: { fullName: true, email: true } } } },
           archivingReason: { select: { id: true, name: true, deletedAt: true } },
           location: { select: { id: true, name: true, deletedAt: true } },
@@ -265,8 +266,11 @@ export class ListAllCatHistoryQuery {
       medicalNote: event.medicalNote
         ? { id: event.medicalNote.id, date: event.medicalNote.date.toISOString().slice(0, 10), comment: event.medicalNote.comment, author: event.medicalNote.createdByUser ? (event.medicalNote.createdByUser.fullName || event.medicalNote.createdByUser.email) : null, isDeleted: Boolean(event.medicalNote.deletedAt) }
         : null,
-      preventiveTreatment: event.preventiveTreatment
-        ? { id: event.preventiveTreatment.id, date: event.preventiveTreatment.date.toISOString().slice(0, 10), name: event.preventiveTreatment.name, type: event.preventiveTreatment.type, isDeleted: Boolean(event.preventiveTreatment.deletedAt) }
+      vaccination: event.vaccination
+        ? { id: event.vaccination.id, date: event.vaccination.date.toISOString().slice(0, 10), nextDueDate: event.vaccination.nextDueDate?.toISOString().slice(0, 10) ?? null, vaccineName: event.vaccination.vaccineName, type: event.vaccination.type, isDeleted: Boolean(event.vaccination.deletedAt) }
+        : null,
+      parasiteTreatment: event.parasiteTreatment
+        ? { id: event.parasiteTreatment.id, date: event.parasiteTreatment.date.toISOString().slice(0, 10), nextDueDate: event.parasiteTreatment.nextDueDate?.toISOString().slice(0, 10) ?? null, productName: event.parasiteTreatment.productName, type: event.parasiteTreatment.type, isDeleted: Boolean(event.parasiteTreatment.deletedAt) }
         : null,
       note: event.note
         ? { id: event.note.id, date: event.note.date.toISOString().slice(0, 10), comment: event.note.comment, author: event.note.createdByUser ? (event.note.createdByUser.fullName || event.note.createdByUser.email) : null, isDeleted: Boolean(event.note.deletedAt) }
@@ -333,7 +337,8 @@ export class ListAllCatHistoryQuery {
       weight: null,
       task: null,
       medicalNote: null,
-      preventiveTreatment: null,
+      vaccination: null,
+      parasiteTreatment: null,
       note: null,
       archivingReason: null,
       location: null,
@@ -376,7 +381,8 @@ export class ListAllCatHistoryQuery {
       weight: null,
       task: null,
       medicalNote: null,
-      preventiveTreatment: null,
+      vaccination: null,
+      parasiteTreatment: null,
       note: null,
       archivingReason: null,
       location: null,
@@ -406,7 +412,8 @@ export class ListAllCatHistoryQuery {
       weight: null,
       task: null,
       medicalNote: null,
-      preventiveTreatment: null,
+      vaccination: null,
+      parasiteTreatment: null,
       note: null,
       archivingReason: null,
       location: event.location
@@ -448,7 +455,8 @@ export class ListAllCatHistoryQuery {
       weight: null,
       task: null,
       medicalNote: null,
-      preventiveTreatment: null,
+      vaccination: null,
+      parasiteTreatment: null,
       note: null,
       archivingReason: event.archivingReason
         ? { id: event.archivingReason.id, name: event.archivingReason.name, isDeleted: Boolean(event.archivingReason.deletedAt) }

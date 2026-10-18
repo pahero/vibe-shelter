@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PreventiveTreatmentType } from "@prisma/client";
+import { VaccinationType } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 
 export type FlightCandidate = {
@@ -41,7 +41,7 @@ export class ListFlightCandidatesHandler {
         adopterAddress: true,
         felvFivTestDone: true,
         currentLocation: { select: { name: true } },
-        preventiveTreatments: {
+        vaccinations: {
           where: { deletedAt: null },
           select: { type: true },
         },
@@ -50,9 +50,7 @@ export class ListFlightCandidatesHandler {
     });
 
     return cats.map((cat) => {
-      const treatmentTypes = new Set(
-        cat.preventiveTreatments.map(({ type }) => type),
-      );
+      const coreVaccineCount = cat.vaccinations.filter(({ type }) => type === VaccinationType.CORE).length;
       return {
         id: cat.id,
         name: cat.name,
@@ -64,13 +62,9 @@ export class ListFlightCandidatesHandler {
         adopterName: cat.adopterName,
         adopterAddress: cat.adopterAddress,
         requirements: {
-          firstVaccine: treatmentTypes.has(
-            PreventiveTreatmentType.FIRST_VACCINE,
-          ),
-          secondVaccine: treatmentTypes.has(
-            PreventiveTreatmentType.SECOND_VACCINE,
-          ),
-          rabies: treatmentTypes.has(PreventiveTreatmentType.RABIES),
+          firstVaccine: coreVaccineCount >= 1,
+          secondVaccine: coreVaccineCount >= 2,
+          rabies: cat.vaccinations.some(({ type }) => type === VaccinationType.RABIES),
           passport: cat.passport,
           chipped: cat.microchipNumber !== null,
           adopter: Boolean(cat.adopterName && cat.adopterAddress),
