@@ -1,4 +1,2 @@
 # TODO
-* Make sure audit is using single table instead of few
-* Make playwright use vitest too
-* Squash migrations
+* Treatment removal/update must remove existing notifications so later there can be new ones created 

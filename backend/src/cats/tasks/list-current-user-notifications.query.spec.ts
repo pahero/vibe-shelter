@@ -62,4 +62,28 @@ describe("ListCurrentUserNotificationsQuery", () => {
       });
     });
   });
+
+  it("returns treatment notifications in the same feed", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const user = await transaction.user.create({ data: { email: `${Date.now()}-treatment-user@example.com` } });
+      const cat = await transaction.cat.create({ data: { name: `Treatment cat ${Date.now()}` } });
+      const treatment = await transaction.catTreatment.create({
+        data: {
+          catId: cat.id,
+          createdByUserId: user.id,
+          updatedByUserId: user.id,
+          shortName: "Antibiotics",
+          startDate: new Date("2020-01-01T00:00:00.000Z"),
+          dosesPerDay: 1,
+        },
+      });
+      await transaction.taskNotification.create({ data: { treatmentId: treatment.id, userId: user.id } });
+      const query = new ListCurrentUserNotificationsQuery(transaction as PrismaService);
+
+      await expect(query.handle(user.id, false, 0, 10)).resolves.toMatchObject({
+        data: [expect.objectContaining({ type: "treatment", treatmentId: treatment.id, comment: "Antibiotics", catId: cat.id, catName: cat.name, catNameNumber: cat.nameNumber })],
+        total: 1,
+      });
+    });
+  });
 });

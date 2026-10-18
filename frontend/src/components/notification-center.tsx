@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { notificationsApi, TaskNotification } from "@/lib/api";
+import { notificationsApi, UserNotification } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
 
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<TaskNotification[]>([]);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +48,8 @@ export function NotificationCenter() {
         <div className="flex items-center justify-between gap-3"><h2 className="font-semibold text-gray-900">Notifications</h2><button type="button" onClick={() => setIsOpen(false)} className="text-sm font-semibold text-[#b24a20]">Close</button></div>
         {isLoading && <p className="mt-4 text-sm text-[#6d6a66]">Loading notifications...</p>}
         {error && <p className="mt-4 text-sm font-medium text-red-700">{error}</p>}
-        {!isLoading && !error && notifications.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No overdue task notifications.</p>}
-        {!isLoading && !error && notifications.length > 0 && <ol className="mt-3 max-h-96 divide-y divide-[#d4c7b4] overflow-auto">{notifications.map((notification) => <li key={notification.id} className="py-3"><p className="text-sm font-semibold text-gray-900">{notification.comment}</p><p className="mt-1 text-xs text-[#6d6a66]">Due {formatDate(notification.dueDate)}</p><Link href={`/cats/${notification.catId}`} onClick={() => setIsOpen(false)} className="mt-2 inline-flex text-sm font-semibold text-[#b24a20] hover:text-[#8f3718]">Open cat →</Link></li>)}</ol>}
+        {!isLoading && !error && notifications.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No notifications.</p>}
+        {!isLoading && !error && notifications.length > 0 && <ol className="mt-3 max-h-96 divide-y divide-[#d4c7b4] overflow-auto">{notifications.map((notification) => <li key={notification.id} className="py-3"><p className="text-sm font-semibold text-gray-900">{notification.type === "treatment" ? `New treatment ${notification.comment} starts for cat ${notification.catName} #${notification.catNameNumber}` : notification.comment}</p><p className="mt-1 text-xs text-[#6d6a66]">{notification.type === "treatment" ? "Starts" : "Due"} {formatDate(notification.dueDate)}</p><Link href={`/cats/${notification.catId}`} onClick={() => setIsOpen(false)} className="mt-2 inline-flex text-sm font-semibold text-[#b24a20] hover:text-[#8f3718]">Open cat →</Link></li>)}</ol>}
       </section>}
     </div>
   );

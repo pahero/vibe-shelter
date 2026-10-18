@@ -134,6 +134,7 @@ export type NoteInput = { date: string; comment: string };
 
 export type TaskNotification = {
   id: string;
+  type: "task";
   taskId: string;
   catId: string;
   comment: string;
@@ -141,8 +142,22 @@ export type TaskNotification = {
   createdAt: string;
 };
 
+export type TreatmentNotification = {
+  id: string;
+  type: "treatment";
+  treatmentId: string;
+  catId: string;
+  catName: string;
+  catNameNumber: number;
+  comment: string;
+  dueDate: string;
+  createdAt: string;
+};
+
+export type UserNotification = TaskNotification | TreatmentNotification;
+
 export type ListNotificationsResponse = {
-  data: TaskNotification[];
+  data: UserNotification[];
   total: number;
   skip: number;
   limit: number;

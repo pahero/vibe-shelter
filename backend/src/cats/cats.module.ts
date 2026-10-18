@@ -35,6 +35,7 @@ import { ListCatTreatmentsHandler } from "./treatments/list-cat-treatments.handl
 import { SetCatTreatmentAdministrationHandler } from "./treatments/set-cat-treatment-administration.handler";
 import { UpdateCatTreatmentHandler } from "./treatments/update-cat-treatment.handler";
 import { RestoreCatTreatmentHandler } from "./treatments/restore-cat-treatment.handler";
+import { SendDueTreatmentNotificationsHandler } from "./treatments/send-due-treatment-notifications.handler";
 import { CatMedicalNotesController } from "./medical-notes/cat-medical-notes.controller";
 import { CreateCatMedicalNoteHandler } from "./medical-notes/create-cat-medical-note.handler";
 import { DeleteCatMedicalNoteHandler } from "./medical-notes/delete-cat-medical-note.handler";
@@ -110,6 +111,7 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     DeleteCatTaskHandler,
     CompleteCatTaskHandler,
     SendDueTaskNotificationsHandler,
+    SendDueTreatmentNotificationsHandler,
     TaskNotificationCronService,
     ListCurrentUserNotificationsQuery,
     ListCatTreatmentsHandler,

@@ -305,11 +305,13 @@ model CatTreatment {
   startDate   DateTime @db.Date
   endDate     DateTime? @db.Date
   dosesPerDay Int
+  notificationSent Boolean @default(false)
   deletedAt   DateTime?
   concurrencyToken String @default(cuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   administrations CatTreatmentAdministration[]
+  notifications   TaskNotification[]
   auditEvents     AuditEvent[]
 
   @@index([catId, createdAt])
@@ -317,6 +319,7 @@ model CatTreatment {
   @@index([deletedAt])
   @@index([createdByUserId])
   @@index([updatedByUserId])
+  @@index([notificationSent, startDate])
 }
 
 model CatTreatmentAdministration {
@@ -562,15 +565,18 @@ model CatTaskReceiver {
 
 model TaskNotification {
   id        String    @id @default(cuid())
-  taskId    String
+  taskId    String?
+  treatmentId String?
   userId    String
-  task      CatTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task      CatTask?  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  treatment CatTreatment? @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   deletedAt DateTime?
   version   Int       @default(0)
   createdAt DateTime  @default(now())
 
   @@unique([taskId, userId])
+  @@unique([treatmentId, userId])
   @@index([userId, createdAt])
   @@index([deletedAt])
 }
