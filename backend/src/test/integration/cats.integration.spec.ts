@@ -65,6 +65,8 @@ describe("Cats endpoints", () => {
         sex: "FEMALE",
         sterilizationStatus: "STERILIZED",
         currentLocationId: location.id,
+        passport: true,
+        sponsorName: "Mila Sponsor",
       })
       .expect(201);
 
@@ -73,7 +75,8 @@ describe("Cats endpoints", () => {
     expect(response.body.primaryPhotoUrl).toBeNull();
     expect(response.body.primaryPhotoKey).toBeUndefined();
     expect(response.body).toMatchObject({
-      passportNumber: null,
+      passport: true,
+      sponsorName: "Mila Sponsor",
       adopterName: null,
       adopterAddress: null,
     });
@@ -381,7 +384,7 @@ describe("Cats endpoints", () => {
     const cat = await createCat(prisma, {
       name: unique("flight-candidate"),
       microchipNumber: unique("flight-chip"),
-      passportNumber: unique("flight-passport"),
+      passport: true,
     });
     await prisma.cat.update({
       where: { id: cat.id },
@@ -1406,7 +1409,7 @@ async function createCat(
     name: string;
     currentLocationId?: string;
     microchipNumber?: string;
-    passportNumber?: string;
+    passport?: boolean;
   },
 ) {
   return prisma.cat.create({
@@ -1416,7 +1419,7 @@ async function createCat(
       sterilizationStatus: "UNKNOWN",
       currentLocationId: data.currentLocationId ?? null,
       microchipNumber: data.microchipNumber ?? null,
-      passportNumber: data.passportNumber ?? null,
+      passport: data.passport ?? false,
     },
   });
 }

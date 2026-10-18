@@ -52,8 +52,11 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.microchipNumber !== undefined
       ? { microchipNumber: optionalTrim(data.microchipNumber) }
       : {}),
-    ...(data.passportNumber !== undefined
-      ? { passportNumber: optionalTrim(data.passportNumber) }
+    ...(data.passport !== undefined
+      ? { passport: data.passport }
+      : {}),
+    ...(data.sponsorName !== undefined
+      ? { sponsorName: optionalTrim(data.sponsorName) }
       : {}),
     ...(data.adopterName !== undefined
       ? { adopterName: optionalTrim(data.adopterName) }

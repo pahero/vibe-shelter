@@ -33,7 +33,7 @@ export class ListCatsHandler {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { microchipNumber: { contains: search, mode: "insensitive" } },
-        { passportNumber: { contains: search, mode: "insensitive" } },
+        { sponsorName: { contains: search, mode: "insensitive" } },
       ];
     const [cats, total] = await Promise.all([
       this.prisma.cat.findMany({

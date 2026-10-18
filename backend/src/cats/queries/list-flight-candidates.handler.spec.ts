@@ -13,7 +13,7 @@ describe("ListFlightCandidatesHandler", () => {
           name: `Ready ${Date.now()}`,
           currentLocationId: location.id,
           microchipNumber: `chip-${Date.now()}-${Math.random()}`,
-          passportNumber: `passport-${Date.now()}-${Math.random()}`,
+          passport: true,
           adopterName: "Taylor Adopter",
           adopterAddress: "123 Cat Street",
           felvFivTestDone: true,

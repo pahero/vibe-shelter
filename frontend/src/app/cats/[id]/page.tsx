@@ -27,7 +27,8 @@ type CatEditForm = {
   estimatedBirthDate: string;
   intakeDate: string;
   microchipNumber: string;
-  passportNumber: string;
+  passport: boolean;
+  sponsorName: string;
   adopterName: string;
   adopterAddress: string;
   felvFivTestDone: boolean;
@@ -67,7 +68,8 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     estimatedBirthDate: dateInputValue(cat.estimatedBirthDate),
     intakeDate: dateInputValue(cat.intakeDate),
     microchipNumber: cat.microchipNumber ?? "",
-    passportNumber: cat.passportNumber ?? "",
+    passport: cat.passport,
+    sponsorName: cat.sponsorName ?? "",
     adopterName: cat.adopterName ?? "",
     adopterAddress: cat.adopterAddress ?? "",
     felvFivTestDone: cat.felvFivTestDone,
@@ -567,7 +569,8 @@ export default function CatProfilePage() {
         estimatedBirthDate: editForm.estimatedBirthDate || null,
         intakeDate: editForm.intakeDate || null,
         microchipNumber: editForm.microchipNumber.trim() || null,
-        passportNumber: editForm.passportNumber.trim() || null,
+        passport: editForm.passport,
+        sponsorName: editForm.sponsorName.trim() || null,
         adopterName: editForm.adopterName.trim() || null,
         adopterAddress: editForm.adopterAddress.trim() || null,
         felvFivTestDone: editForm.felvFivTestDone,
@@ -966,7 +969,7 @@ export default function CatProfilePage() {
                       </select>
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Neutering
+                      Neutering status
                       <select
                         value={editForm.sterilizationStatus}
                         onChange={(event) =>
@@ -990,71 +993,40 @@ export default function CatProfilePage() {
                       <CatColorDatalist />
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Microchip number
-                      <input
-                        value={editForm.microchipNumber}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, microchipNumber: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Passport number
-                      <input
-                        value={editForm.passportNumber}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, passportNumber: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800">
-                      Adopter name
-                      <input
-                        value={editForm.adopterName}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterName: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
-                    </label>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                      <input
-                        type="checkbox"
-                        checked={editForm.felvFivTestDone}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, felvFivTestDone: event.target.checked })}
-                        className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]"
-                      />
-                      FeLV/FIV test done
-                    </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-                      Adopter address
-                      <input
-                        value={editForm.adopterAddress}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterAddress: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
+                      Birth date
+                      <input type="date" value={editForm.estimatedBirthDate} onChange={(event) => setEditForm((prev) => prev && { ...prev, estimatedBirthDate: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Intake date
-                      <input
-                        type="date"
-                        value={editForm.intakeDate}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeDate: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
+                      <input type="date" value={editForm.intakeDate} onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeDate: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
                     </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-                      Birth date
-                      <input
-                        type="date"
-                        value={editForm.estimatedBirthDate}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, estimatedBirthDate: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Microchip number
+                      <input value={editForm.microchipNumber} onChange={(event) => setEditForm((prev) => prev && { ...prev, microchipNumber: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
                     </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
                       Rescue source
-                      <input
-                        value={editForm.rescueSource}
-                        onChange={(event) => setEditForm((prev) => prev && { ...prev, rescueSource: event.target.value })}
-                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      />
+                      <input value={editForm.rescueSource} onChange={(event) => setEditForm((prev) => prev && { ...prev, rescueSource: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <input type="checkbox" checked={editForm.passport} onChange={(event) => setEditForm((prev) => prev && { ...prev, passport: event.target.checked })} className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]" />
+                      Passport
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <input type="checkbox" checked={editForm.felvFivTestDone} onChange={(event) => setEditForm((prev) => prev && { ...prev, felvFivTestDone: event.target.checked })} className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]" />
+                      FIV/FeLV test
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Sponsor name
+                      <input value={editForm.sponsorName} onChange={(event) => setEditForm((prev) => prev && { ...prev, sponsorName: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Adopter name
+                      <input value={editForm.adopterName} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterName: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                      Adopter address
+                      <input value={editForm.adopterAddress} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterAddress: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
                     </label>
                   </div>
                   <div className="flex justify-end gap-3">
@@ -1078,17 +1050,18 @@ export default function CatProfilePage() {
                   {[
                     ["Current location", cat.currentLocationName || "Not assigned"],
                     ["Sex", sexLabels[cat.sex]],
-                    ...(cat.archivingReasonName ? [["Archiving reason", cat.archivingReasonName] as const] : []),
-                    ["Neutering", sterilizationLabels[cat.sterilizationStatus]],
+                    ["Neutering status", sterilizationLabels[cat.sterilizationStatus]],
                     ["Color", cat.color || "Not set"],
+                    ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
+                    ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
                     ["Microchip number", cat.microchipNumber || "Not set"],
-                    ["Passport number", cat.passportNumber || "Not set"],
+                    ["Rescue source", cat.rescueSource || "Not set"],
+                    ["Passport", cat.passport ? "Yes" : "No"],
+                    ["FIV/FeLV test", cat.felvFivTestDone ? "Done" : "Not done"],
+                    ["Sponsor name", cat.sponsorName || "Not set"],
                     ["Adopter name", cat.adopterName || "Not set"],
                     ["Adopter address", cat.adopterAddress || "Not set"],
-                    ["FeLV/FIV test", cat.felvFivTestDone ? "Done" : "Not done"],
-                    ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
-                    ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
-                    ["Rescue source", cat.rescueSource || "Not set"],
+                    ...(cat.archivingReasonName ? [["Archiving reason", cat.archivingReasonName] as const] : []),
                   ].map(([label, value]) => (
                     <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Rescue source" ? "border-t sm:col-span-2" : ""} ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
                       <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66] sm:whitespace-nowrap">{label}</dt>

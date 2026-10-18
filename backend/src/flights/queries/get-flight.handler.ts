@@ -27,7 +27,7 @@ export class GetFlightHandler {
                 name: true,
                 archivedAt: true,
                 microchipNumber: true,
-                passportNumber: true,
+                passport: true,
               },
             },
           },

@@ -46,7 +46,8 @@ export type CatCard = {
   isTest: boolean;
   primaryPhotoUrl: string | null;
   microchipNumber: string | null;
-  passportNumber?: string | null;
+  passport: boolean;
+  sponsorName: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
   felvFivTestDone: boolean;
@@ -246,7 +247,8 @@ export type CreateCatDto = {
   intakeDate?: string | null;
   rescueSource?: string | null;
   microchipNumber?: string | null;
-  passportNumber?: string | null;
+  passport?: boolean;
+  sponsorName?: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
   sterilizationStatus: SterilizationStatus;
@@ -272,7 +274,7 @@ export type FlightCatAssignment = {
     name: string;
     archivedAt: string | null;
     microchipNumber: string | null;
-    passportNumber: string | null;
+    passport: boolean;
   };
   f2fDone: boolean;
   tracesDone: boolean;
@@ -329,7 +331,8 @@ export type FlightCandidate = {
   currentLocationName: string | null;
   archivedAt: string | null;
   microchipNumber: string | null;
-  passportNumber: string | null;
+  passport: boolean;
+  sponsorName: string | null;
   adopterName: string | null;
   adopterAddress: string | null;
   requirements: FlightCandidateRequirements;

@@ -11,6 +11,8 @@ describe("CreateCatDto", () => {
     dto.intakeDate = "2026-04-01";
     dto.rescueSource = "  Found near clinic  ";
     dto.microchipNumber = "  900123456789012  ";
+    dto.passport = true;
+    dto.sponsorName = "  Taylor Sponsor  ";
     dto.sterilizationStatus = "STERILIZED";
     dto.currentLocationId = "  location-1  ";
 
@@ -24,6 +26,8 @@ describe("CreateCatDto", () => {
       intakeDate: new Date("2026-04-01"),
       rescueSource: "Found near clinic",
       microchipNumber: "900123456789012",
+      passport: true,
+      sponsorName: "Taylor Sponsor",
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-1",
       createdByUserId: "user-1",
@@ -50,8 +54,17 @@ describe("CreateCatDto", () => {
       intakeDate: null,
       rescueSource: null,
       microchipNumber: null,
+      passport: false,
+      sponsorName: null,
       currentLocationId: null,
     });
+  });
+
+  it("preserves an explicitly false passport checkbox", () => {
+    const dto = createRequiredDto();
+    dto.passport = false;
+
+    expect(dto.toCommand("user-1", false).passport).toBe(false);
   });
 
   it("normalizes whitespace-only optional strings", () => {

@@ -16,7 +16,8 @@ const candidate: FlightCandidate = {
   currentLocationName: "North Shelter",
   archivedAt: null,
   microchipNumber: "chip-123",
-  passportNumber: "pass-123",
+  passport: true,
+  sponsorName: null,
   adopterName: "Alex Adopter",
   adopterAddress: "12 Cat Street",
   requirements: {

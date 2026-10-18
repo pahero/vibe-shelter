@@ -225,41 +225,37 @@ export function HomeCatsList() {
               Name *
               <input value={createForm.name} onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Mila" />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Color
-              <input value={createForm.color} onChange={(event) => setCreateForm((prev) => ({ ...prev, color: event.target.value }))} list="cat-color-options" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Black-white" />
-              <CatColorDatalist />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Sex *
-              <select value={createForm.sex} onChange={(event) => setCreateForm((prev) => ({ ...prev, sex: event.target.value as CatSex }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
-                <option value="UNKNOWN">Unknown</option>
-                <option value="FEMALE">Female</option>
-                <option value="MALE">Male</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Neutering *
-              <select value={createForm.sterilizationStatus} onChange={(event) => setCreateForm((prev) => ({ ...prev, sterilizationStatus: event.target.value as SterilizationStatus }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
-                <option value="UNKNOWN">Unknown</option>
-                <option value="STERILIZED">Neutered</option>
-                <option value="NOT_STERILIZED">Not neutered</option>
-              </select>
-            </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Location
+              Current location
               <select value={createForm.currentLocationId} onChange={(event) => setCreateForm((prev) => ({ ...prev, currentLocationId: event.target.value }))} disabled={isLoadingLocations || locations.length === 0} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60">
                 {locations.length === 0 && <option value="">No active locations</option>}
                 {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Intake date
-              <input type="date" value={createForm.intakeDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              Sex *
+              <select value={createForm.sex} onChange={(event) => setCreateForm((prev) => ({ ...prev, sex: event.target.value as CatSex }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                <option value="UNKNOWN">Unknown</option><option value="FEMALE">Female</option><option value="MALE">Male</option>
+              </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Estimated birth date
+              Neutering status *
+              <select value={createForm.sterilizationStatus} onChange={(event) => setCreateForm((prev) => ({ ...prev, sterilizationStatus: event.target.value as SterilizationStatus }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                <option value="UNKNOWN">Unknown</option><option value="STERILIZED">Neutered</option><option value="NOT_STERILIZED">Not neutered</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Color
+              <input value={createForm.color} onChange={(event) => setCreateForm((prev) => ({ ...prev, color: event.target.value }))} list="cat-color-options" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Black-white" />
+              <CatColorDatalist />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Birth date
               <input type="date" value={createForm.estimatedBirthDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, estimatedBirthDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Intake date
+              <input type="date" value={createForm.intakeDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Microchip number
@@ -288,7 +284,7 @@ export function HomeCatsList() {
               setSearch(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Name, microchip, or passport"
+            placeholder="Name, microchip, or sponsor"
             className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
           />
         </label>

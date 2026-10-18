@@ -9,6 +9,8 @@ export class CreateCatCommand {
     readonly intakeDate: Date | null,
     readonly rescueSource: string | null,
     readonly microchipNumber: string | null,
+    readonly passport: boolean,
+    readonly sponsorName: string | null,
     readonly sterilizationStatus: SterilizationStatus,
     readonly currentLocationId: string | null,
     readonly createdByUserId: string,

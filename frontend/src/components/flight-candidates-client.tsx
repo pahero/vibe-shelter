@@ -67,7 +67,7 @@ export function FlightCandidatesClient() {
       candidate.name,
       candidate.currentLocationName ?? "",
       candidate.microchipNumber ?? "",
-      candidate.passportNumber ?? "",
+      candidate.sponsorName ?? "",
       candidate.adopterName ?? "",
       candidate.adopterAddress ?? "",
     ].some((value) => value.toLocaleLowerCase().includes(query)));
@@ -106,7 +106,7 @@ export function FlightCandidatesClient() {
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Name, location, passport, chip, or adopter"
+          placeholder="Name, location, sponsor, chip, or adopter"
           className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
         />
       </label>

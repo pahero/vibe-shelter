@@ -129,7 +129,8 @@ model Cat {
   intakeDate          DateTime?
   rescueSource        String?
   microchipNumber     String?             @unique
-  passportNumber      String?             @unique
+  passport            Boolean             @default(false)
+  sponsorName         String?
   adopterName         String?
   adopterAddress      String?
   felvFivTestDone     Boolean             @default(false)

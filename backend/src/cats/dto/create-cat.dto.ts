@@ -1,6 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 import { CatSex, SterilizationStatus } from "@prisma/client";
-import { IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { CreateCatCommand } from "../commands/create-cat.command";
 
 export class CreateCatDto {
@@ -31,6 +31,14 @@ export class CreateCatDto {
   @IsOptional()
   microchipNumber?: string | null;
 
+  @IsBoolean()
+  @IsOptional()
+  passport?: boolean;
+
+  @IsString()
+  @IsOptional()
+  sponsorName?: string | null;
+
   @IsIn(["STERILIZED", "NOT_STERILIZED", "UNKNOWN"])
   sterilizationStatus!: string;
 
@@ -55,6 +63,8 @@ export class CreateCatDto {
       this.parseOptionalDate(this.intakeDate, "intakeDate"),
       this.optionalTrim(this.rescueSource),
       this.optionalTrim(this.microchipNumber),
+      this.passport ?? false,
+      this.optionalTrim(this.sponsorName),
       this.parseEnum(
         this.sterilizationStatus,
         SterilizationStatus,

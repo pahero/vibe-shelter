@@ -22,7 +22,8 @@ model Cat {
   intakeDate         DateTime?
   rescueSource       String?
   microchipNumber    String?     @unique
-  passportNumber     String?     @unique
+  passport           Boolean     @default(false)
+  sponsorName        String?
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   status             CatStatus   @default(ACTIVE)
   currentLocationId  String?
@@ -73,7 +74,7 @@ model Location {
 - `name` is required and must be non-empty after trimming.
 - `sex` is required and must be stored as a non-null enum value; use `UNKNOWN` when sex is not known.
 - `sterilizationStatus` is required and must be stored as a non-null enum value; use `UNKNOWN` when status is not known.
-- `microchipNumber` and `passportNumber` are optional but unique when provided.
+- `microchipNumber` is optional but unique when provided. `passport` records whether a passport exists.
 - `currentLocationId` is optional to allow intake drafts, but active cats shown on location pages should normally have a location.
 - Deleting a location must not delete cats; location references are set to `null`.
 - Use only `primaryPhotoKey` for now. It stores the S3 object key for the primary photo until a dedicated attachment/photo model exists.
@@ -117,7 +118,7 @@ Query Parameters:
 
 - `locationId`: optional; return cats whose `currentLocationId` matches the location.
 - `status`: optional; one of `ACTIVE`, `ADOPTED`, `DECEASED`, `ARCHIVED`; default `ACTIVE`.
-- `search`: optional; case-insensitive match against `name`, `microchipNumber`, or `passportNumber`.
+- `search`: optional; case-insensitive match against `name`, `microchipNumber`, or `sponsorName`.
 - `skip`: pagination offset; default `0`.
 - `limit`: page size; default `50`, maximum `100`.
 
@@ -139,6 +140,8 @@ Response (200):
       "currentLocationName": "Foster Evgenia",
       "primaryPhotoUrl": "https://s3.example.test/shelter/cats/mila.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...",
       "microchipNumber": "900123456789012",
+      "passport": false,
+      "sponsorName": null,
       "updatedAt": "2026-04-24T10:00:00.000Z"
     }
   ],
@@ -181,7 +184,8 @@ Request:
   "intakeDate": "2026-04-01",
   "rescueSource": "Found near clinic",
   "microchipNumber": "900123456789012",
-  "passportNumber": null,
+  "passport": false,
+  "sponsorName": null,
   "sterilizationStatus": "STERILIZED",
   "currentLocationId": "loc-001"
 }
@@ -196,7 +200,7 @@ Validation and Errors:
 - 400 when enum values are invalid.
 - 400 when date fields are not valid dates.
 - 404 when `currentLocationId` does not reference an active location.
-- 409 when `microchipNumber` or `passportNumber` already exists.
+- 409 when `microchipNumber` already exists.
 
 ---
 

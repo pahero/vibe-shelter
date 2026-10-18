@@ -8,7 +8,8 @@ export type FlightCandidate = {
   currentLocationName: string | null;
   archivedAt: string | null;
   microchipNumber: string | null;
-  passportNumber: string | null;
+  passport: boolean;
+  sponsorName: string | null;
   adopterName: string | null;
   adopterAddress: string | null;
   requirements: {
@@ -34,7 +35,8 @@ export class ListFlightCandidatesHandler {
         name: true,
         archivedAt: true,
         microchipNumber: true,
-        passportNumber: true,
+        passport: true,
+        sponsorName: true,
         adopterName: true,
         adopterAddress: true,
         felvFivTestDone: true,
@@ -57,7 +59,8 @@ export class ListFlightCandidatesHandler {
         currentLocationName: cat.currentLocation?.name ?? null,
         archivedAt: cat.archivedAt?.toISOString() ?? null,
         microchipNumber: cat.microchipNumber,
-        passportNumber: cat.passportNumber,
+        passport: cat.passport,
+        sponsorName: cat.sponsorName,
         adopterName: cat.adopterName,
         adopterAddress: cat.adopterAddress,
         requirements: {
@@ -68,7 +71,7 @@ export class ListFlightCandidatesHandler {
             PreventiveTreatmentType.SECOND_VACCINE,
           ),
           rabies: treatmentTypes.has(PreventiveTreatmentType.RABIES),
-          passport: cat.passportNumber !== null,
+          passport: cat.passport,
           chipped: cat.microchipNumber !== null,
           adopter: Boolean(cat.adopterName && cat.adopterAddress),
           felvFivTestDone: cat.felvFivTestDone,

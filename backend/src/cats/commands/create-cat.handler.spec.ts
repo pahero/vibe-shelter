@@ -81,6 +81,8 @@ describe("CreateCatHandler", () => {
           intakeDate,
           "Found near clinic",
           microchipNumber,
+          true,
+          "Taylor Sponsor",
           "STERILIZED",
           location.id,
           actorUserId,
@@ -97,7 +99,8 @@ describe("CreateCatHandler", () => {
         currentLocationId: location.id,
         currentLocationName: location.name,
         microchipNumber,
-        passportNumber: null,
+        passport: true,
+        sponsorName: "Taylor Sponsor",
         adopterName: null,
         adopterAddress: null,
         felvFivTestDone: false,
@@ -205,6 +208,8 @@ function createCommand(
   overrides: Partial<{
     name: string;
     microchipNumber: string;
+    passport: boolean;
+    sponsorName: string;
     currentLocationId: string;
     isTest: boolean;
   }> = {},
@@ -217,6 +222,8 @@ function createCommand(
     null,
     null,
     overrides.microchipNumber ?? null,
+    overrides.passport ?? false,
+    overrides.sponsorName ?? null,
     "UNKNOWN",
     overrides.currentLocationId ?? null,
     actorUserId,

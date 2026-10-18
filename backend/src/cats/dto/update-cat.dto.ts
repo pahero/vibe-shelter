@@ -9,7 +9,8 @@ export type UpdateCatCommand = {
   intakeDate?: Date | null;
   rescueSource?: string | null;
   microchipNumber?: string | null;
-  passportNumber?: string | null;
+  passport?: boolean;
+  sponsorName?: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
   felvFivTestDone?: boolean;
@@ -67,9 +68,13 @@ export class UpdateCatDto {
   @IsOptional()
   microchipNumber?: string | null;
 
+  @IsBoolean()
+  @IsOptional()
+  passport?: boolean;
+
   @IsString()
   @IsOptional()
-  passportNumber?: string | null;
+  sponsorName?: string | null;
 
   @IsString()
   @IsOptional()
@@ -137,8 +142,9 @@ export class UpdateCatDto {
       ...(this.microchipNumber !== undefined
         ? { microchipNumber: optionalText(this.microchipNumber) }
         : {}),
-      ...(this.passportNumber !== undefined
-        ? { passportNumber: optionalText(this.passportNumber) }
+      ...(this.passport !== undefined ? { passport: this.passport } : {}),
+      ...(this.sponsorName !== undefined
+        ? { sponsorName: optionalText(this.sponsorName) }
         : {}),
       ...(this.adopterName !== undefined
         ? { adopterName: optionalText(this.adopterName) }

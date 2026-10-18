@@ -58,17 +58,7 @@ export class UpdateCatHandler {
         });
         if (duplicate)
           throw new ConflictException(
-            "A cat with this microchip or passport number already exists",
-          );
-      }
-      if (updateData.passportNumber) {
-        const duplicate = await tx.cat.findFirst({
-          where: { id: { not: id }, passportNumber: updateData.passportNumber },
-          select: { id: true },
-        });
-        if (duplicate)
-          throw new ConflictException(
-            "A cat with this microchip or passport number already exists",
+            "A cat with this microchip number already exists",
           );
       }
       if (Object.keys(updateData).length === 0)

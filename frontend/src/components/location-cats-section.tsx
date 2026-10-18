@@ -180,16 +180,12 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
                 placeholder="Mila"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Color
-              <input
-                value={form.color}
-                onChange={(event) => setForm((prev) => ({ ...prev, color: event.target.value }))}
-                list="cat-color-options"
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                placeholder="Black-white"
-              />
-              <CatColorDatalist />
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Current location
+              <select value={form.currentLocationId} onChange={(event) => setForm((prev) => ({ ...prev, currentLocationId: event.target.value }))} disabled={isLoadingLocations || locations.length === 0} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60">
+                {locations.length === 0 && <option value="">No active locations</option>}
+                {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+              </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Sex *
@@ -204,7 +200,7 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Neutering *
+              Neutering status *
               <select
                 value={form.sterilizationStatus}
                 onChange={(event) =>
@@ -217,39 +213,18 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
                 <option value="NOT_STERILIZED">Not neutered</option>
               </select>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Location
-              <select
-                value={form.currentLocationId}
-                onChange={(event) => setForm((prev) => ({ ...prev, currentLocationId: event.target.value }))}
-                disabled={isLoadingLocations || locations.length === 0}
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {locations.length === 0 && <option value="">No active locations</option>}
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Color
+              <input value={form.color} onChange={(event) => setForm((prev) => ({ ...prev, color: event.target.value }))} list="cat-color-options" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Black-white" />
+              <CatColorDatalist />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Birth date
+              <input type="date" value={form.estimatedBirthDate} onChange={(event) => setForm((prev) => ({ ...prev, estimatedBirthDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake date
-              <input
-                type="date"
-                value={form.intakeDate}
-                onChange={(event) => setForm((prev) => ({ ...prev, intakeDate: event.target.value }))}
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Estimated birth date
-              <input
-                type="date"
-                value={form.estimatedBirthDate}
-                onChange={(event) => setForm((prev) => ({ ...prev, estimatedBirthDate: event.target.value }))}
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-              />
+              <input type="date" value={form.intakeDate} onChange={(event) => setForm((prev) => ({ ...prev, intakeDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Microchip number
@@ -296,7 +271,7 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               setSearch(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Name, microchip, or passport"
+            placeholder="Name, microchip, or sponsor"
             className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
           />
         </label>
