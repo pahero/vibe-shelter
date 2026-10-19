@@ -45,6 +45,7 @@ export type CatCard = {
   createdByUserId: string | null;
   isTest: boolean;
   primaryPhotoUrl: string | null;
+  primaryPhotoPositionY: number | null;
   microchipNumber: string | null;
   passport: boolean;
   sponsorName: string | null;
@@ -836,10 +837,12 @@ export const catsApi = {
     return handleResponse<CatPhoto>(response);
   },
 
-  async setPrimaryPhoto(id: string, photoId: string): Promise<CatCard> {
+  async setPrimaryPhoto(id: string, photoId: string, positionY?: number | null): Promise<CatCard> {
     const response = await fetch(`${BACKEND_URL}/api/cats/${id}/photos/${photoId}/primary`, {
       method: "PUT",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(positionY === undefined ? {} : { positionY }),
     });
     return handleResponse<CatCard>(response);
   },

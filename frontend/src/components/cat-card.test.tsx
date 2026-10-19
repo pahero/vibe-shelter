@@ -22,6 +22,7 @@ describe("CatCard", () => {
       createdByUserId: null,
       isTest: false,
       primaryPhotoUrl: null,
+      primaryPhotoPositionY: null,
       microchipNumber: null,
       passport: false,
       sponsorName: null,

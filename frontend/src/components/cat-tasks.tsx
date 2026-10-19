@@ -22,7 +22,7 @@ export function CatTasks({ catId, onChanged }: { catId: string; onChanged?: () =
   const [receiverChoice, setReceiverChoice] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -104,7 +104,7 @@ export function CatTasks({ catId, onChanged }: { catId: string; onChanged?: () =
     try { await action(); await refresh(); await onChanged?.(); } catch (reason) { setError(ApiErrorHandler.handle(reason)); } finally { setActionId(null); }
   };
 
-  return <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+  return <section className="md:col-span-2">
     <CatProfileSectionHeader title="Reminders" isExpanded={isExpanded} onToggle={() => { if (isExpanded) cancel(); setIsExpanded((current) => !current); }} onAdd={openNewTask} addLabel="Add reminder" />
 
     {isExpanded && <>

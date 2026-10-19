@@ -12,6 +12,7 @@ export type CatCard = {
   currentLocationId: string | null;
   currentLocationName: string | null;
   primaryPhotoUrl: string | null;
+  primaryPhotoPositionY: number | null;
   microchipNumber: string | null;
   passport: boolean;
   sponsorName: string | null;

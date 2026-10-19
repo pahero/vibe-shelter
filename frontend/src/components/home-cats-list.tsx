@@ -2,7 +2,6 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
-import { AddNewButton } from "@/components/add-new-button";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatCard as CatCardType, CatSex, CatTag, CreateCatDto, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
@@ -34,6 +33,7 @@ export function HomeCatsList() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -200,20 +200,30 @@ export function HomeCatsList() {
   const locationFilterLabel = locations.find((location) => location.id === locationFilter)?.name ?? "All locations";
 
   return (
-    <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 px-6 pb-6 pt-3 shadow-panel backdrop-blur-sm [animation-delay:160ms] md:px-8 md:pb-8 md:pt-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cats list</p>
-        </div>
-        <AddNewButton
-          label={showCreateForm ? "Close add cat form" : "Add cat"}
-          isOpen={showCreateForm}
+    <section className="w-full animate-rise [animation-delay:160ms]">
+      <div className="flex items-center gap-2">
+        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#d4c7b4] bg-white/70 px-3 py-2 text-[#6d6a66] focus-within:ring-2 focus-within:ring-[#d05a2c]">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="10.8" cy="10.8" r="6.8" /><path strokeLinecap="round" d="m16 16 4.5 4.5" /></svg>
+          <input value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1); }} placeholder="Search cats" aria-label="Search cats" className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-[#8b8883]" />
+        </label>
+        <button type="button" aria-label="Filters" title="Filters" aria-expanded={isFiltersOpen} aria-controls="home-cat-filters" onClick={() => setIsFiltersOpen((open) => !open)} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#d4c7b4] bg-white/70 px-3 text-sm font-semibold text-[#333832] transition hover:bg-white">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10m-7 6h4" /></svg>
+          <span className="hidden sm:inline">Filter</span>
+        </button>
+        <button
+          type="button"
+          aria-label={showCreateForm ? "Close add cat form" : "Add cat"}
+          title={showCreateForm ? "Close add cat form" : "Add cat"}
+          aria-expanded={showCreateForm}
           onClick={() => {
             setShowCreateForm((isOpen) => !isOpen);
             setCreateSuccess(null);
             setError(null);
           }}
-        />
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white/70 text-[#333832] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]"
+        >
+          {showCreateForm ? <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" /></svg> : <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" d="M12 5v14M5 12h14" /></svg>}
+        </button>
       </div>
 
       {createSuccess && <p className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800">{createSuccess}</p>}
@@ -275,19 +285,7 @@ export function HomeCatsList() {
         </form>
       )}
 
-      <div className="mt-2 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_minmax(180px,260px)] md:items-end">
-        <label className="grid max-w-md flex-1 gap-1 text-sm font-medium text-gray-800">
-          Search cats
-          <input
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Name, microchip, or sponsor"
-            className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-          />
-        </label>
+      {isFiltersOpen && <div id="home-cat-filters" className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end">
 
         <div className="relative grid gap-1 text-sm font-medium text-gray-800">
           <span id="home-location-filter-label">Location</span>
@@ -385,7 +383,7 @@ export function HomeCatsList() {
           Search archived
         </label>
 
-      </div>
+      </div>}
 
       {locationError && <p className="mt-2 text-sm text-red-700">Locations could not be loaded: {locationError}</p>}
       {tagError && <p className="mt-2 text-sm text-red-700">Tags could not be loaded: {tagError}</p>}

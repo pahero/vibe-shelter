@@ -50,7 +50,7 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/70 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md has-focus-visible:ring-2 has-focus-visible:ring-[#d05a2c]">
       {showProfileLink && <Link href={profileHref} aria-label={`Open profile for ${cat.name}`} className="absolute inset-0 z-10 cursor-pointer" />}
-      <div className="relative h-40 bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
+      <div className="relative aspect-video bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
         {cat.primaryPhotoUrl ? (
           onPhotoClick ? (
             <button
@@ -58,13 +58,13 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoC
               onClick={onPhotoClick}
               aria-label={`Expand photo of ${cat.name}`}
               className="h-full w-full bg-cover bg-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c]"
-              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
+              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})`, backgroundPositionY: cat.primaryPhotoPositionY === null ? "50%" : `${cat.primaryPhotoPositionY}%` }}
             />
           ) : (
             <div
               aria-label={`Photo of ${cat.name}`}
               className="h-full w-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})` }}
+              style={{ backgroundImage: `url(${cat.primaryPhotoUrl})`, backgroundPositionY: cat.primaryPhotoPositionY === null ? "50%" : `${cat.primaryPhotoPositionY}%` }}
             />
           )
         ) : (

@@ -47,7 +47,7 @@ export class UpdatePrimaryCatPhotoHandler {
       });
       const record = await tx.cat.update({
         where: { id: catId },
-        data: { primaryPhotoKey: key },
+        data: { primaryPhotoKey: key, primaryPhotoPositionY: null },
         include: CAT_CARD_INCLUDE,
       });
       if (actorUserId)

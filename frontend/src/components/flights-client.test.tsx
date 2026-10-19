@@ -67,7 +67,7 @@ describe("FlightsClient", () => {
     listCats.mockResolvedValue({ data: [{
       id: "cat-2", name: "Luna", nameNumber: 1, sex: "FEMALE", color: null, estimatedBirthDate: null, intakeDate: null, archivedAt: null,
       sterilizationStatus: "UNKNOWN", currentLocationId: null, currentLocationName: null, createdByUserId: null, isTest: false,
-      primaryPhotoUrl: null, microchipNumber: null, passport: false, sponsorName: null, adopterName: null, adopterAddress: null, felvFivTestDone: false,
+      primaryPhotoUrl: null, primaryPhotoPositionY: null, microchipNumber: null, passport: false, sponsorName: null, adopterName: null, adopterAddress: null, felvFivTestDone: false,
       rescueSource: null, updatedAt: "2026-10-10T00:00:00.000Z", tags: [],
     }], total: 1, skip: 0, limit: 100 });
   });

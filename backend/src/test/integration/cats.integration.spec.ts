@@ -292,8 +292,35 @@ describe("Cats endpoints", () => {
 
     const primary = await authAgent
       .put(`/api/cats/${cat.id}/photos/${second.body.id}/primary`)
+      .send({ positionY: 25 })
       .expect(200);
     expect(primary.body.primaryPhotoUrl).toContain("second.jpg");
+    expect(primary.body.primaryPhotoPositionY).toBe(25);
+    const primaryPhotoAudit = await prisma.auditEvent.findFirst({
+      where: { catId: cat.id, eventType: "primary_photo_changed" },
+    });
+    expect(primaryPhotoAudit).toMatchObject({
+      photoId: second.body.id,
+      oldValue: "first.jpg",
+      newValue: "second.jpg",
+    });
+    const auditCountBeforePositionChange = await prisma.auditEvent.count({
+      where: { catId: cat.id, eventType: "primary_photo_changed" },
+    });
+    const repositioned = await authAgent
+      .put(`/api/cats/${cat.id}/photos/${second.body.id}/primary`)
+      .send({ positionY: 40 })
+      .expect(200);
+    expect(repositioned.body.primaryPhotoPositionY).toBe(40);
+    await expect(
+      prisma.auditEvent.count({
+        where: { catId: cat.id, eventType: "primary_photo_changed" },
+      }),
+    ).resolves.toBe(auditCountBeforePositionChange);
+    await authAgent
+      .put(`/api/cats/${cat.id}/photos/${second.body.id}/primary`)
+      .send({ positionY: 101 })
+      .expect(400);
 
     const afterDelete = await authAgent
       .delete(`/api/cats/${cat.id}/photos/${second.body.id}`)

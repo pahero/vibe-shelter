@@ -2,11 +2,13 @@
 
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
-import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBoxArchive, faCat, faClockRotateLeft, faEllipsis, faImages, faListCheck, faNotesMedical, faPen, faPlus, faRotateLeft, faSyringe, faTrash, faUser, faWeightScale } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
+import { TagColorStrip } from "@/components/tag-color-strip";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { CatHistory } from "@/components/cat-history";
@@ -88,6 +90,10 @@ export default function CatProfilePage() {
   const params = useParams();
   const catId = params?.id as string;
   const [cat, setCat] = useState<CatCardType | null>(null);
+  const [photoPositionY, setPhotoPositionY] = useState(50);
+  const [photoNaturalSize, setPhotoNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const [photoViewportSize, setPhotoViewportSize] = useState<{ width: number; height: number } | null>(null);
+  const [isSavingPhotoPosition, setIsSavingPhotoPosition] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
@@ -96,7 +102,7 @@ export default function CatProfilePage() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [detailsSuccess, setDetailsSuccess] = useState<string | null>(null);
-  const [isCatProfileExpanded, setIsCatProfileExpanded] = useState(false);
+  const [isCatProfileExpanded, setIsCatProfileExpanded] = useState(true);
   const [editForm, setEditForm] = useState<CatEditForm | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
@@ -104,7 +110,7 @@ export default function CatProfilePage() {
   const [weights, setWeights] = useState<CatWeight[]>([]);
   const [isLoadingWeights, setIsLoadingWeights] = useState(true);
   const [isAddingWeight, setIsAddingWeight] = useState(false);
-  const [isWeightExpanded, setIsWeightExpanded] = useState(false);
+  const [isWeightExpanded, setIsWeightExpanded] = useState(true);
   const [isWeightFormOpen, setIsWeightFormOpen] = useState(false);
   const [removingWeightId, setRemovingWeightId] = useState<string | null>(null);
   const [weightKg, setWeightKg] = useState("");
@@ -112,6 +118,7 @@ export default function CatProfilePage() {
   const [weightError, setWeightError] = useState<string | null>(null);
   const [expandedPhotoId, setExpandedPhotoId] = useState<string | null>(null);
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+  const [isPhotoPositionSelectorOpen, setIsPhotoPositionSelectorOpen] = useState(false);
   const [photos, setPhotos] = useState<CatPhoto[]>([]);
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
   const [documents, setDocuments] = useState<CatDocument[]>([]);
@@ -129,7 +136,7 @@ export default function CatProfilePage() {
   const historyLimit = 50;
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 768px)");
-    const syncProfileVisibility = () => setIsCatProfileExpanded(desktopQuery.matches);
+    const syncProfileVisibility = () => setIsCatProfileExpanded(true);
     syncProfileVisibility();
     desktopQuery.addEventListener("change", syncProfileVisibility);
     return () => desktopQuery.removeEventListener("change", syncProfileVisibility);
@@ -147,6 +154,24 @@ export default function CatProfilePage() {
   const [archivingReasonId, setArchivingReasonId] = useState("");
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [isSectionMenuOpen, setIsSectionMenuOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<string>("profile");
+
+  useEffect(() => {
+    const sectionIds = ["profile", "treatments", "notes", "vaccinations", "tasks", "medical-notes", "parasite-treatments", "weight-history", "history", "media"];
+    const hashSection = window.location.hash.slice(1);
+    if (sectionIds.includes(hashSection)) {
+      setSelectedSection(hashSection);
+    } else {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#profile`);
+    }
+  }, []);
+
+  const goToSection = (sectionId: string) => {
+    setSelectedSection(sectionId);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${sectionId}`);
+    setIsSectionMenuOpen(false);
+  };
 
   useEffect(() => {
     if (!catId) return;
@@ -169,6 +194,10 @@ export default function CatProfilePage() {
 
     fetchCat();
   }, [catId]);
+
+  useEffect(() => {
+    setPhotoPositionY(cat?.primaryPhotoPositionY ?? 50);
+  }, [cat?.primaryPhotoUrl, cat?.primaryPhotoPositionY]);
 
   useEffect(() => {
     if (!catId) return;
@@ -447,6 +476,20 @@ export default function CatProfilePage() {
     }
   };
 
+  const savePhotoPosition = async (photoId = primaryPhoto?.id) => {
+    if (!cat || !photoId) return;
+    setIsSavingPhotoPosition(true);
+    setPhotoError(null);
+    try {
+      setCat(await catsApi.setPrimaryPhoto(cat.id, photoId, photoPositionY));
+      setIsPhotoPositionSelectorOpen(false);
+    } catch (err) {
+      setPhotoError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSavingPhotoPosition(false);
+    }
+  };
+
   const handleDeletePhoto = async (photoId: string) => {
     if (!cat) return;
     const nextExpandedPhotoId = expandedPhotoId === photoId ? photos.find((photo) => photo.id !== photoId)?.id ?? null : expandedPhotoId;
@@ -468,12 +511,16 @@ export default function CatProfilePage() {
 
   const openPhoto = (photoId: string) => {
     setExpandedPhotoId(photoId);
+    setPhotoNaturalSize(null);
     setIsPhotoMenuOpen(false);
+    setIsPhotoPositionSelectorOpen(false);
   };
 
   const closePhoto = () => {
     setExpandedPhotoId(null);
+    setPhotoNaturalSize(null);
     setIsPhotoMenuOpen(false);
+    setIsPhotoPositionSelectorOpen(false);
   };
 
   const startEditingDetails = () => {
@@ -693,6 +740,46 @@ export default function CatProfilePage() {
   const hasMultipleDocuments = documents.length > 1;
   const expandedPhotoIndex = expandedPhotoId ? photos.findIndex((photo) => photo.id === expandedPhotoId) : -1;
   const expandedPhoto = expandedPhotoIndex >= 0 ? photos[expandedPhotoIndex] : null;
+  const expandedPhotoIdForEffect = expandedPhoto?.id;
+  const photoFrameGeometry = photoNaturalSize && photoViewportSize
+    ? (() => {
+        const scale = Math.min(
+          photoViewportSize.width / photoNaturalSize.width,
+          photoViewportSize.height / photoNaturalSize.height,
+        );
+        const width = photoNaturalSize.width * scale;
+        const height = photoNaturalSize.height * scale;
+        const frameWidth = Math.min(width, height * (16 / 9));
+        const frameHeight = frameWidth * (9 / 16);
+        const imageTop = (photoViewportSize.height - height) / 2;
+        const imageLeft = (photoViewportSize.width - width) / 2;
+        const top = imageTop + (height - frameHeight) * (photoPositionY / 100);
+        return {
+          width: frameWidth,
+          height: frameHeight,
+          top,
+          left: imageLeft,
+          imageTop,
+          imageHeight: height,
+        };
+      })()
+    : null;
+  useEffect(() => {
+    if (!expandedPhotoIdForEffect) {
+      setPhotoViewportSize(null);
+      return;
+    }
+    const viewport = document.getElementById("expanded-photo-viewport");
+    if (!viewport) return;
+    const measure = () => {
+      const { width, height } = viewport.getBoundingClientRect();
+      setPhotoViewportSize({ width, height });
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    measure();
+    return () => observer.disconnect();
+  }, [expandedPhotoIdForEffect]);
   const hasMultiplePhotos = photos.length > 1;
   const visibleGalleryPhotos = photos.slice(0, 3);
   const showPreviousPhoto = () => {
@@ -713,25 +800,47 @@ export default function CatProfilePage() {
   };
 
   return (
-    <main className="min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6">
-      <div className="mx-auto max-w-4xl">
-        <Link href="/" className="text-sm font-medium text-[#d05a2c] hover:text-[#b24a20]">
-          ← Back to home
-        </Link>
-
-        {isLoading && <p className="mt-8 text-center text-sm text-[#6d6a66]">Loading cat profile...</p>}
+    <main className="relative min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32">
+      <Link
+        href="/"
+        aria-label="Back to home"
+        title="Back to home"
+        className="fixed left-8 top-10 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#d4c7b4] bg-[#fff8ee]/90 text-[#d05a2c] shadow-md backdrop-blur-sm transition hover:bg-white hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]"
+      >
+        <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
+      </Link>
+      <div className="mx-auto max-w-xl">
+        {isLoading && <p className="mt-2 text-center text-sm text-[#6d6a66]">Loading cat profile...</p>}
 
         {!isLoading && error && (
-          <div className="mt-8 rounded-lg border border-red-300 bg-red-50 p-6">
+          <div className="mt-2 rounded-lg border border-red-300 bg-red-50 p-6">
             <p className="text-red-800">{error}</p>
           </div>
         )}
 
         {!isLoading && cat && (
-          <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,360px)_1fr]">
-            <div className="space-y-4">
-              <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={primaryPhoto ? () => openPhoto(primaryPhoto.id) : undefined} />
-               <section className="w-full rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
+          <div className={selectedSection ? "mt-2 flex flex-col gap-6" : "mt-2 grid gap-6 md:grid-cols-[minmax(0,360px)_1fr]"}>
+            <div className={`space-y-4 ${selectedSection ? "md:col-span-1" : ""}`}>
+              {selectedSection ? (
+                <header className="mx-auto w-full text-center">
+                  <div className="relative overflow-hidden rounded-2xl border border-[#d4c7b4] bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20 shadow-sm">
+                    {cat.primaryPhotoUrl ? (
+                      <button type="button" onClick={() => primaryPhoto && openPhoto(primaryPhoto.id)} aria-label={`Expand photo of ${cat.name}`} className="block aspect-video w-full bg-cover bg-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c]" style={{ backgroundImage: `url(${cat.primaryPhotoUrl})`, backgroundPositionY: `${photoPositionY}%` }} />
+                    ) : (
+                      <div className="flex aspect-video w-full items-center justify-center text-5xl" aria-label={`No photo for ${cat.name}`}>🐾</div>
+                    )}
+                    <TagColorStrip tags={cat.tags} overlay />
+                  </div>
+                  <div className="mt-3 flex items-baseline justify-between gap-3 text-left">
+                    <h1 className="min-w-0 truncate text-3xl font-semibold text-gray-900">{cat.name} <span className="text-[#6d6a66]">#{cat.nameNumber}</span></h1>
+                    <span className="shrink-0 text-sm font-medium text-[#6d6a66]">{cat.currentLocationName || "Not assigned"}</span>
+                  </div>
+                </header>
+              ) : (
+                <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={primaryPhoto ? () => openPhoto(primaryPhoto.id) : undefined} />
+              )}
+              {selectedSection === "media" && <>
+               <section id="gallery" className="scroll-mt-6 w-full">
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Gallery</p>
 
                 {isLoadingPhotos && <p className="mt-4 text-sm text-[#6d6a66]">Loading photos...</p>}
@@ -758,7 +867,9 @@ export default function CatProfilePage() {
 
                {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
               </section>
-              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4 shadow-sm">
+              </>}
+              {selectedSection === "media" && <>
+              <section id="documents" className="scroll-mt-6">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Documents</p>
@@ -787,43 +898,22 @@ export default function CatProfilePage() {
                 )}
                 {documentError && <p className="mt-3 text-sm font-medium text-red-700">{documentError}</p>}
               </section>
+              </>}
             </div>
-            <section className="rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
-              <div className="md:hidden">
-                <CatProfileSectionHeader title="Cat profile" isExpanded={isCatProfileExpanded} onToggle={() => setIsCatProfileExpanded((expanded) => !expanded)} className={isCatProfileExpanded ? "rounded-t-[22px]" : "rounded-[22px]"} />
+            {selectedSection === "profile" && <>
+            <section id="profile" className="md:col-span-2">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</h2>
+                {!isEditingDetails && <div className="flex items-center gap-2">
+                  {cat.archivingReasonId ? (
+                    <button type="button" onClick={dearchiveCat} disabled={isArchiving} aria-label="Restore cat" title="Restore cat" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#31734b] text-[#31734b] transition hover:bg-green-50 disabled:opacity-50"><FontAwesomeIcon icon={faRotateLeft} /></button>
+                  ) : (
+                    <button type="button" onClick={openArchiveForm} aria-label="Archive cat" title="Archive cat" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-700 text-red-700 transition hover:bg-red-50"><FontAwesomeIcon icon={faBoxArchive} /></button>
+                  )}
+                  {!cat.archivingReasonId && <button type="button" onClick={startEditingDetails} aria-label="Edit cat profile" title="Edit cat profile" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-white transition hover:bg-[#b24a20]"><FontAwesomeIcon icon={faPen} /></button>}
+                </div>}
               </div>
               <div className={`${isCatProfileExpanded ? "block" : "hidden"} md:block`}>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="hidden font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c] md:block">Cat profile</p>
-                  {isEditingDetails && editForm ? (
-                    <input
-                      form="cat-details-form"
-                      value={editForm.name}
-                      onChange={(event) => setEditForm((prev) => prev && { ...prev, name: event.target.value })}
-                      aria-label="Cat name"
-                      className="mt-1 w-full border-b border-[#d4c7b4] bg-transparent text-4xl font-semibold text-gray-900 focus:border-[#d05a2c] focus:outline-none"
-                    />
-                  ) : (
-                    <h1 className="mt-1 text-4xl font-semibold text-gray-900">{cat.name} <span className="text-[#6d6a66]">#{cat.nameNumber}</span></h1>
-                  )}
-                </div>
-                {!isEditingDetails && !cat.archivingReasonId && (
-                  <div className="flex gap-2">
-                    <button type="button" onClick={openArchiveForm} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-700 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50">
-                      Archive
-                    </button>
-                    <button type="button" onClick={startEditingDetails} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20]">
-                       Edit
-                    </button>
-                  </div>
-                )}
-                {!isEditingDetails && cat.archivingReasonId && (
-                  <button type="button" onClick={dearchiveCat} disabled={isArchiving} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#31734b] bg-[#31734b] px-5 text-sm font-semibold text-white transition hover:bg-[#255a3a] disabled:opacity-50">
-                    {isArchiving ? "Restoring..." : "Restore cat"}
-                  </button>
-                )}
-              </div>
 
               {!isArchiveFormOpen && archiveError && <p className="mt-3 text-sm text-red-700">{archiveError}</p>}
 
@@ -866,7 +956,7 @@ export default function CatProfilePage() {
                   }}
                   aria-label="Add tag"
                   title="Add tag"
-                  className="inline-flex h-8 items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 px-2 text-xs font-semibold leading-none text-[#b24a20] transition hover:bg-[#d05a2c]/20"
+                  className="inline-flex items-center justify-center rounded-full border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 px-2.5 py-1 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20"
                 >
                   + tag
                 </button>
@@ -925,6 +1015,15 @@ export default function CatProfilePage() {
               {isEditingDetails && editForm ? (
                 <form id="cat-details-form" onSubmit={handleDetailsSubmit} className="mt-6 space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Cat name
+                      <input
+                        value={editForm.name}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, name: event.target.value })}
+                        disabled={isSavingDetails}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
                     <label className="grid gap-1 text-sm font-medium text-gray-800">
                       Cat number
                       <input
@@ -1073,13 +1172,14 @@ export default function CatProfilePage() {
               )}
               </div>
             </section>
-            <CatTasks catId={cat.id} onChanged={refreshHistory} />
-            <CatTreatments catId={cat.id} onChanged={refreshHistory} refreshVersion={treatmentRefreshVersion} />
-            <CatMedicalNotes catId={cat.id} onChanged={refreshHistory} />
-            <CatVaccinations catId={cat.id} onChanged={refreshHistory} />
-            <CatParasiteTreatments catId={cat.id} onChanged={refreshHistory} />
-            <CatNotes catId={cat.id} onChanged={refreshHistory} />
-            <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+            </>}
+            {selectedSection === "tasks" && <div id="tasks"><CatTasks catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "treatments" && <div id="treatments"><CatTreatments catId={cat.id} onChanged={refreshHistory} refreshVersion={treatmentRefreshVersion} /></div>}
+            {selectedSection === "medical-notes" && <div id="medical-notes"><CatMedicalNotes catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "vaccinations" && <div id="vaccinations"><CatVaccinations catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "parasite-treatments" && <div id="parasite-treatments"><CatParasiteTreatments catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "notes" && <div id="notes"><CatNotes catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "weight-history" && <section id="weight-history" className="md:col-span-2">
               <CatProfileSectionHeader title="Weight history" isExpanded={isWeightExpanded} onToggle={() => { setIsWeightFormOpen(false); setIsWeightExpanded((current) => !current); }} onAdd={() => setIsWeightFormOpen(true)} addLabel="Add weight" />
 
               {isWeightExpanded && <>
@@ -1189,9 +1289,29 @@ export default function CatProfilePage() {
                 </>
               )}
               </>}
-            </section>
-            <CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} total={historyTotal} skip={historySkip} limit={historyLimit} onPageChange={setHistorySkip} onRestoreTreatment={restoreTreatment} onRestoreFlight={restoreFlight} />
+            </section>}
+            {selectedSection === "history" && <div id="history"><CatHistory events={historyEvents} isLoading={isLoadingHistory} error={historyError} total={historyTotal} skip={historySkip} limit={historyLimit} onPageChange={setHistorySkip} onRestoreTreatment={restoreTreatment} onRestoreFlight={restoreFlight} /></div>}
           </div>
+        )}
+
+        {cat && (
+          <nav aria-label="Cat page sections" className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee]/95 p-2 shadow-xl backdrop-blur-md">
+            {isSectionMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 grid min-w-48 gap-1 rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-2 shadow-xl">
+                {[["tasks", "Tasks", faListCheck], ["medical-notes", "Medical notes", faNotesMedical], ["parasite-treatments", "Parasite treatments", faSyringe], ["weight-history", "Weight history", faWeightScale], ["history", "Audit", faClockRotateLeft], ["media", "Gallery & documents", faImages]].map(([id, label, icon]) => (
+                  <button key={id as string} type="button" onClick={() => goToSection(id as string)} aria-label={label as string} title={label as string} aria-current={selectedSection === id ? "location" : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon as typeof faListCheck} className="w-4" aria-hidden="true" /><span>{label as string}</span></button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              {[["profile", "Profile", faCat], ["treatments", "Treatments", faNotesMedical], ["notes", "Notes", faUser], ["vaccinations", "Vaccinations", faSyringe]].map(([id, label, icon]) => (
+                <button key={id as string} type="button" onClick={() => goToSection(id as string)} aria-label={label as string} title={label as string} aria-current={selectedSection === id ? "location" : undefined} className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon as typeof faCat} aria-hidden="true" /></button>
+              ))}
+              <button type="button" onClick={() => setIsSectionMenuOpen((open) => !open)} aria-expanded={isSectionMenuOpen} aria-label="More sections" title="More sections" className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition ${["tasks", "medical-notes", "parasite-treatments", "weight-history", "history", "media"].includes(selectedSection) ? "bg-[#b24a20] ring-2 ring-[#d05a2c]/30" : "bg-[#d05a2c] hover:bg-[#b24a20]"}`}>
+                <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
+              </button>
+            </div>
+          </nav>
         )}
 
         {cat && expandedPhoto && (
@@ -1214,6 +1334,16 @@ export default function CatProfilePage() {
                 </button>
                 {isPhotoMenuOpen && (
                   <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
+                    {expandedPhoto.isPrimary && <button
+                      type="button"
+                      onClick={() => {
+                        setIsPhotoPositionSelectorOpen((open) => !open);
+                        setIsPhotoMenuOpen(false);
+                      }}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                    >
+                      {isPhotoPositionSelectorOpen ? "Hide frame selector" : "Adjust photo frame"}
+                    </button>}
                     {!expandedPhoto.isPrimary && (
                       <button
                         type="button"
@@ -1247,11 +1377,47 @@ export default function CatProfilePage() {
             )}
 
             <div className="relative z-10 flex max-h-[92dvh] w-[95vw] flex-col items-center gap-2">
-              <div
-                aria-label={`Photo of ${cat.name}`}
-                className="h-[88dvh] w-full rounded-2xl bg-contain bg-center bg-no-repeat shadow-2xl"
-                style={(expandedPhoto.fullUrl ?? expandedPhoto.url) ? { backgroundImage: `url(${expandedPhoto.fullUrl ?? expandedPhoto.url})` } : undefined}
-              />
+              <div id="expanded-photo-viewport" className="relative h-[88dvh] w-full overflow-hidden rounded-2xl bg-black/30 shadow-2xl">
+                {(expandedPhoto.fullUrl ?? expandedPhoto.url) && <Image
+                  src={expandedPhoto.fullUrl ?? expandedPhoto.url ?? ""}
+                  alt={`Photo of ${cat.name}`}
+                  fill
+                  unoptimized
+                  sizes="95vw"
+                  onLoad={(event) => setPhotoNaturalSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
+                  className="object-contain"
+                />}
+                {expandedPhoto.isPrimary && isPhotoPositionSelectorOpen && photoFrameGeometry && <div
+                    role="slider"
+                    aria-label="Select vertical photo frame position"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={photoPositionY}
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowUp") setPhotoPositionY((position) => Math.max(0, position - 2));
+                      if (event.key === "ArrowDown") setPhotoPositionY((position) => Math.min(100, position + 2));
+                    }}
+                    onPointerDown={(event) => {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      const bounds = event.currentTarget.parentElement?.getBoundingClientRect();
+                      const availableHeight = photoFrameGeometry.imageHeight - photoFrameGeometry.height;
+                      if (bounds && availableHeight > 0) setPhotoPositionY(Math.round(Math.max(0, Math.min(100, ((event.clientY - bounds.top - photoFrameGeometry.imageTop - photoFrameGeometry.height / 2) / availableHeight) * 100))));
+                    }}
+                    onPointerMove={(event) => {
+                      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                      const bounds = event.currentTarget.parentElement?.getBoundingClientRect();
+                      const availableHeight = photoFrameGeometry.imageHeight - photoFrameGeometry.height;
+                      if (bounds && availableHeight > 0) setPhotoPositionY(Math.round(Math.max(0, Math.min(100, ((event.clientY - bounds.top - photoFrameGeometry.imageTop - photoFrameGeometry.height / 2) / availableHeight) * 100))));
+                    }}
+                    className="absolute z-10 touch-none cursor-ns-resize border-y-2 border-dashed border-white bg-[#d05a2c]/15 shadow-[0_0_0_9999px_rgba(0,0,0,0.42)] outline-none focus-visible:border-solid focus-visible:ring-2 focus-visible:ring-[#d05a2c]"
+                    style={{ left: photoFrameGeometry.left, top: photoFrameGeometry.top, width: photoFrameGeometry.width, height: photoFrameGeometry.height }}
+                  />}
+              </div>
+              {expandedPhoto.isPrimary && isPhotoPositionSelectorOpen && <div className="flex items-center gap-3">
+                <p className="flex-1 text-xs text-white/80">Drag the frame vertically to choose the crop position.</p>
+                <button type="button" onClick={() => savePhotoPosition(expandedPhoto.id)} disabled={isSavingPhotoPosition || photoPositionY === (cat.primaryPhotoPositionY ?? 50)} className="rounded-lg bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50">{isSavingPhotoPosition ? "Saving…" : "Save position"}</button>
+              </div>}
               <p className="text-xs font-medium text-white/75">Added {formatDate(expandedPhoto.createdAt)}</p>
             </div>
 

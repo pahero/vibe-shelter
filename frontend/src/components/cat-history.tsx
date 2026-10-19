@@ -38,6 +38,7 @@ export const eventLabels: Record<string, string> = {
   current_location_changed: "Current location changed",
   photo_created: "Photo added",
   photo_deleted: "Photo deleted",
+  primary_photo_changed: "Primary photo changed",
   document_created: "Document uploaded",
   document_deleted: "Document removed",
   weight_created: "Weight added",
@@ -181,7 +182,7 @@ export function auditEventLabel(event: CatHistoryEvent): string {
 }
 
 export function CatHistory({ events, isLoading, error, total = events.length, skip = 0, limit = 50, onPageChange, onRestoreTreatment, onRestoreFlight }: CatHistoryProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [restoringTreatmentId, setRestoringTreatmentId] = useState<string | null>(null);
   const [restoringFlightId, setRestoringFlightId] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
@@ -197,7 +198,7 @@ export function CatHistory({ events, isLoading, error, total = events.length, sk
   }
 
   return (
-    <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+    <section className="md:col-span-2">
       <CatProfileSectionHeader title="Audit" isExpanded={isOpen} onToggle={() => setIsOpen((open) => !open)} />
 
       {isOpen && (

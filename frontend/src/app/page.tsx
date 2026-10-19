@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { AppHeader } from "@/components/app-header";
+import { HomeHeader } from "@/components/home-header";
 import { HomeCatsList } from "@/components/home-cats-list";
 import { fetchCurrentUser } from "@/lib/backend";
 
@@ -9,9 +9,13 @@ export default async function Home() {
   const user = await fetchCurrentUser(cookieHeader);
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
-      <AppHeader user={user} />
-      <HomeCatsList />
-    </main>
+    <div className="flex min-h-dvh w-full flex-col items-center px-4 pt-6 pb-4 sm:px-6">
+      <HomeHeader user={user} />
+      <main className="w-full flex-1 pt-6">
+        <div className="mx-auto w-full max-w-6xl">
+          <HomeCatsList />
+        </div>
+      </main>
+    </div>
   );
 }

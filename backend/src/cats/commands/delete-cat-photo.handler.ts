@@ -48,7 +48,10 @@ export class DeleteCatPhotoHandler {
         });
         await tx.cat.update({
           where: { id: catId },
-          data: { primaryPhotoKey: nextPhoto?.key ?? null },
+          data: {
+            primaryPhotoKey: nextPhoto?.key ?? null,
+            primaryPhotoPositionY: null,
+          },
         });
       }
       if (actorUserId)

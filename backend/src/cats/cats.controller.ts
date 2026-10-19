@@ -46,6 +46,7 @@ import {
   CreateCatDto,
   CreateCatTagDto,
   CreateCatWeightDto,
+  SetPrimaryCatPhotoDto,
   UpdateCatDto,
   UpdateCatTagDto,
 } from "./dto";
@@ -347,9 +348,16 @@ export class CatsController {
   async setPrimaryPhoto(
     @Param("id") id: string,
     @Param("photoId") photoId: string,
+    @Body() dto: SetPrimaryCatPhotoDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.setPrimaryCatPhotoHandler.handle(id, photoId, user.isTest);
+    return this.setPrimaryCatPhotoHandler.handle(
+      id,
+      photoId,
+      dto.toCommand().positionY,
+      user.id,
+      user.isTest,
+    );
   }
 
   @Delete(":id/photos/:photoId")

@@ -14,7 +14,7 @@ export function CatParasiteTreatments({ catId, onChanged }: { catId: string; onC
   const [items, setItems] = useState<CatParasiteTreatment[]>([]);
   const [form, setForm] = useState<ParasiteTreatmentInput>(emptyTreatment);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,7 +48,7 @@ export function CatParasiteTreatments({ catId, onChanged }: { catId: string; onC
     finally { setActionId(null); }
   };
 
-  return <section className="overflow-hidden rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm md:col-span-2">
+  return <section className="md:col-span-2">
     <CatProfileSectionHeader title="Parasite treatments" isExpanded={expanded} onToggle={() => { if (expanded) reset(); setExpanded((value) => !value); }} onAdd={add} addLabel="Add parasite treatment" />
     {expanded && <>
       {formOpen && <form onSubmit={submit} className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/50 p-4 md:grid-cols-2">

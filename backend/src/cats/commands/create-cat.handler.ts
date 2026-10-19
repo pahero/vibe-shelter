@@ -107,6 +107,7 @@ export class CreateCatHandler {
       primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(
         cat.primaryPhotoKey,
       ),
+      primaryPhotoPositionY: cat.primaryPhotoPositionY,
       microchipNumber: cat.microchipNumber,
       passport: cat.passport,
       sponsorName: cat.sponsorName,

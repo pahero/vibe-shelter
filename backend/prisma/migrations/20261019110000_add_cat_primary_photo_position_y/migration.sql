@@ -1,0 +1,2 @@
+ALTER TABLE "Cat"
+ADD COLUMN "primaryPhotoPositionY" DOUBLE PRECISION;

@@ -14,7 +14,7 @@ export function CatMedicalNotes({ catId, onChanged }: { catId: string; onChanged
   const [notes, setNotes] = useState<CatMedicalNote[]>([]);
   const [form, setForm] = useState<MedicalNoteInput>(emptyNote);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -29,7 +29,7 @@ export function CatMedicalNotes({ catId, onChanged }: { catId: string; onChanged
   const edit = (note: CatMedicalNote) => { setEditingId(note.id); setForm({ date: note.date, comment: note.comment }); setError(null); setIsFormOpen(true); setIsExpanded(true); };
   const remove = async (noteId: string) => { setActionId(noteId); setError(null); try { await catsApi.deleteMedicalNote(noteId); await refresh(); await onChanged?.(); if (editingId === noteId) reset(); } catch (reason) { setError(ApiErrorHandler.handle(reason)); } finally { setActionId(null); } };
 
-  return <section className="overflow-hidden md:col-span-2 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
+  return <section className="md:col-span-2">
     <CatProfileSectionHeader title="Medical notes" isExpanded={isExpanded} onToggle={() => { if (isExpanded) reset(); setIsExpanded((current) => !current); }} onAdd={add} addLabel="Add medical note" />
     {isExpanded && <>
       {isFormOpen && <form onSubmit={submit} className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/50 p-4"><label className="grid gap-1 text-sm font-medium text-gray-800"><span>Date <span className="text-red-700">*</span></span><input aria-label="Medical note date" type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" /></label><label className="grid gap-1 text-sm font-medium text-gray-800"><span>Comment <span className="text-red-700">*</span></span><textarea aria-label="Medical note comment" value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} rows={3} className="resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" /></label><div className="flex gap-2"><button disabled={isSaving} className="rounded-xl bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? "Saving..." : "Save"}</button><button type="button" onClick={reset} className="rounded-xl border border-[#d4c7b4] px-4 py-2 text-sm font-semibold">Cancel</button></div></form>}
