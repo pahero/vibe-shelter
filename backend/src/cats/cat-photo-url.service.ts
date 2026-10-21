@@ -12,6 +12,12 @@ import { randomUUID } from "crypto";
 
 @Injectable()
 export class CatPhotoUrlService {
+  private static readonly signedUrlTtlSeconds = 3600;
+  private static readonly signedUrlRefreshBufferMs = 60_000;
+  private static readonly signedUrlCache = new Map<
+    string,
+    { url: string; refreshAt: number }
+  >();
   bucketName: string;
   constructor(
     private readonly configService: ConfigService,
@@ -28,11 +34,7 @@ export class CatPhotoUrlService {
       return null;
     }
 
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
-      { expiresIn: 3600 },
-    );
+    return this.getCachedGetUrl(key, "inline", undefined);
   }
 
   async getPhotoUrl(key: string): Promise<string | null> {
@@ -41,16 +43,7 @@ export class CatPhotoUrlService {
 
   async getDocumentUrl(key: string): Promise<string | null> {
     if (!this.bucketName) return null;
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        ResponseContentDisposition: "inline",
-        ResponseContentType: "application/pdf",
-      }),
-      { expiresIn: 3600 },
-    );
+    return this.getCachedGetUrl(key, "inline", "application/pdf");
   }
 
   async getDocumentDownloadUrl(
@@ -58,16 +51,48 @@ export class CatPhotoUrlService {
     fileName: string,
   ): Promise<string | null> {
     if (!this.bucketName) return null;
-    return getSignedUrl(
+    return this.getCachedGetUrl(
+      key,
+      `attachment; filename="${this.safeFileName(fileName)}"`,
+      "application/pdf",
+    );
+  }
+
+  private async getCachedGetUrl(
+    key: string,
+    disposition: string,
+    contentType: string | undefined,
+  ): Promise<string> {
+    const cacheKey = JSON.stringify([
+      this.bucketName,
+      key,
+      disposition,
+      contentType,
+    ]);
+    const now = Date.now();
+    const cached = CatPhotoUrlService.signedUrlCache.get(cacheKey);
+    if (cached && cached.refreshAt > now) return cached.url;
+
+    const responseCacheControl = `private, max-age=${CatPhotoUrlService.signedUrlTtlSeconds}`;
+    const url = await getSignedUrl(
       this.client,
       new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key,
-        ResponseContentDisposition: `attachment; filename="${this.safeFileName(fileName)}"`,
-        ResponseContentType: "application/pdf",
+        ResponseContentDisposition: disposition,
+        ...(contentType ? { ResponseContentType: contentType } : {}),
+        ResponseCacheControl: responseCacheControl,
       }),
-      { expiresIn: 3600 },
+      { expiresIn: CatPhotoUrlService.signedUrlTtlSeconds },
     );
+    CatPhotoUrlService.signedUrlCache.set(cacheKey, {
+      url,
+      refreshAt:
+        now +
+        CatPhotoUrlService.signedUrlTtlSeconds * 1000 -
+        CatPhotoUrlService.signedUrlRefreshBufferMs,
+    });
+    return url;
   }
 
   async getPreviewPhotoUrl(fullKey: string | null): Promise<string | null> {
