@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { faArrowLeft, faPlane } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useMemo, useState } from "react";
 import { catsApi, FlightCandidate, FlightCandidateRequirements } from "@/lib/api";
 import { ApiErrorHandler } from "@/lib/utils";
@@ -17,18 +20,14 @@ function RequirementStatus({ complete, label }: { complete: boolean; label: stri
     <span
       aria-label={`${label}: ${complete ? "complete" : "missing"}`}
       title={`${label}: ${complete ? "complete" : "missing"}`}
-      className={`inline-flex min-w-16 items-center justify-center rounded-full px-2 py-1 text-xs font-semibold ${complete ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-900"}`}
+      className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold ${complete ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
     >
-      {complete ? "Yes" : "Missing"}
+      {label}
     </span>
   );
 }
 
-function isReady(candidate: FlightCandidate): boolean {
-  return Object.values(candidate.requirements).every(Boolean);
-}
-
-export function FlightCandidatesClient() {
+export function FlightCandidatesClient({ embedded = false }: { embedded?: boolean }) {
   const [candidates, setCandidates] = useState<FlightCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,36 +71,23 @@ export function FlightCandidatesClient() {
       candidate.adopterAddress ?? "",
     ].some((value) => value.toLocaleLowerCase().includes(query)));
   }, [candidates, search]);
-
-  const readyCount = candidates.filter(isReady).length;
+  const Wrapper = embedded ? "section" : "main";
 
   return (
-    <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm md:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Travel preparation</p>
-          <h1 className="mt-1 text-3xl font-semibold text-gray-900">Flight candidates</h1>
-          <p className="mt-2 max-w-2xl text-sm text-[#6d6a66]">
-            Track travel requirements for each cat. A cat is ready when every item is complete.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={reload}
-          disabled={isLoading}
-          className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white px-4 text-sm font-semibold text-gray-800 transition hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLoading ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
+    <Wrapper className={embedded ? "mt-8 w-full" : "relative min-h-dvh w-full animate-rise"}>
+      {!embedded && <Link
+        href="/"
+        aria-label="Back to cats"
+        title="Back to cats"
+        className="fixed left-8 top-10 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#d4c7b4] bg-[#fff8ee]/90 text-[#d05a2c] shadow-md backdrop-blur-sm transition hover:bg-white hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]"
+      >
+        <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
+      </Link>}
 
-      {!isLoading && !error && (
-        <p className="mt-5 rounded-xl border border-[#d4c7b4]/80 bg-white/60 px-4 py-3 text-sm text-gray-800" role="status">
-          {readyCount} of {candidates.length} cats meet all seven requirements
-        </p>
-      )}
+      <section className={embedded ? "w-full" : "mx-auto mt-5 w-full max-w-6xl"}>
+        <h1 className="text-2xl font-semibold text-gray-900">Flight candidates</h1>
 
-      <label className="mt-5 grid max-w-md gap-1 text-sm font-medium text-gray-800">
+      <label className="mt-3 grid max-w-md gap-1 text-sm font-medium text-gray-800">
         Search cats
         <input
           value={search}
@@ -111,7 +97,7 @@ export function FlightCandidatesClient() {
         />
       </label>
 
-      {isLoading && <p className="mt-5 text-sm text-[#6d6a66]" role="status">Loading flight candidates…</p>}
+      {isLoading && <p className="mt-4 text-sm text-[#6d6a66]" role="status">Loading flight candidates…</p>}
       {error && (
         <div className="mt-5 rounded-xl border border-red-300 bg-red-50 p-4" role="alert">
           <p className="text-sm font-medium text-red-800">{error}</p>
@@ -127,36 +113,52 @@ export function FlightCandidatesClient() {
       )}
 
       {!isLoading && !error && visibleCandidates.length > 0 && (
-        <div className="mt-5 overflow-x-auto rounded-xl border border-[#d4c7b4] bg-white/60">
-          <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
-            <thead className="bg-[#f1d8c7]/65 text-xs uppercase tracking-wide text-[#514a43]">
-              <tr>
-                <th scope="col" className="px-3 py-3">Cat</th>
-                <th scope="col" className="px-3 py-3">Location</th>
-                {visibleRequirements.map(({ key, label }) => <th scope="col" key={key} className="px-3 py-3 text-center">{label}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {visibleCandidates.map((candidate) => (
-                <tr key={candidate.id} className="border-t border-[#d4c7b4]/70 align-middle">
-                  <th scope="row" className="px-3 py-2 font-semibold">
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visibleCandidates.map((candidate) => (
+            <li key={candidate.id} className="rounded-xl border border-[#d4c7b4] bg-white/70 p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-14 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border border-[#d4c7b4] bg-[#f1d8c7]/45">
+                  {candidate.primaryPhotoUrl ? (
+                    <Image src={candidate.primaryPhotoUrl} alt={`${candidate.name}`} width={72} height={56} unoptimized className="h-full w-full object-cover" />
+                  ) : (
+                    <span role="img" aria-label={`No photo for ${candidate.name}`} className="text-2xl">🐾</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate font-semibold text-gray-900">
                     <Link href={`/cats/${candidate.id}`} className="text-[#a83f1a] underline decoration-transparent underline-offset-2 hover:decoration-current">
                       {candidate.name}
                     </Link>
                     {candidate.archivedAt && <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">Archived</span>}
-                  </th>
-                  <td className="px-3 py-2 text-gray-700">{candidate.currentLocationName || "Not assigned"}</td>
-                  {visibleRequirements.map(({ key, label }) => (
-                    <td key={key} className="px-3 py-2 text-center">
-                      <RequirementStatus complete={candidate.requirements[key]} label={label} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </h2>
+                  <p className="mt-0.5 truncate text-xs text-[#6d6a66]">{candidate.currentLocationName || "Not assigned"}</p>
+                </div>
+                {candidate.flights.length > 0 && (
+                  <div className="flex shrink-0 gap-1.5">
+                    {candidate.flights.map((flight) => (
+                      <Link
+                        key={flight.id}
+                        href={`/flights/${flight.id}`}
+                        aria-label={`${flight.flightNumber} flight`}
+                        title={flight.flightNumber}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-gray-200"
+                      >
+                        <FontAwesomeIcon icon={faPlane} aria-hidden="true" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#d4c7b4]/70 pt-2.5">
+                {visibleRequirements.map(({ key, label }) => (
+                  <RequirementStatus key={key} complete={candidate.requirements[key]} label={label} />
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
-    </section>
+      </section>
+    </Wrapper>
   );
 }

@@ -56,7 +56,7 @@ describe("Flights endpoints", () => {
 
   it("creates, edits, assigns cats, audits, soft-deletes, and restores flights", async () => {
     const cat = await prisma.cat.create({
-      data: { name: unique("flight-cat") },
+      data: { name: unique("flight-cat"), isFlightCandidate: true },
     });
     const created = await authAgent
       .post("/api/flights")

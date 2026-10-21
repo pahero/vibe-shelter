@@ -55,6 +55,7 @@ import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
 import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
 import { ListCatsQueryDto } from "./dto/list-cats-query.dto";
 import { UpdateCatNameNumberDto } from "./dto/update-cat-name-number.dto";
+import { SetCatFlightCandidateHandler } from "./commands/set-cat-flight-candidate.handler";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -89,6 +90,7 @@ export class CatsController {
     private readonly listCatHistoryQuery: ListCatHistoryQuery,
     private readonly listAllCatHistoryQuery: ListAllCatHistoryQuery,
     private readonly listFlightCandidatesHandler: ListFlightCandidatesHandler,
+    private readonly setCatFlightCandidateHandler: SetCatFlightCandidateHandler,
   ) {}
 
   @Get()
@@ -358,6 +360,16 @@ export class CatsController {
       user.id,
       user.isTest,
     );
+  }
+
+  @Put(":id/flight-candidate")
+  async markFlightCandidate(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.setCatFlightCandidateHandler.handle(id, true, user.id, user.isTest);
+  }
+
+  @Delete(":id/flight-candidate")
+  async unmarkFlightCandidate(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.setCatFlightCandidateHandler.handle(id, false, user.id, user.isTest);
   }
 
   @Delete(":id/photos/:photoId")

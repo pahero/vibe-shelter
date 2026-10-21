@@ -18,6 +18,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   adopterName: "adopter_name_changed",
   adopterAddress: "adopter_address_changed",
   felvFivTestDone: "felv_fiv_test_done_changed",
+  flightCandidate: "flight_candidate_changed",
   sterilizationStatus: "sterilization_status_changed",
   currentLocationId: "current_location_changed",
   photoCreated: "photo_created",

@@ -348,6 +348,7 @@ export type FlightCandidateRequirements = {
 export type FlightCandidate = {
   id: string;
   name: string;
+  primaryPhotoUrl: string | null;
   currentLocationName: string | null;
   archivedAt: string | null;
   microchipNumber: string | null;
@@ -355,6 +356,7 @@ export type FlightCandidate = {
   sponsorName: string | null;
   adopterName: string | null;
   adopterAddress: string | null;
+  flights: Array<{ id: string; flightNumber: string }>;
   requirements: FlightCandidateRequirements;
 };
 
@@ -694,6 +696,27 @@ export const catsApi = {
       method: "POST", credentials: "include",
     });
     return handleResponse<MutationResult>(response);
+  },
+
+  async markFlightCandidate(id: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/flight-candidate`, {
+      method: "PUT", credentials: "include",
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async unmarkFlightCandidate(id: string): Promise<MutationResult> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/${id}/flight-candidate`, {
+      method: "DELETE", credentials: "include",
+    });
+    return handleResponse<MutationResult>(response);
+  },
+
+  async listFlightCandidateIds(): Promise<Array<{ id: string }>> {
+    const response = await fetch(`${BACKEND_URL}/api/cats/flight-candidates`, {
+      credentials: "include",
+    });
+    return handleResponse<Array<{ id: string }>>(response);
   },
 
   async createTag(name: string, color?: string): Promise<CatTag> {

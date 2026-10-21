@@ -34,6 +34,7 @@ describe("RestoreFlightCatAssignmentHandler", () => {
       });
       expect(saved.deletedAt).toBeNull();
       expect(saved.concurrencyToken).not.toBe(assignment.concurrencyToken);
+      expect((await transaction.cat.findUniqueOrThrow({ where: { id: cat.id } })).concurrencyToken).not.toBe(cat.concurrencyToken);
       expect(
         (
           await transaction.flight.findUniqueOrThrow({
@@ -58,6 +59,7 @@ describe("RestoreFlightCatAssignmentHandler", () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await createFlightTestActor(transaction);
       const flight = await createFlightFixture(transaction);
+      const otherFlight = await createFlightFixture(transaction);
       const cat = await createFlightTestCat(transaction);
       const deleted = await createFlightAssignment(
         transaction,
@@ -65,7 +67,7 @@ describe("RestoreFlightCatAssignmentHandler", () => {
         cat.id,
         { deletedAt: new Date() },
       );
-      await createFlightAssignment(transaction, flight.id, cat.id);
+      await createFlightAssignment(transaction, otherFlight.id, cat.id);
       const handler = new RestoreFlightCatAssignmentHandler(
         transaction as PrismaService,
       );

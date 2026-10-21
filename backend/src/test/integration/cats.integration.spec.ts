@@ -421,6 +421,11 @@ describe("Cats endpoints", () => {
         felvFivTestDone: true,
       },
     });
+    await authAgent.put(`/api/cats/${cat.id}/flight-candidate`).expect(200);
+    const linkedFlight = await prisma.flight.create({
+      data: { date: new Date("2026-06-01"), airport: "Larnaca", flightNumber: unique("candidate-flight"), flightParent: "Travel Parent" },
+    });
+    await prisma.flightCatAssignment.create({ data: { flightId: linkedFlight.id, catId: cat.id } });
     await authAgent
       .post(`/api/cats/${cat.id}/vaccinations`)
       .send({ date: "2026-01-01", type: "CORE", vaccineName: "Core 1" })
@@ -452,6 +457,8 @@ describe("Cats endpoints", () => {
 
     expect(candidate).toMatchObject({
       id: cat.id,
+      primaryPhotoUrl: null,
+      flights: [{ id: linkedFlight.id, flightNumber: linkedFlight.flightNumber }],
       adopterName: "Jordan Adopter",
       adopterAddress: "45 Travel Road",
       requirements: {
@@ -464,6 +471,16 @@ describe("Cats endpoints", () => {
         felvFivTestDone: true,
       },
     });
+  });
+
+  it("marks and unmarks flight candidates with audit events", async () => {
+    const cat = await createCat(prisma, { name: unique("candidate-toggle") });
+    await authAgent.put(`/api/cats/${cat.id}/flight-candidate`).expect(200).expect({ id: cat.id });
+    await authAgent.delete(`/api/cats/${cat.id}/flight-candidate`).expect(200).expect({ id: cat.id });
+    await expect(prisma.auditEvent.findMany({ where: { catId: cat.id, eventType: "flight_candidate_changed" }, orderBy: { occurredAt: "asc" } })).resolves.toMatchObject([
+      { oldValue: "false", newValue: "true", actorUserId: authUser.id },
+      { oldValue: "true", newValue: "false", actorUserId: authUser.id },
+    ]);
   });
 
   it("supports vaccination and parasite-treatment CRUD with separate data fields", async () => {

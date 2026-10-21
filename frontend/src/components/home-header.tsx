@@ -37,7 +37,6 @@ export function HomeHeader({ user }: HomeFooterProps) {
 
   const menuLinks = [
     { href: "/flights", label: "Flights" },
-    { href: "/flight-candidates", label: "Flight candidates" },
     ...(user?.role === "admin" ? [{ href: "/shelter-management", label: "Shelter management" }] : []),
   ];
   const iconButtonClass = "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#4d514b] transition hover:bg-[#efe7da] hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]";

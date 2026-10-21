@@ -1,0 +1,1 @@
+ALTER TABLE "Cat" ADD COLUMN "isFlightCandidate" BOOLEAN NOT NULL DEFAULT false;

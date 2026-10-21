@@ -4,7 +4,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { faArrowLeft, faBoxArchive, faCat, faClockRotateLeft, faEllipsis, faImages, faListCheck, faNotesMedical, faPen, faPlus, faRotateLeft, faSyringe, faTrash, faUser, faWeightScale } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBoxArchive, faBugs, faCat, faClockRotateLeft, faEllipsis, faImages, faListCheck, faNotesMedical, faPen, faPills, faPlane, faPlus, faRotateLeft, faSyringe, faTrash, faWeightScale } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
@@ -17,7 +17,6 @@ import { CatTreatments } from "@/components/cat-treatments";
 import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatVaccinations } from "@/components/cat-vaccinations";
 import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
-import { CatNotes } from "@/components/cat-notes";
 import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
@@ -154,11 +153,14 @@ export default function CatProfilePage() {
   const [archivingReasonId, setArchivingReasonId] = useState("");
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [isMarkingFlightCandidate, setIsMarkingFlightCandidate] = useState(false);
+  const [flightCandidateError, setFlightCandidateError] = useState<string | null>(null);
+  const [isFlightCandidate, setIsFlightCandidate] = useState(false);
   const [isSectionMenuOpen, setIsSectionMenuOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string>("profile");
 
   useEffect(() => {
-    const sectionIds = ["profile", "treatments", "notes", "vaccinations", "tasks", "medical-notes", "parasite-treatments", "weight-history", "history", "media"];
+    const sectionIds = ["profile", "media", "treatments", "weight-history", "vaccinations", "parasite-treatments", "medical-notes", "tasks", "history"];
     const hashSection = window.location.hash.slice(1);
     if (sectionIds.includes(hashSection)) {
       setSelectedSection(hashSection);
@@ -193,6 +195,17 @@ export default function CatProfilePage() {
     };
 
     fetchCat();
+  }, [catId]);
+
+  useEffect(() => {
+    if (!catId) return;
+    let cancelled = false;
+    catsApi.listFlightCandidateIds().then((candidates) => {
+      if (!cancelled) setIsFlightCandidate(candidates.some((candidate) => candidate.id === catId));
+    }).catch(() => {
+      if (!cancelled) setIsFlightCandidate(false);
+    });
+    return () => { cancelled = true; };
   }, [catId]);
 
   useEffect(() => {
@@ -584,6 +597,22 @@ export default function CatProfilePage() {
     }
   };
 
+  const toggleFlightCandidate = async () => {
+    if (!cat) return;
+    setIsMarkingFlightCandidate(true);
+    setFlightCandidateError(null);
+    try {
+      if (isFlightCandidate) await catsApi.unmarkFlightCandidate(cat.id);
+      else await catsApi.markFlightCandidate(cat.id);
+      setIsFlightCandidate(!isFlightCandidate);
+      await refreshHistory();
+    } catch (err) {
+      setFlightCandidateError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsMarkingFlightCandidate(false);
+    }
+  };
+
   const handleDetailsSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!cat || !editForm) return;
@@ -910,12 +939,14 @@ export default function CatProfilePage() {
                   ) : (
                     <button type="button" onClick={openArchiveForm} aria-label="Archive cat" title="Archive cat" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-700 text-red-700 transition hover:bg-red-50"><FontAwesomeIcon icon={faBoxArchive} /></button>
                   )}
+                  {!cat.archivingReasonId && <button type="button" onClick={toggleFlightCandidate} disabled={isMarkingFlightCandidate} aria-label={isFlightCandidate ? "Unmark flight candidate" : "Mark as flight candidate"} title={isFlightCandidate ? "Unmark flight candidate" : "Mark as flight candidate"} className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:opacity-50 ${isFlightCandidate ? "border-amber-700 text-amber-700 hover:bg-amber-50" : "border-[#31734b] text-[#31734b] hover:bg-green-50"}`}><FontAwesomeIcon icon={faPlane} /></button>}
                   {!cat.archivingReasonId && <button type="button" onClick={startEditingDetails} aria-label="Edit cat profile" title="Edit cat profile" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-white transition hover:bg-[#b24a20]"><FontAwesomeIcon icon={faPen} /></button>}
                 </div>}
               </div>
               <div className={`${isCatProfileExpanded ? "block" : "hidden"} md:block`}>
 
               {!isArchiveFormOpen && archiveError && <p className="mt-3 text-sm text-red-700">{archiveError}</p>}
+              {flightCandidateError && <p className="mt-3 text-sm text-red-700">{flightCandidateError}</p>}
 
               {isArchiveFormOpen && (
                 <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
@@ -1178,7 +1209,6 @@ export default function CatProfilePage() {
             {selectedSection === "medical-notes" && <div id="medical-notes"><CatMedicalNotes catId={cat.id} onChanged={refreshHistory} /></div>}
             {selectedSection === "vaccinations" && <div id="vaccinations"><CatVaccinations catId={cat.id} onChanged={refreshHistory} /></div>}
             {selectedSection === "parasite-treatments" && <div id="parasite-treatments"><CatParasiteTreatments catId={cat.id} onChanged={refreshHistory} /></div>}
-            {selectedSection === "notes" && <div id="notes"><CatNotes catId={cat.id} onChanged={refreshHistory} /></div>}
             {selectedSection === "weight-history" && <section id="weight-history" className="md:col-span-2">
               <CatProfileSectionHeader title="Weight history" isExpanded={isWeightExpanded} onToggle={() => { setIsWeightFormOpen(false); setIsWeightExpanded((current) => !current); }} onAdd={() => setIsWeightFormOpen(true)} addLabel="Add weight" />
 
@@ -1295,19 +1325,19 @@ export default function CatProfilePage() {
         )}
 
         {cat && (
-          <nav aria-label="Cat page sections" className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee]/95 p-2 shadow-xl backdrop-blur-md">
+          <nav aria-label="Cat page sections" className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee]/95 p-2 shadow-xl backdrop-blur-md md:p-2.5">
             {isSectionMenuOpen && (
-              <div className="absolute bottom-full right-0 mb-2 grid min-w-48 gap-1 rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-2 shadow-xl">
-                {[["tasks", "Tasks", faListCheck], ["medical-notes", "Medical notes", faNotesMedical], ["parasite-treatments", "Parasite treatments", faSyringe], ["weight-history", "Weight history", faWeightScale], ["history", "Audit", faClockRotateLeft], ["media", "Gallery & documents", faImages]].map(([id, label, icon]) => (
-                  <button key={id as string} type="button" onClick={() => goToSection(id as string)} aria-label={label as string} title={label as string} aria-current={selectedSection === id ? "location" : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon as typeof faListCheck} className="w-4" aria-hidden="true" /><span>{label as string}</span></button>
+              <div className="absolute bottom-full right-0 mb-2 grid min-w-48 gap-1 rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-2 shadow-xl md:min-w-56 md:p-2">
+                {[["vaccinations", "Vaccinations", faSyringe], ["parasite-treatments", "Parasite treatment", faBugs], ["medical-notes", "Medical notes", faNotesMedical], ["tasks", "Reminders", faListCheck], ["history", "Audit", faClockRotateLeft]].map(([id, label, icon]) => (
+                  <button key={id as string} type="button" onClick={() => goToSection(id as string)} aria-label={label as string} title={label as string} aria-current={selectedSection === id ? "location" : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition md:gap-3 md:px-3 md:py-2.5 ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon as typeof faListCheck} className="w-4" aria-hidden="true" /><span>{label as string}</span></button>
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-1">
-              {[["profile", "Profile", faCat], ["treatments", "Treatments", faNotesMedical], ["notes", "Notes", faUser], ["vaccinations", "Vaccinations", faSyringe]].map(([id, label, icon]) => (
-                <button key={id as string} type="button" onClick={() => goToSection(id as string)} aria-label={label as string} title={label as string} aria-current={selectedSection === id ? "location" : undefined} className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon as typeof faCat} aria-hidden="true" /></button>
+            <div className="flex items-center gap-1 md:gap-2">
+              {[["profile", "Profile", faCat], ["media", "Gallery", faImages], ["treatments", "Treatments", faPills], ["weight-history", "Weight history", faWeightScale]].map(([id, label, icon]) => (
+                <button key={id as string} type="button" onClick={() => goToSection(id as string)} aria-label={label as string} title={label as string} aria-current={selectedSection === id ? "location" : undefined} className={`flex h-10 w-10 items-center justify-center rounded-xl transition md:h-11 md:w-11 ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon as typeof faCat} aria-hidden="true" /></button>
               ))}
-              <button type="button" onClick={() => setIsSectionMenuOpen((open) => !open)} aria-expanded={isSectionMenuOpen} aria-label="More sections" title="More sections" className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition ${["tasks", "medical-notes", "parasite-treatments", "weight-history", "history", "media"].includes(selectedSection) ? "bg-[#b24a20] ring-2 ring-[#d05a2c]/30" : "bg-[#d05a2c] hover:bg-[#b24a20]"}`}>
+              <button type="button" onClick={() => setIsSectionMenuOpen((open) => !open)} aria-expanded={isSectionMenuOpen} aria-label="More sections" title="More sections" className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition md:h-11 md:w-11 ${["vaccinations", "medical-notes", "parasite-treatments", "tasks", "history"].includes(selectedSection) ? "bg-[#b24a20] ring-2 ring-[#d05a2c]/30" : "bg-[#d05a2c] hover:bg-[#b24a20]"}`}>
                 <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
               </button>
             </div>

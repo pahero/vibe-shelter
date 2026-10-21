@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 import {
@@ -39,10 +39,11 @@ function emptyFlightForm(): FlightInput {
   };
 }
 
-export function FlightsClient() {
+export function FlightsClient({ standaloneFlightId }: { standaloneFlightId?: string } = {}) {
   const [flights, setFlights] = useState<FlightListItem[]>([]);
   const [deletedFlights, setDeletedFlights] = useState<FlightListItem[]>([]);
   const [cats, setCats] = useState<CatCard[]>([]);
+  const [flightCandidateIds, setFlightCandidateIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -51,6 +52,8 @@ export function FlightsClient() {
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [selectedFlight, setSelectedFlight] = useState<FlightDetails | null>(null);
   const [flightHistory, setFlightHistory] = useState<FlightAuditEvent[]>([]);
+  const [isFlightHistoryOpen, setIsFlightHistoryOpen] = useState(false);
+  const [flightHistoryPage, setFlightHistoryPage] = useState(1);
   const [isLoadingFlight, setIsLoadingFlight] = useState(false);
   const [isDeletedSelection, setIsDeletedSelection] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -63,12 +66,13 @@ export function FlightsClient() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([flightsApi.list(), flightsApi.list(true), catsApi.listCats({ limit: 100 })])
-      .then(([active, deleted, catResponse]) => {
+    Promise.all([flightsApi.list(), flightsApi.list(true), catsApi.listCats({ limit: 100 }), catsApi.listFlightCandidateIds()])
+      .then(([active, deleted, catResponse, candidates]) => {
         if (cancelled) return;
         setFlights(active);
         setDeletedFlights(deleted);
         setCats(catResponse.data);
+        setFlightCandidateIds(new Set(candidates.map(({ id }) => id)));
       })
       .catch((reason: unknown) => {
         if (!cancelled) setLoadingError(ApiErrorHandler.handle(reason));
@@ -78,6 +82,49 @@ export function FlightsClient() {
       });
     return () => { cancelled = true; };
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (!standaloneFlightId) return;
+    let cancelled = false;
+    setIsLoadingFlight(true);
+    const loadStandaloneFlight = async () => {
+      try {
+        const [detail, history] = await Promise.all([flightsApi.get(standaloneFlightId), flightsApi.history(standaloneFlightId)]);
+        if (cancelled) return;
+        setSelectedFlightId(standaloneFlightId);
+        setSelectedFlight(detail);
+        setFlightHistory(history);
+        setFlightHistoryPage(1);
+        setIsDeletedSelection(false);
+      } catch (activeReason) {
+        try {
+          const deletedFlights = await flightsApi.list(true);
+          const deletedFlight = deletedFlights.find(({ id }) => id === standaloneFlightId);
+          if (!deletedFlight) throw activeReason;
+          const history = await flightsApi.history(standaloneFlightId);
+          if (cancelled) return;
+          setSelectedFlightId(standaloneFlightId);
+          setSelectedFlight({
+            id: deletedFlight.id,
+            date: deletedFlight.date,
+            airport: deletedFlight.airport,
+            flightNumber: deletedFlight.flightNumber,
+            flightParent: deletedFlight.flightParent,
+            updatedAt: "",
+            cats: [],
+          });
+          setFlightHistory(history);
+          setFlightHistoryPage(1);
+          setIsDeletedSelection(true);
+        } catch (reason) {
+          if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
+        }
+      }
+      if (!cancelled) setIsLoadingFlight(false);
+    };
+    void loadStandaloneFlight();
+    return () => { cancelled = true; };
+  }, [standaloneFlightId]);
 
   const refreshLists = () => {
     setIsLoading(true);
@@ -104,10 +151,12 @@ export function FlightsClient() {
           cats: [],
         });
         setFlightHistory(await flightsApi.history(flight.id));
+        setFlightHistoryPage(1);
       } else {
         const [detail, history] = await Promise.all([flightsApi.get(flight.id), flightsApi.history(flight.id)]);
         setSelectedFlight(detail);
         setFlightHistory(history);
+        setFlightHistoryPage(1);
       }
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
@@ -127,6 +176,7 @@ export function FlightsClient() {
     setSelectedFlightId(null);
     setSelectedFlight(null);
     setFlightHistory([]);
+    setFlightHistoryPage(1);
     setIsEditing(false);
     setForm(emptyFlightForm());
     setIsFormOpen(true);
@@ -186,9 +236,14 @@ export function FlightsClient() {
     setActionError(null);
     try {
       await flightsApi.delete(selectedFlightId);
-      setSelectedFlightId(null);
-      setSelectedFlight(null);
-      setFlightHistory([]);
+      if (standaloneFlightId && selectedFlight) {
+        await loadFlight({ ...selectedFlight, deletedAt: new Date().toISOString(), catCount: selectedFlight.cats.length }, true);
+      } else {
+        setSelectedFlightId(null);
+        setSelectedFlight(null);
+        setFlightHistory([]);
+        setFlightHistoryPage(1);
+      }
       refreshLists();
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
@@ -206,6 +261,7 @@ export function FlightsClient() {
         setSelectedFlightId(null);
         setSelectedFlight(null);
         setFlightHistory([]);
+        setFlightHistoryPage(1);
       }
       refreshLists();
     } catch (reason) {
@@ -271,7 +327,7 @@ export function FlightsClient() {
 
   const visibleFlights = showDeleted ? deletedFlights : flights;
   const assignedCatIds = new Set(selectedFlight?.cats.map(({ cat }) => cat.id) ?? []);
-  const availableCats = cats.filter((cat) => !cat.archivedAt && !assignedCatIds.has(cat.id));
+  const availableCats = cats.filter((cat) => flightCandidateIds.has(cat.id) && !cat.archivedAt && !assignedCatIds.has(cat.id));
   const restoredAssignmentEventIds = new Set<string>();
   const assignmentRestoreEventIds = new Set<string>();
   for (const event of flightHistory) {
@@ -280,9 +336,34 @@ export function FlightsClient() {
       assignmentRestoreEventIds.add(event.id);
     }
   }
+  const deletedFlightAssignments = new Map<string, FlightDetails["cats"][number]>();
+  for (const event of [...flightHistory].sort((left, right) => left.createdAt.localeCompare(right.createdAt))) {
+    if (!event.assignment) continue;
+    const previous = deletedFlightAssignments.get(event.assignment.id);
+    if (!event.cat && !previous) continue;
+    deletedFlightAssignments.set(event.assignment.id, {
+      assignmentId: event.assignment.id,
+      cat: {
+        id: event.cat?.id ?? previous!.cat.id,
+        name: event.cat?.name ?? previous!.cat.name,
+        archivedAt: event.cat?.archivedAt ?? previous?.cat.archivedAt ?? null,
+        microchipNumber: previous?.cat.microchipNumber ?? null,
+        passport: previous?.cat.passport ?? false,
+      },
+      f2fDone: event.assignment.f2fDone,
+      tracesDone: event.assignment.tracesDone,
+    });
+    if (event.eventType === "flight_cat_unassigned") deletedFlightAssignments.delete(event.assignment.id);
+  }
+  const deletedFlightCats = [...deletedFlightAssignments.values()];
+  const flightHistoryPageSize = 10;
+  const flightHistoryPageCount = Math.max(1, Math.ceil(flightHistory.length / flightHistoryPageSize));
+  const visibleHistory = flightHistory.slice((flightHistoryPage - 1) * flightHistoryPageSize, flightHistoryPage * flightHistoryPageSize);
 
   return (
-    <section className="w-full max-w-6xl animate-rise rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm md:p-8">
+    <section className={`w-full max-w-6xl animate-rise ${standaloneFlightId ? "relative" : "rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm md:p-8"}`}>
+      {standaloneFlightId && <Link href="/flights" aria-label="Back to flights" title="Back to flights" className="fixed left-8 top-10 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#d4c7b4] bg-[#fff8ee]/90 text-[#d05a2c] shadow-md backdrop-blur-sm transition hover:bg-white hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]"><FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" /></Link>}
+      {!standaloneFlightId && <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Travel planning</p>
@@ -293,6 +374,7 @@ export function FlightsClient() {
           Add flight
         </button>
       </div>
+      </>}
 
       {loadingError && <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800" role="alert">{loadingError}</p>}
       {actionError && <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800" role="alert">{actionError}</p>}
@@ -325,7 +407,8 @@ export function FlightsClient() {
         </form>
       )}
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)]">
+      <div className={`mt-6 grid gap-5 ${standaloneFlightId ? "grid-cols-1" : "lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)]"}`}>
+        {!standaloneFlightId && <>
         <aside className="rounded-2xl border border-[#d4c7b4] bg-white/50 p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-gray-900">{showDeleted ? "Deleted flights" : "Scheduled flights"}</h2>
@@ -349,10 +432,11 @@ export function FlightsClient() {
           </ul>
           <button type="button" onClick={refreshLists} disabled={isLoading} className="mt-4 w-full rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50">Refresh flights</button>
         </aside>
+        </>}
 
         <div className="min-w-0 space-y-5">
           {isLoadingFlight && <p className="rounded-xl border border-[#d4c7b4] bg-white/60 p-5 text-sm text-[#6d6a66]" role="status">Loading flight...</p>}
-          {!isLoadingFlight && !selectedFlight && <p className="rounded-xl border border-dashed border-[#d4c7b4] p-6 text-sm text-[#6d6a66]">Select a flight to manage its cats and audit history.</p>}
+          {!standaloneFlightId && !isLoadingFlight && !selectedFlight && <p className="rounded-xl border border-dashed border-[#d4c7b4] p-6 text-sm text-[#6d6a66]">Select a flight to manage its cats and audit history.</p>}
           {!isLoadingFlight && selectedFlight && (
             <>
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
@@ -370,7 +454,7 @@ export function FlightsClient() {
                     </div>
                   )}
                 </div>
-                {isDeletedSelection && <p className="mt-3 text-sm text-red-800">This flight is deleted. Restore it from the list to resume managing assignments.</p>}
+                {isDeletedSelection && <p className="mt-3 text-sm text-red-800">This flight is deleted. Its assignments cannot be managed until it is restored.</p>}
               </section>
 
               {!isDeletedSelection && (
@@ -393,7 +477,7 @@ export function FlightsClient() {
                     <p className="p-5 text-sm text-[#6d6a66]">No cats assigned to this flight.</p>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="min-w-[660px] w-full border-collapse text-left text-sm">
+                      <table className="w-full border-collapse text-left text-sm">
                         <thead className="text-xs uppercase tracking-wide text-[#514a43]">
                           <tr>
                             <th scope="col" className="px-3 py-3">Cat</th>
@@ -429,11 +513,34 @@ export function FlightsClient() {
                 </section>
               )}
 
+              {isDeletedSelection && (
+                <section className="overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/60">
+                  <div className="border-b border-[#d4c7b4] bg-[#f1d8c7]/45 p-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Assigned cats</h2>
+                    <p className="text-xs text-[#6d6a66]">Read-only assignments for this deleted flight.</p>
+                  </div>
+                  {deletedFlightCats.length === 0 ? (
+                    <p className="p-5 text-sm text-[#6d6a66]">No cats assigned to this flight.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-left text-sm">
+                        <thead className="text-xs uppercase tracking-wide text-[#514a43]"><tr><th scope="col" className="px-3 py-3">Cat</th><th scope="col" className="px-3 py-3 text-center">F2F</th><th scope="col" className="px-3 py-3 text-center">Traces</th></tr></thead>
+                        <tbody>{deletedFlightCats.map((assignment) => <tr key={assignment.assignmentId} className="border-t border-[#d4c7b4]/70"><th scope="row" className="px-3 py-2 font-semibold"><Link href={`/cats/${assignment.cat.id}`} className="text-[#a83f1a] underline-offset-2 hover:underline">{assignment.cat.name}</Link>{assignment.cat.archivedAt && <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">Archived</span>}</th><td className="px-3 py-2 text-center"><input type="checkbox" aria-label={`F2F done for ${assignment.cat.name}`} checked={assignment.f2fDone} disabled readOnly className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c]" /></td><td className="px-3 py-2 text-center"><input type="checkbox" aria-label={`Traces done for ${assignment.cat.name}`} checked={assignment.tracesDone} disabled readOnly className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c]" /></td></tr>)}</tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              )}
+
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
-                <h2 className="text-lg font-semibold text-gray-900">Flight audit history</h2>
-                {flightHistory.length === 0 ? <p className="mt-3 text-sm text-[#6d6a66]">No history yet.</p> : (
+                <button type="button" aria-expanded={isFlightHistoryOpen} onClick={() => setIsFlightHistoryOpen((open) => !open)} className="flex w-full items-center justify-between gap-3 text-left">
+                  <h2 className="text-lg font-semibold text-gray-900">Flight audit history</h2>
+                  <span aria-hidden="true" className="text-[#6d6a66]">{isFlightHistoryOpen ? "−" : "+"}</span>
+                </button>
+                {isFlightHistoryOpen && (flightHistory.length === 0 ? <p className="mt-3 text-sm text-[#6d6a66]">No history yet.</p> : (
+                  <>
                   <ol className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
-                    {flightHistory.map((event) => (
+                    {visibleHistory.map((event) => (
                       <li key={event.id} className={`px-3 py-2 ${event.eventType.endsWith("_created") || event.eventType.endsWith("_restored") ? "border-l-4 border-l-[#31734b] bg-[#31734b]/10" : event.eventType.endsWith("_deleted") || event.eventType.endsWith("_unassigned") ? "border-l-4 border-l-red-700 bg-red-50/70" : "border-l-4 border-l-amber-600 bg-amber-50/70"}`}>
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                           <p className="text-sm font-semibold text-gray-900">
@@ -442,14 +549,20 @@ export function FlightsClient() {
                           </p>
                           <div className="flex shrink-0 items-center gap-2">
                             <time className="text-xs text-[#6d6a66]" dateTime={event.createdAt}>{formatDate(event.createdAt)}</time>
-                            {event.assignment?.isDeleted && assignmentRestoreEventIds.has(event.id) && <button type="button" disabled={assignmentActionId === event.assignment.id} onClick={() => void restoreAssignment(event.assignment!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:opacity-50">{assignmentActionId === event.assignment.id ? "Restoring..." : "Restore cat"}</button>}
+                            {!isDeletedSelection && event.assignment?.isDeleted && assignmentRestoreEventIds.has(event.id) && <button type="button" disabled={assignmentActionId === event.assignment.id} onClick={() => void restoreAssignment(event.assignment!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:opacity-50">{assignmentActionId === event.assignment.id ? "Restoring..." : "Restore cat"}</button>}
                           </div>
                         </div>
                         {(event.oldValue !== null || event.newValue !== null) && <p className="mt-1 text-xs text-[#6d6a66]">{event.oldValue ?? "Not set"} -&gt; {event.newValue ?? "Not set"}</p>}
                       </li>
                     ))}
                   </ol>
-                )}
+                  {flightHistoryPageCount > 1 && <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                    <button type="button" onClick={() => setFlightHistoryPage((page) => Math.max(1, page - 1))} disabled={flightHistoryPage === 1} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-1.5 font-semibold disabled:opacity-50">Previous</button>
+                    <span className="text-[#6d6a66]">Page {flightHistoryPage} of {flightHistoryPageCount}</span>
+                    <button type="button" onClick={() => setFlightHistoryPage((page) => Math.min(flightHistoryPageCount, page + 1))} disabled={flightHistoryPage === flightHistoryPageCount} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-1.5 font-semibold disabled:opacity-50">Next</button>
+                  </div>}
+                  </>
+                ))}
               </section>
             </>
           )}

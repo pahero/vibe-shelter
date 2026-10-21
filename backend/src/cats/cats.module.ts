@@ -78,6 +78,7 @@ import { SetPrimaryCatPhotoHandler } from "./commands/set-primary-cat-photo.hand
 import { DeleteCatPhotoHandler } from "./commands/delete-cat-photo.handler";
 import { AddCatDocumentHandler } from "./commands/add-cat-document.handler";
 import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler";
+import { SetCatFlightCandidateHandler } from "./commands/set-cat-flight-candidate.handler";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -159,6 +160,7 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
     DeleteCatPhotoHandler,
     AddCatDocumentHandler,
     DeleteCatDocumentHandler,
+    SetCatFlightCandidateHandler,
     SessionAuthGuard,
   ],
 })

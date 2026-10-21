@@ -146,10 +146,12 @@ model Cat {
   adopterName         String?
   adopterAddress      String?
   felvFivTestDone     Boolean             @default(false)
+  isFlightCandidate   Boolean             @default(false)
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   archivedAt          DateTime?
   deletedAt           DateTime?
   version             Int                 @default(0)
+  concurrencyToken    String              @default(cuid())
   archivingReasonId String?
   archivingReason   CatArchivingReason? @relation(fields: [archivingReasonId], references: [id], onDelete: Restrict)
   isTest              Boolean             @default(false)

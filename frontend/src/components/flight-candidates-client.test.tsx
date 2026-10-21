@@ -13,6 +13,7 @@ const listCandidates = vi.mocked(catsApi.listFlightCandidates);
 const candidate: FlightCandidate = {
   id: "cat-1",
   name: "Mila",
+  primaryPhotoUrl: "https://example.test/mila.jpg",
   currentLocationName: "North Shelter",
   archivedAt: null,
   microchipNumber: "chip-123",
@@ -20,6 +21,10 @@ const candidate: FlightCandidate = {
   sponsorName: null,
   adopterName: "Alex Adopter",
   adopterAddress: "12 Cat Street",
+  flights: [
+    { id: "flight-active", flightNumber: "CY123" },
+    { id: "flight-active-2", flightNumber: "CY124" },
+  ],
   requirements: {
     firstVaccine: true,
     secondVaccine: true,
@@ -34,23 +39,23 @@ const candidate: FlightCandidate = {
 describe("FlightCandidatesClient", () => {
   beforeEach(() => listCandidates.mockReset());
 
-  it("shows the requested readiness columns and ready count", async () => {
+  it("shows the candidates table and navigation back to cats", async () => {
     listCandidates.mockResolvedValue([candidate, { ...candidate, id: "cat-2", name: "Luna", requirements: { ...candidate.requirements, rabies: false, felvFivTestDone: false } }]);
 
     render(<FlightCandidatesClient />);
 
     expect(await screen.findByRole("heading", { name: "Flight candidates" })).toBeVisible();
-    expect(screen.getByRole("status")).toHaveTextContent("1 of 2 cats meet all seven requirements");
+    expect(screen.getByRole("link", { name: "Back to cats" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Mila" })).toHaveAttribute("href", "/cats/cat-1");
-    expect(screen.getByRole("columnheader", { name: "Rabies" })).toBeVisible();
-    expect(screen.getByRole("columnheader", { name: "Passport" })).toBeVisible();
-    expect(screen.getByRole("columnheader", { name: "Chipped" })).toBeVisible();
-    expect(screen.getByRole("columnheader", { name: "FeLV/FIV" })).toBeVisible();
-    expect(screen.queryByRole("columnheader", { name: "First vaccine" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "Second vaccine" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "Adopter" })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Mila" })).toHaveAttribute("src", "https://example.test/mila.jpg");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "CY123 flight" })[0]).toHaveAttribute("href", "/flights/flight-active");
+    expect(screen.getAllByRole("link", { name: "CY124 flight" })[0]).toHaveAttribute("href", "/flights/flight-active-2");
+    expect(screen.getAllByRole("link", { name: "CY123 flight" })[0].className).toBe(screen.getAllByRole("link", { name: "CY124 flight" })[0].className);
     expect(screen.getByLabelText("Rabies: missing")).toBeVisible();
     expect(screen.getByLabelText("FeLV/FIV: missing")).toBeVisible();
+    expect(screen.queryByText("Missing")).not.toBeInTheDocument();
+    expect(screen.queryByText("Yes")).not.toBeInTheDocument();
   });
 
   it("filters by adopter/address and reports no matching cats", async () => {

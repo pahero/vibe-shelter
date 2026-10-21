@@ -17,7 +17,6 @@ export function AppHeader({ user, hideEditShelterLink = false }: AppHeaderProps)
   const navLinks = user
       ? [
         { href: "/flights", label: "Flights" },
-        { href: "/flight-candidates", label: "Flight candidates" },
         ...(user.role === "admin" && !hideEditShelterLink ? [{ href: "/shelter-management", label: "Shelter management" }] : []),
       ]
     : [];

@@ -15,6 +15,7 @@ describe("AssignCatToFlightHandler", () => {
       const actor = await createFlightTestActor(transaction);
       const flight = await createFlightFixture(transaction);
       const cat = await createFlightTestCat(transaction);
+      await transaction.cat.update({ where: { id: cat.id }, data: { isFlightCandidate: true } });
       const handler = new AssignCatToFlightHandler(
         transaction as PrismaService,
       );
@@ -41,6 +42,7 @@ describe("AssignCatToFlightHandler", () => {
           })
         ).concurrencyToken,
       ).not.toBe(flight.concurrencyToken);
+      expect((await transaction.cat.findUniqueOrThrow({ where: { id: cat.id } })).concurrencyToken).not.toBe(cat.concurrencyToken);
       expect(
         await transaction.auditEvent.findFirstOrThrow({
           where: { assignmentId: assignment.id },
@@ -60,6 +62,7 @@ describe("AssignCatToFlightHandler", () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await createFlightTestActor(transaction);
       const cat = await createFlightTestCat(transaction);
+      await transaction.cat.update({ where: { id: cat.id }, data: { isFlightCandidate: true } });
       const handler = new AssignCatToFlightHandler(
         transaction as PrismaService,
       );
@@ -122,11 +125,24 @@ describe("AssignCatToFlightHandler", () => {
     });
   });
 
-  it("rejects an already assigned cat", async () => {
+  it("rejects a cat that is not a flight candidate", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await createFlightTestActor(transaction);
       const flight = await createFlightFixture(transaction);
       const cat = await createFlightTestCat(transaction);
+      await expect(new AssignCatToFlightHandler(transaction as PrismaService).handle(
+        new AssignCatToFlightCommand(flight.id, cat.id, actor.id, false),
+      )).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  it("rejects an already assigned cat", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const actor = await createFlightTestActor(transaction);
+      const flight = await createFlightFixture(transaction);
+      const anotherFlight = await createFlightFixture(transaction);
+      const cat = await createFlightTestCat(transaction);
+      await transaction.cat.update({ where: { id: cat.id }, data: { isFlightCandidate: true } });
       await transaction.flightCatAssignment.create({
         data: { flightId: flight.id, catId: cat.id },
       });
@@ -136,7 +152,7 @@ describe("AssignCatToFlightHandler", () => {
 
       await expect(
         handler.handle(
-          new AssignCatToFlightCommand(flight.id, cat.id, actor.id, false),
+          new AssignCatToFlightCommand(anotherFlight.id, cat.id, actor.id, false),
         ),
       ).rejects.toThrow(ConflictException);
     });

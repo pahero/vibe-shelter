@@ -39,7 +39,7 @@ describe("AppHeader", () => {
     render(<AppHeader user={adminUser} />);
 
     expect(screen.getByRole("link", { name: "Flights" })).toHaveAttribute("href", "/flights");
-    expect(screen.getByRole("link", { name: "Flight candidates" })).toHaveAttribute("href", "/flight-candidates");
+    expect(screen.queryByRole("link", { name: "Flight candidates" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Shelter management" })).toHaveAttribute("href", "/shelter-management");
     expect(screen.getByText("Admin User")).toBeVisible();
     expect(screen.getByRole("button", { name: "Log out" })).toBeVisible();
@@ -55,7 +55,7 @@ describe("AppHeader", () => {
     render(<AppHeader user={staffUser} />);
 
     expect(screen.getByRole("link", { name: "Flights" })).toHaveAttribute("href", "/flights");
-    expect(screen.getByRole("link", { name: "Flight candidates" })).toHaveAttribute("href", "/flight-candidates");
+    expect(screen.queryByRole("link", { name: "Flight candidates" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Shelter management" })).not.toBeInTheDocument();
     expect(screen.getByText("staff@shelter.local")).toBeVisible();
   });
