@@ -27,7 +27,30 @@ describe("CatPhotoCompressionService", () => {
     expect(fullMetadata.format).toBe("jpeg");
     expect(fullMetadata.width).toBe(1920);
     expect(fullMetadata.height).toBe(1080);
-    expect(previewMetadata.width).toBe(640);
-    expect(previewMetadata.height).toBe(360);
+    expect(previewMetadata.width).toBe(1200);
+    expect(previewMetadata.height).toBe(675);
+  });
+
+  it("caps portrait preview width without shrinking it based on its height", async () => {
+    const input = await sharp({
+      create: {
+        width: 3000,
+        height: 4000,
+        channels: 3,
+        background: { r: 20, g: 80, b: 140 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    const result = await CatPhotoCompressionService.compress({
+      buffer: input,
+      mimetype: "image/png",
+      originalname: "phone-portrait.png",
+    });
+    const previewMetadata = await sharp(result.preview.buffer).metadata();
+
+    expect(previewMetadata.width).toBe(1200);
+    expect(previewMetadata.height).toBe(1600);
   });
 });

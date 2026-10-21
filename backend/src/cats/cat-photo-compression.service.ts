@@ -2,7 +2,7 @@ import sharp from "sharp";
 import type { PrimaryPhotoUpload } from "./cats.types";
 
 const MAX_PHOTO_DIMENSION = 1920;
-const PREVIEW_PHOTO_DIMENSION = 640;
+const PREVIEW_PHOTO_DIMENSION = 1200;
 
 type CompressedCatPhoto = Required<
   Pick<PrimaryPhotoUpload, "buffer" | "mimetype" | "originalname">
@@ -32,11 +32,11 @@ export class CatPhotoCompressionService {
           .toBuffer(),
         image
           .clone()
-          .resize(PREVIEW_PHOTO_DIMENSION, PREVIEW_PHOTO_DIMENSION, {
-            fit: "inside",
+          .resize({
+            width: PREVIEW_PHOTO_DIMENSION,
             withoutEnlargement: true,
           })
-          .jpeg({ quality: 72, mozjpeg: true })
+          .jpeg({ quality: 80, mozjpeg: true })
           .toBuffer(),
       ]);
       const name = this.toJpegName(photo.originalname ?? "photo");
