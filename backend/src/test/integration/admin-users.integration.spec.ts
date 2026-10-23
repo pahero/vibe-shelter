@@ -238,6 +238,6 @@ async function createAdminAgent(
   });
 
   const agent = request.agent(app.getHttpServer());
-  await agent.post("/auth/login").send({ email, password }).expect(201);
+  const login = await agent.post("/auth/login").send({ email, password }).expect(200);
   return agent;
 }

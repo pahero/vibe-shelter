@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { BACKEND_URL } from "@/lib/backend";
+import { BACKEND_URL, type AuthUser } from "@/lib/backend";
 
 type PasswordLoginFormProps = {
   nextPath?: string;
@@ -46,7 +46,7 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
         return;
       }
 
-      const user = (await response.json()) as { passwordChangeRequired?: boolean };
+      const user = (await response.json()) as AuthUser;
       router.push(user.passwordChangeRequired ? "/replace-temporary-password" : nextPath);
     } catch {
       setErrorMessage("Unable to sign in");

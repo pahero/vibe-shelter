@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { CreateLocationDto, UpdateLocationDto } from "./dto";
-import { CurrentUser, SessionAuthGuard } from "../auth";
+import { CurrentUser, JwtAuthGuard } from "../auth";
 import { CreateLocationHandler } from "./commands/create-location.handler";
 import { UpdateLocationHandler } from "./commands/update-location.handler";
 import { ArchiveLocationHandler } from "./commands/archive-location.handler";
@@ -24,7 +24,7 @@ import { ListLocationsQueryDto } from "./dto/list-locations-query.dto";
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/locations")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class LocationsController {
   constructor(
     private readonly createLocationHandler: CreateLocationHandler,

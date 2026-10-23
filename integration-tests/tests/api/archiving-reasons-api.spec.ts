@@ -1,4 +1,5 @@
-import { expect, request as playwrightRequest, test } from "@playwright/test";
+import { request as playwrightRequest } from "@playwright/test";
+import { expect, test } from "../support/api-test";
 import { ADMIN_ACCOUNT, BACKEND_URL, getTestEnv, uniqueName } from "../support/env";
 
 const endpoint = "/api/cats/archiving-reasons";
@@ -9,7 +10,7 @@ test.describe("archiving reasons API", () => {
     const login = await request.post("/auth/login", {
       data: { email: staffTestUser.email, password: staffTestUser.password },
     });
-    expect(login.status()).toBe(201);
+    expect(login.status()).toBe(200);
   });
 
   test("enforces active name uniqueness within, but not across, test partitions", async ({ request }) => {
@@ -22,8 +23,7 @@ test.describe("archiving reasons API", () => {
       const regularLogin = await regularUser.post("/auth/login", {
         data: { email: ADMIN_ACCOUNT.email, password: ADMIN_ACCOUNT.password },
       });
-      expect(regularLogin.status()).toBe(201);
-
+      expect(regularLogin.status()).toBe(200);
       const testCreate = await request.post(endpoint, { data: { name } });
       expect(testCreate.status()).toBe(201);
       testReasonIds.push(((await testCreate.json()) as { id: string }).id);

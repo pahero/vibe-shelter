@@ -45,10 +45,9 @@ async function ensureUser(api: Awaited<ReturnType<typeof request.newContext>>, a
     const login = await userApi.post("/auth/login", {
       data: { email: account.email, password: account.password },
     });
-    if (login.status() !== 201) {
+    if (login.status() !== 200) {
       throw new Error(`Created test user ${account.email} cannot log in: ${await login.text()}`);
     }
-
     const replacePassword = await userApi.post("/auth/replace-temporary-password", {
       data: {
         newPassword: account.password,
@@ -77,12 +76,11 @@ export default async function globalSetup(_config: FullConfig) {
   const adminLogin = await api.post("/auth/login", {
     data: { email: ADMIN_ACCOUNT.email, password: ADMIN_ACCOUNT.password },
   });
-  if (adminLogin.status() !== 201) {
+  if (adminLogin.status() !== 200) {
     throw new Error(
       `Admin login failed (${adminLogin.status()}). Ensure the backend is running and seeded: ${ADMIN_ACCOUNT.email}. Body: ${await adminLogin.text()}`,
     );
   }
-
   for (const account of [STAFF_TEST_ACCOUNT, ADMIN_TEST_ACCOUNT]) {
     await ensureUser(api, account);
   }
@@ -91,7 +89,7 @@ export default async function globalSetup(_config: FullConfig) {
     const login = await api.post("/auth/login", {
       data: { email: account.email, password: account.password },
     });
-    if (login.status() !== 201) {
+    if (login.status() !== 200) {
       throw new Error(
         `Registered test user ${account.email} cannot log in (${login.status()}): ${await login.text()}`,
       );

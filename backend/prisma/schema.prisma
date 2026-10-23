@@ -23,7 +23,6 @@ model User {
   version        Int        @default(0)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
-  sessions       Session[]
   ownedLocations Location[] @relation("ownedLocations")
   createdCats    Cat[]      @relation("createdCats")
   createdPhotos  CatPhoto[] @relation("createdPhotos")
@@ -44,6 +43,7 @@ model User {
   updatedParasiteTreatments ParasiteTreatment[] @relation("updatedParasiteTreatments")
   createdCatTreatments CatTreatment[] @relation("createdCatTreatments")
   updatedCatTreatments CatTreatment[] @relation("updatedCatTreatments")
+  refreshTokens RefreshToken[]
 
   @@index([status])
   @@index([role])
@@ -51,21 +51,17 @@ model User {
   @@index([deletedAt])
 }
 
-model Session {
-  id               String    @id @default(cuid())
-  userId           String
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionTokenHash String    @unique
-  userAgent        String?
-  ipAddress        String?
-  createdAt        DateTime  @default(now())
-  expiresAt        DateTime
-  revokedAt        DateTime?
-  version          Int       @default(0)
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([expiresAt])
-  @@index([revokedAt])
 }
 
 enum UserStatus {

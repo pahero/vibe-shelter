@@ -50,7 +50,7 @@ describe("Authentication endpoints", () => {
     await moduleRef?.close();
   });
 
-  it("logs in, returns the current user, refreshes the session, changes the password, and logs out", async () => {
+  it("logs in with a JWT, refreshes it, changes the password, and logs out", async () => {
     const email = `${unique()}@example.com`;
     const oldPassword = "InitialPassword123!";
     const user = await prisma.user.create({
@@ -65,22 +65,19 @@ describe("Authentication endpoints", () => {
     const login = await agent
       .post("/auth/login")
       .send({ email, password: oldPassword })
-      .expect(201);
-    expect(login.body).toMatchObject({
-      id: user.id,
-      email,
-      passwordChangeRequired: false,
-    });
+      .expect(200);
+    expect(login.body).toMatchObject({ id: user.id, email, passwordChangeRequired: false });
     await agent
       .get("/auth/me")
       .expect(200)
       .expect(({ body }) => expect(body.id).toBe(user.id));
     await agent
-      .post("/auth/session/refresh")
-      .expect(201)
+      .post("/auth/token")
+      .expect(200)
       .expect(({ body }) =>
-        expect(body).toEqual({ message: "Session refreshed" }),
+        expect(body).toEqual({ message: "Tokens refreshed" }),
       );
+    await agent.get("/auth/me").expect(200);
     await agent
       .post("/auth/change-password")
       .send({
@@ -97,7 +94,8 @@ describe("Authentication endpoints", () => {
     await newAgent
       .post("/auth/login")
       .send({ email, password: "ReplacementPassword123!" })
-      .expect(201);
+      .expect(200);
+    await newAgent.get("/auth/me").expect(200);
   });
 
   it("replaces a temporary password before granting normal access", async () => {
@@ -115,7 +113,7 @@ describe("Authentication endpoints", () => {
     const login = await agent
       .post("/auth/login")
       .send({ email, password })
-      .expect(201);
+      .expect(200);
     expect(login.body.passwordChangeRequired).toBe(true);
     await agent
       .post("/auth/replace-temporary-password")
@@ -147,7 +145,7 @@ describe("Authentication endpoints", () => {
     await agent
       .post("/auth/login")
       .send({ email, password: "Password123!" })
-      .expect(201);
+      .expect(200);
     await agent
       .post("/auth/change-password")
       .send({

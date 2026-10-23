@@ -20,10 +20,7 @@ export function generateIntegrationTestConfig(
     googleClientId: "non-essential-for-tests",
     googleClientSecret: "non-essential-for-tests",
     googleCallbackUrl: "non-essential-for-tests",
-    sessionCookieName: "shelter_session",
-    sessionSecret: "session-secret-for-tests",
-    sessionTtlHours: 168,
-    sessionTtlMs: 168 * 60 * 60 * 1000,
+    jwtSecret: "jwt-secret-for-tests",
     frontendUrl: "non-essential-for-tests",
     allowedGoogleDomain: "non-essential-for-tests",
   });

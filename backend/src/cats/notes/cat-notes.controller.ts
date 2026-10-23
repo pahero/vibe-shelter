@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { CreateCatNoteHandler } from "./create-cat-note.handler";
 import { DeleteCatNoteHandler } from "./delete-cat-note.handler";
 import { ListCatNotesHandler } from "./list-cat-notes.handler";
@@ -18,7 +18,7 @@ import { CreateNoteDto, UpdateNoteDto } from "./note.dto";
 import { UpdateCatNoteHandler } from "./update-cat-note.handler";
 type AuthenticatedUser = { id: string; isTest: boolean };
 @Controller("api/cats")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CatNotesController {
   constructor(
     private readonly listNotes: ListCatNotesHandler,

@@ -9,34 +9,38 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
-  BadRequestException,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { Response, Request } from "express";
-import { SessionAuthGuard } from "./session-auth.guard";
+import { Response } from "express";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { Public } from "./decorators/public.decorator";
 import { ConfigService } from "@nestjs/config";
+import type { Request } from "express";
 import {
   AuthMeDto,
   ChangePasswordDto,
   PasswordLoginDto,
   ReplaceTemporaryPasswordDto,
 } from "./dto";
-import { CreateSessionHandler } from "./commands/create-session.handler";
 import { ValidatePasswordCredentialsHandler } from "./queries/validate-password-credentials.handler";
 import { ChangePasswordHandler } from "./commands/change-password.handler";
 import { ReplaceTemporaryPasswordHandler } from "./commands/replace-temporary-password.handler";
-import { RevokeSessionHandler } from "./commands/revoke-session.handler";
+import { signJwt } from "./jwt-token";
+import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handler";
+import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
+import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handler";
+import { assertSameOrigin, clearAuthCookies, readCookie, refreshCookieName, setAuthCookies } from "./auth-cookie";
 
 @Controller("auth")
 export class AuthController {
   constructor(
-    private readonly createSessionHandler: CreateSessionHandler,
     private readonly validatePasswordCredentialsHandler: ValidatePasswordCredentialsHandler,
     private readonly changePasswordHandler: ChangePasswordHandler,
     private readonly replaceTemporaryPasswordHandler: ReplaceTemporaryPasswordHandler,
-    private readonly revokeSessionHandler: RevokeSessionHandler,
+    private readonly createRefreshTokenHandler: CreateRefreshTokenHandler,
+    private readonly rotateRefreshTokenHandler: RotateRefreshTokenHandler,
+    private readonly revokeRefreshTokenHandler: RevokeRefreshTokenHandler,
     private readonly configService: ConfigService,
   ) {}
 
@@ -57,20 +61,10 @@ export class AuthController {
         throw new UnauthorizedException("Google authentication failed");
       }
 
-      // Create session
-      const session = await this.createSessionHandler.handle(
-        user.id,
-        req.get("user-agent"),
-        req.ip,
-      );
-
-      // Set session cookie
-      req.session.userId = user.id;
-      req.session.sessionId = session.id;
-
-      // Redirect to frontend
+      const refreshToken = await this.createRefreshTokenHandler.handle(user.id);
+      setAuthCookies(res, this.issueToken(user), refreshToken, this.nodeEnv);
       const frontendUrl = this.configService.get<string>("frontendUrl");
-      res.redirect(`${frontendUrl}/dashboard`);
+      res.redirect(frontendUrl!);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Authentication failed";
@@ -82,54 +76,34 @@ export class AuthController {
   }
 
   @Post("login")
+  @HttpCode(HttpStatus.OK)
   @Public()
   async passwordLogin(
     @Body() body: PasswordLoginDto,
-    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<AuthMeDto> {
     const command = body.toCommand();
     const user = await this.validatePasswordCredentialsHandler.handle(
       command.email,
       command.password,
     );
-    const session = await this.createSessionHandler.handle(
-      user.id,
-      req.get("user-agent"),
-      req.ip,
-    );
-
-    req.session.userId = user.id;
-    req.session.sessionId = session.id;
-
-    return {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role.toLowerCase() as "admin" | "staff",
-      isTest: user.isTest,
-      passwordChangeRequired: user.passwordChangeRequired,
-    };
+    const refreshToken = await this.createRefreshTokenHandler.handle(user.id);
+    setAuthCookies(response, this.issueToken(user), refreshToken, this.nodeEnv);
+    return this.toAuthMe(user);
   }
 
   @Get("me")
-  @UseGuards(SessionAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getCurrentUser(@CurrentUser() user: Express.User): Promise<AuthMeDto> {
     if (!user) {
       throw new UnauthorizedException("User not authenticated");
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role.toLowerCase() as "admin" | "staff",
-      isTest: user.isTest,
-      passwordChangeRequired: user.passwordChangeRequired,
-    };
+    return this.toAuthMe(user);
   }
 
   @Post("change-password")
-  @UseGuards(SessionAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async changePassword(
     @CurrentUser() user: Express.User,
     @Body() body: ChangePasswordDto,
@@ -144,7 +118,7 @@ export class AuthController {
   }
 
   @Post("replace-temporary-password")
-  @UseGuards(SessionAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async replaceTemporaryPassword(
     @CurrentUser() user: Express.User,
     @Body() body: ReplaceTemporaryPasswordDto,
@@ -158,46 +132,43 @@ export class AuthController {
   }
   @Post("logout")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(SessionAuthGuard)
-  async logout(@Req() req: Request, @Res() res: Response) {
-    const sessionId = req.session.sessionId;
-    await (sessionId
-      ? this.revokeSessionHandler.handle(sessionId)
-      : Promise.resolve());
-    req.session.destroy((error) => {
-      res.clearCookie("connect.sid");
-      res
-        .status(error ? HttpStatus.INTERNAL_SERVER_ERROR : HttpStatus.OK)
-        .json(
-          error
-            ? { message: "Logout failed" }
-            : { message: "Logged out successfully" },
-        );
-    });
+  @Public()
+  async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    assertSameOrigin(request, this.configService.get<string>("frontendUrl", "http://localhost:4001"));
+    const refreshToken = readCookie(request.headers.cookie, refreshCookieName(this.nodeEnv));
+    if (refreshToken) await this.revokeRefreshTokenHandler.handle(refreshToken);
+    clearAuthCookies(response, this.nodeEnv);
+    return { message: "Logged out successfully" };
   }
 
-  @Post("session/refresh")
-  @UseGuards(SessionAuthGuard)
-  async refreshSession(@Req() req: Request) {
-    try {
-      const userId = req.session.userId;
+  @Post("token")
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  async refreshToken(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    assertSameOrigin(request, this.configService.get<string>("frontendUrl", "http://localhost:4001"));
+    const refreshToken = readCookie(request.headers.cookie, refreshCookieName(this.nodeEnv));
+    if (!refreshToken) throw new UnauthorizedException("Refresh cookie required");
+    const rotated = await this.rotateRefreshTokenHandler.handle(refreshToken);
+    setAuthCookies(response, this.issueToken(rotated.user), rotated.refreshToken, this.nodeEnv);
+    return { message: "Tokens refreshed" };
+  }
 
-      if (!userId) {
-        throw new UnauthorizedException("Invalid session");
-      }
+  private issueToken(user: Express.User): string {
+    return signJwt(user, this.configService.get<string>("jwtSecret") ?? "");
+  }
 
-      // Create new session
-      const newSession = await this.createSessionHandler.handle(
-        userId,
-        req.get("user-agent"),
-        req.ip,
-      );
+  private get nodeEnv(): string {
+    return this.configService.get<string>("nodeEnv", "development");
+  }
 
-      req.session.sessionId = newSession.id;
-
-      return { message: "Session refreshed" };
-    } catch (error) {
-      throw new BadRequestException("Failed to refresh session");
-    }
+  private toAuthMe(user: Express.User): AuthMeDto {
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role.toLowerCase() as "admin" | "staff",
+      isTest: user.isTest,
+      passwordChangeRequired: user.passwordChangeRequired,
+    };
   }
 }

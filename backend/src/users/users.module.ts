@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { UsersController } from "./users.controller";
 import { DatabaseModule } from "@/database/database.module";
 import { AuthModule } from "@/auth/auth.module";
-import { SessionAuthGuard } from "@/auth";
+import { JwtAuthGuard } from "@/auth";
 import { CreateUserHandler } from "./commands/create-user.handler";
 import { UpdateUserHandler } from "./commands/update-user.handler";
 import { DeleteUserHandler } from "./commands/delete-user.handler";
@@ -18,7 +18,7 @@ import { GetUserHandler } from "./queries/get-user.handler";
     DeleteUserHandler,
     ListUsersHandler,
     GetUserHandler,
-    SessionAuthGuard,
+    JwtAuthGuard,
   ],
   exports: [
     CreateUserHandler,

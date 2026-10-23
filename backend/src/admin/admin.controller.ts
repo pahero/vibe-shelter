@@ -16,11 +16,11 @@ import { UpdateUserHandler } from "@/users/commands/update-user.handler";
 import { DeleteUserHandler } from "@/users/commands/delete-user.handler";
 import { ListUsersHandler } from "@/users/queries/list-users.handler";
 import { GetUserHandler } from "@/users/queries/get-user.handler";
-import { AdminRoleGuard, SessionAuthGuard } from "@/auth";
+import { AdminRoleGuard, JwtAuthGuard } from "@/auth";
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from "@/auth/dto";
 
 @Controller("admin/users")
-@UseGuards(SessionAuthGuard, AdminRoleGuard)
+@UseGuards(JwtAuthGuard, AdminRoleGuard)
 export class AdminUsersController {
   constructor(
     private readonly createUserHandler: CreateUserHandler,

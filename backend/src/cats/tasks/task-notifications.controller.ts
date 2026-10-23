@@ -1,11 +1,11 @@
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Query, UseGuards } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { ListCurrentUserNotificationsDto } from "./list-current-user-notifications.dto";
 import { ListCurrentUserNotificationsQuery } from "./list-current-user-notifications.query";
 import { DismissNotificationHandler } from "./dismiss-notification.handler";
 
 @Controller("api/notifications")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class TaskNotificationsController {
   constructor(
     private readonly listCurrentUserNotificationsQuery: ListCurrentUserNotificationsQuery,

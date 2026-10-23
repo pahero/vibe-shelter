@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { CreateVaccinationHandler } from "./create-vaccination.handler";
 import { DeleteVaccinationHandler } from "./delete-vaccination.handler";
 import { ListVaccinationsHandler } from "./list-vaccinations.handler";
@@ -9,7 +9,7 @@ import { UpdateVaccinationHandler } from "./update-vaccination.handler";
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/cats")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class VaccinationsController {
   constructor(
     private readonly listVaccinations: ListVaccinationsHandler,

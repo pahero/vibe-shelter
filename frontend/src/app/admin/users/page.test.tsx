@@ -32,7 +32,7 @@ const fetchAdminUsersMock = vi.mocked(fetchAdminUsers);
 
 describe("AdminUsersPage", () => {
   beforeEach(() => {
-    headersMock.mockResolvedValue(new Headers({ cookie: "shelter_session=abc" }));
+    headersMock.mockResolvedValue(new Headers({ cookie: "shelter_token=abc" }));
     redirectMock.mockClear();
     fetchCurrentUserMock.mockReset();
     fetchAdminUsersMock.mockReset();
@@ -75,6 +75,6 @@ describe("AdminUsersPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Register user" }));
     expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
     expect(screen.queryByText("Listed User")).not.toBeInTheDocument();
-    expect(fetchAdminUsersMock).toHaveBeenCalledWith("shelter_session=abc");
+    expect(fetchAdminUsersMock).toHaveBeenCalledWith("shelter_token=abc");
   });
 });

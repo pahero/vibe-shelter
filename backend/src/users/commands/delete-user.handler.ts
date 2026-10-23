@@ -21,10 +21,6 @@ export class DeleteUserHandler {
           version: { increment: 1 },
         },
       });
-      await tx.session.updateMany({
-        where: { userId: id, revokedAt: null },
-        data: { revokedAt: new Date(), version: { increment: 1 } },
-      });
     });
   }
 }

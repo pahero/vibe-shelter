@@ -1,9 +1,9 @@
 export const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
 
 function getBackendUrl(): string {
   if (typeof window === "undefined") {
-    return process.env.INTERNAL_API_URL?.replace(/\/$/, "") ?? BACKEND_URL;
+    return process.env.INTERNAL_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
   }
 
   return BACKEND_URL;
@@ -50,9 +50,7 @@ export async function fetchCurrentUser(cookieHeader: string): Promise<AuthUser |
   try {
     response = await fetch(`${getBackendUrl()}/auth/me`, {
       method: "GET",
-      headers: {
-        cookie: cookieHeader,
-      },
+      headers: { cookie: cookieHeader },
       cache: "no-store",
     });
   } catch {
@@ -69,12 +67,7 @@ export async function fetchCurrentUser(cookieHeader: string): Promise<AuthUser |
 export async function fetchAdminUsers(cookieHeader?: string): Promise<AdminUser[]> {
   const response = await fetch(`${getBackendUrl()}/admin/users`, {
     method: "GET",
-    headers: cookieHeader
-      ? {
-          cookie: cookieHeader,
-        }
-      : undefined,
-    credentials: "include",
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
     cache: "no-store",
   });
 
@@ -86,12 +79,11 @@ export async function fetchAdminUsers(cookieHeader?: string): Promise<AdminUser[
 }
 
 export async function createAdminUser(input: CreateAdminUserInput): Promise<AdminUser> {
-  const response = await fetch(`${getBackendUrl()}/admin/users`, {
+  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "include",
     body: JSON.stringify(input),
   });
 
@@ -104,10 +96,9 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Admi
 }
 
 export async function setAdminUserTemporaryPassword(userId: string, password: string): Promise<AdminUser> {
-  const response = await fetch(`${getBackendUrl()}/admin/users/${userId}`, {
+  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ password }),
   });
 
@@ -119,10 +110,9 @@ export async function setAdminUserTemporaryPassword(userId: string, password: st
 }
 
 export async function changePassword(input: ChangePasswordInput): Promise<void> {
-  const response = await fetch(`${getBackendUrl()}/auth/change-password`, {
+  const response = await authenticatedFetch(`${getBackendUrl()}/auth/change-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify(input),
   });
 
@@ -132,10 +122,9 @@ export async function changePassword(input: ChangePasswordInput): Promise<void> 
 }
 
 export async function replaceTemporaryPassword(input: Pick<ChangePasswordInput, "newPassword" | "newPasswordConfirmation">): Promise<void> {
-  const response = await fetch(`${getBackendUrl()}/auth/replace-temporary-password`, {
+  const response = await authenticatedFetch(`${getBackendUrl()}/auth/replace-temporary-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify(input),
   });
 
@@ -158,4 +147,16 @@ async function readErrorMessage(response: Response): Promise<string> {
   }
 
   return response.statusText || "User registration failed";
+}
+export async function authenticatedFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const send = () => fetch(input, { ...init, credentials: "include" });
+  const response = await send();
+  if (response.status !== 401 || typeof window === "undefined") return response;
+
+  const refreshResponse = await fetch(`${BACKEND_URL}/auth/token`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!refreshResponse.ok) return response;
+  return send();
 }

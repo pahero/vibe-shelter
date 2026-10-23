@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { CompleteCatTaskHandler } from "./complete-cat-task.handler";
 import { CreateCatTaskHandler } from "./create-cat-task.handler";
 import { DeleteCatTaskHandler } from "./delete-cat-task.handler";
@@ -21,7 +21,7 @@ import { UpdateCatTaskHandler } from "./update-cat-task.handler";
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/cats")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CatTasksController {
   constructor(
     private readonly listCatTasksHandler: ListCatTasksHandler,

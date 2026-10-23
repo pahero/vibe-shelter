@@ -15,7 +15,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { CurrentUser, SessionAuthGuard } from "../auth";
+import { CurrentUser, JwtAuthGuard } from "../auth";
 import { PrimaryPhotoUpload } from "./cats.types";
 import { ListCatsHandler } from "./queries/list-cats.handler";
 import { ListCatTagsHandler } from "./queries/list-cat-tags.handler";
@@ -60,7 +60,7 @@ import { SetCatFlightCandidateHandler } from "./commands/set-cat-flight-candidat
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/cats")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CatsController {
   constructor(
     private readonly listCatsHandler: ListCatsHandler,

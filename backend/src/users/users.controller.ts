@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { UserResponseDto } from "@/auth/dto";
-import { CurrentUser, SessionAuthGuard } from "@/auth";
+import { CurrentUser, JwtAuthGuard } from "@/auth";
 import { ListUsersHandler } from "./queries/list-users.handler";
 import { GetUserHandler } from "./queries/get-user.handler";
 
@@ -12,7 +12,7 @@ export class UsersController {
   ) {}
 
   @Get()
-  @UseGuards(SessionAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getAll(
     @Query("status") status?: string,
     @Query("role") role?: string,
@@ -26,7 +26,7 @@ export class UsersController {
   }
 
   @Get(":id")
-  @UseGuards(SessionAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getById(@Param("id") id: string): Promise<UserResponseDto> {
     return this.getUserHandler.handle(id);
   }

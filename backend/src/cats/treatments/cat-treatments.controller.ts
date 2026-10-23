@@ -11,7 +11,7 @@ import {
   Put,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { CreateCatTreatmentHandler } from "./create-cat-treatment.handler";
 import { DeleteCatTreatmentHandler } from "./delete-cat-treatment.handler";
 import { ListCatTreatmentsHandler } from "./list-cat-treatments.handler";
@@ -27,7 +27,7 @@ import { RestoreCatTreatmentHandler } from "./restore-cat-treatment.handler";
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/cats")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class CatTreatmentsController {
   constructor(
     private readonly listTreatments: ListCatTreatmentsHandler,

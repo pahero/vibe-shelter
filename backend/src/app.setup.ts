@@ -1,12 +1,9 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
-import cookieParser from "cookie-parser";
-import session from "express-session";
 import { ConfigService } from "@nestjs/config";
 import type { Express } from "express";
 
 export function setupApp(app: INestApplication) {
-  // Caddy terminates TLS. Express must trust its forwarded protocol so secure
-  // session cookies are issued when NODE_ENV=production.
+  // Caddy terminates TLS; trust its forwarded protocol for secure deployments.
   const expressApp = app.getHttpAdapter().getInstance() as Express;
   expressApp.set("trust proxy", 1);
 
@@ -15,8 +12,6 @@ export function setupApp(app: INestApplication) {
     "frontendUrl",
     "http://localhost:4001",
   );
-  const sessionSecret =
-    configService.get<string>("sessionSecret") ?? "dev-session-secret";
 
   // Enable CORS
   app.enableCors({
@@ -26,24 +21,6 @@ export function setupApp(app: INestApplication) {
     allowedHeaders: "Content-Type,Authorization",
   });
 
-  // Middleware
-  app.use(cookieParser());
-  app.use(
-    session({
-      secret: sessionSecret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: configService.get<number>(
-          "sessionTtlMs",
-          7 * 24 * 60 * 60 * 1000,
-        ),
-      },
-    }),
-  );
 
   // Global validation pipe
   app.useGlobalPipes(

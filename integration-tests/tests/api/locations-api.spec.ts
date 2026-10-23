@@ -1,4 +1,5 @@
-import { expect, request as playwrightRequest, test } from "@playwright/test";
+import { expect, request as playwrightRequest } from "@playwright/test";
+import { test } from "../support/api-test";
 import { BACKEND_URL, getTestEnv, uniqueName } from "../support/env";
 
 test.describe("locations API", () => {
@@ -12,7 +13,7 @@ test.describe("locations API", () => {
       },
     });
 
-    expect(loginResponse.status()).toBe(201);
+    expect(loginResponse.status()).toBe(200);
   });
 
   test("should create an active location owned by the test user", async ({ request }) => {

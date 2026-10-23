@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../auth";
+import { CurrentUser, JwtAuthGuard } from "../auth";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
 import { CreateFlightHandler } from "./commands/create-flight.handler";
 import { DeleteFlightCatAssignmentHandler } from "./commands/delete-flight-cat-assignment.handler";
@@ -31,7 +31,7 @@ import { ListFlightsHandler } from "./queries/list-flights.handler";
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/flights")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class FlightsController {
   constructor(
     private readonly createFlight: CreateFlightHandler,

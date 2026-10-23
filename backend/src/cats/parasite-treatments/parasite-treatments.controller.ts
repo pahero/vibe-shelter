@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { CreateParasiteTreatmentHandler } from "./create-parasite-treatment.handler";
 import { DeleteParasiteTreatmentHandler } from "./delete-parasite-treatment.handler";
 import { ListParasiteTreatmentsHandler } from "./list-parasite-treatments.handler";
@@ -9,7 +9,7 @@ import { UpdateParasiteTreatmentHandler } from "./update-parasite-treatment.hand
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/cats")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class ParasiteTreatmentsController {
   constructor(
     private readonly listTreatments: ListParasiteTreatmentsHandler,

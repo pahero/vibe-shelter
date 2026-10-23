@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { LocationsController } from "./locations.controller";
 import { DatabaseModule } from "../database/database.module";
 import { AuthModule } from "../auth/auth.module";
-import { SessionAuthGuard } from "../auth";
+import { JwtAuthGuard } from "../auth";
 import { CreateLocationHandler } from "./commands/create-location.handler";
 import { UpdateLocationHandler } from "./commands/update-location.handler";
 import { ArchiveLocationHandler } from "./commands/archive-location.handler";
@@ -21,7 +21,7 @@ import { ListLocationsQueryDto } from "./dto/list-locations-query.dto";
     GetLocationHandler,
     ListLocationsHandler,
     ListLocationsQueryDto,
-    SessionAuthGuard,
+    JwtAuthGuard,
   ],
 })
 export class LocationsModule {}

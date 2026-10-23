@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser, SessionAuthGuard } from "../../auth";
+import { CurrentUser, JwtAuthGuard } from "../../auth";
 import {
   CreateCatArchivingReasonDto,
   DeleteCatArchivingReasonDto,
@@ -24,7 +24,7 @@ import { UpdateArchivingReasonCommand } from "./update-archiving-reason.command"
 type AuthenticatedUser = { id: string; isTest: boolean };
 
 @Controller("api/cats/archiving-reasons")
-@UseGuards(SessionAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class ArchivingReasonsController {
   constructor(
     private readonly listReasonsQuery: ListArchivingReasonsQuery,

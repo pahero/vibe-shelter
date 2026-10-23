@@ -1495,7 +1495,7 @@ async function createAuthenticatedAgent(
   });
 
   const agent = request.agent(app.getHttpServer());
-  await agent.post("/auth/login").send({ email, password }).expect(201);
+  const login = await agent.post("/auth/login").send({ email, password }).expect(200);
 
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });
   return { agent, user: { id: user.id, email, isTest: user.isTest } };
