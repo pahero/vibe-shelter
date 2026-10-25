@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { PushNotificationSetup } from "@/components/push-notification-setup";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
@@ -25,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${plexMono.variable}`}>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning><PushNotificationSetup />{children}</body>
     </html>
   );
 }

@@ -14,4 +14,9 @@ export default () => ({
   jwtSecret: process.env.JWT_SECRET,
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:4001",
   allowedGoogleDomain: process.env.ALLOWED_GOOGLE_DOMAIN,
+  webPush: {
+    publicKey: process.env.WEB_PUSH_PUBLIC_KEY,
+    privateKey: process.env.WEB_PUSH_PRIVATE_KEY,
+    subject: process.env.WEB_PUSH_SUBJECT || "mailto:admin@example.com",
+  },
 });

@@ -1,6 +1,7 @@
 import { PrismaService } from "../../database/prisma.service";
 import { runInTestTransaction } from "../../test-utils/test-db";
 import { SendDueTaskNotificationsHandler } from "./send-due-task-notifications.handler";
+import { PushNotificationService } from "./push-notification.service";
 
 describe("SendDueTaskNotificationsHandler", () => {
   it("does not send notifications before a task is due", async () => {
@@ -23,6 +24,7 @@ describe("SendDueTaskNotificationsHandler", () => {
       });
       const handler = new SendDueTaskNotificationsHandler(
         transaction as PrismaService,
+        { sendToUser: async () => undefined } as PushNotificationService,
       );
 
       await handler.handle(new Date("2020-01-01T00:00:00.000Z"));
@@ -56,6 +58,7 @@ describe("SendDueTaskNotificationsHandler", () => {
       });
       const handler = new SendDueTaskNotificationsHandler(
         transaction as PrismaService,
+        { sendToUser: async () => undefined } as PushNotificationService,
       );
 
       await handler.handle(new Date("2020-01-02T00:00:00.000Z"));

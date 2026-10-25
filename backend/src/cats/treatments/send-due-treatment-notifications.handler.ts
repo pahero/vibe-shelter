@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { runInNewTransaction } from "../../database/helpers";
+import { PushNotificationService } from "../tasks/push-notification.service";
 
 @Injectable()
 export class SendDueTreatmentNotificationsHandler {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly push: PushNotificationService) {}
 
   async handle(now = new Date()): Promise<void> {
     const treatments = await this.prisma.catTreatment.findMany({
@@ -31,5 +32,11 @@ export class SendDueTreatmentNotificationsHandler {
         data: { notificationSent: true, concurrencyToken: crypto.randomUUID() },
       });
     });
+    const recipients = new Set(treatments.flatMap((treatment) => treatment.createdByUserId ? [treatment.createdByUserId] : []));
+    await Promise.all([...recipients].map((userId) => this.push.sendToUser(userId, {
+      title: "Shelter treatment reminder",
+      body: "A cat treatment has started.",
+      url: "/notifications",
+    })));
   }
 }

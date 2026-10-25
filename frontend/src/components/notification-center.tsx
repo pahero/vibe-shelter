@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { notificationsApi, UserNotification } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
+import { authenticatedFetch, BACKEND_URL } from "@/lib/backend";
 
 export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +13,33 @@ export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean })
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
+
+  const enablePush = async () => {
+    setPushMessage(null);
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error("Push notifications are not supported by this browser.");
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") throw new Error("Notification permission was not granted.");
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      const keyResponse = await authenticatedFetch(`${BACKEND_URL}/api/push-subscriptions/public-key`);
+      if (!keyResponse.ok) throw new Error("Unable to load push configuration.");
+      const { publicKey } = await keyResponse.json() as { publicKey: string | null };
+      if (!publicKey) throw new Error("Push notifications are not configured on the server.");
+      const padded = publicKey + "=".repeat((4 - publicKey.length % 4) % 4);
+      const key = Uint8Array.from(atob(padded.replace(/-/g, "+").replace(/_/g, "/")), (character) => character.charCodeAt(0));
+      const subscription = await registration.pushManager.getSubscription() ?? await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key.buffer as ArrayBuffer });
+      const json = subscription.toJSON();
+      const response = await authenticatedFetch(`${BACKEND_URL}/api/push-subscriptions`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: json.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth }),
+      });
+      if (!response.ok) throw new Error("Unable to save this device.");
+      setPushMessage("Push notifications enabled on this device.");
+    } catch (reason) {
+      setPushMessage(reason instanceof Error ? reason.message : "Unable to enable push notifications.");
+    }
+  };
 
   const refresh = useCallback(async (showLoading: boolean) => {
     if (showLoading) setIsLoading(true);
@@ -61,6 +89,8 @@ export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean })
       </button>
       {isOpen && <section role="dialog" aria-label="Notifications" className="fixed left-1/2 top-16 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-4 shadow-xl md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:translate-x-0">
         <div className="flex items-center justify-between gap-3"><h2 className="font-semibold text-gray-900">Notifications</h2><button type="button" onClick={() => setIsOpen(false)} className="text-sm font-semibold text-[#b24a20]">Close</button></div>
+        <button type="button" onClick={() => void enablePush()} className="mt-3 rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-white">Enable phone notifications</button>
+        {pushMessage && <p className="mt-2 text-sm text-[#6d6a66]">{pushMessage}</p>}
         {isLoading && <p className="mt-4 text-sm text-[#6d6a66]">Loading notifications...</p>}
         {error && <p className="mt-4 text-sm font-medium text-red-700">{error}</p>}
         {!isLoading && !error && notifications.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No notifications.</p>}
