@@ -49,11 +49,13 @@ describe("user DTO command conversion", () => {
       fullName: "  New Name  ",
       role: "admin" as const,
       password: "NewPassword123!",
+      isTest: true,
     });
     expect(dto.toCommand()).toEqual({
       fullName: "New Name",
       role: "admin",
       password: "NewPassword123!",
+      isTest: true,
     });
   });
 

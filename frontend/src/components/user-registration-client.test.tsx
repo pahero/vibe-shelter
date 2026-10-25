@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AdminUser, createAdminUser, fetchAdminUsers } from "@/lib/backend";
+import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserTestStatus } from "@/lib/backend";
 import { UserRegistrationClient } from "./user-registration-client";
 
 vi.mock("@/lib/backend", async () => {
@@ -9,11 +9,13 @@ vi.mock("@/lib/backend", async () => {
     ...actual,
     createAdminUser: vi.fn(),
     fetchAdminUsers: vi.fn(),
+    setAdminUserTestStatus: vi.fn(),
   };
 });
 
 const createAdminUserMock = vi.mocked(createAdminUser);
 const fetchAdminUsersMock = vi.mocked(fetchAdminUsers);
+const setAdminUserTestStatusMock = vi.mocked(setAdminUserTestStatus);
 
 const existingUsers: AdminUser[] = [
   {
@@ -46,6 +48,7 @@ describe("UserRegistrationClient", () => {
   beforeEach(() => {
     createAdminUserMock.mockReset();
     fetchAdminUsersMock.mockReset();
+    setAdminUserTestStatusMock.mockReset();
   });
 
   it("loads users when mounted without server-provided users", async () => {
@@ -130,5 +133,16 @@ describe("UserRegistrationClient", () => {
 
     expect(screen.getAllByText("Test user").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Not a test user").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("changes a user's test marker and updates the displayed list", async () => {
+    setAdminUserTestStatusMock.mockResolvedValue({ ...existingUsers[0], isTest: false });
+    render(<UserRegistrationClient initialUsers={existingUsers} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark non-test" }));
+
+    await waitFor(() => expect(setAdminUserTestStatusMock).toHaveBeenCalledWith("user-1", false));
+    expect(await screen.findByText("test@example.com is now not a test user.")).toBeVisible();
+    expect(screen.getAllByText("Not a test user").length).toBeGreaterThanOrEqual(2);
   });
 });

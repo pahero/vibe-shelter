@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, startTransition, useEffect, useState } from "react";
-import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserTemporaryPassword } from "@/lib/backend";
+import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserTemporaryPassword, setAdminUserTestStatus } from "@/lib/backend";
 
 type MarkerValue = "" | "true" | "false";
 
@@ -41,6 +41,7 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
   const [temporaryPasswordConfirmation, setTemporaryPasswordConfirmation] = useState("");
   const [temporaryPasswordError, setTemporaryPasswordError] = useState("");
   const [isUpdatingTemporaryPassword, setIsUpdatingTemporaryPassword] = useState(false);
+  const [updatingTestStatusUserId, setUpdatingTestStatusUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialUsers !== undefined) return;
@@ -127,6 +128,21 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
       setTemporaryPasswordError(error instanceof Error ? error.message : "Unable to set a temporary password.");
     } finally {
       setIsUpdatingTemporaryPassword(false);
+    }
+  }
+
+  async function toggleTestStatus(user: AdminUser) {
+    setUpdatingTestStatusUserId(user.id);
+    setSuccessMessage("");
+    setUsersError("");
+    try {
+      const updatedUser = await setAdminUserTestStatus(user.id, !user.isTest);
+      setUsers((currentUsers) => currentUsers.map((current) => current.id === updatedUser.id ? updatedUser : current));
+      setSuccessMessage(`${updatedUser.email} is now ${updatedUser.isTest ? "a test user" : "not a test user"}.`);
+    } catch (error) {
+      setUsersError(error instanceof Error ? error.message : "Unable to update user type.");
+    } finally {
+      setUpdatingTestStatusUserId(null);
     }
   }
   function updateField<Key extends keyof FormState>(field: Key, value: FormState[Key]) {
@@ -293,6 +309,9 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
                   <span className={user.isTest ? "rounded-full bg-[#ffe1d4] px-3 py-1 text-sm font-semibold text-[#9a3f1c]" : "rounded-full bg-[#e8f4de] px-3 py-1 text-sm font-semibold text-[#3f6b28]"}>
                     {user.isTest ? "Test user" : "Not a test user"}
                   </span>
+                  <button type="button" onClick={() => void toggleTestStatus(user)} disabled={updatingTestStatusUserId === user.id} className="rounded-lg border border-[#d4c7b4] px-3 py-1.5 text-sm font-semibold text-[#1f2320] disabled:opacity-50">
+                    {updatingTestStatusUserId === user.id ? "Updating..." : `Mark ${user.isTest ? "non-test" : "test"}`}
+                  </button>
                   {user.passwordChangeRequired && <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">Temporary password</span>}
                   <button type="button" onClick={() => { setPasswordUser(user); setTemporaryPassword(""); setTemporaryPasswordConfirmation(""); setTemporaryPasswordError(""); }} className="text-sm font-semibold text-[#b24a20] hover:text-[#8f3b19]">Set temporary password</button>
                 </div>

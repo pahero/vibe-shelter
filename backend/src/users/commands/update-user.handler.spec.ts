@@ -20,6 +20,7 @@ describe("UpdateUserHandler", () => {
           role: "admin",
           status: "inactive",
           password: "NewPassword123!",
+          isTest: true,
         },
       );
       expect(result).toEqual({ id: user.id });
@@ -30,6 +31,7 @@ describe("UpdateUserHandler", () => {
         fullName: "New Name",
         role: "ADMIN",
         status: "INACTIVE",
+        isTest: true,
         passwordChangeRequired: true,
         version: 1,
       });

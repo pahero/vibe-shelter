@@ -110,6 +110,23 @@ export async function setAdminUserTemporaryPassword(userId: string, password: st
   return (await response.json()) as AdminUser;
 }
 
+export async function setAdminUserTestStatus(userId: string, isTest: boolean): Promise<AdminUser> {
+  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isTest }),
+  });
+
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  return fetchAdminUser(userId);
+}
+
+async function fetchAdminUser(userId: string): Promise<AdminUser> {
+  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, { method: "GET" });
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  return (await response.json()) as AdminUser;
+}
+
 export async function changePassword(input: ChangePasswordInput): Promise<void> {
   const response = await authenticatedFetch(`${getBackendUrl()}/auth/change-password`, {
     method: "POST",

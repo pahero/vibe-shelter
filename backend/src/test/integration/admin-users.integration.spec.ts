@@ -182,7 +182,7 @@ describe("Admin user registration endpoints", () => {
 
     await adminAgent
       .patch(`/admin/users/${user.id}`)
-      .send({ fullName: "After", role: "admin" })
+      .send({ fullName: "After", role: "admin", isTest: true })
       .expect(200)
       .expect(({ body }) => {
         expect(body).toEqual({ id: user.id });
@@ -201,6 +201,7 @@ describe("Admin user registration endpoints", () => {
       fullName: "After",
       role: "ADMIN",
       status: "INACTIVE",
+      isTest: true,
     });
 
     await adminAgent.delete(`/admin/users/${user.id}`).expect(204);

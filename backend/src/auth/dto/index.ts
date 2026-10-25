@@ -71,6 +71,10 @@ export class UpdateUserDto {
   @MinLength(8)
   password?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  isTest?: boolean;
+
   toCommand(): UpdateUserCommand {
     return {
       ...(this.fullName !== undefined
@@ -79,6 +83,7 @@ export class UpdateUserDto {
       ...(this.role !== undefined ? { role: this.role } : {}),
       ...(this.status !== undefined ? { status: this.status } : {}),
       ...(this.password !== undefined ? { password: this.password } : {}),
+      ...(this.isTest !== undefined ? { isTest: this.isTest } : {}),
     };
   }
 }
@@ -88,6 +93,7 @@ export type UpdateUserCommand = {
   role?: "admin" | "staff";
   status?: "active" | "inactive";
   password?: string;
+  isTest?: boolean;
 };
 
 export class UserResponseDto {

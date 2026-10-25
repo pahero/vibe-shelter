@@ -49,6 +49,7 @@ export class UpdateUserHandler {
           ...(passwordHash
             ? { passwordHash, passwordChangeRequired: true }
             : {}),
+          ...(data.isTest !== undefined ? { isTest: data.isTest } : {}),
           version: { increment: 1 },
         },
       });
