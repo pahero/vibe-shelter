@@ -101,6 +101,25 @@ describe("Cats endpoints", () => {
     );
   });
 
+  it("POST /api/push-subscriptions saves a device subscription and DELETE removes it", async () => {
+    const endpoint = `https://push.example.test/${crypto.randomUUID()}`;
+    const subscription = {
+      endpoint,
+      p256dh: "test-public-key",
+      auth: "test-auth-secret",
+    };
+
+    await authAgent.post("/api/push-subscriptions").send(subscription).expect(204);
+    await expect(
+      prisma.pushSubscription.findUnique({ where: { endpoint } }),
+    ).resolves.toMatchObject({ endpoint, userId: authUser.id });
+
+    await authAgent.delete("/api/push-subscriptions").send({ endpoint }).expect(204);
+    await expect(
+      prisma.pushSubscription.findUnique({ where: { endpoint } }),
+    ).resolves.toBeNull();
+  });
+
   it("numbers matching cats and supports editing a cat name number", async () => {
     const name = unique("Tom");
     const first = await authAgent

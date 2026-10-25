@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { runInNewTransaction } from "../../database/helpers";
+import { PushNotificationService } from "./push-notification.service";
 
 @Injectable()
 export class SendDueTaskNotificationsHandler {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly push: PushNotificationService) {}
 
   async handle(now = new Date()): Promise<void> {
     const tasks = await this.prisma.catTask.findMany({
@@ -22,9 +23,11 @@ export class SendDueTaskNotificationsHandler {
       take: 50,
     });
 
+    const recipients = new Set<string>();
     await runInNewTransaction(this.prisma, async (transaction) => {
       for (const task of tasks) {
         for (const receiver of task.receivers) {
+          recipients.add(receiver.userId);
           await transaction.taskNotification.upsert({
             where: {
               taskId_userId: { taskId: task.id, userId: receiver.userId },
@@ -49,5 +52,10 @@ export class SendDueTaskNotificationsHandler {
           throw new Error("Task was removed while sending notifications");
       }
     });
+    await Promise.all([...recipients].map((userId) => this.push.sendToUser(userId, {
+      title: "Shelter task due",
+      body: "You have a task that is due.",
+      url: "/#notifications",
+    })));
   }
 }

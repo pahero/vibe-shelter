@@ -90,6 +90,7 @@ export type CatTask = {
   completedBy: { id: string; fullName: string | null } | null;
   createdAt: string;
   updatedAt: string;
+  canComplete?: boolean;
 };
 
 export type TaskInput = {

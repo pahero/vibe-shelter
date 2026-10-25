@@ -44,6 +44,7 @@ model User {
   createdCatTreatments CatTreatment[] @relation("createdCatTreatments")
   updatedCatTreatments CatTreatment[] @relation("updatedCatTreatments")
   refreshTokens RefreshToken[]
+  pushSubscriptions PushSubscription[]
 
   @@index([status])
   @@index([role])
@@ -62,6 +63,19 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 enum UserStatus {

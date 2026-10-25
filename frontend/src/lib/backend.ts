@@ -68,6 +68,7 @@ export async function fetchAdminUsers(cookieHeader?: string): Promise<AdminUser[
   const response = await fetch(`${getBackendUrl()}/admin/users`, {
     method: "GET",
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+    credentials: "include",
     cache: "no-store",
   });
 
@@ -130,6 +131,15 @@ export async function replaceTemporaryPassword(input: Pick<ChangePasswordInput, 
 
   if (!response.ok) {
     throw new Error(await readErrorMessage(response));
+  }
+
+  // The access token still contains passwordChangeRequired=true. Rotate it
+  // now so subsequent page requests see the updated account state.
+  const refreshResponse = await authenticatedFetch(`${getBackendUrl()}/auth/token`, {
+    method: "POST",
+  });
+  if (!refreshResponse.ok) {
+    throw new Error("Password was changed, but the session could not be refreshed. Please sign in again.");
   }
 }
 

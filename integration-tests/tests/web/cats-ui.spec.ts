@@ -302,6 +302,39 @@ const location = await createLocationViaApi(page, locationName);
     await expect(page.getByText(updatedComment, { exact: true })).toHaveCount(0);
   });
 
+  test("creating an overdue reminder creates a notification for its receiver", async ({ page }) => {
+    const catName = uniqueName("Notification Cat");
+    const reminderComment = uniqueName("Overdue notification reminder");
+    const { staffTestUser } = getTestEnv();
+
+    await authenticateAsStaff(page);
+    const cat = await createCatViaApi(page, { name: catName });
+    await page.goto(`/cats/${cat.id}`);
+    await page.getByRole("button", { name: "Reminders" }).click();
+    await page.getByRole("button", { name: "Add reminder", exact: true }).click();
+
+    const taskForm = page.locator("form").filter({ has: page.getByLabel("Notification receivers") });
+    await taskForm.getByLabel("Comment").fill(reminderComment);
+    await taskForm.getByLabel("Due date").fill("2020-01-02T10:00");
+    await taskForm.getByLabel("Notification receivers").selectOption({ label: `${staffTestUser.fullName} (${staffTestUser.email})` });
+
+    const createTask = page.waitForResponse(
+      (response) => response.url().includes(`/api/cats/${cat.id}/tasks`) && response.request().method() === "POST",
+    );
+    await taskForm.getByRole("button", { name: "Save" }).click();
+    expect((await createTask).status()).toBe(201);
+
+    // Overdue tasks are processed by the one-second backend scheduler. Opening
+    // the center fetches the newly-created notification from the API.
+    await page.waitForTimeout(2_000);
+    const notificationList = page.waitForResponse(
+      (response) => response.url().includes("/api/notifications") && response.request().method() === "GET",
+    );
+    await page.getByRole("button", { name: "Notifications" }).click();
+    expect((await notificationList).status()).toBe(200);
+    await expect(page.getByRole("dialog", { name: "Notifications" }).getByText(reminderComment, { exact: true })).toBeVisible();
+  });
+
   test("user can create a treatment and record a medication dose", async ({ page }) => {
     const treatmentName = uniqueName("Antibiotic");
     const treatmentDate = new Date().toISOString().slice(0, 10);
