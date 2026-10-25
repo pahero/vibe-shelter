@@ -399,6 +399,41 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+const UPLOAD_MAX_ATTEMPTS = 5;
+const UPLOAD_RETRY_BASE_DELAY_MS = 500;
+const UPLOAD_RETRY_MAX_DELAY_MS = 5_000;
+
+function isRetryableUploadStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function waitForUploadRetry(attempt: number): Promise<void> {
+  const exponentialDelay = Math.min(UPLOAD_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1), UPLOAD_RETRY_MAX_DELAY_MS);
+  const jitteredDelay = exponentialDelay * (0.8 + Math.random() * 0.4);
+  return new Promise((resolve) => setTimeout(resolve, jitteredDelay));
+}
+
+async function uploadWithRetry<T>(url: string, method: "POST" | "PUT", createBody: () => FormData): Promise<T> {
+  for (let attempt = 1; attempt <= UPLOAD_MAX_ATTEMPTS; attempt += 1) {
+    let response: Response;
+    try {
+      response = await authenticatedFetch(url, { method, body: createBody() });
+    } catch (error) {
+      if (attempt === UPLOAD_MAX_ATTEMPTS) throw error;
+      await waitForUploadRetry(attempt);
+      continue;
+    }
+
+    if (attempt < UPLOAD_MAX_ATTEMPTS && isRetryableUploadStatus(response.status)) {
+      await waitForUploadRetry(attempt);
+      continue;
+    }
+    return handleResponse<T>(response);
+  }
+
+  throw new Error("Upload failed after retries");
+}
+
 export const locationsApi = {
   async listLocations(params?: ListLocationsParams): Promise<ListLocationsResponse> {
     const query = new URLSearchParams();
@@ -802,15 +837,11 @@ export const catsApi = {
   },
 
   async updatePrimaryPhoto(id: string, photo: File): Promise<CatCard> {
-    const formData = new FormData();
-    formData.append("photo", photo);
-
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/primary-photo`, {
-      method: "PUT",
-      
-      body: formData,
+    return uploadWithRetry(`${BACKEND_URL}/api/cats/${id}/primary-photo`, "PUT", () => {
+      const formData = new FormData();
+      formData.append("photo", photo);
+      return formData;
     });
-    return handleResponse<CatCard>(response);
   },
 
   async listPhotos(id: string): Promise<CatPhoto[]> {
@@ -830,14 +861,11 @@ export const catsApi = {
   },
 
   async addDocument(id: string, document: File): Promise<CatDocument> {
-    const formData = new FormData();
-    formData.append("document", document);
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/documents`, {
-      method: "POST",
-      
-      body: formData,
+    return uploadWithRetry(`${BACKEND_URL}/api/cats/${id}/documents`, "POST", () => {
+      const formData = new FormData();
+      formData.append("document", document);
+      return formData;
     });
-    return handleResponse<CatDocument>(response);
   },
 
   async deleteDocument(id: string, documentId: string): Promise<void> {
@@ -849,15 +877,11 @@ export const catsApi = {
   },
 
   async addPhoto(id: string, photo: File): Promise<CatPhoto> {
-    const formData = new FormData();
-    formData.append("photo", photo);
-
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/photos`, {
-      method: "POST",
-      
-      body: formData,
+    return uploadWithRetry(`${BACKEND_URL}/api/cats/${id}/photos`, "POST", () => {
+      const formData = new FormData();
+      formData.append("photo", photo);
+      return formData;
     });
-    return handleResponse<CatPhoto>(response);
   },
 
   async setPrimaryPhoto(id: string, photoId: string, positionY?: number | null): Promise<CatCard> {
