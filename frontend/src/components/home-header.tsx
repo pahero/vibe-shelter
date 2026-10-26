@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { NotificationCenter } from "@/components/notification-center";
+import { LogoutButton } from "@/components/logout-button";
 import type { AuthUser } from "@/lib/backend";
 
 type HomeFooterProps = { user: AuthUser | null };
@@ -51,6 +52,7 @@ export function HomeHeader({ user }: HomeFooterProps) {
           <button type="button" className={iconButtonClass} aria-label="Open menu" title="Open menu" aria-haspopup="menu" aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen((open) => !open)}><MenuIcon /></button>
           {isMenuOpen && <nav role="menu" aria-label="Main menu" className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl">
             {menuLinks.map(({ href, label }) => <Link key={href} role="menuitem" href={href} onClick={() => setIsMenuOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]">{label}</Link>)}
+            {user && <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />}
           </nav>}
         </div>
       </div>

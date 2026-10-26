@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AppHeader } from "@/components/app-header";
 import { MyUserClient } from "@/components/my-user-client";
 import { fetchCurrentUser } from "@/lib/backend";
 
@@ -22,8 +21,7 @@ export default async function MyUserPage() {
   }
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
-      <AppHeader user={user} />
+    <main className="min-h-dvh w-full bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32">
       <MyUserClient user={user} />
     </main>
   );

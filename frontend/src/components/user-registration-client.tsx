@@ -1,17 +1,16 @@
 "use client";
 
 import { FormEvent, startTransition, useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { PaginationControls } from "@/components/pagination-controls";
 import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserTemporaryPassword, setAdminUserTestStatus } from "@/lib/backend";
-
-type MarkerValue = "" | "true" | "false";
 
 type FormState = {
   email: string;
   fullName: string;
   role: "admin" | "staff";
-  status: "active" | "inactive";
-  password: string;
-  isTest: MarkerValue;
+  isTest: boolean;
 };
 
 type UserRegistrationClientProps = {
@@ -22,10 +21,17 @@ const emptyForm: FormState = {
   email: "",
   fullName: "",
   role: "staff",
-  status: "active",
-  password: "",
-  isTest: "",
+  isTest: false,
 };
+const usersPageSize = 20;
+
+function generateTemporaryPassword(): string {
+  const randomBytes = crypto.getRandomValues(new Uint8Array(24));
+  return btoa(String.fromCharCode(...randomBytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
 
 export function UserRegistrationClient({ initialUsers }: UserRegistrationClientProps) {
   const [users, setUsers] = useState(initialUsers ?? []);
@@ -36,12 +42,12 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  const [passwordUser, setPasswordUser] = useState<AdminUser | null>(null);
-  const [temporaryPassword, setTemporaryPassword] = useState("");
-  const [temporaryPasswordConfirmation, setTemporaryPasswordConfirmation] = useState("");
-  const [temporaryPasswordError, setTemporaryPasswordError] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [isPasswordCopied, setIsPasswordCopied] = useState(false);
   const [isUpdatingTemporaryPassword, setIsUpdatingTemporaryPassword] = useState(false);
+  const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
   const [updatingTestStatusUserId, setUpdatingTestStatusUserId] = useState<string | null>(null);
+  const [usersPage, setUsersPage] = useState(1);
 
   useEffect(() => {
     if (initialUsers !== undefined) return;
@@ -70,6 +76,7 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
     const nextErrors = validateForm(form);
     setErrors(nextErrors);
     setSuccessMessage("");
+    setGeneratedPassword("");
 
     if (Object.keys(nextErrors).length > 0) {
       return;
@@ -77,20 +84,23 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
 
     setIsSubmitting(true);
     try {
+      const password = generateTemporaryPassword();
       const created = await createAdminUser({
         email: form.email.trim(),
         fullName: form.fullName.trim() || undefined,
         role: form.role,
-        status: form.status,
-        password: form.password,
-        isTest: form.isTest === "true",
+        status: "active",
+        password,
+        isTest: form.isTest,
       });
 
       startTransition(() => {
-        setUsers((currentUsers) => [created, ...currentUsers.filter((user) => user.id !== created.id)]);
+        setUsers((currentUsers) => [{ ...created, passwordChangeRequired: true }, ...currentUsers.filter((user) => user.id !== created.id)]);
         setForm(emptyForm);
         setErrors({});
-        setSuccessMessage(`${created.email} was registered successfully.`);
+        setSuccessMessage(`Temporary password for ${created.email} is:`);
+        setGeneratedPassword(password);
+        setIsPasswordCopied(false);
         setIsRegistrationOpen(false);
       });
     } catch (error) {
@@ -107,28 +117,29 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
     setSuccessMessage("");
   }
 
-  async function submitTemporaryPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!passwordUser) return;
-    setTemporaryPasswordError("");
-    if (temporaryPassword !== temporaryPasswordConfirmation) {
-      setTemporaryPasswordError("Passwords do not match.");
-      return;
-    }
-
+  async function resetUserPassword(user: AdminUser) {
+    const password = generateTemporaryPassword();
     setIsUpdatingTemporaryPassword(true);
+    setResettingPasswordUserId(user.id);
+    setSuccessMessage("");
+    setGeneratedPassword("");
+    setIsPasswordCopied(false);
     try {
-      const updatedUser = await setAdminUserTemporaryPassword(passwordUser.id, temporaryPassword);
-      setUsers((currentUsers) => currentUsers.map((user) => user.id === updatedUser.id ? updatedUser : user));
-      setPasswordUser(null);
-      setTemporaryPassword("");
-      setTemporaryPasswordConfirmation("");
-      setSuccessMessage(`A temporary password was set for ${updatedUser.email}.`);
+      await setAdminUserTemporaryPassword(user.id, password);
+      setUsers((currentUsers) => currentUsers.map((currentUser) => currentUser.id === user.id ? { ...currentUser, passwordChangeRequired: true } : currentUser));
+      setGeneratedPassword(password);
+      setSuccessMessage(`Temporary password for ${user.email} is:`);
     } catch (error) {
-      setTemporaryPasswordError(error instanceof Error ? error.message : "Unable to set a temporary password.");
+      setUsersError(error instanceof Error ? error.message : "Unable to reset the password.");
     } finally {
       setIsUpdatingTemporaryPassword(false);
+      setResettingPasswordUserId(null);
     }
+  }
+
+  async function copyGeneratedPassword() {
+    await navigator.clipboard.writeText(generatedPassword);
+    setIsPasswordCopied(true);
   }
 
   async function toggleTestStatus(user: AdminUser) {
@@ -153,9 +164,9 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
     <section className="w-full max-w-6xl">
       {isRegistrationOpen && <div className="rounded-[28px] border border-[#d4c7b4] bg-[#fff8ee]/90 p-5 shadow-panel md:p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#b24a20]">Admin</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#1f2320]">Register a user</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Register a user</h1>
         <p className="mt-2 text-sm leading-6 text-[#6d6a66]">
-          Create shelter accounts with a password and an explicit test-user marker.
+              Create an active shelter account and generate a temporary password automatically.
         </p>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit} noValidate>
@@ -192,98 +203,54 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
             />
           </label>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-semibold text-[#1f2320]">
-              Role
-              <select
-                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 text-base font-normal outline-none transition focus:border-[#d05a2c] focus:ring-2 focus:ring-[#ffd4bf]"
-                value={form.role}
-                onChange={(event) => updateField("role", event.target.value as FormState["role"])}
-              >
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-semibold text-[#1f2320]">
-              Status
-              <select
-                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 text-base font-normal outline-none transition focus:border-[#d05a2c] focus:ring-2 focus:ring-[#ffd4bf]"
-                value={form.status}
-                onChange={(event) => updateField("status", event.target.value as FormState["status"])}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </label>
-          </div>
-
           <label className="flex flex-col gap-2 text-sm font-semibold text-[#1f2320]">
-            Password
-            <input
+            Role
+            <select
               className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 text-base font-normal outline-none transition focus:border-[#d05a2c] focus:ring-2 focus:ring-[#ffd4bf]"
-              type="password"
-              value={form.password}
-              onChange={(event) => updateField("password", event.target.value)}
-              aria-describedby={errors.password ? "password-error" : undefined}
-            />
-            {errors.password ? <span id="password-error" className="text-sm font-medium text-red-700">{errors.password}</span> : null}
+              value={form.role}
+              onChange={(event) => updateField("role", event.target.value as FormState["role"])}
+            >
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
           </label>
 
-          <fieldset className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-4">
-            <legend className="px-1 text-sm font-semibold text-[#1f2320]">Test user</legend>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="flex min-h-11 items-center gap-3 rounded-xl border border-[#d4c7b4] bg-white px-3 text-sm font-medium text-[#1f2320]">
-                <input
-                  type="radio"
-                  name="isTest"
-                  value="true"
-                  checked={form.isTest === "true"}
-                  onChange={() => updateField("isTest", "true")}
-                />
-                Test user
-              </label>
-              <label className="flex min-h-11 items-center gap-3 rounded-xl border border-[#d4c7b4] bg-white px-3 text-sm font-medium text-[#1f2320]">
-                <input
-                  type="radio"
-                  name="isTest"
-                  value="false"
-                  checked={form.isTest === "false"}
-                  onChange={() => updateField("isTest", "false")}
-                />
-                Not a test user
-              </label>
-            </div>
-            {errors.isTest ? <p className="mt-2 text-sm font-medium text-red-700">{errors.isTest}</p> : null}
-          </fieldset>
+          <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-[#1f2320]">
+            <input type="checkbox" checked={form.isTest} onChange={(event) => updateField("isTest", event.target.checked)} className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c]" />
+            Test user
+          </label>
 
           <div className="mt-2 flex gap-2">
           <button
-            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
             type="submit"
           >
             {isSubmitting ? "Registering..." : "Register user"}
           </button>
-          <button type="button" onClick={closeRegistrationForm} disabled={isSubmitting} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white px-5 text-sm font-semibold text-[#1f2320] disabled:opacity-60">Cancel</button>
+          <button type="button" onClick={closeRegistrationForm} disabled={isSubmitting} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white px-4 text-sm font-semibold text-[#1f2320] transition hover:bg-[#fff8ee] disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
           </div>
         </form>
       </div>}
 
-      {!isRegistrationOpen && <div className="rounded-[28px] border border-[#d4c7b4] bg-white/80 p-5 shadow-panel md:p-6">
+      {!isRegistrationOpen && <div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#b24a20]">Current users</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#1f2320]">User list</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">Users</h2>
           </div>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-[#6d6a66]">{users.length} registered</p>
-            {!isRegistrationOpen && <button type="button" onClick={() => setIsRegistrationOpen(true)} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20]">Register user</button>}
+            {!isRegistrationOpen && <button type="button" onClick={() => setIsRegistrationOpen(true)} aria-label="Register user" title="Register user" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] text-white transition hover:bg-[#b24a20]"><FontAwesomeIcon icon={faPlus} aria-hidden="true" /></button>}
           </div>
         </div>
 
         {successMessage ? (
-          <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700" role="status">{successMessage}</p>
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700" role="status">
+            <p>{successMessage}</p>
+            {generatedPassword && <div className="mt-2 flex flex-wrap items-center gap-3">
+              <code className="select-all break-all rounded-lg border border-emerald-200 bg-white px-3 py-2 font-mono text-base font-semibold text-emerald-900">{generatedPassword}</code>
+              <button type="button" onClick={() => void copyGeneratedPassword()} className="inline-flex min-h-9 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100">{isPasswordCopied ? "Copied" : "Copy password"}</button>
+            </div>}
+          </div>
         ) : null}
 
         {isLoadingUsers ? (
@@ -291,41 +258,32 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
         ) : usersError ? (
           <p className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">{usersError}</p>
         ) : users.length === 0 ? (
-          <p className="mt-6 rounded-2xl border border-dashed border-[#d4c7b4] bg-[#fff8ee] p-5 text-sm text-[#6d6a66]">
+          <p className="mt-6 text-sm text-[#6d6a66]">
             No users are registered yet. New registrations will appear here immediately.
           </p>
         ) : (
-          <ul className="mt-6 divide-y divide-[#eadccb] overflow-hidden rounded-2xl border border-[#eadccb] bg-[#fffaf4]">
-            {users.map((user) => (
-              <li key={user.id} className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-[#1f2320]">{user.fullName || user.email}</p>
+          <ul className="mt-4 grid gap-2">
+            {users.slice((usersPage - 1) * usersPageSize, usersPage * usersPageSize).map((user) => (
+              <li key={user.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3 rounded-xl border border-[#d4c7b4] bg-white/70 p-4">
+                <div className="grid min-w-0 grid-rows-3 gap-1">
+                  <p className="truncate font-semibold text-[#1f2320]">{user.fullName || "—"}</p>
                   <p className="truncate text-sm text-[#6d6a66]">{user.email}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#8b8379]">
+                  <p className="truncate text-xs uppercase tracking-[0.18em] text-[#8b8379]">
                     {user.role} / {user.status}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={user.isTest ? "rounded-full bg-[#ffe1d4] px-3 py-1 text-sm font-semibold text-[#9a3f1c]" : "rounded-full bg-[#e8f4de] px-3 py-1 text-sm font-semibold text-[#3f6b28]"}>
-                    {user.isTest ? "Test user" : "Not a test user"}
-                  </span>
-                  <button type="button" onClick={() => void toggleTestStatus(user)} disabled={updatingTestStatusUserId === user.id} className="rounded-lg border border-[#d4c7b4] px-3 py-1.5 text-sm font-semibold text-[#1f2320] disabled:opacity-50">
+                <div className="grid justify-items-end gap-1">
+                  <button type="button" onClick={() => void toggleTestStatus(user)} disabled={updatingTestStatusUserId === user.id || isUpdatingTemporaryPassword} className="text-right text-sm font-semibold text-[#b24a20] hover:text-[#8f3b19] disabled:opacity-50">
                     {updatingTestStatusUserId === user.id ? "Updating..." : `Mark ${user.isTest ? "non-test" : "test"}`}
                   </button>
-                  {user.passwordChangeRequired && <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">Temporary password</span>}
-                  <button type="button" onClick={() => { setPasswordUser(user); setTemporaryPassword(""); setTemporaryPasswordConfirmation(""); setTemporaryPasswordError(""); }} className="text-sm font-semibold text-[#b24a20] hover:text-[#8f3b19]">Set temporary password</button>
+                  {user.passwordChangeRequired ? <span className="text-right text-xs font-medium text-amber-800">Temporary password required</span> : <span aria-hidden="true" />}
+                  <button type="button" onClick={() => void resetUserPassword(user)} disabled={isUpdatingTemporaryPassword} className="text-right text-sm font-semibold text-[#b24a20] hover:text-[#8f3b19] disabled:opacity-50">{resettingPasswordUserId === user.id ? "Generating..." : "Reset password"}</button>
                 </div>
-                {passwordUser?.id === user.id && <form onSubmit={submitTemporaryPassword} className="md:col-span-2 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/70 p-3 sm:grid-cols-[1fr_1fr_auto_auto]">
-                  <input type="password" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} placeholder="Temporary password" required minLength={8} className="min-h-10 rounded-lg border border-[#d4c7b4] bg-white px-3 text-sm" />
-                  <input type="password" value={temporaryPasswordConfirmation} onChange={(event) => setTemporaryPasswordConfirmation(event.target.value)} placeholder="Repeat password" required minLength={8} className="min-h-10 rounded-lg border border-[#d4c7b4] bg-white px-3 text-sm" />
-                  <button type="submit" disabled={isUpdatingTemporaryPassword} className="rounded-lg bg-[#d05a2c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">Save</button>
-                  <button type="button" onClick={() => setPasswordUser(null)} disabled={isUpdatingTemporaryPassword} className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold">Cancel</button>
-                  {temporaryPasswordError && <p className="text-sm font-medium text-red-700 sm:col-span-4">{temporaryPasswordError}</p>}
-                </form>}
               </li>
             ))}
           </ul>
         )}
+        {!isLoadingUsers && !usersError && <PaginationControls page={usersPage} pageSize={usersPageSize} totalItems={users.length} onPageChange={setUsersPage} />}
       </div>}</section>
   );
 }
@@ -335,14 +293,6 @@ function validateForm(form: FormState): Partial<Record<keyof FormState, string>>
 
   if (!form.email.trim()) {
     errors.email = "Email is required.";
-  }
-
-  if (!form.password.trim()) {
-    errors.password = "Password is required.";
-  }
-
-  if (!form.isTest) {
-    errors.isTest = "Select whether this user is a test user.";
   }
 
   return errors;

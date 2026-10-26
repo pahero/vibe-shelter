@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AppHeader } from "@/components/app-header";
 import { EditShelterClient } from "@/components/edit-shelter-client";
 import { fetchCurrentUser } from "@/lib/backend";
 
@@ -22,8 +21,7 @@ export default async function EditShelterPage() {
   }
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
-      <AppHeader user={user} hideEditShelterLink />
+    <main className="min-h-dvh w-full bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32">
       <EditShelterClient />
     </main>
   );

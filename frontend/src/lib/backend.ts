@@ -92,11 +92,13 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Admi
     const message = await readErrorMessage(response);
     throw new Error(message);
   }
-
-  return (await response.json()) as AdminUser;
+  const users = await fetchAdminUsers();
+  const matchingUser = users.find((user) => user.email.toLowerCase() === input.email.toLowerCase());
+  if (!matchingUser) throw new Error("The user was created but could not be loaded.");
+  return matchingUser;
 }
 
-export async function setAdminUserTemporaryPassword(userId: string, password: string): Promise<AdminUser> {
+export async function setAdminUserTemporaryPassword(userId: string, password: string): Promise<void> {
   const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -106,8 +108,6 @@ export async function setAdminUserTemporaryPassword(userId: string, password: st
   if (!response.ok) {
     throw new Error(await readErrorMessage(response));
   }
-
-  return (await response.json()) as AdminUser;
 }
 
 export async function setAdminUserTestStatus(userId: string, isTest: boolean): Promise<AdminUser> {
