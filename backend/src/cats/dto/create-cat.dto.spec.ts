@@ -9,7 +9,8 @@ describe("CreateCatDto", () => {
     dto.color = "  Calico  ";
     dto.estimatedBirthDate = "2024-03-15";
     dto.intakeDate = "2026-04-01";
-    dto.rescueSource = "  Found near clinic  ";
+    dto.intakeDetails = "  Found near clinic  ";
+    dto.intakeSource = "RESCUE_ORGANISATION";
     dto.microchipNumber = "  900123456789012  ";
     dto.passport = true;
     dto.sponsorName = "  Taylor Sponsor  ";
@@ -24,7 +25,8 @@ describe("CreateCatDto", () => {
       color: "Calico",
       estimatedBirthDate: new Date("2024-03-15"),
       intakeDate: new Date("2026-04-01"),
-      rescueSource: "Found near clinic",
+      intakeDetails: "Found near clinic",
+      intakeSource: "RESCUE_ORGANISATION",
       microchipNumber: "900123456789012",
       passport: true,
       sponsorName: "Taylor Sponsor",
@@ -44,7 +46,7 @@ describe("CreateCatDto", () => {
     dto.color = value;
     dto.estimatedBirthDate = value;
     dto.intakeDate = value;
-    dto.rescueSource = value;
+    dto.intakeDetails = value;
     dto.microchipNumber = value;
     dto.currentLocationId = value;
 
@@ -52,7 +54,7 @@ describe("CreateCatDto", () => {
       color: null,
       estimatedBirthDate: null,
       intakeDate: null,
-      rescueSource: null,
+      intakeDetails: null,
       microchipNumber: null,
       passport: false,
       sponsorName: null,

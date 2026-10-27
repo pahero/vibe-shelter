@@ -5,7 +5,7 @@ import { CatCard } from "@/components/cat-card";
 import { AddNewButton } from "@/components/add-new-button";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, CatSex, CreateCatDto, Location, catsApi, locationsApi, SterilizationStatus } from "@/lib/api";
+import { CatCard as CatCardType, CatSex, CreateCatDto, IntakeSource, INTAKE_SOURCE_LABELS, Location, catsApi, locationsApi, SterilizationStatus } from "@/lib/api";
 
 type LocationCatsSectionProps = {
   locationId: string;
@@ -22,7 +22,8 @@ function emptyForm(locationId: string) {
     estimatedBirthDate: "",
     intakeDate: "",
     microchipNumber: "",
-    rescueSource: "",
+    intakeDetails: "",
+    intakeSource: "" as IntakeSource | "",
     sterilizationStatus: "UNKNOWN" as SterilizationStatus,
     currentLocationId: locationId,
   };
@@ -125,7 +126,8 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
       color: form.color.trim() || null,
       estimatedBirthDate: form.estimatedBirthDate || null,
       intakeDate: form.intakeDate || null,
-      rescueSource: form.rescueSource.trim() || null,
+      intakeDetails: form.intakeDetails.trim() || null,
+      intakeSource: form.intakeSource || null,
       microchipNumber: form.microchipNumber.trim() || null,
       sterilizationStatus: form.sterilizationStatus,
       currentLocationId: form.currentLocationId || null,
@@ -180,11 +182,22 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
                 placeholder="Mila"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
               Current location
               <select value={form.currentLocationId} onChange={(event) => setForm((prev) => ({ ...prev, currentLocationId: event.target.value }))} disabled={isLoadingLocations || locations.length === 0} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60">
                 {locations.length === 0 && <option value="">No active locations</option>}
                 {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Intake source
+              <select
+                value={form.intakeSource}
+                onChange={(event) => setForm((prev) => ({ ...prev, intakeSource: event.target.value as IntakeSource | "" }))}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              >
+                <option value="">Not set</option>
+                {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
@@ -235,10 +248,10 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Rescue source
+              Intake details
               <input
-                value={form.rescueSource}
-                onChange={(event) => setForm((prev) => ({ ...prev, rescueSource: event.target.value }))}
+                value={form.intakeDetails}
+                onChange={(event) => setForm((prev) => ({ ...prev, intakeDetails: event.target.value }))}
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                 placeholder="Found near clinic"
               />

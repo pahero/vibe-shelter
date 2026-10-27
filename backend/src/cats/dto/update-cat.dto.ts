@@ -7,7 +7,8 @@ export type UpdateCatCommand = {
   color?: string | null;
   estimatedBirthDate?: Date | null;
   intakeDate?: Date | null;
-  rescueSource?: string | null;
+  intakeDetails?: string | null;
+  intakeSource?: "SHELTER_VOLUNTEER" | "OWNER_SURRENDER" | "RESCUE_REQUEST" | "VET_CLINIC" | "RESCUE_ORGANISATION" | "OTHER" | null;
   microchipNumber?: string | null;
   passport?: boolean;
   sponsorName?: string | null;
@@ -62,7 +63,11 @@ export class UpdateCatDto {
 
   @IsString()
   @IsOptional()
-  rescueSource?: string | null;
+  intakeDetails?: string | null;
+
+  @IsIn(["SHELTER_VOLUNTEER", "OWNER_SURRENDER", "RESCUE_REQUEST", "VET_CLINIC", "RESCUE_ORGANISATION", "OTHER"])
+  @IsOptional()
+  intakeSource?: string | null;
 
   @IsString()
   @IsOptional()
@@ -119,6 +124,23 @@ export class UpdateCatDto {
         "Invalid sterilizationStatus. Must be one of: STERILIZED, NOT_STERILIZED, UNKNOWN",
       );
     }
+    const validIntakeSources = [
+      "SHELTER_VOLUNTEER",
+      "OWNER_SURRENDER",
+      "RESCUE_REQUEST",
+      "VET_CLINIC",
+      "RESCUE_ORGANISATION",
+      "OTHER",
+    ];
+    if (
+      this.intakeSource !== undefined &&
+      this.intakeSource !== null &&
+      !validIntakeSources.includes(this.intakeSource)
+    ) {
+      throw new BadRequestException(
+        `Invalid intakeSource. Must be one of: ${validIntakeSources.join(", ")}`,
+      );
+    }
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
       ...(this.sex !== undefined
@@ -136,8 +158,11 @@ export class UpdateCatDto {
       ...(this.intakeDate !== undefined
         ? { intakeDate: optionalDate(this.intakeDate, "intakeDate") }
         : {}),
-      ...(this.rescueSource !== undefined
-        ? { rescueSource: optionalText(this.rescueSource) }
+      ...(this.intakeDetails !== undefined
+        ? { intakeDetails: optionalText(this.intakeDetails) }
+        : {}),
+      ...(this.intakeSource !== undefined
+        ? { intakeSource: this.intakeSource as UpdateCatCommand["intakeSource"] }
         : {}),
       ...(this.microchipNumber !== undefined
         ? { microchipNumber: optionalText(this.microchipNumber) }

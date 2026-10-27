@@ -9,7 +9,8 @@ describe("UpdateCatDto.toCommand", () => {
       color: "  Black  ",
       estimatedBirthDate: "2020-01-02",
       intakeDate: "2024-03-04",
-      rescueSource: "  Clinic  ",
+      intakeDetails: "  Clinic  ",
+      intakeSource: "RESCUE_ORGANISATION",
       microchipNumber: "  chip  ",
       passport: true,
       sponsorName: "  Sponsor  ",
@@ -25,7 +26,8 @@ describe("UpdateCatDto.toCommand", () => {
       color: "Black",
       estimatedBirthDate: new Date("2020-01-02"),
       intakeDate: new Date("2024-03-04"),
-      rescueSource: "Clinic",
+      intakeDetails: "Clinic",
+      intakeSource: "RESCUE_ORGANISATION",
       microchipNumber: "chip",
       passport: true,
       sponsorName: "Sponsor",
@@ -46,7 +48,7 @@ describe("UpdateCatDto.toCommand", () => {
       color: "   ",
       estimatedBirthDate: "",
       intakeDate: null,
-      rescueSource: null,
+      intakeDetails: null,
       microchipNumber: " ",
       passport: false,
       sponsorName: null,
@@ -58,7 +60,7 @@ describe("UpdateCatDto.toCommand", () => {
       color: null,
       estimatedBirthDate: null,
       intakeDate: null,
-      rescueSource: null,
+      intakeDetails: null,
       microchipNumber: null,
       passport: false,
       sponsorName: null,
@@ -97,5 +99,10 @@ describe("UpdateCatDto.toCommand", () => {
       sterilizationStatus: "UNKNOWN_VALUE",
     });
     expect(() => dto.toCommand()).toThrow("Invalid sterilizationStatus");
+  });
+
+  it("rejects an invalid intake source", () => {
+    const dto = Object.assign(new UpdateCatDto(), { intakeSource: "CLINIC" });
+    expect(() => dto.toCommand()).toThrow("Invalid intakeSource");
   });
 });

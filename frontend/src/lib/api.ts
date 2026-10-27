@@ -27,6 +27,15 @@ export type ListLocationsResponse = {
 
 export type CatSex = "FEMALE" | "MALE" | "UNKNOWN";
 export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
+export type IntakeSource = "SHELTER_VOLUNTEER" | "OWNER_SURRENDER" | "RESCUE_REQUEST" | "VET_CLINIC" | "RESCUE_ORGANISATION" | "OTHER";
+export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
+  SHELTER_VOLUNTEER: "Shelter volunteer",
+  OWNER_SURRENDER: "Owner Surrender",
+  RESCUE_REQUEST: "Rescue request",
+  VET_CLINIC: "Vet clinic",
+  RESCUE_ORGANISATION: "Rescue organisation",
+  OTHER: "Other",
+};
 
 export type CatCard = {
   isFavorite?: boolean;
@@ -53,7 +62,8 @@ export type CatCard = {
   adopterName?: string | null;
   adopterAddress?: string | null;
   felvFivTestDone: boolean;
-  rescueSource: string | null;
+  intakeDetails: string | null;
+  intakeSource: IntakeSource | null;
   updatedAt: string;
   tags: CatTag[];
 };
@@ -269,7 +279,8 @@ export type CreateCatDto = {
   color?: string | null;
   estimatedBirthDate?: string | null;
   intakeDate?: string | null;
-  rescueSource?: string | null;
+  intakeDetails?: string | null;
+  intakeSource?: IntakeSource | null;
   microchipNumber?: string | null;
   passport?: boolean;
   sponsorName?: string | null;

@@ -45,7 +45,8 @@ export async function toCatCard(
     adopterName: cat.adopterName,
     adopterAddress: cat.adopterAddress,
     felvFivTestDone: cat.felvFivTestDone,
-    rescueSource: cat.rescueSource,
+    intakeDetails: cat.intakeDetails,
+    intakeSource: cat.intakeSource,
     updatedAt: cat.updatedAt.toISOString(),
     tags: cat.tags.map((item) => toCatTag(item.tag)),
   };

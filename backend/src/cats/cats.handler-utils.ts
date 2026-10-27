@@ -46,9 +46,10 @@ export function toCatUpdateData(data: UpdateCatCommand) {
       ? { estimatedBirthDate: data.estimatedBirthDate }
       : {}),
     ...(data.intakeDate !== undefined ? { intakeDate: data.intakeDate } : {}),
-    ...(data.rescueSource !== undefined
-      ? { rescueSource: optionalTrim(data.rescueSource) }
+    ...(data.intakeDetails !== undefined
+      ? { intakeDetails: optionalTrim(data.intakeDetails) }
       : {}),
+    ...(data.intakeSource !== undefined ? { intakeSource: data.intakeSource } : {}),
     ...(data.microchipNumber !== undefined
       ? { microchipNumber: optionalTrim(data.microchipNumber) }
       : {}),

@@ -80,6 +80,7 @@ describe("CreateCatHandler", () => {
           estimatedBirthDate,
           intakeDate,
           "Found near clinic",
+          "RESCUE_ORGANISATION",
           microchipNumber,
           true,
           "Taylor Sponsor",
@@ -109,7 +110,8 @@ describe("CreateCatHandler", () => {
       await expect(
         tx.cat.findUniqueOrThrow({ where: { id: card.id } }),
       ).resolves.toMatchObject({
-        rescueSource: "Found near clinic",
+        intakeDetails: "Found near clinic",
+        intakeSource: "RESCUE_ORGANISATION",
         createdByUserId: actorUserId,
         isTest: false,
       });
@@ -219,9 +221,10 @@ function createCommand(
     "UNKNOWN",
     null,
     null,
-    null,
-    null,
-    overrides.microchipNumber ?? null,
+      null,
+      null,
+      null,
+      overrides.microchipNumber ?? null,
     overrides.passport ?? false,
     overrides.sponsorName ?? null,
     "UNKNOWN",

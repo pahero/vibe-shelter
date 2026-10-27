@@ -42,7 +42,8 @@ describe("UpdateCatHandler", () => {
           color: "Black",
           estimatedBirthDate: new Date("2020-01-02"),
           intakeDate: new Date("2024-03-04"),
-          rescueSource: "Clinic",
+          intakeDetails: "Clinic",
+          intakeSource: "RESCUE_ORGANISATION",
           microchipNumber: `chip-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           passport: true,
           sponsorName: "Sponsor",
@@ -68,7 +69,8 @@ describe("UpdateCatHandler", () => {
         microchipNumber: expect.stringContaining("chip-"),
         passport: true,
         sponsorName: "Sponsor",
-        rescueSource: "Clinic",
+        intakeDetails: "Clinic",
+        intakeSource: "RESCUE_ORGANISATION",
         sterilizationStatus: "STERILIZED",
       });
       await expect(
@@ -77,7 +79,7 @@ describe("UpdateCatHandler", () => {
       const events = await tx.auditEvent.findMany({
         where: { catId: cat.id },
       });
-      expect(events).toHaveLength(14);
+      expect(events).toHaveLength(15);
       expect(events).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -99,6 +101,11 @@ describe("UpdateCatHandler", () => {
             eventType: "sponsor_name_changed",
             oldValue: "Not set",
             newValue: "Sponsor",
+          }),
+          expect.objectContaining({
+            eventType: "intake_source_changed",
+            oldValue: "Not set",
+            newValue: "Rescue organisation",
           }),
           expect.objectContaining({
             eventType: "felv_fiv_test_done_changed",

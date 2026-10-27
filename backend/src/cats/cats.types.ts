@@ -20,7 +20,8 @@ export type CatCard = {
   adopterName: string | null;
   adopterAddress: string | null;
   felvFivTestDone: boolean;
-  rescueSource: string | null;
+  intakeDetails: string | null;
+  intakeSource: import("@prisma/client").CatIntakeSource | null;
   createdByUserId: string | null;
   isTest: boolean;
   updatedAt: string;

@@ -4,7 +4,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, CatSex, CatTag, CreateCatDto, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import { CatCard as CatCardType, CatSex, CatTag, CreateCatDto, IntakeSource, INTAKE_SOURCE_LABELS, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
 
 const CATS_PER_PAGE = 6;
 
@@ -16,7 +16,8 @@ function emptyCatForm(locationId = "") {
     estimatedBirthDate: "",
     intakeDate: "",
     microchipNumber: "",
-    rescueSource: "",
+    intakeDetails: "",
+    intakeSource: "" as IntakeSource | "",
     sterilizationStatus: "UNKNOWN" as SterilizationStatus,
     currentLocationId: locationId,
   };
@@ -175,7 +176,8 @@ export function HomeCatsList() {
       color: createForm.color.trim() || null,
       estimatedBirthDate: createForm.estimatedBirthDate || null,
       intakeDate: createForm.intakeDate || null,
-      rescueSource: createForm.rescueSource.trim() || null,
+      intakeDetails: createForm.intakeDetails.trim() || null,
+      intakeSource: createForm.intakeSource || null,
       microchipNumber: createForm.microchipNumber.trim() || null,
       sterilizationStatus: createForm.sterilizationStatus,
       currentLocationId: createForm.currentLocationId || null,
@@ -271,9 +273,16 @@ export function HomeCatsList() {
               Microchip number
               <input value={createForm.microchipNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, microchipNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Rescue source
-              <input value={createForm.rescueSource} onChange={(event) => setCreateForm((prev) => ({ ...prev, rescueSource: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Intake details
+              <input value={createForm.intakeDetails} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDetails: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Intake source
+              <select value={createForm.intakeSource} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeSource: event.target.value as IntakeSource | "" }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                <option value="">Not set</option>
+                {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
             </label>
           </div>
           <div className="mt-4 flex justify-end gap-3">

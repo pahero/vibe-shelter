@@ -95,6 +95,15 @@ enum LocationStatus {
   ARCHIVED
 }
 
+enum CatIntakeSource {
+  SHELTER_VOLUNTEER
+  OWNER_SURRENDER
+  RESCUE_REQUEST
+  VET_CLINIC
+  RESCUE_ORGANISATION
+  OTHER
+}
+
 enum CatSex {
   FEMALE
   MALE
@@ -150,7 +159,8 @@ model Cat {
   color               String?
   estimatedBirthDate  DateTime?
   intakeDate          DateTime?
-  rescueSource        String?
+  intakeDetails        String?
+  intakeSource         CatIntakeSource?
   microchipNumber     String?             @unique
   passport            Boolean             @default(false)
   sponsorName         String?

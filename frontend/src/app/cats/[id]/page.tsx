@@ -17,7 +17,7 @@ import { CatTreatments } from "@/components/cat-treatments";
 import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatVaccinations } from "@/components/cat-vaccinations";
 import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
-import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
+import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, IntakeSource, INTAKE_SOURCE_LABELS, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 
@@ -34,7 +34,8 @@ type CatEditForm = {
   adopterName: string;
   adopterAddress: string;
   felvFivTestDone: boolean;
-  rescueSource: string;
+  intakeDetails: string;
+  intakeSource: IntakeSource | "";
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string;
 };
@@ -75,7 +76,8 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     adopterName: cat.adopterName ?? "",
     adopterAddress: cat.adopterAddress ?? "",
     felvFivTestDone: cat.felvFivTestDone,
-    rescueSource: cat.rescueSource ?? "",
+    intakeDetails: cat.intakeDetails ?? "",
+    intakeSource: cat.intakeSource ?? "",
     sterilizationStatus: cat.sterilizationStatus,
     currentLocationId: cat.currentLocationId ?? "",
   };
@@ -658,7 +660,8 @@ export default function CatProfilePage() {
         adopterName: editForm.adopterName.trim() || null,
         adopterAddress: editForm.adopterAddress.trim() || null,
         felvFivTestDone: editForm.felvFivTestDone,
-        rescueSource: editForm.rescueSource.trim() || null,
+        intakeDetails: editForm.intakeDetails.trim() || null,
+        intakeSource: editForm.intakeSource || null,
         sterilizationStatus: editForm.sterilizationStatus,
         currentLocationId: editForm.currentLocationId || null,
       });
@@ -1150,9 +1153,16 @@ export default function CatProfilePage() {
                       Microchip number
                       <input value={editForm.microchipNumber} onChange={(event) => setEditForm((prev) => prev && { ...prev, microchipNumber: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
                     </label>
-                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-                      Rescue source
-                      <input value={editForm.rescueSource} onChange={(event) => setEditForm((prev) => prev && { ...prev, rescueSource: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Intake details
+                      <input value={editForm.intakeDetails} onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeDetails: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Intake source
+                      <select value={editForm.intakeSource} onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeSource: event.target.value as CatEditForm["intakeSource"] })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                        <option value="">Not set</option>
+                        {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
                     </label>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
                       <input type="checkbox" checked={editForm.passport} onChange={(event) => setEditForm((prev) => prev && { ...prev, passport: event.target.checked })} className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]" />
@@ -1201,7 +1211,8 @@ export default function CatProfilePage() {
                     ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
                     ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
                     ["Microchip number", cat.microchipNumber || "Not set"],
-                    ["Rescue source", cat.rescueSource || "Not set"],
+                    ["Intake details", cat.intakeDetails || "Not set"],
+                    ["Intake source", cat.intakeSource ? INTAKE_SOURCE_LABELS[cat.intakeSource] : "Not set"],
                     ["Passport", cat.passport ? "Yes" : "No"],
                     ["FIV/FeLV test", cat.felvFivTestDone ? "Done" : "Not done"],
                     ["Sponsor name", cat.sponsorName || "Not set"],
@@ -1209,9 +1220,9 @@ export default function CatProfilePage() {
                     ["Adopter address", cat.adopterAddress || "Not set"],
                     ...(cat.archivingReasonName ? [["Archiving reason", cat.archivingReasonName] as const] : []),
                   ].map(([label, value]) => (
-                    <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Rescue source" ? "border-t sm:col-span-2" : ""} ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
+                    <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
                       <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66] sm:whitespace-nowrap">{label}</dt>
-                      <dd className={`mt-0.5 font-semibold text-gray-900 ${label === "Rescue source" ? "whitespace-pre-wrap break-words" : "truncate"}`}>{value}</dd>
+                      <dd className="mt-0.5 truncate font-semibold text-gray-900">{value}</dd>
                     </div>
                   ))}
                 </dl>

@@ -20,7 +20,8 @@ model Cat {
   color              String?
   estimatedBirthDate DateTime?
   intakeDate         DateTime?
-  rescueSource       String?
+  intakeDetails      String?
+  intakeSource      CatIntakeSource?
   microchipNumber    String?     @unique
   passport           Boolean     @default(false)
   sponsorName        String?
@@ -182,7 +183,7 @@ Request:
   "sex": "FEMALE",
   "color": "Calico",
   "intakeDate": "2026-04-01",
-  "rescueSource": "Found near clinic",
+  "intakeDetails": "Found near clinic",
   "microchipNumber": "900123456789012",
   "passport": false,
   "sponsorName": null,
