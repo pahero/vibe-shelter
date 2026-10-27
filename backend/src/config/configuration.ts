@@ -14,6 +14,17 @@ export default () => ({
   jwtSecret: process.env.JWT_SECRET,
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:4001",
   allowedGoogleDomain: process.env.ALLOWED_GOOGLE_DOMAIN,
+  email: {
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT || "465", 10),
+    secure: process.env.SMTP_SECURE !== "false",
+    user: process.env.SMTP_USER,
+    password: process.env.SMTP_PASSWORD,
+    from: process.env.SMTP_FROM,
+  },
+  recaptcha: {
+    secretKey: process.env.RECAPTCHA_SECRET_KEY,
+  },
   webPush: {
     publicKey: process.env.WEB_PUSH_PUBLIC_KEY,
     privateKey: process.env.WEB_PUSH_PRIVATE_KEY,

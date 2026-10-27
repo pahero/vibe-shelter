@@ -147,6 +147,19 @@ export class PasswordLoginDto {
 
 export type PasswordLoginCommand = { email: string; password: string };
 
+export class ForgotPasswordDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  captchaToken!: string;
+
+  toCommand(): { email: string; captchaToken: string } {
+    return { email: this.email.trim().toLowerCase(), captchaToken: this.captchaToken };
+  }
+}
+
 export class ChangePasswordDto {
   @IsString()
   @IsNotEmpty()

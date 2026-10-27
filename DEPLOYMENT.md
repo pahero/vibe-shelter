@@ -172,6 +172,12 @@ Variables:
 - `GARAGE_BUCKET` (optional; defaults to `shelter`)
 - `GOOGLE_CALLBACK_URL` (optional; derived from `APP_DOMAIN`)
 - `ALLOWED_GOOGLE_DOMAIN` (optional)
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` (required; reCAPTCHA v3 site key for `APP_DOMAIN`)
+- `SMTP_USER` (Gmail sender account)
+- `SMTP_FROM` (sender address; usually the same Gmail address)
+- `SMTP_HOST` (optional; defaults to `smtp.gmail.com`)
+- `SMTP_PORT` (optional; defaults to `465`)
+- `SMTP_SECURE` (optional; defaults to `true`)
 
 Configure these Environment Secrets:
 
@@ -181,6 +187,8 @@ Configure these Environment Secrets:
 - `GARAGE_ACCESS_KEY`
 - `GARAGE_SECRET_KEY`
 - `GOOGLE_CLIENT_SECRET` (optional; leave unset to disable Google sign-in)
+- `RECAPTCHA_SECRET_KEY` (reCAPTCHA v3 secret paired with `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`)
+- `SMTP_PASSWORD` (Gmail App Password; never use your regular Google account password)
 - `SEED_ADMIN_PASSWORD` (required only when `seed_admin` is enabled)
 
 The workflow writes values to temporary runner files without logging them and

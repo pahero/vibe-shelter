@@ -22,10 +22,12 @@ import {
   ChangePasswordDto,
   PasswordLoginDto,
   ReplaceTemporaryPasswordDto,
+  ForgotPasswordDto,
 } from "./dto";
 import { ValidatePasswordCredentialsHandler } from "./queries/validate-password-credentials.handler";
 import { ChangePasswordHandler } from "./commands/change-password.handler";
 import { ReplaceTemporaryPasswordHandler } from "./commands/replace-temporary-password.handler";
+import { ForgotPasswordHandler } from "./commands/forgot-password.handler";
 import { signJwt } from "./jwt-token";
 import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handler";
 import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
@@ -41,6 +43,7 @@ export class AuthController {
     private readonly createRefreshTokenHandler: CreateRefreshTokenHandler,
     private readonly rotateRefreshTokenHandler: RotateRefreshTokenHandler,
     private readonly revokeRefreshTokenHandler: RevokeRefreshTokenHandler,
+    private readonly forgotPasswordHandler: ForgotPasswordHandler,
     private readonly configService: ConfigService,
   ) {}
 
@@ -90,6 +93,15 @@ export class AuthController {
     const refreshToken = await this.createRefreshTokenHandler.handle(user.id);
     setAuthCookies(response, this.issueToken(user), refreshToken, this.nodeEnv);
     return this.toAuthMe(user);
+  }
+
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  async forgotPassword(@Body() body: ForgotPasswordDto): Promise<{ message: string }> {
+    const command = body.toCommand();
+    await this.forgotPasswordHandler.handle(command.email, command.captchaToken);
+    return { message: "If an eligible account exists, a temporary password has been emailed." };
   }
 
   @Get("me")

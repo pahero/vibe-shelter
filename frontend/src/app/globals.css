@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+.grecaptcha-badge {
+  visibility: hidden;
+}
+
+body.show-recaptcha-badge .grecaptcha-badge {
+  visibility: visible;
+}
+
 html,
 body {
   margin: 0;

@@ -12,6 +12,7 @@ import { ReplaceTemporaryPasswordHandler } from "./commands/replace-temporary-pa
 import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handler";
 import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
 import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handler";
+import { ForgotPasswordHandler } from "./commands/forgot-password.handler";
 
 @Module({
   imports: [PassportModule, DatabaseModule],
@@ -27,6 +28,7 @@ import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handl
     CreateRefreshTokenHandler,
     RotateRefreshTokenHandler,
     RevokeRefreshTokenHandler,
+    ForgotPasswordHandler,
   ],
 })
 export class AuthModule {}
