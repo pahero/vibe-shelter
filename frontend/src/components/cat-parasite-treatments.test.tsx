@@ -21,7 +21,6 @@ describe("CatParasiteTreatments", () => {
 
   it("offers separate treatment types and requires a product name", async () => {
     render(<CatParasiteTreatments catId="cat-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Parasite treatments" }));
     await screen.findByText("No parasite treatments recorded.");
     fireEvent.click(screen.getByRole("button", { name: "Add parasite treatment" }));
     expect(screen.getByLabelText("Treatment Type").querySelectorAll("option")).toHaveLength(4);
@@ -32,7 +31,6 @@ describe("CatParasiteTreatments", () => {
 
   it("submits parasite-treatment fields with a trimmed product name", async () => {
     render(<CatParasiteTreatments catId="cat-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Parasite treatments" }));
     await screen.findByText("No parasite treatments recorded.");
     fireEvent.click(screen.getByRole("button", { name: "Add parasite treatment" }));
     fireEvent.change(screen.getByLabelText("Product Name"), { target: { value: "  Spot-on  " } });

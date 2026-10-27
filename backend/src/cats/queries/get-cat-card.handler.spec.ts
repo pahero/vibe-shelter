@@ -31,6 +31,25 @@ describe("GetCatCardHandler", () => {
     });
   });
 
+  it("includes favorite status for the requesting user", async () => {
+    await runInTestTransaction(async (tx) => {
+      const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
+      const cat = await tx.cat.create({ data: { name: `Favorite card ${crypto.randomUUID()}` } });
+      await tx.catFavorite.create({ data: { userId: user.id, catId: cat.id } });
+      await expect(new GetCatCardHandler(tx as PrismaService, photoUrls).handle(cat.id, false, user.id)).resolves.toMatchObject({ id: cat.id, isFavorite: true });
+    });
+  });
+
+  it("does not expose another user's favorite state", async () => {
+    await runInTestTransaction(async (tx) => {
+      const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
+      const otherUser = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
+      const cat = await tx.cat.create({ data: { name: `Private favorite ${crypto.randomUUID()}` } });
+      await tx.catFavorite.create({ data: { userId: user.id, catId: cat.id } });
+      await expect(new GetCatCardHandler(tx as PrismaService, photoUrls).handle(cat.id, false, otherUser.id)).resolves.toMatchObject({ id: cat.id, isFavorite: false });
+    });
+  });
+
   it("hides cats from the opposite test partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({

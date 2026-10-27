@@ -45,6 +45,7 @@ model User {
   updatedCatTreatments CatTreatment[] @relation("updatedCatTreatments")
   refreshTokens RefreshToken[]
   pushSubscriptions PushSubscription[]
+  favoriteCats CatFavorite[]
 
   @@index([status])
   @@index([role])
@@ -185,6 +186,7 @@ model Cat {
   parasiteTreatments  ParasiteTreatment[]
   notes               CatNote[]
   flightAssignments  FlightCatAssignment[]
+  favorites CatFavorite[]
 
 
   @@index([createdByUserId])
@@ -196,6 +198,17 @@ model Cat {
   @@index([name])
   @@unique([name, nameNumber, isTest])
   @@index([intakeDate])
+}
+
+model CatFavorite {
+  userId String
+  catId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cat Cat @relation(fields: [catId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, catId])
+  @@index([catId])
 }
 
 model CatArchivingReason {

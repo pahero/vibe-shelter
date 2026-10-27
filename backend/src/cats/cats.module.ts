@@ -81,6 +81,8 @@ import { DeleteCatDocumentHandler } from "./commands/delete-cat-document.handler
 import { SetCatFlightCandidateHandler } from "./commands/set-cat-flight-candidate.handler";
 import { PushSubscriptionsController } from "./tasks/push-subscriptions.controller";
 import { PushNotificationService } from "./tasks/push-notification.service";
+import { ToggleCatFavoriteHandler } from "./commands/toggle-cat-favorite.handler";
+import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favorite-cats-with-active-treatments.handler";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -99,6 +101,8 @@ import { PushNotificationService } from "./tasks/push-notification.service";
   providers: [
     CatPhotoUrlService,
     CatPhotoCleanupService,
+    ToggleCatFavoriteHandler,
+    ListFavoriteCatsWithActiveTreatmentsHandler,
     CreateCatHandler,
     ArchiveCatHandler,
     DearchiveCatHandler,

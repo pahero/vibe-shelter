@@ -56,6 +56,8 @@ import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.ha
 import { ListCatsQueryDto } from "./dto/list-cats-query.dto";
 import { UpdateCatNameNumberDto } from "./dto/update-cat-name-number.dto";
 import { SetCatFlightCandidateHandler } from "./commands/set-cat-flight-candidate.handler";
+import { ToggleCatFavoriteHandler } from "./commands/toggle-cat-favorite.handler";
+import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favorite-cats-with-active-treatments.handler";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -91,6 +93,8 @@ export class CatsController {
     private readonly listAllCatHistoryQuery: ListAllCatHistoryQuery,
     private readonly listFlightCandidatesHandler: ListFlightCandidatesHandler,
     private readonly setCatFlightCandidateHandler: SetCatFlightCandidateHandler,
+    private readonly toggleCatFavoriteHandler: ToggleCatFavoriteHandler,
+    private readonly listFavoriteCatsWithActiveTreatmentsHandler: ListFavoriteCatsWithActiveTreatmentsHandler,
   ) {}
 
   @Get()
@@ -114,6 +118,16 @@ export class CatsController {
       }),
       user?.isTest ?? false,
     );
+  }
+
+  @Post(":id/favorite")
+  async toggleFavorite(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.toggleCatFavoriteHandler.handle(id, user.id);
+  }
+
+  @Get("favorites/active-treatments")
+  async listFavoriteCatsWithActiveTreatments(@CurrentUser() user: AuthenticatedUser) {
+    return this.listFavoriteCatsWithActiveTreatmentsHandler.handle(user.id, user.isTest);
   }
 
   @Get("tags")
@@ -152,7 +166,7 @@ export class CatsController {
     @Param("id") id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.getCatCardHandler.handle(id, user.isTest);
+    return this.getCatCardHandler.handle(id, user.isTest, user.id);
   }
 
   @Get(":id/weights")

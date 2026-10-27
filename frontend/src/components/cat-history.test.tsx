@@ -19,8 +19,6 @@ describe("CatHistory", () => {
 
   it("renders loading, empty, and error states", () => {
     const { rerender } = render(<CatHistory events={[]} isLoading error={null} />);
-    expect(screen.queryByText("Loading cat history...")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Loading cat history...")).toBeVisible();
 
     rerender(<CatHistory events={[]} isLoading={false} error={null} />);
@@ -38,8 +36,6 @@ describe("CatHistory", () => {
       newValue: "Luna",
       photo: null,
     } as CatHistoryEvent]} isLoading={false} error={null} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Name changed")).toBeVisible();
     expect(screen.getByText(/by Staff Member/)).toBeVisible();
     expect(screen.getByText(/Mila/)).toBeVisible();
@@ -65,8 +61,6 @@ describe("CatHistory", () => {
         photo: { id: "photo-1", link: "https://example.test/photo-1", status: "DELETED" },
       } as CatHistoryEvent,
     ]} isLoading={false} error={null} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Photo added")).toBeVisible();
     expect(screen.getByText("Photo deleted")).toBeVisible();
     expect(screen.getByRole("link", { name: "Open photo link" })).toHaveAttribute("href", "https://example.test/photo-1");
@@ -94,8 +88,6 @@ describe("CatHistory", () => {
         photo: null,
       } as CatHistoryEvent,
     ]} isLoading={false} error={null} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Tag Needs foster Added to cat")).toBeVisible();
     expect(screen.getByText("Tag Needs foster Removed from cat")).toBeVisible();
   });
@@ -110,13 +102,12 @@ describe("CatHistory", () => {
       ...baseEvent,
       eventType: "note_created",
       note: { id: "note-1", date: "2026-09-10", comment: "Checkup", author: "Test User", isDeleted: false },
-    } as CatHistoryEvent)).toBe("Note 2026-09-10 · created");
+    } as CatHistoryEvent)).toBe("Note 2026-09-10 · Test User · created");
   });
 
   it("shows next-page controls when more audit events are available", () => {
     const onPageChange = vi.fn();
     render(<CatHistory events={[{ ...baseEvent, eventType: "name_changed", oldValue: "A", newValue: "B", photo: null } as CatHistoryEvent]} isLoading={false} error={null} total={51} skip={0} limit={50} onPageChange={onPageChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Showing 1-50 of 51")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(onPageChange).toHaveBeenCalledWith(50);
@@ -124,21 +115,18 @@ describe("CatHistory", () => {
 
   it("identifies a treatment audit event by its linked treatment", () => {
     render(<CatHistory events={[{ ...baseEvent, eventType: "treatment_start_date_changed", oldValue: "2026-09-01", newValue: "2026-09-02", treatment: { id: "treatment-1", shortName: "Antibiotic" }, photo: null } as CatHistoryEvent]} isLoading={false} error={null} />);
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Treatment Antibiotic Start date changed")).toBeVisible();
   });
 
   it("restores a deleted linked treatment from its audit event", async () => {
     const onRestoreTreatment = vi.fn().mockResolvedValue(undefined);
     render(<CatHistory events={[{ ...baseEvent, eventType: "treatment_deleted", oldValue: null, newValue: null, treatment: { id: "treatment-1", shortName: "Antibiotic", isDeleted: true }, photo: null } as CatHistoryEvent]} isLoading={false} error={null} onRestoreTreatment={onRestoreTreatment} />);
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));
     await waitFor(() => expect(onRestoreTreatment).toHaveBeenCalledWith("treatment-1"));
   });
 
   it("hides Restore after the linked treatment is restored", () => {
     render(<CatHistory events={[{ ...baseEvent, eventType: "treatment_deleted", oldValue: null, newValue: null, treatment: { id: "treatment-1", shortName: "Antibiotic", isDeleted: false }, photo: null } as CatHistoryEvent]} isLoading={false} error={null} onRestoreTreatment={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
   });
 
@@ -152,7 +140,6 @@ describe("CatHistory", () => {
       photo: null,
       flight: { id: "flight-1", flightNumber: "CY123", airport: "Larnaca", date: "2026-10-15", isDeleted: true },
     } as CatHistoryEvent]} isLoading={false} error={null} onRestoreFlight={onRestoreFlight} />);
-    fireEvent.click(screen.getByRole("button", { name: /audit/i }));
     expect(screen.getByText("Flight CY123 · Cat assigned")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Restore flight" }));
     await waitFor(() => expect(onRestoreFlight).toHaveBeenCalledWith("flight-1"));

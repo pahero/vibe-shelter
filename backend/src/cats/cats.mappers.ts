@@ -19,6 +19,7 @@ export function toCatTag(tag: {
 export async function toCatCard(
   cat: CatWithLocation,
   photoUrls: CatPhotoUrlService,
+  userId?: string,
 ): Promise<CatCard> {
   return {
     id: cat.id,

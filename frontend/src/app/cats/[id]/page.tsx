@@ -89,6 +89,7 @@ export default function CatProfilePage() {
   const params = useParams();
   const catId = params?.id as string;
   const [cat, setCat] = useState<CatCardType | null>(null);
+  const [favoriteOverride, setFavoriteOverride] = useState<{ catId: string; value: boolean } | null>(null);
   const [photoPositionY, setPhotoPositionY] = useState(50);
   const [photoNaturalSize, setPhotoNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [photoViewportSize, setPhotoViewportSize] = useState<{ width: number; height: number } | null>(null);
@@ -861,6 +862,9 @@ export default function CatProfilePage() {
               {selectedSection ? (
                 <header className="mx-auto w-full text-center">
                   <div className="relative overflow-hidden rounded-2xl border border-[#d4c7b4] bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20 shadow-sm">
+                    <button type="button" onClick={async () => { const result = await catsApi.toggleCatFavorite(cat.id); setFavoriteOverride({ catId: cat.id, value: result.favorite }); }} aria-label={(favoriteOverride?.catId === cat.id ? favoriteOverride.value : !!cat.isFavorite) ? `Remove ${cat.name} from favorites` : `Add ${cat.name} to favorites`} title={(favoriteOverride?.catId === cat.id ? favoriteOverride.value : !!cat.isFavorite) ? "Remove from favorites" : "Add to favorites"} className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white ${(favoriteOverride?.catId === cat.id ? favoriteOverride.value : !!cat.isFavorite) ? "text-rose-600" : "text-gray-500"}`}>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill={(favoriteOverride?.catId === cat.id ? favoriteOverride.value : !!cat.isFavorite) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+                    </button>
                     {cat.primaryPhotoUrl ? (
                       <button type="button" onClick={() => primaryPhoto && openPhoto(primaryPhoto.id)} aria-label={`Expand photo of ${cat.name}`} className="block aspect-video w-full bg-cover bg-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c]" style={{ backgroundImage: `url(${cat.primaryPhotoUrl})`, backgroundPositionY: `${photoPositionY}%` }} />
                     ) : (
@@ -874,7 +878,7 @@ export default function CatProfilePage() {
                   </div>
                 </header>
               ) : (
-                <CatCard cat={cat} showProfileLink={false} showTags={false} onPhotoClick={primaryPhoto ? () => openPhoto(primaryPhoto.id) : undefined} />
+                <CatCard cat={cat} showProfileLink={false} showTags={false} showFavorite onPhotoClick={primaryPhoto ? () => openPhoto(primaryPhoto.id) : undefined} />
               )}
               {selectedSection === "media" && <>
                <section id="gallery" className="scroll-mt-6 w-full">

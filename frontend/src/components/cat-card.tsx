@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { TagColorStrip } from "@/components/tag-color-strip";
-import { CatCard as CatCardType } from "@/lib/api";
+import { CatCard as CatCardType, catsApi } from "@/lib/api";
 import { tagChipStyle } from "@/lib/tag-colors";
 import { formatDateShort } from "@/lib/utils";
+import { useState } from "react";
 
 export type CatCardProps = {
   cat: CatCardType;
   showProfileLink?: boolean;
   showTags?: boolean;
+  showFavorite?: boolean;
   onPhotoClick?: () => void;
 };
 
@@ -44,12 +46,29 @@ function formatAge(dateString: string | null): string {
   return parts.join(" ");
 }
 
-export function CatCard({ cat, showProfileLink = true, showTags = true, onPhotoClick }: CatCardProps) {
+export function CatCard({ cat, showProfileLink = true, showTags = true, showFavorite = false, onPhotoClick }: CatCardProps) {
   const profileHref = `/cats/${cat.id}`;
+  const [favorite, setFavorite] = useState(cat.isFavorite);
+  const [savingFavorite, setSavingFavorite] = useState(false);
+
+
+  async function toggleFavorite() {
+    if (savingFavorite) return;
+    setSavingFavorite(true);
+    try {
+      const result = await catsApi.toggleCatFavorite(cat.id);
+      setFavorite(result.favorite);
+    } finally {
+      setSavingFavorite(false);
+    }
+  }
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/70 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md has-focus-visible:ring-2 has-focus-visible:ring-[#d05a2c]">
       {showProfileLink && <Link href={profileHref} aria-label={`Open profile for ${cat.name}`} className="absolute inset-0 z-10 cursor-pointer" />}
+      {showFavorite && <button type="button" onClick={toggleFavorite} disabled={savingFavorite} aria-label={favorite ? `Remove ${cat.name} from favorites` : `Add ${cat.name} to favorites`} title={favorite ? "Remove from favorites" : "Add to favorites"} className={`absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white disabled:opacity-60 ${favorite ? "text-rose-600" : "text-gray-500"}`}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill={favorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+      </button>}
       <div className="relative aspect-video bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
         {cat.primaryPhotoUrl ? (
           onPhotoClick ? (

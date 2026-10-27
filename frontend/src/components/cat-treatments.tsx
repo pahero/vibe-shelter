@@ -24,7 +24,7 @@ function columnsFor(treatments: CatTreatment[]) {
   return treatments.flatMap((treatment) => Array.from({ length: treatment.dosesPerDay }, (_, index) => ({ treatment, doseNumber: index + 1, label: treatment.dosesPerDay === 2 ? `${treatment.shortName} (${index === 0 ? "morning" : "evening"})` : treatment.shortName })));
 }
 
-function MedicationTable({ treatments, startDate, endDate, onToggle, actionKey }: { treatments: CatTreatment[]; startDate: string; endDate: string; onToggle: (treatment: CatTreatment, date: string, doseNumber: number, checked: boolean) => Promise<void>; actionKey: string | null }) {
+export function MedicationTable({ treatments, startDate, endDate, onToggle, actionKey }: { treatments: CatTreatment[]; startDate: string; endDate: string; onToggle: (treatment: CatTreatment, date: string, doseNumber: number, checked: boolean) => Promise<void>; actionKey: string | null }) {
   const columns = columnsFor(treatments);
   const dates = datesBetween(startDate, endDate).reverse();
   if (columns.length === 0 || dates.length === 0) return null;

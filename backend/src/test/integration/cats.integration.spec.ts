@@ -575,6 +575,20 @@ describe("Cats endpoints", () => {
     expect(response.body.felvFivTestDone).toBe(false);
   });
 
+  it("GET /api/cats/favorites/active-treatments returns this user's favorite cats with active treatments", async () => {
+    const cat = await createCat(prisma, { name: unique("favorite-active") });
+    await authAgent.post(`/api/cats/${cat.id}/favorite`).expect(201);
+    const today = new Date().toISOString().slice(0, 10);
+    await authAgent.post(`/api/cats/${cat.id}/treatments`).send({ shortName: "Current", startDate: today, dosesPerDay: 1 }).expect(201);
+
+    const card = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
+    expect(card.body.isFavorite).toBe(true);
+    const response = await authAgent.get("/api/cats/favorites/active-treatments").expect(200);
+    expect(response.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: cat.id, name: cat.name, nameNumber: cat.nameNumber, updatedAt: expect.any(String) }),
+    ]));
+  });
+
   it("PATCH /api/cats/:id updates a cat card", async () => {
     const cat = await createCat(prisma, { name: unique("patch") });
 

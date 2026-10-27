@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 export type CatCard = {
+  isFavorite?: boolean;
   id: string;
   name: string;
   nameNumber: number;

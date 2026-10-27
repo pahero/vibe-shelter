@@ -21,7 +21,6 @@ describe("CatVaccinations", () => {
 
   it("offers the three vaccination types and optional fields", async () => {
     render(<CatVaccinations catId="cat-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Vaccinations" }));
     await screen.findByText("No vaccinations recorded.");
     fireEvent.click(screen.getByRole("button", { name: "Add vaccination" }));
     expect(screen.getByLabelText("Vaccine Type")).toBeInTheDocument();
@@ -34,7 +33,6 @@ describe("CatVaccinations", () => {
   it("submits vaccination fields and refreshes the history callback", async () => {
     const onChanged = vi.fn().mockResolvedValue(undefined);
     render(<CatVaccinations catId="cat-1" onChanged={onChanged} />);
-    fireEvent.click(screen.getByRole("button", { name: "Vaccinations" }));
     await screen.findByText("No vaccinations recorded.");
     fireEvent.click(screen.getByRole("button", { name: "Add vaccination" }));
     fireEvent.change(screen.getByLabelText("Vaccine Name"), { target: { value: "Core vaccine" } });

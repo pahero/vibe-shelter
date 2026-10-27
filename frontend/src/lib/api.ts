@@ -29,6 +29,7 @@ export type CatSex = "FEMALE" | "MALE" | "UNKNOWN";
 export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
 
 export type CatCard = {
+  isFavorite?: boolean;
   id: string;
   name: string;
   nameNumber: number;
@@ -114,6 +115,8 @@ export type CatTreatment = {
     checkedBy: { id: string; fullName: string | null };
   }[];
 };
+
+export type FavoriteCatWithActiveTreatment = Pick<CatCard, "id" | "name" | "nameNumber" | "updatedAt">;
 
 export type TreatmentInput = {
   shortName: string;
@@ -520,6 +523,10 @@ export const notificationsApi = {
 };
 
 export const catsApi = {
+  async listFavoriteCatsWithActiveTreatments(): Promise<FavoriteCatWithActiveTreatment[]> {
+    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/favorites/active-treatments`, { method: "GET" });
+    return handleResponse<FavoriteCatWithActiveTreatment[]>(response);
+  },
   async listFlightCandidates(): Promise<FlightCandidate[]> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/flight-candidates`, { method: "GET", });
     return handleResponse<FlightCandidate[]>(response);
@@ -648,6 +655,12 @@ export const catsApi = {
     });
     return handleResponse<CatCard>(response);
   },
+
+  async toggleCatFavorite(id: string): Promise<{ favorite: boolean }> {
+    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/favorite`, { method: "POST" });
+    return handleResponse<{ favorite: boolean }>(response);
+  },
+
 
   async listHistory(id: string, params?: { skip?: number; limit?: number }): Promise<CatHistoryResponse> {
     const query = new URLSearchParams();

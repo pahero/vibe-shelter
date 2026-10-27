@@ -64,12 +64,11 @@ describe("UserRegistrationClient", () => {
     render(<UserRegistrationClient initialUsers={existingUsers} />);
 
     expect(screen.queryByRole("heading", { name: "Register a user" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "User list" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Users" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Register user" }));
     expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
     expect(screen.getByLabelText("Email")).toBeVisible();
-    expect(screen.getByLabelText("Password")).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "User list" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
     expect(screen.queryByText("Test Existing")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("heading", { name: "Register a user" })).not.toBeInTheDocument();
@@ -96,43 +95,39 @@ describe("UserRegistrationClient", () => {
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@example.com" } });
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "New User" } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Password123!" } });
     fireEvent.click(screen.getByLabelText("Test user"));
     fireEvent.click(screen.getByRole("button", { name: "Register user" }));
 
     await waitFor(() => {
-      expect(createAdminUserMock).toHaveBeenCalledWith({
+      expect(createAdminUserMock).toHaveBeenCalledWith(expect.objectContaining({
         email: "new@example.com",
         fullName: "New User",
         role: "staff",
         status: "active",
-        password: "Password123!",
         isTest: true,
-      });
+        password: expect.any(String),
+      }));
     });
-    expect(await screen.findByText("new@example.com was registered successfully.")).toBeVisible();
+    expect(await screen.findByText("Temporary password for new@example.com is:")).toBeVisible();
     expect(screen.getByText("New User")).toBeVisible();
-    expect(screen.getAllByText("Test user").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Copy password")).toBeVisible();
   });
 
-  it("shows password validation and does not call creation API for blank passwords", () => {
+  it("validates email and does not call creation API for a blank email", () => {
     render(<UserRegistrationClient initialUsers={existingUsers} />);
     fireEvent.click(screen.getByRole("button", { name: "Register user" }));
 
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "missing-password@example.com" } });
-    fireEvent.click(screen.getByLabelText("Not a test user"));
     fireEvent.click(screen.getByRole("button", { name: "Register user" }));
 
-    expect(screen.getByText("Password is required.")).toBeVisible();
+    expect(screen.getByText("Email is required.")).toBeVisible();
     expect(createAdminUserMock).not.toHaveBeenCalled();
-    expect(screen.queryByText("missing-password@example.com was registered successfully.")).not.toBeInTheDocument();
   });
 
-  it("displays test and non-test marker labels in the user list", () => {
+  it("displays test status actions in the user list", () => {
     render(<UserRegistrationClient initialUsers={existingUsers} />);
 
-    expect(screen.getAllByText("Test user").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Not a test user").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: "Mark non-test" })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Mark test" })).toHaveLength(1);
   });
 
   it("changes a user's test marker and updates the displayed list", async () => {
@@ -143,6 +138,6 @@ describe("UserRegistrationClient", () => {
 
     await waitFor(() => expect(setAdminUserTestStatusMock).toHaveBeenCalledWith("user-1", false));
     expect(await screen.findByText("test@example.com is now not a test user.")).toBeVisible();
-    expect(screen.getAllByText("Not a test user").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole("button", { name: "Mark test" })).toHaveLength(2);
   });
 });

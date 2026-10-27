@@ -117,6 +117,7 @@ export class CreateCatHandler {
       rescueSource: cat.rescueSource,
       updatedAt: cat.updatedAt.toISOString(),
       tags: [],
+      isFavorite: false,
     };
   }
 }
