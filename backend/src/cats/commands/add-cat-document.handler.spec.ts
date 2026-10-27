@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { S3Client } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import { PrismaService } from "../../database/prisma.service";
 import {
   createBucket,
@@ -93,6 +94,30 @@ describe("AddCatDocumentHandler", () => {
           false,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  it("compresses an uploaded PNG to one JPEG full image", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({
+        data: {
+          email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
+        },
+      });
+      const cat = await tx.cat.create({
+        data: { name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}` },
+      });
+      const png = await sharp({ create: { width: 2, height: 2, channels: 3, background: { r: 20, g: 80, b: 140 } } }).png().toBuffer();
+      const result = await new AddCatDocumentHandler(
+        tx as PrismaService,
+        new CatPhotoUrlService(config, s3Client),
+      ).handle(cat.id, {
+        originalname: "scan.png",
+        mimetype: "image/png",
+        buffer: png,
+      }, actor.id, false);
+      expect(result.fileName).toBe("scan.jpg");
+      expect(result.url).toContain("documents/");
     });
   });
 

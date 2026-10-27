@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import * as bcrypt from "bcrypt";
+import sharp from "sharp";
 import { generateIntegrationTestConfig } from "@/test-utils/test-configuration";
 import { PrismaClient } from "@prisma/client";
 import { AppModule } from "@/app.module";
@@ -406,6 +407,17 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
+  });
+
+  it("accepts image files as documents and stores a compressed full JPEG", async () => {
+    const cat = await createCat(prisma, { name: unique("image-document") });
+    const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: { r: 90, g: 40, b: 20 } } }).png().toBuffer();
+    const created = await authAgent
+      .post(`/api/cats/${cat.id}/documents`)
+      .attach("document", png, { filename: "scan.png", contentType: "image/png" })
+      .expect(201);
+    expect(created.body.fileName).toBe("scan.jpg");
+    expect(created.body.url).toContain(`cats/${cat.id}/documents/`);
   });
 
   it("GET /api/cats lists active cat cards with filters", async () => {

@@ -7,7 +7,6 @@ import { CatTreatment, catsApi, TreatmentInput } from "@/lib/api";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 
-const CURRENT_TABLE_DAYS = 14;
 const today = () => new Date().toISOString().slice(0, 10);
 const emptyTreatment = (): TreatmentInput => ({ shortName: "", instructions: "", startDate: today(), endDate: null, dosesPerDay: 1 });
 const asDate = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -29,7 +28,7 @@ function MedicationTable({ treatments, startDate, endDate, onToggle, actionKey }
   const columns = columnsFor(treatments);
   const dates = datesBetween(startDate, endDate).reverse();
   if (columns.length === 0 || dates.length === 0) return null;
-  return <div className="mt-4 overflow-x-auto rounded-xl border border-[#d4c7b4] bg-white/55"><table className="min-w-full text-left text-sm"><thead className="text-[#6d6a66]"><tr><th className="sticky left-0 bg-[#f7e6db] px-3 py-2 text-center font-mono text-xs uppercase">Date</th>{columns.map(({ treatment, doseNumber, label }, index) => <th key={`${treatment.id}-${doseNumber}`} className={`px-3 py-2 text-center font-mono text-xs uppercase whitespace-nowrap ${index % 2 === 0 ? "bg-[#f7e6db]" : "bg-[#fff8ee]"}`}>{label}</th>)}</tr></thead><tbody className="divide-y divide-[#d4c7b4]">{dates.map((date) => <tr key={date}><td className="sticky left-0 bg-white px-3 py-2 font-medium whitespace-nowrap">{formatDate(date)}</td>{columns.map(({ treatment, doseNumber }, index) => {
+  return <div className="mt-4 max-h-[34rem] overflow-auto rounded-xl border border-[#d4c7b4] bg-white/55"><table className="min-w-full text-left text-sm"><thead className="sticky top-0 z-20 text-[#6d6a66]"><tr><th className="sticky left-0 bg-[#f7e6db] px-3 py-2 text-center font-mono text-xs uppercase">Date</th>{columns.map(({ treatment, doseNumber, label }, index) => <th key={`${treatment.id}-${doseNumber}`} className={`px-3 py-2 text-center font-mono text-xs uppercase whitespace-nowrap ${index % 2 === 0 ? "bg-[#f7e6db]" : "bg-[#fff8ee]"}`}>{label}</th>)}</tr></thead><tbody className="divide-y divide-[#d4c7b4]">{dates.map((date) => <tr key={date}><td className="sticky left-0 bg-white px-3 py-2 font-medium whitespace-nowrap">{formatDate(date)}</td>{columns.map(({ treatment, doseNumber }, index) => {
     const enabled = date >= treatment.startDate && (!treatment.endDate || date <= treatment.endDate);
     const checked = treatment.administrations.some((item) => item.date === date && item.doseNumber === doseNumber);
     const key = `${treatment.id}-${date}-${doseNumber}`;
@@ -54,9 +53,7 @@ export function CatTreatments({ catId, onChanged, refreshVersion = 0 }: { catId:
   const futureTreatments = useMemo(() => treatments.filter((item) => item.startDate > today()).sort((a, b) => a.startDate.localeCompare(b.startDate)), [treatments]);
   const previousTreatments = useMemo(() => treatments.filter((item) => item.endDate !== null && item.endDate < today()), [treatments]);
   const currentStart = currentTreatments.length ? [today(), ...currentTreatments.map((item) => item.startDate)].sort().slice(0, 1)[0] : today();
-  const tableStart = asDate(today());
-  tableStart.setUTCDate(tableStart.getUTCDate() - CURRENT_TABLE_DAYS + 1);
-  const currentTableStart = currentStart > tableStart.toISOString().slice(0, 10) ? currentStart : tableStart.toISOString().slice(0, 10);
+  const currentTableStart = currentStart;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!form.shortName.trim() || !form.startDate) { setError("Enter a short name and start date."); return; } if (form.endDate && form.endDate < form.startDate) { setError("End date cannot be before start date."); return; } setSaving(true); setError(null); try { const payload = { ...form, shortName: form.shortName.trim(), instructions: form.instructions?.trim() || null }; if (editingId) await catsApi.updateTreatment(editingId, payload); else await catsApi.createTreatment(catId, payload); await refresh(); await onChanged?.(); setForm(emptyTreatment()); setEditingId(null); setIsFormOpen(false); } catch (reason) { setError(ApiErrorHandler.handle(reason)); } finally { setSaving(false); } };
   const finishTreatment = async () => { if (!editingId) return; setSaving(true); setError(null); try { await catsApi.updateTreatment(editingId, { endDate: today() }); await refresh(); await onChanged?.(); setForm(emptyTreatment()); setEditingId(null); setIsFormOpen(false); } catch (reason) { setError(ApiErrorHandler.handle(reason)); } finally { setSaving(false); } };

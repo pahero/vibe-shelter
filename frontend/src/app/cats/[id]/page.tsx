@@ -409,13 +409,13 @@ export default function CatProfilePage() {
   }, []);
 
   const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
 
-    if (!file || !cat) return;
+    if (files.length === 0 || !cat) return;
 
-    if (!file.type.startsWith("image/")) {
-      setPhotoError("Choose an image file to update the cat photo.");
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      setPhotoError("Choose image files to add to the cat photo gallery.");
       return;
     }
 
@@ -423,10 +423,13 @@ export default function CatProfilePage() {
     setPhotoError(null);
 
     try {
-      await catsApi.addPhoto(cat.id, file);
+      const uploads = await Promise.allSettled(files.map((file) => catsApi.addPhoto(cat.id, file)));
       const [updatedCat, updatedPhotos] = await Promise.all([catsApi.getCatCard(cat.id), catsApi.listPhotos(cat.id), refreshHistory()]);
       setCat(updatedCat);
       setPhotos(updatedPhotos);
+      if (uploads.some((upload) => upload.status === "rejected")) {
+        setPhotoError("Some photos could not be uploaded. Please try again for those photos.");
+      }
     } catch (err) {
       setPhotoError(ApiErrorHandler.handle(err));
     } finally {
@@ -438,8 +441,11 @@ export default function CatProfilePage() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !cat) return;
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setDocumentError("Choose a PDF document.");
+    const extension = file.name.toLowerCase().split(".").pop();
+    const isPdf = file.type === "application/pdf" || extension === "pdf";
+    const isImage = (["image/jpeg", "image/png"].includes(file.type) || ["jpg", "jpeg", "png"].includes(extension ?? ""));
+    if (!isPdf && !isImage) {
+      setDocumentError("Choose a PDF, JPEG, or PNG file.");
       return;
     }
 
@@ -763,12 +769,14 @@ export default function CatProfilePage() {
    const graphWeights = [...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
   const currentTagIds = new Set(cat?.tags.map((tag) => tag.id) ?? []);
   const tagsToAdd = availableTags.filter((tag) => !currentTagIds.has(tag.id));
-  const primaryPhoto = photos.find((photo) => photo.isPrimary) ?? photos[0] ?? null;
-  const expandedDocument = expandedDocumentId ? documents.find((document) => document.id === expandedDocumentId) ?? null : null;
-  const expandedDocumentIndex = expandedDocumentId ? documents.findIndex((document) => document.id === expandedDocumentId) : -1;
-  const hasMultipleDocuments = documents.length > 1;
-  const expandedPhotoIndex = expandedPhotoId ? photos.findIndex((photo) => photo.id === expandedPhotoId) : -1;
-  const expandedPhoto = expandedPhotoIndex >= 0 ? photos[expandedPhotoIndex] : null;
+  const sortedPhotos = [...photos].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || b.createdAt.localeCompare(a.createdAt));
+  const sortedDocuments = [...documents].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const primaryPhoto = sortedPhotos[0] ?? null;
+  const expandedDocument = expandedDocumentId ? sortedDocuments.find((document) => document.id === expandedDocumentId) ?? null : null;
+  const expandedDocumentIndex = expandedDocumentId ? sortedDocuments.findIndex((document) => document.id === expandedDocumentId) : -1;
+  const hasMultipleDocuments = sortedDocuments.length > 1;
+  const expandedPhotoIndex = expandedPhotoId ? sortedPhotos.findIndex((photo) => photo.id === expandedPhotoId) : -1;
+  const expandedPhoto = expandedPhotoIndex >= 0 ? sortedPhotos[expandedPhotoIndex] : null;
   const expandedPhotoIdForEffect = expandedPhoto?.id;
   const photoFrameGeometry = photoNaturalSize && photoViewportSize
     ? (() => {
@@ -809,23 +817,23 @@ export default function CatProfilePage() {
     measure();
     return () => observer.disconnect();
   }, [expandedPhotoIdForEffect]);
-  const hasMultiplePhotos = photos.length > 1;
-  const visibleGalleryPhotos = photos.slice(0, 3);
+  const hasMultiplePhotos = sortedPhotos.length > 1;
+  const visibleGalleryPhotos = sortedPhotos;
   const showPreviousPhoto = () => {
     if (!hasMultiplePhotos || expandedPhotoIndex < 0) return;
-    openPhoto(photos[(expandedPhotoIndex - 1 + photos.length) % photos.length].id);
+    openPhoto(sortedPhotos[(expandedPhotoIndex - 1 + sortedPhotos.length) % sortedPhotos.length].id);
   };
   const showNextPhoto = () => {
     if (!hasMultiplePhotos || expandedPhotoIndex < 0) return;
-    openPhoto(photos[(expandedPhotoIndex + 1) % photos.length].id);
+    openPhoto(sortedPhotos[(expandedPhotoIndex + 1) % sortedPhotos.length].id);
   };
   const showPreviousDocument = () => {
     if (!hasMultipleDocuments || expandedDocumentIndex < 0) return;
-    setExpandedDocumentId(documents[(expandedDocumentIndex - 1 + documents.length) % documents.length].id);
+    setExpandedDocumentId(sortedDocuments[(expandedDocumentIndex - 1 + sortedDocuments.length) % sortedDocuments.length].id);
   };
   const showNextDocument = () => {
     if (!hasMultipleDocuments || expandedDocumentIndex < 0) return;
-    setExpandedDocumentId(documents[(expandedDocumentIndex + 1) % documents.length].id);
+    setExpandedDocumentId(sortedDocuments[(expandedDocumentIndex + 1) % sortedDocuments.length].id);
   };
 
   return (
@@ -889,7 +897,7 @@ export default function CatProfilePage() {
                     ))}
                     <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-2xl font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60" aria-label="Add photo">
                       {isUploadingPhoto ? "..." : "+"}
-                      <input type="file" accept="image/*" disabled={isUploadingPhoto} onChange={handlePhotoChange} className="sr-only" />
+                      <input type="file" accept="image/*" multiple disabled={isUploadingPhoto} onChange={handlePhotoChange} className="sr-only" />
                     </label>
                   </div>
                 )}
@@ -902,22 +910,25 @@ export default function CatProfilePage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Documents</p>
-                    <p className="mt-1 text-xs text-[#6d6a66]">PDF files only</p>
+                    <p className="mt-1 text-xs text-[#6d6a66]">PDF, JPEG, or PNG files</p>
                   </div>
-                  <label aria-label="Upload PDF" title="Upload PDF" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
+                  <label aria-label="Upload document or image" title="Upload document or image" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
                     {isUploadingDocument ? "…" : <FontAwesomeIcon icon={faPlus} className="text-sm" />}
-                    <input type="file" accept="application/pdf,.pdf" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
+                    <input type="file" accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
                   </label>
                 </div>
                 {isLoadingDocuments && <p className="mt-4 text-sm text-[#6d6a66]">Loading documents...</p>}
                 {!isLoadingDocuments && documents.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No documents have been uploaded.</p>}
                 {!isLoadingDocuments && documents.length > 0 && (
                   <ul className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
-                    {documents.map((document) => (
+                    {sortedDocuments.map((document) => (
                       <li key={document.id} className="flex items-center gap-3 py-2.5">
-                        <button type="button" onClick={() => setExpandedDocumentId(document.id)} disabled={!document.url} className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-[#b24a20] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-gray-800 disabled:no-underline" title={document.fileName}>
-                          {document.fileName}
-                        </button>
+                        <div className="min-w-0 flex-1">
+                          <button type="button" onClick={() => setExpandedDocumentId(document.id)} disabled={!document.url} className="block max-w-full truncate text-left text-sm font-semibold text-[#b24a20] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-gray-800 disabled:no-underline" title={document.fileName}>
+                            {document.fileName}
+                          </button>
+                          <p className="mt-0.5 text-xs text-[#6d6a66]">Added {formatDate(document.createdAt)}</p>
+                        </div>
                         <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} aria-label="Delete document" title="Delete document" className="shrink-0 rounded-lg p-2 text-red-700 transition hover:bg-red-100 disabled:opacity-50">
                           <FontAwesomeIcon icon={faTrash} />
                         </button>
@@ -1469,13 +1480,19 @@ export default function CatProfilePage() {
             )}
             <div className="relative z-10 flex h-[92dvh] w-[95vw] max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
               <div className="flex items-center justify-between gap-3 border-b border-[#d4c7b4] bg-[#fff8ee] px-4 py-3">
-                <p className="min-w-0 truncate text-sm font-semibold text-gray-900" title={expandedDocument.fileName}>{expandedDocument.fileName}{hasMultipleDocuments && <span className="ml-2 text-xs font-medium text-[#6d6a66]">{expandedDocumentIndex + 1} / {documents.length}</span>}</p>
+                <p className="min-w-0 truncate text-sm font-semibold text-gray-900" title={expandedDocument.fileName}>{expandedDocument.fileName}{hasMultipleDocuments && <span className="ml-2 text-xs font-medium text-[#6d6a66]">{expandedDocumentIndex + 1} / {sortedDocuments.length}</span>}</p>
                 <div className="flex shrink-0 items-center gap-2">
                   <a href={expandedDocument.downloadUrl ?? undefined} className="rounded-lg border border-[#b24a20] px-3 py-1.5 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10">Download</a>
                   <button type="button" onClick={() => setExpandedDocumentId(null)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d05a2c] text-2xl font-light leading-none text-white transition hover:bg-[#b24a20]" aria-label="Close document preview">×</button>
                 </div>
               </div>
-              <iframe src={expandedDocument.url ?? undefined} title={`Preview of ${expandedDocument.fileName}`} className="min-h-0 flex-1 bg-white" />
+              {(["jpg", "jpeg", "png"].includes(expandedDocument.fileName.toLowerCase().split(".").pop() ?? "") ? (
+                <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-black p-4">
+                  {expandedDocument.url && <img src={expandedDocument.url} alt={expandedDocument.fileName} className="max-h-full max-w-full object-contain" />}
+                </div>
+              ) : (
+                <iframe src={expandedDocument.url ?? undefined} title={`Preview of ${expandedDocument.fileName}`} className="min-h-0 flex-1 bg-white" />
+              ))}
             </div>
             {hasMultipleDocuments && (
               <button type="button" onClick={showNextDocument} className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20" aria-label="Next document">

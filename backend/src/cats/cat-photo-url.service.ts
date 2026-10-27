@@ -43,7 +43,7 @@ export class CatPhotoUrlService {
 
   async getDocumentUrl(key: string): Promise<string | null> {
     if (!this.bucketName) return null;
-    return this.getCachedGetUrl(key, "inline", "application/pdf");
+    return this.getCachedGetUrl(key, "inline", this.documentContentType(key));
   }
 
   async getDocumentDownloadUrl(
@@ -54,7 +54,7 @@ export class CatPhotoUrlService {
     return this.getCachedGetUrl(
       key,
       `attachment; filename="${this.safeFileName(fileName)}"`,
-      "application/pdf",
+      this.documentContentType(fileName),
     );
   }
 
@@ -170,6 +170,7 @@ export class CatPhotoUrlService {
   async uploadDocument(input: {
     catId: string;
     originalName?: string;
+    contentType?: string;
     body: Buffer;
   }): Promise<string> {
     if (!this.bucketName) throw new Error("S3 bucket is not configured");
@@ -180,7 +181,7 @@ export class CatPhotoUrlService {
         Bucket: this.bucketName,
         Key: key,
         Body: input.body,
-        ContentType: "application/pdf",
+        ContentType: input.contentType ?? "application/pdf",
         ContentDisposition: `attachment; filename="${this.safeFileName(input.originalName)}"`,
       }),
     );
@@ -242,8 +243,13 @@ export class CatPhotoUrlService {
       .replace(/[^a-zA-Z0-9._-]/g, "-")
       .replace(/-+/g, "-")
       .slice(0, 120);
-    return safeName.toLowerCase().endsWith(".pdf")
-      ? safeName
-      : `${safeName}.pdf`;
+    return safeName;
+  }
+
+  private documentContentType(name: string): string {
+    const lowerName = name.toLowerCase();
+    if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerName.endsWith(".png")) return "image/png";
+    return "application/pdf";
   }
 }
