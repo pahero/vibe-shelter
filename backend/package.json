@@ -10,6 +10,8 @@
     "format": "oxfmt --write src test prisma",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "import:trello": "tsx scripts/import-trello.ts -- folc.json --one-attachment-per-cat",
+    "import:trello:archive": "tsx scripts/import-trello.ts -- folc_archive.json --archive --one-attachment-per-cat",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "knip": "knip"

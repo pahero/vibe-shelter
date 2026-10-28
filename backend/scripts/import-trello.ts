@@ -19,7 +19,11 @@ type TrelloAttachment = {
 };
 type TrelloCard = {
   id: string;
+  idList: string;
   name: string;
+  url?: string;
+  shortUrl?: string;
+  closed?: boolean;
   desc?: string;
   idLabels?: string[];
   idChecklists?: string[];
@@ -27,6 +31,7 @@ type TrelloCard = {
 };
 type TrelloBoard = {
   cards: TrelloCard[];
+  lists: Array<{ id: string; name: string }>;
   labels: Array<{ id: string; name: string }>;
   checklists: Array<TrelloChecklist & { id: string; idCard: string }>;
 };
@@ -34,9 +39,17 @@ type ApiRecord = {
   id: string;
   name: string;
   nameNumber: number;
+  archivingReasonId?: string | null;
+  archivedAt?: string | null;
   currentLocationId?: string | null;
 };
-type CatNameNumber = { name: string; nameNumber: number };
+type CatNameNumber = {
+  id: string;
+  name: string;
+  nameNumber: number;
+  archivingReasonId: string | null;
+  archivedAt: string | null;
+};
 type CatPage = {
   data: CatNameNumber[];
   total: number;
@@ -70,10 +83,74 @@ const sourcePath = existsSync(localSourcePath)
   ? localSourcePath
   : resolve(import.meta.dirname, "../../", sourceArgument);
 const dryRun = process.argv.includes("--dry-run");
+const archiveMode = process.argv.includes("--archive");
+const oneAttachmentPerCat = process.argv.includes("--one-attachment-per-cat");
 
 async function main(): Promise<void> {
   const board = JSON.parse(await readFile(sourcePath, "utf8")) as TrelloBoard;
-  const cards = board.cards.filter((card) => card.desc?.includes("(2026)"));
+  const matchingCards = archiveMode
+    ? board.cards
+    : board.cards.filter((card) => card.desc?.includes("(2026)"));
+  const flightListIds = new Set(
+    board.lists
+      .filter((list) => /^\s*(?:flight|flug)\b/i.test(list.name))
+      .map((list) => list.id),
+  );
+  const archiveCardsByNameNumber = new Map<string, TrelloCard[]>();
+  const duplicateCandidates = archiveMode
+    ? matchingCards
+    : matchingCards.filter((card) => !flightListIds.has(card.idList));
+  for (const card of duplicateCandidates) {
+    const parsedName = parseCardName(card.name);
+    const key = nameNumberKey(parsedName.name, parsedName.nameNumber ?? 1);
+    const group = archiveCardsByNameNumber.get(key) ?? [];
+    group.push(card);
+    archiveCardsByNameNumber.set(key, group);
+  }
+  const archiveCardIdsToSkip = new Set<string>();
+  let duplicateArchiveGroupCount = 0;
+  let ambiguousArchiveGroupCount = 0;
+  let skippedClosedArchiveCardCount = 0;
+  for (const group of archiveCardsByNameNumber.values()) {
+    if (group.length < 2) continue;
+    duplicateArchiveGroupCount++;
+    const openCards = group.filter((card) => !card.closed);
+    if (openCards.length === 1) {
+      for (const card of group) {
+        if (card !== openCards[0]) {
+          archiveCardIdsToSkip.add(card.id);
+          if (card.closed) skippedClosedArchiveCardCount++;
+        }
+      }
+    } else {
+      ambiguousArchiveGroupCount++;
+      for (const card of group) archiveCardIdsToSkip.add(card.id);
+    }
+  }
+  const selectedCards = duplicateCandidates.filter(
+    (card) => !archiveCardIdsToSkip.has(card.id),
+  );
+  const cards = selectedCards;
+  const ignoredFlightCardCount = matchingCards.length - cards.length;
+  for (const card of duplicateCandidates) {
+    if (!archiveCardIdsToSkip.has(card.id)) continue;
+    const parsedName = parseCardName(card.name);
+    const reason =
+      archiveCardsByNameNumber
+        .get(nameNumberKey(parsedName.name, parsedName.nameNumber ?? 1))
+        ?.filter((candidate) => !candidate.closed).length === 1
+        ? "closed duplicate; sole non-closed duplicate selected"
+        : "ambiguous duplicate group; no card imported";
+    console.log(
+      `Not imported (${reason}): ${card.name} — ${trelloCardUrl(card)}`,
+    );
+  }
+  for (const card of matchingCards) {
+    if (!flightListIds.has(card.idList) || archiveMode) continue;
+    console.log(
+      `Not imported (Flight/Flug list): ${card.name} — ${trelloCardUrl(card)}`,
+    );
+  }
   const desiredTagNames = [
     "CCLAF",
     "sick",
@@ -103,6 +180,13 @@ async function main(): Promise<void> {
           nameNumber: parsedName.nameNumber ?? 1,
           ...description,
           locationName: description.locationName ?? fallbackLocationName,
+          ...(archiveMode
+            ? {
+                archivingReason:
+                  board.lists.find((list) => list.id === card.idList)?.name ??
+                  "MISSING LIST",
+              }
+            : {}),
           sex: labels.includes("male")
             ? "MALE"
             : labels.includes("female")
@@ -116,12 +200,21 @@ async function main(): Promise<void> {
           tags: labels.filter((name) =>
             desiredTagNames.some((tag) => tag.toLowerCase() === name),
           ),
-          attachmentCount: card.attachments?.length ?? 0,
+          attachmentCount: oneAttachmentPerCat
+            ? Math.min(
+                card.attachments?.filter((attachment) => attachment.url)
+                  .length ?? 0,
+                1,
+              )
+            : (card.attachments?.length ?? 0),
+          ...(card.url || card.shortUrl
+            ? { trelloUrl: trelloCardUrl(card) }
+            : {}),
         })}`,
       );
     }
     console.log(
-      `Dry run complete: ${cards.length} matching cards; no API changes made.`,
+      `Dry run complete: ${cards.length} ${archiveMode ? "archive" : "non-flight"} cards;${duplicateArchiveGroupCount ? ` selected the sole non-closed Trello card from duplicate groups, skipping ${skippedClosedArchiveCardCount} closed cards; left ${ambiguousArchiveGroupCount} ambiguous groups unimported (${duplicateArchiveGroupCount} duplicate groups total);` : ""} ignored ${ignoredFlightCardCount} flight-list cards;${oneAttachmentPerCat ? " limited uploads to one attachment per cat;" : ""} no API changes made.`,
     );
     return;
   }
@@ -147,6 +240,9 @@ async function main(): Promise<void> {
       tagIds.set(name.toLocaleLowerCase(), tag.id);
     }
   }
+  const archiveReasonIds = archiveMode
+    ? await ensureArchiveReasons(board.lists, cookie)
+    : new Map<string, string>();
   const importDate = new Date();
   const dayOfMonth = importDate.getUTCDate();
   importDate.setUTCDate(1);
@@ -158,24 +254,42 @@ async function main(): Promise<void> {
   const vaccineDate = importDate.toISOString().slice(0, 10);
   let createdCount = 0;
   let skippedDuplicateCount = 0;
+  let archivedCount = 0;
   for (const [index, card] of cards.entries()) {
     try {
       const parsedName = parseCardName(card.name);
       const nameNumber = parsedName.nameNumber ?? 1;
-      const alreadyImported = existingCats.nameNumbers.has(
-        nameNumberKey(parsedName.name, nameNumber),
-      );
+      const key = nameNumberKey(parsedName.name, nameNumber);
+      const alreadyImported = existingCats.get(key);
       if (alreadyImported) {
+        if (archiveMode && !alreadyImported.archivingReasonId) {
+          const reasonId = archiveReasonIds.get(card.idList);
+          if (!reasonId)
+            throw new Error(
+              `No archiving reason found for source list ${card.idList}`,
+            );
+          await archiveCat(alreadyImported.id, reasonId, cookie);
+          alreadyImported.archivingReasonId = reasonId;
+          alreadyImported.archivedAt = new Date().toISOString();
+          archivedCount++;
+        }
         skippedDuplicateCount++;
         console.log(
-          `Skipped duplicate ${index + 1}/${cards.length}: ${parsedName.name} #${nameNumber} already exists`,
+          `Not imported (already exists): ${parsedName.name} #${nameNumber} — ${trelloCardUrl(card)}`,
         );
         continue;
       }
       const description = parseDescription(card.desc ?? "");
+      const archiveReasonId = archiveMode
+        ? archiveReasonIds.get(card.idList)
+        : undefined;
+      if (archiveMode && !archiveReasonId)
+        throw new Error(
+          `No archiving reason found for source list ${card.idList}`,
+        );
       const locationName = description.locationName ?? fallbackLocationName;
-      const key = locationKey(locationName);
-      let currentLocationId = locationByName.get(key);
+      const locationLookupKey = locationKey(locationName);
+      let currentLocationId = locationByName.get(locationLookupKey);
       if (!currentLocationId) {
         const createdLocation = await api<{ id: string }>(
           "/api/locations",
@@ -183,7 +297,7 @@ async function main(): Promise<void> {
           { method: "POST", body: { name: locationName } },
         );
         currentLocationId = createdLocation.id;
-        locationByName.set(key, currentLocationId);
+        locationByName.set(locationLookupKey, currentLocationId);
         console.log(`Created active location: ${locationName}`);
       }
       const checked = readCheckedData(checklistByCard.get(card.id) ?? []);
@@ -219,7 +333,22 @@ async function main(): Promise<void> {
         body: payload,
       });
       createdCount++;
-      existingCats.nameNumbers.add(nameNumberKey(cat.name, cat.nameNumber));
+      existingCats.set(key, {
+        id: cat.id,
+        name: cat.name,
+        nameNumber: cat.nameNumber,
+        archivingReasonId: null,
+        archivedAt: null,
+      });
+      if (archiveReasonId) {
+        await archiveCat(cat.id, archiveReasonId, cookie);
+        const importedCat = existingCats.get(key);
+        if (importedCat) {
+          importedCat.archivingReasonId = archiveReasonId;
+          importedCat.archivedAt = new Date().toISOString();
+        }
+        archivedCount++;
+      }
       for (const tagName of desiredTagNames) {
         if (labels.has(tagName.toLowerCase())) {
           const tagId = tagIds.get(tagName.toLowerCase());
@@ -245,13 +374,17 @@ async function main(): Promise<void> {
           },
         });
       }
-      for (const attachment of card.attachments ?? []) {
-        if (!attachment.url) continue;
+      const attachments = (card.attachments ?? []).filter(
+        (attachment) => attachment.url,
+      );
+      for (const attachment of oneAttachmentPerCat
+        ? attachments.slice(0, 1)
+        : attachments) {
         try {
-          await importPhoto(cat.id, attachment, cookie);
+          await importAttachment(cat.id, attachment, cookie);
         } catch (error) {
           console.error(
-            `Photo import failed for ${card.name} / ${attachment.name ?? attachment.url}: ${error instanceof Error ? error.message : String(error)}`,
+            `Attachment import failed for ${card.name} / ${attachment.name ?? attachment.url}: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }
@@ -260,19 +393,19 @@ async function main(): Promise<void> {
       );
     } catch (error) {
       console.error(
-        `Failed card ${index + 1}/${cards.length} (${card.name}): ${error instanceof Error ? error.message : String(error)}`,
+        `Not imported (failed): ${card.name} — ${trelloCardUrl(card)}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
   console.log(
-    `Created ${createdCount} cats; skipped ${skippedDuplicateCount} existing name/number duplicates out of ${cards.length} source cards.`,
+    `Created ${createdCount} cats; archived ${archivedCount}; skipped ${skippedDuplicateCount} existing name/number duplicates; selected the sole non-closed Trello card from duplicate groups, skipping ${skippedClosedArchiveCardCount} closed cards and leaving ${ambiguousArchiveGroupCount} ambiguous groups unimported; ignored ${ignoredFlightCardCount} flight-list cards;${oneAttachmentPerCat ? " limited uploads to one attachment per cat." : ""}`,
   );
 }
 
-async function loadExistingCats(cookie: string): Promise<{
-  nameNumbers: Set<string>;
-}> {
-  const existing = { nameNumbers: new Set<string>() };
+async function loadExistingCats(
+  cookie: string,
+): Promise<Map<string, CatNameNumber>> {
+  const existing = new Map<string, CatNameNumber>();
   for (const archived of [false, true]) {
     let skip = 0;
     let total = 0;
@@ -282,13 +415,62 @@ async function loadExistingCats(cookie: string): Promise<{
         cookie,
       );
       for (const cat of page.data) {
-        existing.nameNumbers.add(nameNumberKey(cat.name, cat.nameNumber));
+        existing.set(nameNumberKey(cat.name, cat.nameNumber), cat);
       }
       total = page.total;
       skip += page.limit;
     } while (skip < total);
   }
   return existing;
+}
+
+async function ensureArchiveReasons(
+  lists: Array<{ id: string; name: string }>,
+  cookie: string,
+): Promise<Map<string, string>> {
+  const reasons = await api<Array<{ id: string; name: string }>>(
+    "/api/cats/archiving-reasons",
+    cookie,
+  );
+  const idsByName = new Map(
+    reasons.map((reason) => [
+      reason.name.trim().toLocaleLowerCase(),
+      reason.id,
+    ]),
+  );
+  const reasonIdsByList = new Map<string, string>();
+  for (const list of lists) {
+    const name = list.name.trim();
+    const key = name.toLocaleLowerCase();
+    let reasonId = idsByName.get(key);
+    if (!reasonId) {
+      const created = await api<{ id: string }>(
+        "/api/cats/archiving-reasons",
+        cookie,
+        { method: "POST", body: { name } },
+      );
+      reasonId = created.id;
+      idsByName.set(key, reasonId);
+      console.log(`Created archiving reason: ${name}`);
+    }
+    reasonIdsByList.set(list.id, reasonId);
+  }
+  return reasonIdsByList;
+}
+
+async function archiveCat(
+  catId: string,
+  reasonId: string,
+  cookie: string,
+): Promise<void> {
+  await api(`/api/cats/${catId}/archive`, cookie, {
+    method: "POST",
+    body: { reasonId },
+  });
+}
+
+function trelloCardUrl(card: TrelloCard): string {
+  return card.shortUrl ?? card.url ?? `https://trello.com/c/${card.id}`;
 }
 
 async function loadActiveLocations(
@@ -371,11 +553,40 @@ async function api<T = unknown>(
   return (await response.json()) as T;
 }
 
-async function importPhoto(
+async function importAttachment(
   catId: string,
   attachment: TrelloAttachment,
   cookie: string,
 ): Promise<void> {
+  const attachmentName = attachment.name ?? new URL(attachment.url!).pathname;
+  const extension = attachmentName.split(".").pop()?.toLowerCase();
+  const mimeType = attachment.mimeType?.toLowerCase() ?? "";
+  const isPdf = mimeType === "application/pdf" || extension === "pdf";
+  const videoType = mimeType.startsWith("video/")
+    ? mimeType === "video/mp4" ||
+      mimeType === "video/webm" ||
+      mimeType === "video/quicktime"
+      ? mimeType
+      : null
+    : extension === "mp4"
+      ? "video/mp4"
+      : extension === "webm"
+        ? "video/webm"
+        : extension === "mov"
+          ? "video/quicktime"
+          : null;
+  if (mimeType.startsWith("video/") && !videoType) {
+    throw new Error(`Unsupported video format (${attachment.mimeType})`);
+  }
+  if (
+    !videoType &&
+    ["mov", "avi", "mkv", "m4v", "mpeg", "mpg"].includes(extension ?? "")
+  ) {
+    throw new Error(
+      `Unsupported video format (.${extension}); use MP4, WebM, or MOV`,
+    );
+  }
+
   const attachmentUrl = new URL(attachment.url!);
   if (
     attachmentUrl.hostname === "trello.com" &&
@@ -402,28 +613,42 @@ async function importPhoto(
     );
   const bytes = await response.arrayBuffer();
   const form = new FormData();
+  const isVideo = videoType !== null;
+  const uploadName = videoType
+    ? `${attachmentName.replace(/\.[^/.]+$/, "")}.${videoType === "video/mp4" ? "mp4" : videoType === "video/webm" ? "webm" : "mov"}`
+    : attachmentName;
+  const destination = isPdf
+    ? {
+        path: `/api/cats/${catId}/documents`,
+        field: "document",
+        type: "application/pdf",
+      }
+    : {
+        path: `/api/cats/${catId}/photos`,
+        field: "photo",
+        type:
+          videoType ??
+          attachment.mimeType ??
+          response.headers.get("content-type") ??
+          "image/jpeg",
+      };
   form.append(
-    "photo",
-    new Blob([bytes], {
-      type:
-        attachment.mimeType ||
-        response.headers.get("content-type") ||
-        "image/jpeg",
-    }),
-    basename(attachment.name || new URL(attachment.url!).pathname),
+    destination.field,
+    new Blob([bytes], { type: destination.type }),
+    basename(uploadName),
   );
-  const upload = await fetch(`${apiBase}/api/cats/${catId}/photos`, {
+  const upload = await fetch(`${apiBase}${destination.path}`, {
     method: "POST",
     headers: { cookie },
     body: form,
   }).catch((error: unknown) => {
     throw new Error(
-      `Network request failed: POST /api/cats/${catId}/photos: ${describeError(error)}`,
+      `Network request failed: POST ${destination.path}: ${describeError(error)}`,
     );
   });
   if (!upload.ok)
     throw new Error(
-      `Photo upload failed (${upload.status}): ${await upload.text()}`,
+      `${isPdf ? "Document" : isVideo ? "Video" : "Photo"} upload failed (${upload.status}): ${await upload.text()}`,
     );
 }
 
