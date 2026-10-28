@@ -63,7 +63,8 @@ export class CreateCatHandler {
       const created = await transaction.cat.create({
         data: {
           name: command.name,
-          nameNumber: (highestNumber._max.nameNumber ?? 0) + 1,
+          nameNumber:
+            command.nameNumber ?? (highestNumber._max.nameNumber ?? 0) + 1,
           sex: command.sex,
           color: command.color,
           estimatedBirthDate: command.estimatedBirthDate,
@@ -73,6 +74,9 @@ export class CreateCatHandler {
           microchipNumber: command.microchipNumber,
           passport: command.passport,
           sponsorName: command.sponsorName,
+          adopterName: command.adopterName,
+          adopterAddress: command.adopterAddress,
+          felvFivTestDone: command.felvFivTestDone,
           sterilizationStatus: command.sterilizationStatus,
           currentLocationId: command.currentLocationId,
           createdByUserId: command.createdByUserId,

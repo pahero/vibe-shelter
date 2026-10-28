@@ -246,9 +246,30 @@ export class CatPhotoUrlService {
     return safeName;
   }
 
+  async uploadVideo(input: {
+    catId: string;
+    originalName: string;
+    contentType: "video/mp4" | "video/webm" | "video/quicktime";
+    body: Buffer;
+  }): Promise<string> {
+    if (!this.bucketName) throw new Error("S3 bucket is not configured");
+    const safeName = this.safeFileName(input.originalName);
+    const key = `cats/${input.catId}/photos/${Date.now()}-${randomUUID()}-${safeName}`;
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: input.body,
+        ContentType: input.contentType,
+      }),
+    );
+    return key;
+  }
+
   private documentContentType(name: string): string {
     const lowerName = name.toLowerCase();
-    if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg"))
+      return "image/jpeg";
     if (lowerName.endsWith(".png")) return "image/png";
     return "application/pdf";
   }

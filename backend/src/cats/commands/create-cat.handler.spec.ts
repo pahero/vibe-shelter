@@ -62,6 +62,30 @@ describe("CreateCatHandler", () => {
     });
   });
 
+  it("preserves an explicitly imported name number and checklist cat fields", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorUserId = await createActor(tx);
+      const name = unique("imported-cat");
+      const created = await createHandler(tx as PrismaService).execute(
+        createCommand(actorUserId, {
+          name,
+          nameNumber: 27,
+          adopterName: "Jane Doe",
+          adopterAddress: "5 Main Street",
+          felvFivTestDone: true,
+        }),
+      );
+      expect(created.nameNumber).toBe(27);
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: created.id } }),
+      ).resolves.toMatchObject({
+        adopterName: "Jane Doe",
+        adopterAddress: "5 Main Street",
+        felvFivTestDone: true,
+      });
+    });
+  });
+
   it("persists command fields and returns the active location", async () => {
     await runInTestTransaction(async (tx) => {
       const prisma = tx as PrismaService;
@@ -168,26 +192,26 @@ describe("CreateCatHandler", () => {
   });
 
   it("rejects a duplicate microchip number", async () => {
-      await runInTestTransaction(async (tx) => {
-        const actorUserId = await createActor(tx);
-        const handler = createHandler(tx as PrismaService);
-        const value = unique("microchip");
-        await handler.execute(
+    await runInTestTransaction(async (tx) => {
+      const actorUserId = await createActor(tx);
+      const handler = createHandler(tx as PrismaService);
+      const value = unique("microchip");
+      await handler.execute(
+        createCommand(actorUserId, {
+          name: unique("first"),
+          microchipNumber: value,
+        }),
+      );
+      await expect(
+        handler.execute(
           createCommand(actorUserId, {
-            name: unique("first"),
+            name: unique("second"),
             microchipNumber: value,
           }),
-        );
-        await expect(
-          handler.execute(
-            createCommand(actorUserId, {
-              name: unique("second"),
-              microchipNumber: value,
-            }),
-          ),
-        ).rejects.toThrow(ConflictException);
-      });
+        ),
+      ).rejects.toThrow(ConflictException);
     });
+  });
 });
 
 function createHandler(prisma: PrismaService): CreateCatHandler {
@@ -214,6 +238,10 @@ function createCommand(
     sponsorName: string;
     currentLocationId: string;
     isTest: boolean;
+    nameNumber: number;
+    adopterName: string;
+    adopterAddress: string;
+    felvFivTestDone: boolean;
   }> = {},
 ): CreateCatCommand {
   return new CreateCatCommand(
@@ -221,16 +249,20 @@ function createCommand(
     "UNKNOWN",
     null,
     null,
-      null,
-      null,
-      null,
-      overrides.microchipNumber ?? null,
+    null,
+    null,
+    null,
+    overrides.microchipNumber ?? null,
     overrides.passport ?? false,
     overrides.sponsorName ?? null,
     "UNKNOWN",
     overrides.currentLocationId ?? null,
     actorUserId,
     overrides.isTest ?? false,
+    overrides.nameNumber,
+    overrides.adopterName ?? null,
+    overrides.adopterAddress ?? null,
+    overrides.felvFivTestDone ?? false,
   );
 }
 

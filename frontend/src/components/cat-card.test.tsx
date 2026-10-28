@@ -40,6 +40,43 @@ describe("CatCard", () => {
     expect(screen.getByRole("heading", { name: "Tom #3" })).toBeVisible();
   });
 
+  it("shows a video preview and exposes it as an expandable video", () => {
+    const cat = {
+      id: "cat-video",
+      name: "Video Cat",
+      nameNumber: 4,
+      primaryPhotoUrl: "https://storage.example/cats/video.mp4?signature=abc",
+      primaryPhotoPositionY: null,
+      sex: "UNKNOWN",
+      color: null,
+      estimatedBirthDate: null,
+      intakeDate: null,
+      archivedAt: null,
+      archivingReasonId: null,
+      archivingReasonName: null,
+      sterilizationStatus: "UNKNOWN",
+      currentLocationId: null,
+      currentLocationName: null,
+      createdByUserId: null,
+      isTest: false,
+      microchipNumber: null,
+      passport: false,
+      sponsorName: null,
+      adopterName: null,
+      adopterAddress: null,
+      felvFivTestDone: false,
+      intakeDetails: null,
+      intakeSource: null,
+      updatedAt: "2026-10-03T00:00:00.000Z",
+      tags: [],
+    } as CatCardType;
+
+    render(<CatCard cat={cat} showProfileLink={false} onPhotoClick={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Expand video of Video Cat" }).querySelector("video"))
+      .toHaveAttribute("src", cat.primaryPhotoUrl);
+  });
+
   it("only renders the favorite heart when enabled and toggles its selected state", async () => {
     const cat: CatCardType = { id: "cat-heart", name: "Mimi", nameNumber: 2, sex: "FEMALE", color: null, estimatedBirthDate: null, intakeDate: null, sterilizationStatus: "UNKNOWN", currentLocationId: null, currentLocationName: null, createdByUserId: null, isTest: false, primaryPhotoUrl: null, primaryPhotoPositionY: null, microchipNumber: null, passport: false, sponsorName: null, adopterName: null, adopterAddress: null, felvFivTestDone: false, intakeDetails: null, intakeSource: null, updatedAt: "2026-10-03T00:00:00.000Z", tags: [], isFavorite: false };
     const toggle = vi.spyOn(catsApi, "toggleCatFavorite").mockResolvedValue({ favorite: true });

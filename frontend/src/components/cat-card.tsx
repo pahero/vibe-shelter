@@ -50,6 +50,7 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, showFavo
   const profileHref = `/cats/${cat.id}`;
   const [favorite, setFavorite] = useState(cat.isFavorite);
   const [savingFavorite, setSavingFavorite] = useState(false);
+  const primaryIsVideo = /\.(mp4|webm)(?:[?#]|$)/i.test(cat.primaryPhotoUrl ?? "");
 
 
   async function toggleFavorite() {
@@ -71,7 +72,19 @@ export function CatCard({ cat, showProfileLink = true, showTags = true, showFavo
       </button>}
       <div className="relative aspect-video bg-gradient-to-br from-[#f1d8c7] to-[#d05a2c]/20">
         {cat.primaryPhotoUrl ? (
-          onPhotoClick ? (
+          primaryIsVideo ? (
+            onPhotoClick ? (
+              <button type="button" onClick={onPhotoClick} aria-label={`Expand video of ${cat.name}`} className="relative h-full w-full bg-black focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c]">
+                <video src={cat.primaryPhotoUrl ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-contain" aria-hidden="true" />
+                <span className="absolute inset-0 flex items-center justify-center text-5xl text-white drop-shadow" aria-hidden="true">▶</span>
+              </button>
+            ) : (
+              <div className="relative h-full w-full bg-black" aria-label={`Video of ${cat.name}`}>
+                <video src={cat.primaryPhotoUrl ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-contain" aria-hidden="true" />
+                <span className="absolute inset-0 flex items-center justify-center text-5xl text-white drop-shadow" aria-hidden="true">▶</span>
+              </div>
+            )
+          ) : onPhotoClick ? (
             <button
               type="button"
               onClick={onPhotoClick}

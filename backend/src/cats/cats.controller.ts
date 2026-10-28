@@ -333,7 +333,7 @@ export class CatsController {
 
   @Post(":id/photos")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor("photo"))
+  @UseInterceptors(FileInterceptor("photo", { limits: { fileSize: 500 * 1024 * 1024 } }))
   async addPhoto(
     @Param("id") id: string,
     @CurrentUser() user: AuthenticatedUser,

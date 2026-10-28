@@ -69,6 +69,12 @@ export async function toCatPhoto(
     url: await photoUrls.getPhotoUrl(photo.previewKey ?? photo.key),
     fullUrl: await photoUrls.getPhotoUrl(photo.key),
     isPrimary: photo.key === primaryPhotoKey,
+    mediaType:
+      photo.key.endsWith(".mp4") ||
+      photo.key.endsWith(".webm") ||
+      photo.key.endsWith(".mov")
+        ? "video"
+        : "image",
     createdAt: photo.createdAt.toISOString(),
   };
 }

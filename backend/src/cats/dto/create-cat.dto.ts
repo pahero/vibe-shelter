@@ -1,12 +1,25 @@
 import { BadRequestException } from "@nestjs/common";
 import { CatIntakeSource, CatSex, SterilizationStatus } from "@prisma/client";
-import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from "class-validator";
 import { CreateCatCommand } from "../commands/create-cat.command";
 
 export class CreateCatDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  nameNumber?: number;
 
   @IsIn(["FEMALE", "MALE", "UNKNOWN"])
   sex!: string;
@@ -27,7 +40,14 @@ export class CreateCatDto {
   @IsOptional()
   intakeDetails?: string | null;
 
-  @IsIn(["SHELTER_VOLUNTEER", "OWNER_SURRENDER", "RESCUE_REQUEST", "VET_CLINIC", "RESCUE_ORGANISATION", "OTHER"])
+  @IsIn([
+    "SHELTER_VOLUNTEER",
+    "OWNER_SURRENDER",
+    "RESCUE_REQUEST",
+    "VET_CLINIC",
+    "RESCUE_ORGANISATION",
+    "OTHER",
+  ])
   @IsOptional()
   intakeSource?: string | null;
 
@@ -42,6 +62,18 @@ export class CreateCatDto {
   @IsString()
   @IsOptional()
   sponsorName?: string | null;
+
+  @IsString()
+  @IsOptional()
+  adopterName?: string | null;
+
+  @IsString()
+  @IsOptional()
+  adopterAddress?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  felvFivTestDone?: boolean;
 
   @IsIn(["STERILIZED", "NOT_STERILIZED", "UNKNOWN"])
   sterilizationStatus!: string;
@@ -80,6 +112,10 @@ export class CreateCatDto {
       this.optionalTrim(this.currentLocationId),
       createdByUserId,
       currentUserIsTest,
+      this.nameNumber,
+      this.optionalTrim(this.adopterName),
+      this.optionalTrim(this.adopterAddress),
+      this.felvFivTestDone ?? false,
     );
   }
 
