@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { S3Client } from "@aws-sdk/client-s3";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { PrismaService } from "../../database/prisma.service";
 import {
   createBucket,
@@ -102,6 +103,72 @@ describe("AddCatPhotoHandler", () => {
           tx as PrismaService,
           new CatPhotoUrlService(config, s3Client),
         ).handle(cat.id, undefined, undefined, false),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  it.each([
+    { filename: "clip.mp4", mimetype: "video/mp4" },
+    { filename: "clip.webm", mimetype: "video/webm" },
+    { filename: "clip.mov", mimetype: "video/quicktime" },
+    { filename: undefined, mimetype: "video/mp4" },
+  ])(
+    "stores $mimetype video without image compression",
+    async ({ filename, mimetype }) => {
+      await runInTestTransaction(async (tx) => {
+        const cat = await tx.cat.create({
+          data: { name: `Video cat ${Date.now()}-${Math.random()}` },
+        });
+        const result = await new AddCatPhotoHandler(
+          tx as PrismaService,
+          new CatPhotoUrlService(config, s3Client),
+        ).handle(
+          cat.id,
+          {
+            originalname: filename,
+            mimetype,
+            buffer: Buffer.from("video content"),
+          },
+          undefined,
+          false,
+        );
+
+        expect(result).toMatchObject({
+          catId: cat.id,
+          mediaType: "video",
+          isPrimary: true,
+        });
+        const record = await tx.catPhoto.findUniqueOrThrow({
+          where: { id: result.id },
+        });
+        const stored = await s3Client.send(
+          new HeadObjectCommand({ Bucket: bucket, Key: record.key }),
+        );
+        expect(stored.ContentType).toBe(mimetype);
+        expect(result.url).toBe(result.fullUrl);
+      });
+    },
+  );
+
+  it("rejects unsupported video MIME types", async () => {
+    await runInTestTransaction(async (tx) => {
+      const cat = await tx.cat.create({
+        data: { name: `Invalid video cat ${Date.now()}-${Math.random()}` },
+      });
+      await expect(
+        new AddCatPhotoHandler(
+          tx as PrismaService,
+          new CatPhotoUrlService(config, s3Client),
+        ).handle(
+          cat.id,
+          {
+            originalname: "clip.avi",
+            mimetype: "video/x-msvideo",
+            buffer: Buffer.from("video content"),
+          },
+          undefined,
+          false,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });

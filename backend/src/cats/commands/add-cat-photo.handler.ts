@@ -32,14 +32,58 @@ export class AddCatPhotoHandler {
     if (!cat) throw new NotFoundException("Cat not found");
     if (!photo?.buffer?.length)
       throw new BadRequestException("Photo file is required");
-    const compressed = await CatPhotoCompressionService.compress(photo);
-    const { key, previewKey } = await this.photoUrls.uploadPhotoVariants({
-      catId,
-      originalName: compressed.full.originalname,
-      contentType: compressed.full.mimetype,
-      fullBody: compressed.full.buffer,
-      previewBody: compressed.preview.buffer,
-    });
+    const isMp4 =
+      photo.mimetype === "video/mp4" &&
+      (!photo.originalname ||
+        photo.originalname.toLowerCase().endsWith(".mp4"));
+    const isWebm =
+      photo.mimetype === "video/webm" &&
+      (!photo.originalname ||
+        photo.originalname.toLowerCase().endsWith(".webm"));
+    const isQuickTime =
+      photo.mimetype === "video/quicktime" &&
+      (!photo.originalname ||
+        photo.originalname.toLowerCase().endsWith(".mov"));
+    if (
+      photo.mimetype?.startsWith("video/") &&
+      !isMp4 &&
+      !isWebm &&
+      !isQuickTime
+    )
+      throw new BadRequestException(
+        "Only MP4, WebM, and MOV videos are supported",
+      );
+    let key: string;
+    let previewKey: string | null = null;
+    if (isMp4 || isWebm || isQuickTime) {
+      key = await this.photoUrls.uploadVideo({
+        catId,
+        originalName:
+          photo.originalname ??
+          (isMp4 ? "video.mp4" : isWebm ? "video.webm" : "video.mov"),
+        contentType: isMp4
+          ? "video/mp4"
+          : isWebm
+            ? "video/webm"
+            : "video/quicktime",
+        body: photo.buffer,
+      });
+    } else {
+      if (!photo.mimetype?.startsWith("image/"))
+        throw new BadRequestException(
+          "Only image, MP4, and WebM files are supported",
+        );
+      const compressed = await CatPhotoCompressionService.compress(photo);
+      const variants = await this.photoUrls.uploadPhotoVariants({
+        catId,
+        originalName: compressed.full.originalname,
+        contentType: compressed.full.mimetype,
+        fullBody: compressed.full.buffer,
+        previewBody: compressed.preview.buffer,
+      });
+      key = variants.key;
+      previewKey = variants.previewKey;
+    }
     const created = await runInNewTransaction(this.prisma, async (tx) => {
       const result = await tx.catPhoto.create({
         data: { catId, key, previewKey, createdByUserId: actorUserId ?? null },

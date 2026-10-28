@@ -59,27 +59,34 @@ describe("Cats endpoints", () => {
 
   it("POST /api/cats creates a cat card", async () => {
     const location = await createLocation(prisma, "post");
+    const name = unique("Mila");
     const response = await authAgent
       .post("/api/cats")
       .send({
-        name: "Mila",
+        name,
         sex: "FEMALE",
         sterilizationStatus: "STERILIZED",
         currentLocationId: location.id,
         passport: true,
         sponsorName: "Mila Sponsor",
+        nameNumber: 12,
+        adopterName: "Jane Doe",
+        adopterAddress: "5 Main Street",
+        felvFivTestDone: true,
       })
       .expect(201);
 
-    expect(response.body.name).toBe("Mila");
+    expect(response.body.name).toBe(name);
     expect(response.body.currentLocationName).toBe(location.name);
     expect(response.body.primaryPhotoUrl).toBeNull();
     expect(response.body.primaryPhotoKey).toBeUndefined();
     expect(response.body).toMatchObject({
       passport: true,
       sponsorName: "Mila Sponsor",
-      adopterName: null,
-      adopterAddress: null,
+      nameNumber: 12,
+      adopterName: "Jane Doe",
+      adopterAddress: "5 Main Street",
+      felvFivTestDone: true,
     });
     const stored = await (prisma as any).cat.findUnique({
       where: { id: response.body.id },
@@ -110,12 +117,18 @@ describe("Cats endpoints", () => {
       auth: "test-auth-secret",
     };
 
-    await authAgent.post("/api/push-subscriptions").send(subscription).expect(204);
+    await authAgent
+      .post("/api/push-subscriptions")
+      .send(subscription)
+      .expect(204);
     await expect(
       prisma.pushSubscription.findUnique({ where: { endpoint } }),
     ).resolves.toMatchObject({ endpoint, userId: authUser.id });
 
-    await authAgent.delete("/api/push-subscriptions").send({ endpoint }).expect(204);
+    await authAgent
+      .delete("/api/push-subscriptions")
+      .send({ endpoint })
+      .expect(204);
     await expect(
       prisma.pushSubscription.findUnique({ where: { endpoint } }),
     ).resolves.toBeNull();
@@ -252,10 +265,14 @@ describe("Cats endpoints", () => {
       .query({ catId: testCat.body.id })
       .expect(200);
     expect(
-      regularManagementHistory.body.data.map((event: { catId: string }) => event.catId),
+      regularManagementHistory.body.data.map(
+        (event: { catId: string }) => event.catId,
+      ),
     ).toContain(regularCat.body.id);
     expect(
-      testManagementHistory.body.data.map((event: { catId: string }) => event.catId),
+      testManagementHistory.body.data.map(
+        (event: { catId: string }) => event.catId,
+      ),
     ).toContain(testCat.body.id);
 
     await regularAuth.agent
@@ -348,6 +365,38 @@ describe("Cats endpoints", () => {
     expect(afterDelete.body.primaryPhotoUrl).toContain("first.jpg");
   });
 
+  it.each([
+    { filename: "clip.mp4", contentType: "video/mp4" },
+    { filename: "clip.webm", contentType: "video/webm" },
+    { filename: "clip.mov", contentType: "video/quicktime" },
+  ])(
+    "uploads and lists $contentType gallery media",
+    async ({ filename, contentType }) => {
+      const cat = await createCat(prisma, { name: unique("video-gallery") });
+      const uploaded = await authAgent
+        .post(`/api/cats/${cat.id}/photos`)
+        .attach("photo", Buffer.from("video bytes"), { filename, contentType })
+        .expect(201);
+
+      expect(uploaded.body).toMatchObject({
+        mediaType: "video",
+        catId: cat.id,
+      });
+      expect(uploaded.body.fullUrl).toContain(filename);
+      expect(uploaded.body.url).toBe(uploaded.body.fullUrl);
+      const listed = await authAgent
+        .get(`/api/cats/${cat.id}/photos`)
+        .expect(200);
+      expect(listed.body).toContainEqual(
+        expect.objectContaining({
+          id: uploaded.body.id,
+          mediaType: "video",
+          fullUrl: uploaded.body.fullUrl,
+        }),
+      );
+    },
+  );
+
   it("manages PDF document endpoints and records both audit events", async () => {
     const cat = await createCat(prisma, { name: unique("document") });
 
@@ -411,10 +460,22 @@ describe("Cats endpoints", () => {
 
   it("accepts image files as documents and stores a compressed full JPEG", async () => {
     const cat = await createCat(prisma, { name: unique("image-document") });
-    const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: { r: 90, g: 40, b: 20 } } }).png().toBuffer();
+    const png = await sharp({
+      create: {
+        width: 8,
+        height: 8,
+        channels: 3,
+        background: { r: 90, g: 40, b: 20 },
+      },
+    })
+      .png()
+      .toBuffer();
     const created = await authAgent
       .post(`/api/cats/${cat.id}/documents`)
-      .attach("document", png, { filename: "scan.png", contentType: "image/png" })
+      .attach("document", png, {
+        filename: "scan.png",
+        contentType: "image/png",
+      })
       .expect(201);
     expect(created.body.fileName).toBe("scan.jpg");
     expect(created.body.url).toContain(`cats/${cat.id}/documents/`);
@@ -454,9 +515,16 @@ describe("Cats endpoints", () => {
     });
     await authAgent.put(`/api/cats/${cat.id}/flight-candidate`).expect(200);
     const linkedFlight = await prisma.flight.create({
-      data: { date: new Date("2026-06-01"), airport: "Larnaca", flightNumber: unique("candidate-flight"), flightParent: "Travel Parent" },
+      data: {
+        date: new Date("2026-06-01"),
+        airport: "Larnaca",
+        flightNumber: unique("candidate-flight"),
+        flightParent: "Travel Parent",
+      },
     });
-    await prisma.flightCatAssignment.create({ data: { flightId: linkedFlight.id, catId: cat.id } });
+    await prisma.flightCatAssignment.create({
+      data: { flightId: linkedFlight.id, catId: cat.id },
+    });
     await authAgent
       .post(`/api/cats/${cat.id}/vaccinations`)
       .send({ date: "2026-01-01", type: "CORE", vaccineName: "Core 1" })
@@ -474,10 +542,10 @@ describe("Cats endpoints", () => {
       .get(`/api/cats/${cat.id}/vaccinations`)
       .expect(200);
     expect(
-      vaccinations.body.map((vaccination: { type: string }) => vaccination.type),
-    ).toEqual(
-      expect.arrayContaining(["CORE", "RABIES"]),
-    );
+      vaccinations.body.map(
+        (vaccination: { type: string }) => vaccination.type,
+      ),
+    ).toEqual(expect.arrayContaining(["CORE", "RABIES"]));
 
     const response = await authAgent
       .get("/api/cats/flight-candidates")
@@ -489,7 +557,9 @@ describe("Cats endpoints", () => {
     expect(candidate).toMatchObject({
       id: cat.id,
       primaryPhotoUrl: null,
-      flights: [{ id: linkedFlight.id, flightNumber: linkedFlight.flightNumber }],
+      flights: [
+        { id: linkedFlight.id, flightNumber: linkedFlight.flightNumber },
+      ],
       adopterName: "Jordan Adopter",
       adopterAddress: "45 Travel Road",
       requirements: {
@@ -506,9 +576,20 @@ describe("Cats endpoints", () => {
 
   it("marks and unmarks flight candidates with audit events", async () => {
     const cat = await createCat(prisma, { name: unique("candidate-toggle") });
-    await authAgent.put(`/api/cats/${cat.id}/flight-candidate`).expect(200).expect({ id: cat.id });
-    await authAgent.delete(`/api/cats/${cat.id}/flight-candidate`).expect(200).expect({ id: cat.id });
-    await expect(prisma.auditEvent.findMany({ where: { catId: cat.id, eventType: "flight_candidate_changed" }, orderBy: { occurredAt: "asc" } })).resolves.toMatchObject([
+    await authAgent
+      .put(`/api/cats/${cat.id}/flight-candidate`)
+      .expect(200)
+      .expect({ id: cat.id });
+    await authAgent
+      .delete(`/api/cats/${cat.id}/flight-candidate`)
+      .expect(200)
+      .expect({ id: cat.id });
+    await expect(
+      prisma.auditEvent.findMany({
+        where: { catId: cat.id, eventType: "flight_candidate_changed" },
+        orderBy: { occurredAt: "asc" },
+      }),
+    ).resolves.toMatchObject([
       { oldValue: "false", newValue: "true", actorUserId: authUser.id },
       { oldValue: "true", newValue: "false", actorUserId: authUser.id },
     ]);
@@ -521,7 +602,11 @@ describe("Cats endpoints", () => {
       .send({ type: "CORE", date: "2026-01-01", vaccineName: "Vaccine A" })
       .expect(201);
     expect(vaccination.body).toHaveProperty("id");
-    await expect(prisma.vaccination.findUniqueOrThrow({ where: { id: vaccination.body.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.vaccination.findUniqueOrThrow({
+        where: { id: vaccination.body.id },
+      }),
+    ).resolves.toMatchObject({
       createdByUserId: authUser.id,
       updatedByUserId: authUser.id,
     });
@@ -529,38 +614,76 @@ describe("Cats endpoints", () => {
       .patch(`/api/cats/vaccinations/${vaccination.body.id}`)
       .send({ nextDueDate: "2027-01-01", vaccineName: "Vaccine B" })
       .expect(200);
-    await expect(prisma.vaccination.findUniqueOrThrow({ where: { id: vaccination.body.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.vaccination.findUniqueOrThrow({
+        where: { id: vaccination.body.id },
+      }),
+    ).resolves.toMatchObject({
       createdByUserId: authUser.id,
       updatedByUserId: authUser.id,
     });
-    const vaccinationList = await authAgent.get(`/api/cats/${cat.id}/vaccinations`).expect(200);
-    expect(vaccinationList.body).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "CORE", date: "2026-01-01", nextDueDate: "2027-01-01", vaccineName: "Vaccine B" }),
-    ]));
-    await authAgent.delete(`/api/cats/vaccinations/${vaccination.body.id}`).expect(204);
+    const vaccinationList = await authAgent
+      .get(`/api/cats/${cat.id}/vaccinations`)
+      .expect(200);
+    expect(vaccinationList.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "CORE",
+          date: "2026-01-01",
+          nextDueDate: "2027-01-01",
+          vaccineName: "Vaccine B",
+        }),
+      ]),
+    );
+    await authAgent
+      .delete(`/api/cats/vaccinations/${vaccination.body.id}`)
+      .expect(204);
 
     const parasiteTreatment = await authAgent
       .post(`/api/cats/${cat.id}/parasite-treatments`)
       .send({ type: "FLEAS_TICKS", date: "2026-02-01", productName: "Spot-on" })
       .expect(201);
     expect(parasiteTreatment.body).toHaveProperty("id");
-    await expect(prisma.parasiteTreatment.findUniqueOrThrow({ where: { id: parasiteTreatment.body.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.parasiteTreatment.findUniqueOrThrow({
+        where: { id: parasiteTreatment.body.id },
+      }),
+    ).resolves.toMatchObject({
       createdByUserId: authUser.id,
       updatedByUserId: authUser.id,
     });
     await authAgent
       .patch(`/api/cats/parasite-treatments/${parasiteTreatment.body.id}`)
-      .send({ type: "COMBINED", nextDueDate: "2026-05-01", productName: "Combo" })
+      .send({
+        type: "COMBINED",
+        nextDueDate: "2026-05-01",
+        productName: "Combo",
+      })
       .expect(200);
-    await expect(prisma.parasiteTreatment.findUniqueOrThrow({ where: { id: parasiteTreatment.body.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.parasiteTreatment.findUniqueOrThrow({
+        where: { id: parasiteTreatment.body.id },
+      }),
+    ).resolves.toMatchObject({
       createdByUserId: authUser.id,
       updatedByUserId: authUser.id,
     });
-    const parasiteList = await authAgent.get(`/api/cats/${cat.id}/parasite-treatments`).expect(200);
-    expect(parasiteList.body).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "COMBINED", date: "2026-02-01", nextDueDate: "2026-05-01", productName: "Combo" }),
-    ]));
-    await authAgent.delete(`/api/cats/parasite-treatments/${parasiteTreatment.body.id}`).expect(204);
+    const parasiteList = await authAgent
+      .get(`/api/cats/${cat.id}/parasite-treatments`)
+      .expect(200);
+    expect(parasiteList.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "COMBINED",
+          date: "2026-02-01",
+          nextDueDate: "2026-05-01",
+          productName: "Combo",
+        }),
+      ]),
+    );
+    await authAgent
+      .delete(`/api/cats/parasite-treatments/${parasiteTreatment.body.id}`)
+      .expect(204);
   });
 
   it("GET /api/cats/:id/card returns one cat card", async () => {
@@ -579,14 +702,26 @@ describe("Cats endpoints", () => {
     const cat = await createCat(prisma, { name: unique("favorite-active") });
     await authAgent.post(`/api/cats/${cat.id}/favorite`).expect(201);
     const today = new Date().toISOString().slice(0, 10);
-    await authAgent.post(`/api/cats/${cat.id}/treatments`).send({ shortName: "Current", startDate: today, dosesPerDay: 1 }).expect(201);
+    await authAgent
+      .post(`/api/cats/${cat.id}/treatments`)
+      .send({ shortName: "Current", startDate: today, dosesPerDay: 1 })
+      .expect(201);
 
     const card = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
     expect(card.body.isFavorite).toBe(true);
-    const response = await authAgent.get("/api/cats/favorites/active-treatments").expect(200);
-    expect(response.body).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: cat.id, name: cat.name, nameNumber: cat.nameNumber, updatedAt: expect.any(String) }),
-    ]));
+    const response = await authAgent
+      .get("/api/cats/favorites/active-treatments")
+      .expect(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: cat.id,
+          name: cat.name,
+          nameNumber: cat.nameNumber,
+          updatedAt: expect.any(String),
+        }),
+      ]),
+    );
   });
 
   it("PATCH /api/cats/:id updates a cat card", async () => {
@@ -941,13 +1076,22 @@ describe("Cats endpoints", () => {
       .get(`/api/cats/${cat.id}/card`)
       .expect(200);
     expect(catAfterTagDeletion.body.tags).toEqual([]);
-    await expect(prisma.catTagOnCat.findUniqueOrThrow({ where: { catId_tagId: { catId: cat.id, tagId: createdTag.body.id } } })).resolves.toMatchObject({ deletedAt: null });
+    await expect(
+      prisma.catTagOnCat.findUniqueOrThrow({
+        where: { catId_tagId: { catId: cat.id, tagId: createdTag.body.id } },
+      }),
+    ).resolves.toMatchObject({ deletedAt: null });
 
     const catHistory = await authAgent
       .get(`/api/cats/${cat.id}/history`)
       .expect(200);
     expect(catHistory.body.data).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventType: "tag_removed_from_cat", tag: expect.objectContaining({ id: createdTag.body.id }) })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "tag_removed_from_cat",
+          tag: expect.objectContaining({ id: createdTag.body.id }),
+        }),
+      ]),
     );
 
     const auditAfterDeletion = await authAgent
@@ -964,12 +1108,27 @@ describe("Cats endpoints", () => {
       ]),
     );
 
-    const restoredTag = await authAgent.post("/api/cats/tags").send({ name: createdTag.body.name }).expect(201);
+    const restoredTag = await authAgent
+      .post("/api/cats/tags")
+      .send({ name: createdTag.body.name })
+      .expect(201);
     expect(restoredTag.body.id).toBe(createdTag.body.id);
-    const restoredCard = await authAgent.get(`/api/cats/${cat.id}/card`).expect(200);
-    expect(restoredCard.body.tags).toEqual(expect.arrayContaining([expect.objectContaining({ id: createdTag.body.id })]));
-    const restoreAudit = await (prisma as any).auditEvent.findFirstOrThrow({ where: { tagId: createdTag.body.id, action: "restore" } });
-    expect(restoreAudit).toMatchObject({ actorUserId: authUser.id, oldValue: null, newValue: null });
+    const restoredCard = await authAgent
+      .get(`/api/cats/${cat.id}/card`)
+      .expect(200);
+    expect(restoredCard.body.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: createdTag.body.id }),
+      ]),
+    );
+    const restoreAudit = await (prisma as any).auditEvent.findFirstOrThrow({
+      where: { tagId: createdTag.body.id, action: "restore" },
+    });
+    expect(restoreAudit).toMatchObject({
+      actorUserId: authUser.id,
+      oldValue: null,
+      newValue: null,
+    });
   });
 
   it("partitions active tag names, lists tags, and assignments by test group", async () => {
@@ -1492,7 +1651,9 @@ describe("Cats endpoints", () => {
   });
 
   it("allows an owner to dismiss their notification", async () => {
-    const cat = await createCat(prisma, { name: unique("dismiss-notification-cat") });
+    const cat = await createCat(prisma, {
+      name: unique("dismiss-notification-cat"),
+    });
     const treatment = await prisma.catTreatment.create({
       data: {
         catId: cat.id,
@@ -1507,7 +1668,11 @@ describe("Cats endpoints", () => {
     });
 
     await authAgent.delete(`/api/notifications/${notification.id}`).expect(204);
-    expect(await prisma.taskNotification.findUniqueOrThrow({ where: { id: notification.id } })).toMatchObject({
+    expect(
+      await prisma.taskNotification.findUniqueOrThrow({
+        where: { id: notification.id },
+      }),
+    ).toMatchObject({
       deletedAt: expect.any(Date),
       version: 1,
     });
@@ -1540,7 +1705,10 @@ async function createAuthenticatedAgent(
   });
 
   const agent = request.agent(app.getHttpServer());
-  const login = await agent.post("/auth/login").send({ email, password }).expect(200);
+  const login = await agent
+    .post("/auth/login")
+    .send({ email, password })
+    .expect(200);
 
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });
   return { agent, user: { id: user.id, email, isTest: user.isTest } };

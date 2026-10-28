@@ -16,5 +16,9 @@ export class CreateCatCommand {
     readonly currentLocationId: string | null,
     readonly createdByUserId: string,
     readonly isTest: boolean,
+    readonly nameNumber?: number,
+    readonly adopterName: string | null = null,
+    readonly adopterAddress: string | null = null,
+    readonly felvFivTestDone = false,
   ) {}
 }

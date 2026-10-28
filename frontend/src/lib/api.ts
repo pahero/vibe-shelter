@@ -192,6 +192,7 @@ export type CatPhoto = {
   url: string | null;
   fullUrl: string | null;
   isPrimary: boolean;
+  mediaType: "image" | "video";
   createdAt: string;
 };
 

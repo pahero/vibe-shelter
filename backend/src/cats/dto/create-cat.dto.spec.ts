@@ -16,6 +16,10 @@ describe("CreateCatDto", () => {
     dto.sponsorName = "  Taylor Sponsor  ";
     dto.sterilizationStatus = "STERILIZED";
     dto.currentLocationId = "  location-1  ";
+    dto.nameNumber = 27;
+    dto.adopterName = "  Jane Doe ";
+    dto.adopterAddress = "  5 Main Street ";
+    dto.felvFivTestDone = true;
 
     const command = dto.toCommand("user-1", true);
 
@@ -34,6 +38,10 @@ describe("CreateCatDto", () => {
       currentLocationId: "location-1",
       createdByUserId: "user-1",
       isTest: true,
+      nameNumber: 27,
+      adopterName: "Jane Doe",
+      adopterAddress: "5 Main Street",
+      felvFivTestDone: true,
     });
   });
 

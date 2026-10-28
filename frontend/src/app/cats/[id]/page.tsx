@@ -20,6 +20,7 @@ import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
 import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, IntakeSource, INTAKE_SOURCE_LABELS, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
+import { isSupportedGalleryUpload } from "@/lib/gallery-media";
 
 type CatEditForm = {
   name: string;
@@ -417,8 +418,8 @@ export default function CatProfilePage() {
 
     if (files.length === 0 || !cat) return;
 
-    if (files.some((file) => !file.type.startsWith("image/"))) {
-      setPhotoError("Choose image files to add to the cat photo gallery.");
+    if (files.some((file) => !isSupportedGalleryUpload(file))) {
+      setPhotoError("Choose image files or MP4/WebM videos to add to the gallery.");
       return;
     }
 
@@ -869,7 +870,9 @@ export default function CatProfilePage() {
                       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill={(favoriteOverride?.catId === cat.id ? favoriteOverride.value : !!cat.isFavorite) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
                     </button>
                     {cat.primaryPhotoUrl ? (
-                      <button type="button" onClick={() => primaryPhoto && openPhoto(primaryPhoto.id)} aria-label={`Expand photo of ${cat.name}`} className="block aspect-video w-full bg-cover bg-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c]" style={{ backgroundImage: `url(${cat.primaryPhotoUrl})`, backgroundPositionY: `${photoPositionY}%` }} />
+                      <button type="button" onClick={() => primaryPhoto && openPhoto(primaryPhoto.id)} aria-label={`Expand ${primaryPhoto?.mediaType ?? "photo"} of ${cat.name}`} className={`relative block aspect-video w-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#d05a2c] ${primaryPhoto?.mediaType === "video" ? "bg-black" : "bg-cover bg-center"}`} style={primaryPhoto?.mediaType === "video" ? undefined : { backgroundImage: `url(${cat.primaryPhotoUrl})`, backgroundPositionY: `${photoPositionY}%` }}>
+                        {primaryPhoto?.mediaType === "video" && <><video src={primaryPhoto.fullUrl ?? primaryPhoto.url ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-contain" aria-hidden="true" /><span className="absolute inset-0 flex items-center justify-center text-5xl text-white drop-shadow" aria-hidden="true">▶</span></>}
+                      </button>
                     ) : (
                       <div className="flex aspect-video w-full items-center justify-center text-5xl" aria-label={`No photo for ${cat.name}`}>🐾</div>
                     )}
@@ -892,19 +895,19 @@ export default function CatProfilePage() {
                 {!isLoadingPhotos && (
                   <div className="mt-3 grid w-fit grid-cols-4 gap-2">
                     {visibleGalleryPhotos.map((photo) => (
-                      <div key={photo.id} className="overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]">
+                      <div key={photo.id} className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]">
                         <button
                           type="button"
                           onClick={() => openPhoto(photo.id)}
-                          className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105"
-                          style={photo.url ? { backgroundImage: `url(${photo.url})` } : undefined}
-                          aria-label={`Open photo of ${cat.name}`}
-                        />
+                          className={`block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 ${photo.mediaType === "video" ? "flex items-center justify-center bg-black text-2xl text-white" : ""}`}
+                          style={photo.mediaType !== "video" && photo.url ? { backgroundImage: `url(${photo.url})` } : undefined}
+                          aria-label={`Open ${photo.mediaType} of ${cat.name}`}
+                        >{photo.mediaType === "video" && <span aria-hidden="true">▶</span>}</button>
                       </div>
                     ))}
-                    <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-2xl font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60" aria-label="Add photo">
+                    <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-2xl font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60" aria-label="Add photo or video" title="Add photo or video">
                       {isUploadingPhoto ? "..." : "+"}
-                      <input type="file" accept="image/*" multiple disabled={isUploadingPhoto} onChange={handlePhotoChange} className="sr-only" />
+                      <input type="file" accept="image/*,video/mp4,video/webm,.mp4,.webm" multiple disabled={isUploadingPhoto} onChange={handlePhotoChange} className="sr-only" />
                     </label>
                   </div>
                 )}
@@ -1390,7 +1393,7 @@ export default function CatProfilePage() {
                 </button>
                 {isPhotoMenuOpen && (
                   <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
-                    {expandedPhoto.isPrimary && <button
+                    {expandedPhoto.isPrimary && expandedPhoto.mediaType !== "video" && <button
                       type="button"
                       onClick={() => {
                         setIsPhotoPositionSelectorOpen((open) => !open);
@@ -1434,7 +1437,14 @@ export default function CatProfilePage() {
 
             <div className="relative z-10 flex max-h-[92dvh] w-[95vw] flex-col items-center gap-2">
               <div id="expanded-photo-viewport" className="relative h-[88dvh] w-full overflow-hidden rounded-2xl bg-black/30 shadow-2xl">
-                {(expandedPhoto.fullUrl ?? expandedPhoto.url) && <Image
+                {expandedPhoto.mediaType === "video" && (expandedPhoto.fullUrl ?? expandedPhoto.url) ? <video
+                  src={expandedPhoto.fullUrl ?? expandedPhoto.url ?? undefined}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="h-full w-full object-contain"
+                  aria-label={`Video of ${cat.name}`}
+                /> : (expandedPhoto.fullUrl ?? expandedPhoto.url) && <Image
                   src={expandedPhoto.fullUrl ?? expandedPhoto.url ?? ""}
                   alt={`Photo of ${cat.name}`}
                   fill
@@ -1470,7 +1480,7 @@ export default function CatProfilePage() {
                     style={{ left: photoFrameGeometry.left, top: photoFrameGeometry.top, width: photoFrameGeometry.width, height: photoFrameGeometry.height }}
                   />}
               </div>
-              {expandedPhoto.isPrimary && isPhotoPositionSelectorOpen && <div className="flex items-center gap-3">
+              {expandedPhoto.isPrimary && expandedPhoto.mediaType !== "video" && isPhotoPositionSelectorOpen && <div className="flex items-center gap-3">
                 <p className="flex-1 text-xs text-white/80">Drag the frame vertically to choose the crop position.</p>
                 <button type="button" onClick={() => savePhotoPosition(expandedPhoto.id)} disabled={isSavingPhotoPosition || photoPositionY === (cat.primaryPhotoPositionY ?? 50)} className="rounded-lg bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50">{isSavingPhotoPosition ? "Saving…" : "Save position"}</button>
               </div>}
