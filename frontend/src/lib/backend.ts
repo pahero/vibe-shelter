@@ -13,7 +13,7 @@ export type AuthUser = {
   id: string;
   email: string;
   fullName: string | null;
-  role: "admin" | "staff";
+  role: "owner" | "admin" | "staff";
   passwordChangeRequired?: boolean;
 };
 
@@ -22,7 +22,7 @@ export type AdminUser = {
   email: string;
   fullName: string | null;
   status: "active" | "inactive";
-  role: "admin" | "staff";
+  role: "owner" | "admin" | "staff";
   isTest: boolean;
   passwordChangeRequired: boolean;
   lastLoginAt: string | null;
@@ -33,7 +33,7 @@ export type AdminUser = {
 export type CreateAdminUserInput = {
   email: string;
   fullName?: string;
-  role: "admin" | "staff";
+  role: "owner" | "admin" | "staff";
   status: "active" | "inactive";
   password: string;
   isTest: boolean;
@@ -117,6 +117,16 @@ export async function setAdminUserTestStatus(userId: string, isTest: boolean): P
     body: JSON.stringify({ isTest }),
   });
 
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  return fetchAdminUser(userId);
+}
+
+export async function setAdminUserRole(userId: string, role: AdminUser["role"]): Promise<AdminUser> {
+  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
   if (!response.ok) throw new Error(await readErrorMessage(response));
   return fetchAdminUser(userId);
 }

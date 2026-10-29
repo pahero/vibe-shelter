@@ -44,7 +44,7 @@ function isJwtUser(value: unknown): value is JwtUser & { exp: number } {
   return (
     typeof payload.id === "string" &&
     typeof payload.email === "string" &&
-    (payload.role === "ADMIN" || payload.role === "STAFF") &&
+    (payload.role === "OWNER" || payload.role === "ADMIN" || payload.role === "STAFF") &&
     typeof payload.isTest === "boolean" &&
     typeof payload.passwordChangeRequired === "boolean" &&
     (payload.fullName === null || typeof payload.fullName === "string") &&

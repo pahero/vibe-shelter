@@ -16,13 +16,13 @@ export default async function EditShelterPage() {
     redirect("/login?next=/shelter-management");
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== "admin" && user.role !== "owner") {
     redirect("/");
   }
 
   return (
     <main className="min-h-dvh w-full bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32">
-      <EditShelterClient />
+      <EditShelterClient currentUser={{ id: user.id, role: user.role }} />
     </main>
   );
 }

@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { CreateLocationDto, UpdateLocationDto } from "./dto";
-import { CurrentUser, JwtAuthGuard } from "../auth";
+import { AdminRoleGuard, CurrentUser, JwtAuthGuard } from "../auth";
 import { CreateLocationHandler } from "./commands/create-location.handler";
 import { UpdateLocationHandler } from "./commands/update-location.handler";
 import { ArchiveLocationHandler } from "./commands/archive-location.handler";
@@ -36,6 +36,7 @@ export class LocationsController {
   ) {}
 
   @Post()
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.CREATED)
   async createLocation(
     @Body() dto: CreateLocationDto,
@@ -79,6 +80,7 @@ export class LocationsController {
   }
 
   @Patch(":id")
+  @UseGuards(AdminRoleGuard)
   async updateLocation(
     @Param("id") id: string,
     @Body() dto: UpdateLocationDto,
@@ -93,6 +95,7 @@ export class LocationsController {
   }
 
   @Delete(":id")
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteLocation(
     @Param("id") id: string,

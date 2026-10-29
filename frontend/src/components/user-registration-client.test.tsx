@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserTestStatus } from "@/lib/backend";
+import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserRole, setAdminUserTestStatus } from "@/lib/backend";
 import { UserRegistrationClient } from "./user-registration-client";
 
 vi.mock("@/lib/backend", async () => {
@@ -10,12 +10,14 @@ vi.mock("@/lib/backend", async () => {
     createAdminUser: vi.fn(),
     fetchAdminUsers: vi.fn(),
     setAdminUserTestStatus: vi.fn(),
+    setAdminUserRole: vi.fn(),
   };
 });
 
 const createAdminUserMock = vi.mocked(createAdminUser);
 const fetchAdminUsersMock = vi.mocked(fetchAdminUsers);
 const setAdminUserTestStatusMock = vi.mocked(setAdminUserTestStatus);
+const setAdminUserRoleMock = vi.mocked(setAdminUserRole);
 
 const existingUsers: AdminUser[] = [
   {
@@ -49,6 +51,7 @@ describe("UserRegistrationClient", () => {
     createAdminUserMock.mockReset();
     fetchAdminUsersMock.mockReset();
     setAdminUserTestStatusMock.mockReset();
+    setAdminUserRoleMock.mockReset();
   });
 
   it("loads users when mounted without server-provided users", async () => {
@@ -139,5 +142,29 @@ describe("UserRegistrationClient", () => {
     await waitFor(() => expect(setAdminUserTestStatusMock).toHaveBeenCalledWith("user-1", false));
     expect(await screen.findByText("test@example.com is now not a test user.")).toBeVisible();
     expect(screen.getAllByRole("button", { name: "Mark test" })).toHaveLength(2);
+  });
+
+  it("lets owners change roles, including promoting a user to Owner", async () => {
+    setAdminUserRoleMock.mockResolvedValue({ ...existingUsers[0], role: "owner" });
+    render(<UserRegistrationClient initialUsers={existingUsers} currentUser={{ id: "owner-1", role: "owner" }} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Change role for test@example.com" }), { target: { value: "owner" } });
+    await waitFor(() => expect(setAdminUserRoleMock).toHaveBeenCalledWith("user-1", "owner"));
+  });
+
+  it("limits Admin role controls to Admin/Staff targets and excludes Owner promotion", () => {
+    const users = [{ ...existingUsers[0], role: "owner" as const }, ...existingUsers.slice(1)];
+    render(<UserRegistrationClient initialUsers={users} currentUser={{ id: "admin-1", role: "admin" }} />);
+    expect(screen.queryByRole("combobox", { name: "Change role for test@example.com" })).not.toBeInTheDocument();
+    const adminTargetRole = screen.getByRole("combobox", { name: "Change role for real@example.com" });
+    expect(adminTargetRole).toHaveValue("admin");
+    expect(screen.queryByRole("option", { name: "Owner" })).not.toBeInTheDocument();
+  });
+
+  it("offers Owner creation only to Owners", () => {
+    const { rerender } = render(<UserRegistrationClient initialUsers={existingUsers} currentUser={{ id: "admin-1", role: "admin" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Register user" }));
+    expect(screen.queryByRole("option", { name: "Owner" })).not.toBeInTheDocument();
+    rerender(<UserRegistrationClient initialUsers={existingUsers} currentUser={{ id: "owner-1", role: "owner" }} />);
+    expect(screen.getByRole("option", { name: "Owner" })).toBeInTheDocument();
   });
 });

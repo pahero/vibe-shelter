@@ -18,7 +18,7 @@ export class CreateUserDto {
   fullName?: string;
 
   @IsString()
-  role: "admin" | "staff" = "staff";
+  role: "owner" | "admin" | "staff" = "staff";
 
   @IsString()
   status: "active" | "inactive" = "active";
@@ -47,7 +47,7 @@ export class CreateUserDto {
 export type CreateUserCommand = {
   email: string;
   fullName?: string;
-  role: "admin" | "staff";
+  role: "owner" | "admin" | "staff";
   status: "active" | "inactive";
   password: string;
   isTest: boolean;
@@ -60,7 +60,7 @@ export class UpdateUserDto {
 
   @IsString()
   @IsOptional()
-  role?: "admin" | "staff";
+  role?: "owner" | "admin" | "staff";
 
   @IsString()
   @IsOptional()
@@ -90,7 +90,7 @@ export class UpdateUserDto {
 
 export type UpdateUserCommand = {
   fullName?: string;
-  role?: "admin" | "staff";
+  role?: "owner" | "admin" | "staff";
   status?: "active" | "inactive";
   password?: string;
   isTest?: boolean;
@@ -105,7 +105,7 @@ export class UserResponseDto {
 
   status!: "active" | "inactive";
 
-  role!: "admin" | "staff";
+  role!: "owner" | "admin" | "staff";
 
   isTest!: boolean;
 
@@ -125,7 +125,7 @@ export class AuthMeDto {
 
   fullName!: string | null;
 
-  role!: "admin" | "staff";
+  role!: "owner" | "admin" | "staff";
 
   isTest!: boolean;
 

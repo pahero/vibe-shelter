@@ -15,7 +15,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { CurrentUser, JwtAuthGuard } from "../auth";
+import { AdminRoleGuard, CurrentUser, JwtAuthGuard } from "../auth";
 import { PrimaryPhotoUpload } from "./cats.types";
 import { ListCatsHandler } from "./queries/list-cats.handler";
 import { ListCatTagsHandler } from "./queries/list-cat-tags.handler";
@@ -244,6 +244,7 @@ export class CatsController {
   }
 
   @Post("tags")
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.CREATED)
   async createTag(
     @Body() dto: CreateCatTagDto,
@@ -253,6 +254,7 @@ export class CatsController {
   }
 
   @Patch("tags/:tagId")
+  @UseGuards(AdminRoleGuard)
   async updateTag(
     @Param("tagId") tagId: string,
     @Body() dto: UpdateCatTagDto,
@@ -262,6 +264,7 @@ export class CatsController {
   }
 
   @Delete("tags/:tagId")
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTag(
     @Param("tagId") tagId: string,

@@ -59,7 +59,7 @@ describe("ListUsersHandler", () => {
   it("rejects an invalid role filter", async () => {
     await runInTestTransaction(async (tx) => {
       await expect(
-        new ListUsersHandler(tx as PrismaService).handle({ role: "owner" }),
+        new ListUsersHandler(tx as PrismaService).handle({ role: "root" }),
       ).rejects.toThrow(BadRequestException);
     });
   });

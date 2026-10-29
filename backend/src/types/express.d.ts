@@ -4,7 +4,7 @@ declare global {
       id: string;
       email: string;
       fullName: string | null;
-      role: "ADMIN" | "STAFF";
+      role: "OWNER" | "ADMIN" | "STAFF";
       isTest: boolean;
       passwordChangeRequired: boolean;
       status?: "ACTIVE" | "INACTIVE";

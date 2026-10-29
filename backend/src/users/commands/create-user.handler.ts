@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
@@ -12,13 +13,15 @@ import { CreateUserCommand } from "../../auth/dto";
 export class CreateUserHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(data: CreateUserCommand): Promise<{ id: string }> {
+  async handle(data: CreateUserCommand, actor: { role: "OWNER" | "ADMIN" | "STAFF" }): Promise<{ id: string }> {
     if (!data.password?.trim())
       throw new BadRequestException("Password is required");
     if (typeof data.isTest !== "boolean")
       throw new BadRequestException("Test user marker is required");
-    if (data.role !== "admin" && data.role !== "staff")
+    if (data.role !== "admin" && data.role !== "staff" && data.role !== "owner")
       throw new BadRequestException("Invalid user role");
+    if (data.role === "owner" && actor.role !== "OWNER")
+      throw new ForbiddenException("Only Owners can create Owner users");
     if (data.status !== "active" && data.status !== "inactive")
       throw new BadRequestException("Invalid user status");
     const email = data.email;
@@ -33,7 +36,7 @@ export class CreateUserHandler {
         data: {
           email,
           fullName: data.fullName?.trim() || null,
-          role: data.role.toUpperCase() as "ADMIN" | "STAFF",
+          role: data.role.toUpperCase() as "OWNER" | "ADMIN" | "STAFF",
           status: data.status.toUpperCase() as "ACTIVE" | "INACTIVE",
           passwordHash,
           passwordChangeRequired: true,

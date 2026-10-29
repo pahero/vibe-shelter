@@ -53,6 +53,19 @@ describe("Cats endpoints", () => {
     authUser = auth.user;
   });
 
+  it("restricts shelter-management mutations to Admins and Owners", async () => {
+    const staff = await createAuthenticatedAgent(app, prisma, false, "STAFF");
+    await staff.agent.post("/api/locations").send({ name: unique("guard-location") }).expect(403);
+    await staff.agent.patch("/api/locations/missing").send({ name: unique("guard-location") }).expect(403);
+    await staff.agent.delete("/api/locations/missing").expect(403);
+    await staff.agent.post("/api/cats/tags").send({ name: unique("guard-tag"), color: "#ffffff" }).expect(403);
+    await staff.agent.patch("/api/cats/tags/missing").send({ name: "blocked" }).expect(403);
+    await staff.agent.delete("/api/cats/tags/missing").expect(403);
+    await staff.agent.post("/api/cats/archiving-reasons").send({ name: unique("guard-reason") }).expect(403);
+    await staff.agent.patch("/api/cats/archiving-reasons/missing").send({ name: "blocked" }).expect(403);
+    await staff.agent.delete("/api/cats/archiving-reasons/missing").send({}).expect(403);
+  });
+
   afterAll(async () => {
     await app?.close();
   });
@@ -1688,6 +1701,7 @@ async function createAuthenticatedAgent(
   app: INestApplication,
   prisma: PrismaClient,
   isTest = false,
+  role: "OWNER" | "ADMIN" | "STAFF" = "OWNER",
 ) {
   const email = `${unique("cats-auth")}@example.com`;
   const password = "cats-integration-password";
@@ -1697,7 +1711,7 @@ async function createAuthenticatedAgent(
     data: {
       email,
       fullName: "Cats Integration User",
-      role: "STAFF",
+      role,
       status: "ACTIVE",
       passwordHash,
       isTest,

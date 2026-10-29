@@ -22,7 +22,7 @@ export class ListUsersHandler {
     }
     if (filters.role) {
       const role = filters.role.toUpperCase();
-      if (role !== "ADMIN" && role !== "STAFF")
+      if (role !== "OWNER" && role !== "ADMIN" && role !== "STAFF")
         throw new BadRequestException("Invalid user role");
       where.role = role as UserRole;
     }

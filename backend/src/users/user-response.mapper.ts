@@ -7,7 +7,7 @@ export function toUserResponse(user: User): UserResponseDto {
     email: user.email,
     fullName: user.fullName,
     status: user.status.toLowerCase() as "active" | "inactive",
-    role: user.role.toLowerCase() as "admin" | "staff",
+    role: user.role.toLowerCase() as "owner" | "admin" | "staff",
     isTest: user.isTest,
     passwordChangeRequired: user.passwordChangeRequired,
     lastLoginAt: user.lastLoginAt,

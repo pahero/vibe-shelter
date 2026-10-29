@@ -1,10 +1,12 @@
-import { BadRequestException, ConflictException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../../database/prisma.service";
 import { runInTestTransaction } from "../../test-utils/test-db";
 import { CreateUserHandler } from "./create-user.handler";
 
 describe("CreateUserHandler", () => {
+  const admin = { role: "ADMIN" as const };
+  const owner = { role: "OWNER" as const };
   it("creates a normalized user and hashes the password", async () => {
     await runInTestTransaction(async (tx) => {
       const result = await new CreateUserHandler(tx as PrismaService).handle({
@@ -14,7 +16,7 @@ describe("CreateUserHandler", () => {
         status: "active",
         password: "Password123!",
         isTest: true,
-      });
+      }, admin);
       const user = await tx.user.findUniqueOrThrow({
         where: { id: result.id },
       });
@@ -42,7 +44,7 @@ describe("CreateUserHandler", () => {
           status: "active",
           password: "  ",
           isTest: false,
-        }),
+        }, admin),
       ).rejects.toThrow(BadRequestException);
       await expect(tx.user.count({ where: { email } })).resolves.toBe(0);
     });
@@ -59,6 +61,7 @@ describe("CreateUserHandler", () => {
       await expect(
         new CreateUserHandler(tx as PrismaService).handle(
           command as Parameters<CreateUserHandler["handle"]>[0],
+          owner,
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -68,7 +71,7 @@ describe("CreateUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const command = {
         email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
-        role: "owner",
+        role: "root",
         status: "active",
         password: "Password123!",
         isTest: false,
@@ -76,8 +79,26 @@ describe("CreateUserHandler", () => {
       await expect(
         new CreateUserHandler(tx as PrismaService).handle(
           command as Parameters<CreateUserHandler["handle"]>[0],
+          owner,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  it("allows Owners to create Owner accounts", async () => {
+    await runInTestTransaction(async (tx) => {
+      const result = await new CreateUserHandler(tx as PrismaService).handle({
+        email: `${crypto.randomUUID()}@example.com`, role: "owner", status: "active", password: "Password123!", isTest: false,
+      }, owner);
+      await expect(tx.user.findUniqueOrThrow({ where: { id: result.id } })).resolves.toMatchObject({ role: "OWNER" });
+    });
+  });
+
+  it("prevents Admins from creating Owner accounts", async () => {
+    await runInTestTransaction(async (tx) => {
+      await expect(new CreateUserHandler(tx as PrismaService).handle({
+        email: `${crypto.randomUUID()}@example.com`, role: "owner", status: "active", password: "Password123!", isTest: false,
+      }, admin)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -93,6 +114,7 @@ describe("CreateUserHandler", () => {
       await expect(
         new CreateUserHandler(tx as PrismaService).handle(
           command as Parameters<CreateUserHandler["handle"]>[0],
+          owner,
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -109,7 +131,7 @@ describe("CreateUserHandler", () => {
           status: "active",
           password: "Password123!",
           isTest: false,
-        }),
+        }, admin),
       ).rejects.toThrow(ConflictException);
     });
   });

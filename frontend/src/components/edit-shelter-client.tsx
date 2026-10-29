@@ -50,7 +50,7 @@ function auditDateLabel(value: string): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-export function EditShelterClient() {
+export function EditShelterClient({ currentUser }: { currentUser: { id: string; role: "owner" | "admin" } }) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [archivingReasons, setArchivingReasons] = useState<CatArchivingReason[]>([]);
@@ -611,7 +611,7 @@ export function EditShelterClient() {
             </div>
           </section>}
 
-          {activeSection === "users" && <UserRegistrationClient />}
+          {activeSection === "users" && <UserRegistrationClient currentUser={currentUser} />}
 
 
           {activeSection === "archiving" && <section className="space-y-3">

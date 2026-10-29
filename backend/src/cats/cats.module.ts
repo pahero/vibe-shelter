@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "../auth/auth.module";
-import { JwtAuthGuard } from "../auth";
+import { AdminRoleGuard, JwtAuthGuard } from "../auth";
 import { DatabaseModule } from "../database/database.module";
 import { CatPhotoUrlService } from "./cat-photo-url.service";
 import { CatPhotoCleanupService } from "./cat-photo-cleanup.service";
@@ -170,6 +170,7 @@ import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favo
     DeleteCatDocumentHandler,
     SetCatFlightCandidateHandler,
     JwtAuthGuard,
+    AdminRoleGuard,
   ],
 })
 export class CatsModule {}

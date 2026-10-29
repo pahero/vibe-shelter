@@ -17,7 +17,7 @@ export default async function AdminUsersPage() {
     redirect("/login?next=/admin/users");
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== "admin" && user.role !== "owner") {
     redirect("/");
   }
 
@@ -26,7 +26,7 @@ export default async function AdminUsersPage() {
   return (
     <main className="flex min-h-dvh w-full flex-col items-center gap-6 p-6">
       <AppHeader user={user} />
-      <UserRegistrationClient initialUsers={users} />
+      <UserRegistrationClient initialUsers={users} currentUser={{ id: user.id, role: user.role }} />
     </main>
   );
 }

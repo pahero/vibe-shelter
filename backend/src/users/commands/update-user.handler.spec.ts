@@ -5,6 +5,7 @@ import { runInTestTransaction } from "../../test-utils/test-db";
 import { UpdateUserHandler } from "./update-user.handler";
 
 describe("UpdateUserHandler", () => {
+  const owner = { id: "owner-actor", role: "OWNER" as const };
   it("updates provided fields and requires a password change after password replacement", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
@@ -22,6 +23,7 @@ describe("UpdateUserHandler", () => {
           password: "NewPassword123!",
           isTest: true,
         },
+        owner,
       );
       expect(result).toEqual({ id: user.id });
       const updated = await tx.user.findUniqueOrThrow({
@@ -44,7 +46,7 @@ describe("UpdateUserHandler", () => {
   it("rejects a missing user", async () => {
     await runInTestTransaction(async (tx) => {
       await expect(
-        new UpdateUserHandler(tx as PrismaService).handle("missing", {}),
+        new UpdateUserHandler(tx as PrismaService).handle("missing", {}, owner),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -58,7 +60,7 @@ describe("UpdateUserHandler", () => {
         },
       });
       await expect(
-        new UpdateUserHandler(tx as PrismaService).handle(deleted.id, {}),
+        new UpdateUserHandler(tx as PrismaService).handle(deleted.id, {}, owner),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -70,11 +72,12 @@ describe("UpdateUserHandler", () => {
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
         },
       });
-      const data = { role: "owner" };
+      const data = { role: "root" };
       await expect(
         new UpdateUserHandler(tx as PrismaService).handle(
           user.id,
           data as Parameters<UpdateUserHandler["handle"]>[1],
+          owner,
         ),
       ).rejects.toThrow("Invalid user role");
     });
@@ -92,8 +95,30 @@ describe("UpdateUserHandler", () => {
         new UpdateUserHandler(tx as PrismaService).handle(
           user.id,
           data as Parameters<UpdateUserHandler["handle"]>[1],
+          owner,
         ),
       ).rejects.toThrow("Invalid user status");
+    });
+  });
+
+  it("prevents an Admin from promoting a user to Owner", async () => {
+    await runInTestTransaction(async (tx) => {
+      const target = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
+      await expect(new UpdateUserHandler(tx as PrismaService).handle(target.id, { role: "owner" }, { id: "admin-actor", role: "ADMIN" })).rejects.toThrow("Only Owners can change Owner roles");
+    });
+  });
+
+  it("prevents an Admin from changing an Owner's role", async () => {
+    await runInTestTransaction(async (tx) => {
+      const target = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" } });
+      await expect(new UpdateUserHandler(tx as PrismaService).handle(target.id, { role: "staff" }, { id: "admin-actor", role: "ADMIN" })).rejects.toThrow("Only Owners can change Owner roles");
+    });
+  });
+
+  it("prevents users from changing their own role", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" } });
+      await expect(new UpdateUserHandler(tx as PrismaService).handle(actor.id, { role: "staff" }, { id: actor.id, role: "OWNER" })).rejects.toThrow("You cannot change your own role");
     });
   });
 });

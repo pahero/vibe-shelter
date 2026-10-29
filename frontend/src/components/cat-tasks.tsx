@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPen, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CatTask, catsApi, TaskInput, User, usersApi } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
@@ -50,7 +50,9 @@ export function CatTasks({ catId, onChanged }: { catId: string; onChanged?: () =
       ? current.receiverIds.filter((id) => id !== userId)
       : [...current.receiverIds, userId],
   }));
-  const selectedReceivers = users.filter((user) => form.receiverIds.includes(user.id));
+  const selectedReceivers = form.receiverIds.map((id) =>
+    users.find((user) => user.id === id) ?? { id, fullName: null, email: id, status: "inactive" as const, isTest: false },
+  );
 
   const openNewTask = () => {
     setEditingId(null);
@@ -112,7 +114,7 @@ export function CatTasks({ catId, onChanged }: { catId: string; onChanged?: () =
       <label className="grid gap-1 text-sm font-medium text-gray-800"><span>Comment <span className="text-red-700">*</span></span><input aria-label="Comment" value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" /></label>
       <label className="grid gap-1 text-sm font-medium text-gray-800"><span>Due date <span className="text-red-700">*</span></span><input aria-label="Due date" type="datetime-local" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" /></label>
       <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2"><span>Notification receivers <span className="text-red-700">*</span></span><select aria-label="Notification receivers" value={receiverChoice} onChange={(event) => { const userId = event.target.value; if (userId) toggleReceiver(userId); setReceiverChoice(""); }} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"><option value="">Choose a receiver...</option>{users.map((user) => <option key={user.id} value={user.id} disabled={form.receiverIds.includes(user.id)}>{user.fullName || user.email}{user.fullName ? ` (${user.email})` : ""}</option>)}</select></label>
-      {selectedReceivers.length > 0 && <div className="flex flex-wrap gap-1 md:col-span-2">{selectedReceivers.map((user) => <button key={user.id} type="button" onClick={() => toggleReceiver(user.id)} className="rounded-full bg-[#d05a2c]/10 px-2 py-1 text-xs font-semibold text-[#b24a20]">{user.fullName || user.email} Р В РІР‚СљР Р†Р вЂљРІР‚Сњ</button>)}</div>}
+      {selectedReceivers.length > 0 && <div className="flex flex-wrap gap-1 md:col-span-2">{selectedReceivers.map((user) => <span key={user.id} className="inline-flex items-center gap-1 rounded-full bg-[#d05a2c]/10 py-1 pl-2 pr-1 text-xs font-semibold text-[#b24a20]">{user.fullName || user.email}<button type="button" onClick={() => toggleReceiver(user.id)} aria-label={`Remove ${user.fullName || user.email}`} title={`Remove ${user.fullName || user.email}`} className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-[#d05a2c]/20"><FontAwesomeIcon icon={faXmark} aria-hidden="true" /></button></span>)}</div>}
       <div className="flex gap-2 md:col-span-2"><button disabled={isSaving} className="rounded-xl bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSaving ? "Saving..." : "Save"}</button><button type="button" onClick={cancel} className="rounded-xl border border-[#d4c7b4] px-4 py-2 text-sm font-semibold">Cancel</button></div>
     </form>}
 

@@ -178,7 +178,7 @@ export class AuthController {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      role: user.role.toLowerCase() as "admin" | "staff",
+      role: user.role.toLowerCase() as "owner" | "admin" | "staff",
       isTest: user.isTest,
       passwordChangeRequired: user.passwordChangeRequired,
     };

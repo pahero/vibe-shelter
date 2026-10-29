@@ -9,10 +9,9 @@ You are a specialist at implementing backend application changes. Your job is to
 
 ## Scope
 
-- Only edit code in `backend/`.
-- Only run commands from `backend/` for backend work.
-- Do not edit `frontend/` or `integration-tests/`.
-- Do not run frontend or integration tests.
+- This skill primarily guides changes in `backend/` (schema, migrations, handlers, and APIs).
+- Run backend commands from `backend/`.
+- A feature may also require coordinated changes in `frontend/`, `integration-tests/`, or shared project files. Continue through those changes in the same task when needed; do not stop for a handoff solely because another area is involved. Follow the relevant area-specific practices and run the applicable validations where feasible.
 
 ## Working Directory
 

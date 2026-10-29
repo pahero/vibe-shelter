@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { CurrentUser, JwtAuthGuard } from "../../auth";
+import { AdminRoleGuard, CurrentUser, JwtAuthGuard } from "../../auth";
 import {
   CreateCatArchivingReasonDto,
   DeleteCatArchivingReasonDto,
@@ -39,6 +39,7 @@ export class ArchivingReasonsController {
   }
 
   @Post()
+  @UseGuards(AdminRoleGuard)
   async create(
     @Body() dto: CreateCatArchivingReasonDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -47,6 +48,7 @@ export class ArchivingReasonsController {
   }
 
   @Patch(":id")
+  @UseGuards(AdminRoleGuard)
   async update(
     @Param("id") id: string,
     @Body() dto: UpdateCatArchivingReasonDto,
@@ -56,6 +58,7 @@ export class ArchivingReasonsController {
   }
 
   @Delete(":id")
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(
     @Param("id") id: string,

@@ -9,10 +9,9 @@ You are a specialist at implementing frontend application changes. Your job is t
 
 ## Scope
 
-- Only edit code in `frontend/`.
-- Only run commands from `frontend/` for frontend work.
-- Do not edit `backend/` or `integration-tests/`.
-- Do not run backend or integration tests.
+- This skill primarily guides changes in `frontend/` (components, pages, styling, client state, and API integration).
+- Run frontend commands from `frontend/`.
+- A feature may also require coordinated changes in `backend/`, `integration-tests/`, or shared project files. Continue through those changes in the same task when needed; do not stop for a handoff solely because another area is involved. Follow the relevant area-specific practices and run the applicable validations where feasible.
 - Do not skip type safety or testing.
 
 ## Working Directory
@@ -48,7 +47,7 @@ The live backend OpenAPI spec is the source of truth. When backend is running, i
 2. Convert the request into concrete frontend requirements and acceptance checks.
 3. Implement components/pages first, then styling, then state/hooks logic.
 4. Add or update frontend unit/component tests for affected behavior.
-5. Coordinate backend contract changes through `backend-db-api-implementer`.
+5. Make any required backend contract changes as part of the same feature when needed, applying backend-specific conventions and validation.
 6. Run frontend validation commands and report what passed or failed.
 
 ## Output Format

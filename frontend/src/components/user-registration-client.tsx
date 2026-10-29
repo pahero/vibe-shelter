@@ -4,17 +4,18 @@ import { FormEvent, startTransition, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { PaginationControls } from "@/components/pagination-controls";
-import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserTemporaryPassword, setAdminUserTestStatus } from "@/lib/backend";
+import { AdminUser, createAdminUser, fetchAdminUsers, setAdminUserRole, setAdminUserTemporaryPassword, setAdminUserTestStatus } from "@/lib/backend";
 
 type FormState = {
   email: string;
   fullName: string;
-  role: "admin" | "staff";
+  role: "owner" | "admin" | "staff";
   isTest: boolean;
 };
 
 type UserRegistrationClientProps = {
   initialUsers?: AdminUser[];
+  currentUser?: { id: string; role: "owner" | "admin" };
 };
 
 const emptyForm: FormState = {
@@ -33,7 +34,7 @@ function generateTemporaryPassword(): string {
     .replace(/=+$/g, "");
 }
 
-export function UserRegistrationClient({ initialUsers }: UserRegistrationClientProps) {
+export function UserRegistrationClient({ initialUsers, currentUser }: UserRegistrationClientProps) {
   const [users, setUsers] = useState(initialUsers ?? []);
   const [isLoadingUsers, setIsLoadingUsers] = useState(initialUsers === undefined);
   const [usersError, setUsersError] = useState("");
@@ -47,6 +48,7 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
   const [isUpdatingTemporaryPassword, setIsUpdatingTemporaryPassword] = useState(false);
   const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
   const [updatingTestStatusUserId, setUpdatingTestStatusUserId] = useState<string | null>(null);
+  const [updatingRoleUserId, setUpdatingRoleUserId] = useState<string | null>(null);
   const [usersPage, setUsersPage] = useState(1);
 
   useEffect(() => {
@@ -156,6 +158,19 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
       setUpdatingTestStatusUserId(null);
     }
   }
+
+  async function changeRole(user: AdminUser, role: AdminUser["role"]) {
+    setUpdatingRoleUserId(user.id);
+    setUsersError("");
+    try {
+      const updatedUser = await setAdminUserRole(user.id, role);
+      setUsers((currentUsers) => currentUsers.map((current) => current.id === updatedUser.id ? updatedUser : current));
+    } catch (error) {
+      setUsersError(error instanceof Error ? error.message : "Unable to update user role.");
+    } finally {
+      setUpdatingRoleUserId(null);
+    }
+  }
   function updateField<Key extends keyof FormState>(field: Key, value: FormState[Key]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -212,6 +227,7 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
             >
               <option value="staff">Staff</option>
               <option value="admin">Admin</option>
+              {currentUser?.role === "owner" && <option value="owner">Owner</option>}
             </select>
           </label>
 
@@ -271,6 +287,14 @@ export function UserRegistrationClient({ initialUsers }: UserRegistrationClientP
                   <p className="truncate text-xs uppercase tracking-[0.18em] text-[#8b8379]">
                     {user.role} / {user.status}
                   </p>
+                  {currentUser && currentUser.id !== user.id && (currentUser.role === "owner" || user.role !== "owner") && <label className="flex items-center gap-2 text-sm text-[#6d6a66]">
+                    <span>Role</span>
+                    <select aria-label={`Change role for ${user.email}`} value={user.role} disabled={updatingRoleUserId === user.id} onChange={(event) => void changeRole(user, event.target.value as AdminUser["role"])} className="rounded-lg border border-[#d4c7b4] bg-white px-2 py-1 text-sm text-[#1f2320]">
+                      {currentUser.role === "owner" && <option value="owner">Owner</option>}
+                      <option value="admin">Admin</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                  </label>}
                 </div>
                 <div className="grid justify-items-end gap-1">
                   <button type="button" onClick={() => void toggleTestStatus(user)} disabled={updatingTestStatusUserId === user.id || isUpdatingTemporaryPassword} className="text-right text-sm font-semibold text-[#b24a20] hover:text-[#8f3b19] disabled:opacity-50">

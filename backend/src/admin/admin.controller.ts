@@ -16,7 +16,7 @@ import { UpdateUserHandler } from "@/users/commands/update-user.handler";
 import { DeleteUserHandler } from "@/users/commands/delete-user.handler";
 import { ListUsersHandler } from "@/users/queries/list-users.handler";
 import { GetUserHandler } from "@/users/queries/get-user.handler";
-import { AdminRoleGuard, JwtAuthGuard } from "@/auth";
+import { AdminRoleGuard, CurrentUser, JwtAuthGuard } from "@/auth";
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from "@/auth/dto";
 
 @Controller("admin/users")
@@ -33,8 +33,9 @@ export class AdminUsersController {
   @Post()
   async createUser(
     @Body() createUserDto: CreateUserDto,
+    @CurrentUser() user: Express.User,
   ): Promise<{ id: string }> {
-    return this.createUserHandler.handle(createUserDto.toCommand());
+    return this.createUserHandler.handle(createUserDto.toCommand(), { role: user.role });
   }
 
   @Get()
@@ -54,16 +55,18 @@ export class AdminUsersController {
   async updateUser(
     @Param("id") id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() user: Express.User,
   ): Promise<{ id: string }> {
-    return this.updateUserHandler.handle(id, updateUserDto.toCommand());
+    return this.updateUserHandler.handle(id, updateUserDto.toCommand(), { id: user.id, role: user.role });
   }
 
   @Patch(":id/status")
   async updateUserStatus(
     @Param("id") id: string,
     @Body() body: { status: "active" | "inactive" },
+    @CurrentUser() user: Express.User,
   ): Promise<{ id: string }> {
-    return this.updateUserHandler.handle(id, { status: body.status });
+    return this.updateUserHandler.handle(id, { status: body.status }, { id: user.id, role: user.role });
   }
 
   @Delete(":id")
