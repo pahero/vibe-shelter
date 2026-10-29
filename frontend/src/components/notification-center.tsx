@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { notificationsApi, UserNotification } from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
-import { ensurePushSubscription } from "@/lib/push-subscription";
+import { ensurePushSubscription, removePushSubscription } from "@/lib/push-subscription";
 
 export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +16,24 @@ export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean })
   const [error, setError] = useState<string | null>(null);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  const refreshPushStatus = useCallback(async () => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window) || Notification.permission !== "granted") {
+      setPushEnabled(false);
+      return;
+    }
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      setPushEnabled(Boolean(await registration?.pushManager.getSubscription()));
+    } catch {
+      setPushEnabled(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPushStatus();
+  }, [refreshPushStatus]);
 
   const enablePush = async () => {
     setPushMessage(null);
@@ -21,9 +41,21 @@ export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean })
       const permission = await Notification.requestPermission();
       if (permission !== "granted") throw new Error("Notification permission was not granted.");
       await ensurePushSubscription();
+      await refreshPushStatus();
       setPushMessage("Push notifications enabled on this device.");
     } catch (reason) {
       setPushMessage(reason instanceof Error ? reason.message : "Unable to enable push notifications.");
+    }
+  };
+
+  const disablePush = async () => {
+    setPushMessage(null);
+    try {
+      await removePushSubscription();
+      await refreshPushStatus();
+      setPushMessage("Phone notifications disabled on this device.");
+    } catch (reason) {
+      setPushMessage(reason instanceof Error ? reason.message : "Unable to disable phone notifications.");
     }
   };
 
@@ -86,8 +118,7 @@ export function NotificationCenter({ iconOnly = false }: { iconOnly?: boolean })
         {total > 0 && <span className="absolute right-1 top-1 rounded-full bg-[#d05a2c] px-1.5 py-0.5 text-[10px] leading-none text-white">{total > 99 ? "99+" : total}</span>}
       </button>
       {isOpen && <section role="dialog" aria-label="Notifications" className="fixed left-1/2 top-16 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-4 shadow-xl md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:translate-x-0">
-        <div className="flex items-center justify-between gap-3"><h2 className="font-semibold text-gray-900">Notifications</h2><button type="button" onClick={() => setIsOpen(false)} className="text-sm font-semibold text-[#b24a20]">Close</button></div>
-        <button type="button" onClick={() => void enablePush()} className="mt-3 rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-white">Enable phone notifications</button>
+        <div className="flex items-center justify-between gap-3"><h2 className="font-semibold text-gray-900">Notifications</h2><div className="flex items-center gap-3"><button type="button" aria-label={pushEnabled ? "Unsubscribe" : "Subscribe"} title={pushEnabled ? "Unsubscribe" : "Subscribe"} aria-pressed={pushEnabled} onClick={() => void (pushEnabled ? disablePush() : enablePush())} className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition ${pushEnabled ? "text-[#b24a20] hover:bg-[#efe7da]" : "border border-[#b24a20] bg-[#d05a2c] text-white hover:bg-[#b24a20]"}`}><FontAwesomeIcon icon={faPaperPlane} aria-hidden="true" /></button><button type="button" onClick={() => setIsOpen(false)} className="text-sm font-semibold text-[#b24a20]">Close</button></div></div>
         {pushMessage && <p className="mt-2 text-sm text-[#6d6a66]">{pushMessage}</p>}
         {isLoading && <p className="mt-4 text-sm text-[#6d6a66]">Loading notifications...</p>}
         {error && <p className="mt-4 text-sm font-medium text-red-700">{error}</p>}

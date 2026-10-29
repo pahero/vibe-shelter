@@ -38,3 +38,21 @@ export async function ensurePushSubscription(): Promise<void> {
   });
   if (!response.ok) throw new Error("Unable to save this device.");
 }
+
+export async function removePushSubscription(): Promise<void> {
+  if (!("serviceWorker" in navigator)) {
+    throw new Error("Push notifications are not supported by this browser.");
+  }
+
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) return;
+
+  const response = await authenticatedFetch(`${BACKEND_URL}/api/push-subscriptions`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint: subscription.endpoint }),
+  });
+  if (!response.ok) throw new Error("Unable to disable phone notifications.");
+  if (!(await subscription.unsubscribe())) throw new Error("Unable to disable phone notifications on this device.");
+}
