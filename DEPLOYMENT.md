@@ -140,6 +140,13 @@ deletes Restic repository objects. Keep `BACKUP_RESTIC_PASSWORD` separately,
 never change it without migrating the repository key, and periodically test
 restoring both files with `restic snapshots` and `restic restore`.
 
+`.github/workflows/restore-backup.yml` is a manual, production-environment
+workflow. Supply a Restic snapshot ID, tag, or `latest`, and explicitly set
+`confirm_restore` to true. It stops the backend while replacing the PostgreSQL
+database and Garage data volume, then restarts the affected services even if the
+restore fails. A restore replaces current production data; use the production
+environment's approval rules to restrict who can run it.
+
 After installing Docker, grant the runner access and restart its service so the
 new group membership is applied:
 

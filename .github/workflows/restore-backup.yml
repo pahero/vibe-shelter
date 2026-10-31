@@ -1,0 +1,138 @@
+name: Restore production backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: Restic snapshot ID, tag, or "latest"
+        required: true
+        default: latest
+        type: string
+      confirm_restore:
+        description: Replace production PostgreSQL and Garage data
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: shelter-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    name: Restore PostgreSQL and Garage
+    runs-on: [self-hosted, Linux, X64]
+    environment: production
+    timeout-minutes: 180
+    steps:
+      - name: Restore selected backup
+        shell: bash
+        env:
+          SNAPSHOT: ${{ inputs.snapshot }}
+          CONFIRM_RESTORE: ${{ inputs.confirm_restore }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          BACKUP_S3_ENDPOINT: ${{ vars.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+          BACKUP_S3_REGION: ${{ vars.BACKUP_S3_REGION }}
+          BACKUP_S3_PREFIX: ${{ vars.BACKUP_S3_PREFIX }}
+          BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          RESTIC_PASSWORD: ${{ secrets.BACKUP_RESTIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+
+          if [[ "${CONFIRM_RESTORE}" != true ]]; then
+            echo 'Set confirm_restore to true to replace production data.' >&2
+            exit 1
+          fi
+          if [[ -z "${SNAPSHOT}" ]]; then
+            echo 'A Restic snapshot ID, tag, or "latest" is required.' >&2
+            exit 1
+          fi
+          required=(BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY RESTIC_PASSWORD)
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing production backup variable or secret: ${name}" >&2
+              exit 1
+            fi
+          done
+          POSTGRES_USER="${POSTGRES_USER:-shelter}"
+          POSTGRES_DB="${POSTGRES_DB:-shelter}"
+          BACKUP_S3_REGION="${BACKUP_S3_REGION:-us-east-1}"
+          BACKUP_S3_PREFIX="${BACKUP_S3_PREFIX:-shelter/production}"
+          BACKUP_S3_ENDPOINT="${BACKUP_S3_ENDPOINT%/}"
+          BACKUP_S3_PREFIX="${BACKUP_S3_PREFIX#/}"
+          BACKUP_S3_PREFIX="${BACKUP_S3_PREFIX%/}"
+          backup_key="${BACKUP_S3_PREFIX:+${BACKUP_S3_PREFIX}/}"
+          export RESTIC_REPOSITORY="s3:${BACKUP_S3_ENDPOINT}/${BACKUP_S3_BUCKET}/${backup_key%/}"
+          restore_dir="$(mktemp -d "${RUNNER_TEMP}/shelter-restore.XXXXXX")"
+
+          postgres_ids="$(docker ps --filter label=com.docker.compose.project=shelter --filter label=com.docker.compose.service=postgres --format '{{.ID}}')"
+          garage_ids="$(docker ps --filter label=com.docker.compose.project=shelter --filter label=com.docker.compose.service=garage --format '{{.ID}}')"
+          backend_ids="$(docker ps --filter label=com.docker.compose.project=shelter --filter label=com.docker.compose.service=backend --format '{{.ID}}')"
+          garage_volumes="$(docker volume ls --filter label=com.docker.compose.project=shelter --filter label=com.docker.compose.volume=garage-data --format '{{.Name}}')"
+          if [[ "$(wc -w <<< "${postgres_ids}")" -ne 1 || "$(wc -w <<< "${garage_ids}")" -ne 1 || "$(wc -w <<< "${backend_ids}")" -ne 1 || "$(wc -w <<< "${garage_volumes}")" -ne 1 ]]; then
+            echo 'Expected exactly one running PostgreSQL, Garage, and backend container, plus one Garage data volume' >&2
+            exit 1
+          fi
+          postgres_id="${postgres_ids}"
+          garage_id="${garage_ids}"
+          backend_id="${backend_ids}"
+          garage_volume="${garage_volumes}"
+          backend_stopped=false
+          garage_stopped=false
+          cleanup() {
+            status=$?
+            trap - EXIT
+            set +e
+            if [[ "${garage_stopped}" == true ]]; then
+              docker start "${garage_id}" >/dev/null || status=1
+            fi
+            if [[ "${backend_stopped}" == true ]]; then
+              docker start "${backend_id}" >/dev/null || status=1
+            fi
+            rm -rf -- "${restore_dir}"
+            exit "${status}"
+          }
+          trap cleanup EXIT
+
+          restic=(docker run --rm \
+            --env RESTIC_REPOSITORY \
+            --env RESTIC_PASSWORD \
+            --env "AWS_ACCESS_KEY_ID=${BACKUP_S3_ACCESS_KEY_ID}" \
+            --env "AWS_SECRET_ACCESS_KEY=${BACKUP_S3_SECRET_ACCESS_KEY}" \
+            --env "AWS_DEFAULT_REGION=${BACKUP_S3_REGION}" \
+            --volume "${restore_dir}:/restore" \
+            docker.io/restic/restic:0.17.3)
+          "${restic[@]}" restore "${SNAPSHOT}" --target /restore
+
+          mapfile -t postgres_dumps < <(find "${restore_dir}" -type f -name postgres.dump -print)
+          mapfile -t garage_archives < <(find "${restore_dir}" -type f -name garage-data.tar.gz -print)
+          if [[ "${#postgres_dumps[@]}" -ne 1 || "${#garage_archives[@]}" -ne 1 ]]; then
+            echo 'The snapshot must contain exactly one postgres.dump and one garage-data.tar.gz file.' >&2
+            exit 1
+          fi
+          postgres_dump="${postgres_dumps[0]}"
+          garage_archive="${garage_archives[0]}"
+
+          docker stop --time 30 "${backend_id}" >/dev/null
+          backend_stopped=true
+          docker cp "${postgres_dump}" "${postgres_id}:/tmp/postgres.dump"
+          docker exec "${postgres_id}" pg_restore --clean --if-exists --no-owner --no-privileges -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" /tmp/postgres.dump
+          docker exec "${postgres_id}" rm -f /tmp/postgres.dump
+
+          docker stop --time 30 "${garage_id}" >/dev/null
+          garage_stopped=true
+          docker run --rm --volume "${garage_volume}:/data" --volume "$(dirname "${garage_archive}"):/backup:ro" docker.io/library/alpine:3.21 \
+            sh -c 'rm -rf /data/* /data/.[!.]* /data/..?*; tar -xzf /backup/garage-data.tar.gz -C /data'
+          docker start "${garage_id}" >/dev/null
+          garage_stopped=false
+          docker start "${backend_id}" >/dev/null
+          backend_stopped=false
+
+          echo "Restored snapshot ${SNAPSHOT} from ${RESTIC_REPOSITORY}"
