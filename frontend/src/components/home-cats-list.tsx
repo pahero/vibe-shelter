@@ -46,6 +46,38 @@ export function HomeCatsList() {
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState(() => emptyCatForm());
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hasRestoredListState, setHasRestoredListState] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setCurrentPage(Math.max(1, Number(params.get("page")) || 1));
+    setSearch(params.get("search") ?? "");
+    setLocationFilter(params.get("location") ?? "");
+    setTagFilter(params.get("tag") ?? "");
+    setSearchArchived(params.get("archived") === "true");
+    setHasRestoredListState(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasRestoredListState) return;
+    const params = new URLSearchParams();
+    if (currentPage > 1) params.set("page", String(currentPage));
+    if (search) params.set("search", search);
+    if (locationFilter) params.set("location", locationFilter);
+    if (tagFilter) params.set("tag", tagFilter);
+    if (searchArchived) params.set("archived", "true");
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", query ? `/?${query}` : "/");
+  }, [currentPage, search, locationFilter, tagFilter, searchArchived, hasRestoredListState]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const savedScroll = sessionStorage.getItem("cat-list-scroll");
+    if (savedScroll !== null) {
+      sessionStorage.removeItem("cat-list-scroll");
+      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll))));
+    }
+  }, [cats, isLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -421,7 +453,7 @@ export function HomeCatsList() {
       {!isLoading && cats.length > 0 && (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {cats.map((cat) => (
-            <CatCard key={cat.id} cat={cat} showTags={false} />
+            <CatCard key={cat.id} cat={cat} showTags={false} profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(searchArchived ? { archived: "true" } : {}) }).toString()}`} />
           ))}
         </div>
       )}

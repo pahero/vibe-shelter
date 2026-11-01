@@ -6,7 +6,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { faArrowLeft, faBoxArchive, faBugs, faCat, faClockRotateLeft, faEllipsis, faImages, faListCheck, faNotesMedical, faPen, faPills, faPlane, faPlus, faRotateLeft, faSyringe, faTrash, faWeightScale } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { CatCard } from "@/components/cat-card";
 import { TagColorStrip } from "@/components/tag-color-strip";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
@@ -94,6 +94,7 @@ function randomTagColor(): string {
 
 export default function CatProfilePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const catId = params?.id as string;
   const [cat, setCat] = useState<CatCardType | null>(null);
   const [favoriteOverride, setFavoriteOverride] = useState<{ catId: string; value: boolean } | null>(null);
@@ -851,7 +852,7 @@ export default function CatProfilePage() {
   return (
     <main className="relative min-h-dvh bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32">
       <Link
-        href="/"
+        href={searchParams.size ? `/?${searchParams.toString()}` : "/"}
         aria-label="Back to home"
         title="Back to home"
         className="fixed left-8 top-10 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#d4c7b4] bg-[#fff8ee]/90 text-[#d05a2c] shadow-md backdrop-blur-sm transition hover:bg-white hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]"
