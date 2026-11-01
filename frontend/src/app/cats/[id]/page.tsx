@@ -17,7 +17,7 @@ import { CatTreatments } from "@/components/cat-treatments";
 import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatVaccinations } from "@/components/cat-vaccinations";
 import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
-import { CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, IntakeSource, INTAKE_SOURCE_LABELS, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
+import { AdopterCountry, CatArchivingReason, CatCard as CatCardType, CatDocument, CatHistoryEvent, CatPhoto, CatSex, CatTag, CatWeight, IntakeSource, INTAKE_SOURCE_LABELS, Location, SterilizationStatus, catsApi, flightsApi, locationsApi } from "@/lib/api";
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 import { isSupportedGalleryUpload } from "@/lib/gallery-media";
@@ -34,6 +34,7 @@ type CatEditForm = {
   sponsorName: string;
   adopterName: string;
   adopterAddress: string;
+  adopterCountry: AdopterCountry | "";
   felvFivTestDone: boolean;
   intakeDetails: string;
   intakeSource: IntakeSource | "";
@@ -76,6 +77,7 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     sponsorName: cat.sponsorName ?? "",
     adopterName: cat.adopterName ?? "",
     adopterAddress: cat.adopterAddress ?? "",
+    adopterCountry: cat.adopterCountry ?? "",
     felvFivTestDone: cat.felvFivTestDone,
     intakeDetails: cat.intakeDetails ?? "",
     intakeSource: cat.intakeSource ?? "",
@@ -660,6 +662,7 @@ export default function CatProfilePage() {
         sponsorName: editForm.sponsorName.trim() || null,
         adopterName: editForm.adopterName.trim() || null,
         adopterAddress: editForm.adopterAddress.trim() || null,
+        adopterCountry: editForm.adopterCountry || null,
         felvFivTestDone: editForm.felvFivTestDone,
         intakeDetails: editForm.intakeDetails.trim() || null,
         intakeSource: editForm.intakeSource || null,
@@ -1187,6 +1190,12 @@ export default function CatProfilePage() {
                       Adopter address
                       <input value={editForm.adopterAddress} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterAddress: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
                     </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Adopter country
+                      <select value={editForm.adopterCountry} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterCountry: event.target.value as AdopterCountry | "" })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                        <option value="">Not set</option><option value="UK">UK</option><option value="EU">EU</option><option value="CY">CY</option>
+                      </select>
+                    </label>
                   </div>
                   <div className="flex justify-end gap-3">
                     <button
@@ -1221,6 +1230,7 @@ export default function CatProfilePage() {
                     ["Sponsor name", cat.sponsorName || "Not set"],
                     ["Adopter name", cat.adopterName || "Not set"],
                     ["Adopter address", cat.adopterAddress || "Not set"],
+                    ["Adopter country", cat.adopterCountry || "Not set"],
                     ...(cat.archivingReasonName ? [["Archiving reason", cat.archivingReasonName] as const] : []),
                   ].map(([label, value]) => (
                     <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>

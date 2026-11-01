@@ -19,6 +19,7 @@ export const eventLabels: Record<string, string> = {
   sponsor_name_changed: "Sponsor name changed",
   adopter_name_changed: "Adopter name changed",
   adopter_address_changed: "Adopter address changed",
+  adopter_country_changed: "Adopter country changed",
   felv_fiv_test_done_changed: "FeLV/FIV test status changed",
   traces_changed: "Traces changed",
   fit_to_fly_changed: "Fit-to-fly changed",

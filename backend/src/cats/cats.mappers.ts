@@ -44,6 +44,7 @@ export async function toCatCard(
     sponsorName: cat.sponsorName,
     adopterName: cat.adopterName,
     adopterAddress: cat.adopterAddress,
+    adopterCountry: cat.adopterCountry,
     felvFivTestDone: cat.felvFivTestDone,
     intakeDetails: cat.intakeDetails,
     intakeSource: cat.intakeSource,

@@ -26,6 +26,7 @@ export type ListLocationsResponse = {
 };
 
 export type CatSex = "FEMALE" | "MALE" | "UNKNOWN";
+export type AdopterCountry = "UK" | "EU" | "CY";
 export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
 export type IntakeSource = "SHELTER_VOLUNTEER" | "OWNER_SURRENDER" | "RESCUE_REQUEST" | "VET_CLINIC" | "RESCUE_ORGANISATION" | "OTHER";
 export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
@@ -61,6 +62,7 @@ export type CatCard = {
   sponsorName: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
+  adopterCountry?: AdopterCountry | null;
   felvFivTestDone: boolean;
   intakeDetails: string | null;
   intakeSource: IntakeSource | null;
@@ -287,6 +289,7 @@ export type CreateCatDto = {
   sponsorName?: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
+  adopterCountry?: AdopterCountry | null;
   sterilizationStatus: SterilizationStatus;
   currentLocationId?: string | null;
 };
@@ -372,6 +375,7 @@ export type FlightCandidate = {
   sponsorName: string | null;
   adopterName: string | null;
   adopterAddress: string | null;
+  adopterCountry?: AdopterCountry | null;
   flights: Array<{ id: string; flightNumber: string }>;
   requirements: FlightCandidateRequirements;
 };

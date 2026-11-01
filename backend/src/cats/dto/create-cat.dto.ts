@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { CatIntakeSource, CatSex, SterilizationStatus } from "@prisma/client";
+import { CatAdopterCountry, CatIntakeSource, CatSex, SterilizationStatus } from "@prisma/client";
 import {
   IsBoolean,
   IsIn,
@@ -71,6 +71,10 @@ export class CreateCatDto {
   @IsOptional()
   adopterAddress?: string | null;
 
+  @IsIn(["UK", "EU", "CY"])
+  @IsOptional()
+  adopterCountry?: "UK" | "EU" | "CY" | null;
+
   @IsBoolean()
   @IsOptional()
   felvFivTestDone?: boolean;
@@ -118,6 +122,9 @@ export class CreateCatDto {
       this.optionalTrim(this.adopterName),
       this.optionalTrim(this.adopterAddress),
       this.felvFivTestDone ?? false,
+      this.adopterCountry
+        ? this.parseEnum(this.adopterCountry, CatAdopterCountry, "adopterCountry")
+        : null,
     );
   }
 

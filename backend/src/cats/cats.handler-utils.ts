@@ -65,6 +65,7 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.adopterAddress !== undefined
       ? { adopterAddress: optionalTrim(data.adopterAddress) }
       : {}),
+    ...(data.adopterCountry !== undefined ? { adopterCountry: data.adopterCountry } : {}),
     ...(data.felvFivTestDone !== undefined
       ? { felvFivTestDone: data.felvFivTestDone }
       : {}),

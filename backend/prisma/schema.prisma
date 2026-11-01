@@ -105,6 +105,12 @@ enum CatIntakeSource {
   OTHER
 }
 
+enum CatAdopterCountry {
+  UK
+  EU
+  CY
+}
+
 enum CatSex {
   FEMALE
   MALE
@@ -167,6 +173,7 @@ model Cat {
   sponsorName         String?
   adopterName         String?
   adopterAddress      String?
+  adopterCountry      CatAdopterCountry?
   felvFivTestDone     Boolean             @default(false)
   isFlightCandidate   Boolean             @default(false)
   sterilizationStatus SterilizationStatus @default(UNKNOWN)

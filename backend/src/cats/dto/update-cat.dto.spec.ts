@@ -16,6 +16,7 @@ describe("UpdateCatDto.toCommand", () => {
       sponsorName: "  Sponsor  ",
       adopterName: "  Foster  ",
       adopterAddress: "  Address  ",
+      adopterCountry: "CY",
       felvFivTestDone: true,
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-id",
@@ -33,6 +34,7 @@ describe("UpdateCatDto.toCommand", () => {
       sponsorName: "Sponsor",
       adopterName: "Foster",
       adopterAddress: "Address",
+      adopterCountry: "CY",
       felvFivTestDone: true,
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-id",
@@ -104,5 +106,17 @@ describe("UpdateCatDto.toCommand", () => {
   it("rejects an invalid intake source", () => {
     const dto = Object.assign(new UpdateCatDto(), { intakeSource: "CLINIC" });
     expect(() => dto.toCommand()).toThrow("Invalid intakeSource");
+  });
+
+  it.each(["UK", "EU", "CY"] as const)("accepts adopter country %s", (adopterCountry) => {
+    expect(Object.assign(new UpdateCatDto(), { adopterCountry }).toCommand()).toEqual({ adopterCountry });
+  });
+
+  it("preserves null adopter country", () => {
+    expect(Object.assign(new UpdateCatDto(), { adopterCountry: null }).toCommand()).toEqual({ adopterCountry: null });
+  });
+
+  it("rejects invalid adopter country", () => {
+    expect(() => Object.assign(new UpdateCatDto(), { adopterCountry: "US" }).toCommand()).toThrow("Invalid adopterCountry");
   });
 });

@@ -19,6 +19,7 @@ describe("CreateCatDto", () => {
     dto.nameNumber = 27;
     dto.adopterName = "  Jane Doe ";
     dto.adopterAddress = "  5 Main Street ";
+    dto.adopterCountry = "UK";
     dto.felvFivTestDone = true;
 
     const command = dto.toCommand("user-1", true);
@@ -41,6 +42,7 @@ describe("CreateCatDto", () => {
       nameNumber: 27,
       adopterName: "Jane Doe",
       adopterAddress: "5 Main Street",
+      adopterCountry: "UK",
       felvFivTestDone: true,
     });
   });
@@ -75,6 +77,12 @@ describe("CreateCatDto", () => {
     dto.passport = false;
 
     expect(dto.toCommand("user-1", false).passport).toBe(false);
+  });
+
+  it.each(["UK", "EU", "CY"] as const)("accepts adopter country %s", (adopterCountry) => {
+    const dto = createRequiredDto();
+    dto.adopterCountry = adopterCountry;
+    expect(dto.toCommand("user-1", false).adopterCountry).toBe(adopterCountry);
   });
 
   it("normalizes whitespace-only optional strings", () => {

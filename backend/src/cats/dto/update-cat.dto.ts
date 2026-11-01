@@ -14,6 +14,7 @@ export type UpdateCatCommand = {
   sponsorName?: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
+  adopterCountry?: "UK" | "EU" | "CY" | null;
   felvFivTestDone?: boolean;
   sterilizationStatus?: "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
   currentLocationId?: string;
@@ -89,6 +90,10 @@ export class UpdateCatDto {
   @IsOptional()
   adopterAddress?: string | null;
 
+  @IsIn(["UK", "EU", "CY"])
+  @IsOptional()
+  adopterCountry?: "UK" | "EU" | "CY" | null;
+
   @IsBoolean()
   @IsOptional()
   felvFivTestDone?: boolean;
@@ -143,6 +148,10 @@ export class UpdateCatDto {
         `Invalid intakeSource. Must be one of: ${validIntakeSources.join(", ")}`,
       );
     }
+    if (this.adopterCountry !== undefined && this.adopterCountry !== null &&
+      !["UK", "EU", "CY"].includes(this.adopterCountry)) {
+      throw new BadRequestException("Invalid adopterCountry. Must be one of: UK, EU, CY");
+    }
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
       ...(this.sex !== undefined
@@ -179,6 +188,7 @@ export class UpdateCatDto {
       ...(this.adopterAddress !== undefined
         ? { adopterAddress: optionalText(this.adopterAddress) }
         : {}),
+      ...(this.adopterCountry !== undefined ? { adopterCountry: this.adopterCountry } : {}),
       ...(this.felvFivTestDone !== undefined
         ? { felvFivTestDone: this.felvFivTestDone }
         : {}),
