@@ -275,7 +275,7 @@ export function HomeCatsList() {
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake details
-              <input value={createForm.intakeDetails} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDetails: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
+              <textarea value={createForm.intakeDetails} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDetails: event.target.value }))} className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake source
