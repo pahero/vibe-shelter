@@ -43,6 +43,7 @@ export type CatCard = {
   id: string;
   name: string;
   nameNumber: number;
+  trelloUrl?: string | null;
   sex: CatSex;
   color: string | null;
   estimatedBirthDate: string | null;
@@ -671,6 +672,15 @@ export const catsApi = {
       
     });
     return handleResponse<CatCard>(response);
+  },
+
+  async setTrelloLink(id: string, trelloUrl: string | null): Promise<MutationResult> {
+    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/trello-link`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trelloUrl }),
+    });
+    return handleResponse<MutationResult>(response);
   },
 
   async toggleCatFavorite(id: string): Promise<{ favorite: boolean }> {

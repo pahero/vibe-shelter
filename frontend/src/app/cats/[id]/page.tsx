@@ -21,6 +21,7 @@ import { AdopterCountry, CatArchivingReason, CatCard as CatCardType, CatDocument
 import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 import { isSupportedGalleryUpload } from "@/lib/gallery-media";
+import { authenticatedFetch, BACKEND_URL } from "@/lib/backend";
 
 type CatEditForm = {
   name: string;
@@ -168,6 +169,35 @@ export default function CatProfilePage() {
   const [isFlightCandidate, setIsFlightCandidate] = useState(false);
   const [isSectionMenuOpen, setIsSectionMenuOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<string>("profile");
+  const [isOwner, setIsOwner] = useState(false);
+  const [trelloUrlDraft, setTrelloUrlDraft] = useState("");
+  const [isSavingTrelloUrl, setIsSavingTrelloUrl] = useState(false);
+  const [trelloUrlError, setTrelloUrlError] = useState<string | null>(null);
+
+  useEffect(() => {
+    authenticatedFetch(`${BACKEND_URL}/auth/me`).then(async (response) => {
+      if (response.ok) setIsOwner(((await response.json()) as { role?: string }).role === "owner");
+    }).catch(() => setIsOwner(false));
+  }, []);
+
+  useEffect(() => {
+    setTrelloUrlDraft(cat?.trelloUrl ?? "");
+  }, [cat?.trelloUrl]);
+
+  const saveTrelloUrl = async () => {
+    if (!cat) return;
+    setIsSavingTrelloUrl(true);
+    setTrelloUrlError(null);
+    try {
+      const url = trelloUrlDraft.trim();
+      await catsApi.setTrelloLink(cat.id, url || null);
+      setCat({ ...cat, trelloUrl: url || null });
+    } catch (err) {
+      setTrelloUrlError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSavingTrelloUrl(false);
+    }
+  };
 
   useEffect(() => {
     const sectionIds = ["profile", "media", "treatments", "weight-history", "vaccinations", "parasite-treatments", "medical-notes", "tasks", "history"];
@@ -973,6 +1003,15 @@ export default function CatProfilePage() {
                 </div>}
               </div>
               <div className={`${isCatProfileExpanded ? "block" : "hidden"} md:block`}>
+
+              <div className="mt-3 rounded-lg border border-[#d4c7b4] bg-white/60 px-3 py-2 text-sm">
+                {cat.trelloUrl ? <a href={cat.trelloUrl} target="_blank" rel="noreferrer" className="font-medium text-[#b24a20] underline">Trello card</a> : <span className="text-[#6d6a66]">No Trello card linked</span>}
+                {isOwner && <div className="mt-2 flex gap-2">
+                  <input aria-label="Trello card URL" type="url" placeholder="https://trello.com/c/wqNVNDIs" value={trelloUrlDraft} onChange={(event) => setTrelloUrlDraft(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm" />
+                  <button type="button" onClick={saveTrelloUrl} disabled={isSavingTrelloUrl} className="rounded-lg border border-[#b24a20] bg-[#d05a2c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSavingTrelloUrl ? "Saving..." : "Save"}</button>
+                </div>}
+                {trelloUrlError && <p className="mt-2 text-sm text-red-700">{trelloUrlError}</p>}
+              </div>
 
               {!isArchiveFormOpen && archiveError && <p className="mt-3 text-sm text-red-700">{archiveError}</p>}
               {flightCandidateError && <p className="mt-3 text-sm text-red-700">{flightCandidateError}</p>}

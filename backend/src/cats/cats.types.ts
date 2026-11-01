@@ -5,6 +5,7 @@ export type CatCard = {
   id: string;
   name: string;
   nameNumber: number;
+  trelloUrl: string | null;
   sex: string;
   color: string | null;
   estimatedBirthDate: string | null;

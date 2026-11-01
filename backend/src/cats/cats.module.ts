@@ -85,6 +85,7 @@ import { ToggleCatFavoriteHandler } from "./commands/toggle-cat-favorite.handler
 import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favorite-cats-with-active-treatments.handler";
 import { PermanentlyDeleteCatsHandler } from "./commands/permanently-delete-cats.handler";
 import { OwnerRoleGuard } from "../auth/owner-role.guard";
+import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -106,6 +107,7 @@ import { OwnerRoleGuard } from "../auth/owner-role.guard";
     ToggleCatFavoriteHandler,
     ListFavoriteCatsWithActiveTreatmentsHandler,
     PermanentlyDeleteCatsHandler,
+    SetCatTrelloLinkHandler,
     CreateCatHandler,
     ArchiveCatHandler,
     DearchiveCatHandler,

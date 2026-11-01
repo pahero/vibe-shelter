@@ -98,6 +98,7 @@ export class CreateCatHandler {
       id: cat.id,
       name: cat.name,
       nameNumber: cat.nameNumber,
+      trelloUrl: cat.trelloUrl,
       sex: cat.sex,
       color: cat.color,
       estimatedBirthDate: cat.estimatedBirthDate?.toISOString() ?? null,

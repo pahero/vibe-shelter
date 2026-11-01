@@ -176,6 +176,7 @@ model Cat {
   adopterCountry      CatAdopterCountry?
   felvFivTestDone     Boolean             @default(false)
   isFlightCandidate   Boolean             @default(false)
+  trelloUrl           String?
   sterilizationStatus SterilizationStatus @default(UNKNOWN)
   archivedAt          DateTime?
   deletedAt           DateTime?

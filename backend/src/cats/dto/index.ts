@@ -4,3 +4,4 @@ export * from "./create-cat-weight.dto";
 export * from "./create-cat-tag.dto";
 export * from "./create-cat-archiving-reason.dto";
 export * from "./set-primary-cat-photo.dto";
+export * from "./set-cat-trello-link.dto";
