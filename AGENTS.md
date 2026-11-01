@@ -14,7 +14,6 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 
 ## Soft-deletable entities
 
-- Entities must only be deleted through soft deletion; hard deletion is prohibited.
 - Soft-deletable entities must have a concurrency token.
 - When creating an item that references a soft-deletable entity, update that entity's concurrency token in the same transaction. This verifies that it still exists and has not been removed.
 - Soft deletion must always update the entity's concurrency token in the same write.

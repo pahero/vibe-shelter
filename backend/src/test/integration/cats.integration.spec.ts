@@ -66,6 +66,14 @@ describe("Cats endpoints", () => {
     await staff.agent.delete("/api/cats/archiving-reasons/missing").send({}).expect(403);
   });
 
+  it("allows only Owners to invoke permanent cat deletion", async () => {
+    const staff = await createAuthenticatedAgent(app, prisma, false, "STAFF");
+    const admin = await createAuthenticatedAgent(app, prisma, false, "ADMIN");
+    await staff.agent.delete("/api/cats/permanent").send({ ids: ["missing"] }).expect(403);
+    await admin.agent.delete("/api/cats/permanent").send({ ids: ["missing"] }).expect(403);
+    await authAgent.delete("/api/cats/permanent").send({ ids: [] }).expect(400);
+  });
+
   afterAll(async () => {
     await app?.close();
   });

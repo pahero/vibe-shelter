@@ -83,6 +83,8 @@ import { PushSubscriptionsController } from "./tasks/push-subscriptions.controll
 import { PushNotificationService } from "./tasks/push-notification.service";
 import { ToggleCatFavoriteHandler } from "./commands/toggle-cat-favorite.handler";
 import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favorite-cats-with-active-treatments.handler";
+import { PermanentlyDeleteCatsHandler } from "./commands/permanently-delete-cats.handler";
+import { OwnerRoleGuard } from "../auth/owner-role.guard";
 
 @Module({
   imports: [ConfigModule, DatabaseModule, AuthModule],
@@ -103,6 +105,7 @@ import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favo
     CatPhotoCleanupService,
     ToggleCatFavoriteHandler,
     ListFavoriteCatsWithActiveTreatmentsHandler,
+    PermanentlyDeleteCatsHandler,
     CreateCatHandler,
     ArchiveCatHandler,
     DearchiveCatHandler,
@@ -171,6 +174,7 @@ import { ListFavoriteCatsWithActiveTreatmentsHandler } from "./queries/list-favo
     SetCatFlightCandidateHandler,
     JwtAuthGuard,
     AdminRoleGuard,
+    OwnerRoleGuard,
   ],
 })
 export class CatsModule {}

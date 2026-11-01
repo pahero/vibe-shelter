@@ -12,6 +12,7 @@ import { AddNewButton } from "@/components/add-new-button";
 import { PaginationControls } from "@/components/pagination-controls";
 import { AdminUser, fetchAdminUsers } from "@/lib/backend";
 import { DEFAULT_TAG_COLOR, TAG_COLOR_OPTIONS, VISIBLE_TAG_COLOR_COUNT, tagChipStyle } from "@/lib/tag-colors";
+import { PermanentCatDeletionClient } from "@/components/permanent-cat-deletion-client";
 
 const primaryButtonClass = "inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60";
 const secondaryButtonClass = "inline-flex min-h-10 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white px-4 text-sm font-semibold text-[#1f2320] transition hover:bg-[#fff8ee] disabled:cursor-not-allowed disabled:opacity-60";
@@ -36,7 +37,7 @@ type EditingTag = {
   color: string;
 };
 
-type ShelterSection = "locations" | "tags" | "users" | "archiving" | "audit";
+type ShelterSection = "locations" | "tags" | "users" | "archiving" | "audit" | "permanent-delete";
 
 type CatCardOptions = {
   id: string;
@@ -107,6 +108,7 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
     if (section === "users") {
       return;
     }
+    if (section === "permanent-delete") return;
     if (section === "archiving") {
       await loadArchivingReasons();
       return;
@@ -680,7 +682,7 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
           </section>}
        
 
-       {activeSection === "audit" && <section>
+        {activeSection === "audit" && <section>
          <h1 className="text-2xl font-semibold text-gray-900">Audit history</h1>
             <form onSubmit={filterAudit} className="mt-4 flex flex-wrap gap-2">
               <select value={auditUser} onChange={(event) => setAuditUser(event.target.value)} className="w-48 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" aria-label="Filter by user">
@@ -739,12 +741,13 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
               </div>
             )}
         </section>}
+        {activeSection === "permanent-delete" && currentUser.role === "owner" && <PermanentCatDeletionClient />}
         </div>
       )}
       </main>
       <nav aria-label="Shelter management sections" className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee]/95 p-2 shadow-xl backdrop-blur-md md:p-2.5">
         <div className="flex items-center gap-1 md:gap-2">
-          {([["locations", "Locations", faLocationDot], ["tags", "Tags", faTags], ["users", "Users", faUsers], ["archiving", "Archiving reasons", faBoxArchive], ["audit", "Audit history", faClockRotateLeft]] as const).map(([id, label, icon]) => <button key={id} type="button" onClick={() => selectSection(id)} aria-label={label} title={label} aria-current={activeSection === id ? "location" : undefined} className={`flex h-10 w-10 items-center justify-center rounded-xl transition md:h-11 md:w-11 ${activeSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon} aria-hidden="true" /></button>)}
+          {([...([["locations", "Locations", faLocationDot], ["tags", "Tags", faTags], ["users", "Users", faUsers], ["archiving", "Archiving reasons", faBoxArchive], ["audit", "Audit history", faClockRotateLeft]] as const), ...(currentUser.role === "owner" ? [["permanent-delete", "Permanently delete cats", faTrash] as const] : [])]).map(([id, label, icon]) => <button key={id} type="button" onClick={() => selectSection(id)} aria-label={label} title={label} aria-current={activeSection === id ? "location" : undefined} className={`flex h-10 w-10 items-center justify-center rounded-xl transition md:h-11 md:w-11 ${activeSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}><FontAwesomeIcon icon={icon} aria-hidden="true" /></button>)}
         </div>
       </nav>
     </>

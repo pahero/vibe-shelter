@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -16,6 +17,8 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { AdminRoleGuard, CurrentUser, JwtAuthGuard } from "../auth";
+import { OwnerRoleGuard } from "../auth/owner-role.guard";
+import { PermanentlyDeleteCatsHandler } from "./commands/permanently-delete-cats.handler";
 import { PrimaryPhotoUpload } from "./cats.types";
 import { ListCatsHandler } from "./queries/list-cats.handler";
 import { ListCatTagsHandler } from "./queries/list-cat-tags.handler";
@@ -95,7 +98,17 @@ export class CatsController {
     private readonly setCatFlightCandidateHandler: SetCatFlightCandidateHandler,
     private readonly toggleCatFavoriteHandler: ToggleCatFavoriteHandler,
     private readonly listFavoriteCatsWithActiveTreatmentsHandler: ListFavoriteCatsWithActiveTreatmentsHandler,
+    private readonly permanentlyDeleteCatsHandler: PermanentlyDeleteCatsHandler,
   ) {}
+
+  @Delete("permanent")
+  @UseGuards(OwnerRoleGuard)
+  async permanentlyDeleteCats(@Body() body: unknown) {
+    if (!body || typeof body !== "object" || !("ids" in body) || !Array.isArray(body.ids) || !body.ids.every((id) => typeof id === "string")) {
+      throw new BadRequestException("Request body must contain an ids array of strings");
+    }
+    return this.permanentlyDeleteCatsHandler.handle(body.ids);
+  }
 
   @Get()
   async listCats(

@@ -21,7 +21,7 @@ async function main() {
     where: { email: adminEmail },
     update: {
       fullName: "Administrator",
-      role: "ADMIN",
+      role: "OWNER",
       status: "ACTIVE",
       passwordHash: adminPasswordHash,
       isTest: false,
@@ -29,7 +29,7 @@ async function main() {
     create: {
       email: adminEmail,
       fullName: "Administrator",
-      role: "ADMIN",
+      role: "OWNER",
       status: "ACTIVE",
       passwordHash: adminPasswordHash,
       isTest: false,
