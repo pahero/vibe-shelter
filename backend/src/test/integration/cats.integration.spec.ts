@@ -1374,9 +1374,10 @@ describe("Cats endpoints", () => {
       .expect(200);
     expect(updatedReason.body).toEqual({ id: createdReason.body.id });
 
+    const archivingDate = "2024-06-15";
     const archived = await authAgent
       .post(`/api/cats/${cat.id}/archive`)
-      .send({ reasonId: updatedReason.body.id })
+      .send({ reasonId: updatedReason.body.id, archivingDate })
       .expect(201);
     expect(archived.body).toEqual({ id: cat.id });
 
@@ -1386,7 +1387,7 @@ describe("Cats endpoints", () => {
     expect(archivedCard.body).toMatchObject({
       archivingReasonId: updatedReason.body.id,
       archivingReasonName: updatedReasonName,
-      archivedAt: expect.any(String),
+      archivedAt: `${archivingDate}T00:00:00.000Z`,
     });
 
     const archivedSearch = await authAgent

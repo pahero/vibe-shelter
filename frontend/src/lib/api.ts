@@ -750,9 +750,9 @@ export const catsApi = {
     return handleResponse<void>(response);
   },
 
-  async archiveCat(id: string, reasonId: string): Promise<MutationResult> {
+  async archiveCat(id: string, reasonId: string, archivingDate: string): Promise<MutationResult> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/archive`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reasonId }),
+      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reasonId, archivingDate }),
     });
     return handleResponse<MutationResult>(response);
   },

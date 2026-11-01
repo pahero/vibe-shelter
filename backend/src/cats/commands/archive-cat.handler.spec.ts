@@ -23,6 +23,7 @@ describe("ArchiveCatHandler", () => {
       const archived = await handler.execute({
         catId: cat.id,
         reasonId: reason.id,
+        archivedAt: new Date("2024-06-15T00:00:00.000Z"),
         actorUserId: actor.id,
         currentUserIsTest: false,
       });
@@ -32,7 +33,7 @@ describe("ArchiveCatHandler", () => {
         tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
       ).resolves.toMatchObject({
         archivingReasonId: reason.id,
-        archivedAt: expect.any(Date),
+        archivedAt: new Date("2024-06-15T00:00:00.000Z"),
         version: 1,
       });
       await expect(
@@ -72,6 +73,7 @@ describe("ArchiveCatHandler", () => {
         handler.execute({
           catId: cat.id,
           reasonId: reason.id,
+          archivedAt: new Date("2024-06-15T00:00:00.000Z"),
           actorUserId: actor.id,
           currentUserIsTest: false,
         }),

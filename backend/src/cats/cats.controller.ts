@@ -223,12 +223,9 @@ export class CatsController {
     @Body() dto: ArchiveCatDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.archiveCatHandler.execute({
-      catId: id,
-      reasonId: dto.reasonId,
-      actorUserId: user.id,
-      currentUserIsTest: user.isTest,
-    });
+    return this.archiveCatHandler.execute(
+      dto.toCommand(id, user.id, user.isTest),
+    );
   }
 
   @Post(":id/dearchive")

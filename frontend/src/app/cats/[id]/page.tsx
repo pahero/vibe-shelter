@@ -61,7 +61,9 @@ function dateInputValue(date: string | null): string {
 }
 
 function todayInputValue(): string {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+  return today.toISOString().slice(0, 10);
 }
 
 function catToEditForm(cat: CatCardType): CatEditForm {
@@ -157,6 +159,7 @@ export default function CatProfilePage() {
   const [isArchiveFormOpen, setIsArchiveFormOpen] = useState(false);
   const [archivingReasons, setArchivingReasons] = useState<CatArchivingReason[]>([]);
   const [archivingReasonId, setArchivingReasonId] = useState("");
+  const [archivingDate, setArchivingDate] = useState(todayInputValue);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [isMarkingFlightCandidate, setIsMarkingFlightCandidate] = useState(false);
@@ -568,6 +571,7 @@ export default function CatProfilePage() {
       const reasons = await catsApi.listArchivingReasons();
       setArchivingReasons(reasons);
       setArchivingReasonId(reasons[0]?.id ?? "");
+      setArchivingDate(todayInputValue());
       setIsArchiveFormOpen(true);
     } catch (err) {
       setArchiveError(ApiErrorHandler.handle(err));
@@ -582,7 +586,7 @@ export default function CatProfilePage() {
     setIsArchiving(true);
     setArchiveError(null);
     try {
-      await catsApi.archiveCat(cat.id, archivingReasonId);
+      await catsApi.archiveCat(cat.id, archivingReasonId, archivingDate);
       const updated = await catsApi.getCatCard(cat.id);
       setCat(updated);
       setIsArchiveFormOpen(false);
@@ -979,6 +983,7 @@ export default function CatProfilePage() {
                       {archivingReasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
                     </select>
                   </label>
+                  <label className="mt-3 grid gap-1 text-sm font-medium text-gray-800"><span>Archiving date <span className="text-red-700">*</span></span><input aria-label="Archiving date" type="date" required value={archivingDate} onChange={(event) => setArchivingDate(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" /></label>
                   {archivingReasons.length === 0 && <p className="mt-2 text-sm text-red-700">Create an archiving reason in shelter settings first.</p>}
                   {archiveError && <p className="mt-2 text-sm text-red-700">{archiveError}</p>}
                   <div className="mt-3 flex gap-2">

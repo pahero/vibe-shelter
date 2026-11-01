@@ -10,6 +10,7 @@ import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 export type ArchiveCatInput = {
   catId: string;
   reasonId: string;
+  archivedAt: Date;
   actorUserId: string;
   currentUserIsTest: boolean;
 };
@@ -43,7 +44,7 @@ export class ArchiveCatHandler {
       await transaction.cat.update({
         where: { id: cat.id },
         data: {
-          archivedAt: new Date(),
+          archivedAt: input.archivedAt,
           archivingReasonId: reason.id,
           version: { increment: 1 },
         },
