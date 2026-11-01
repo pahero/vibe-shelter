@@ -27,9 +27,8 @@ describe("ListCatsHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { connect: { id: location.id } },
           name: `Unique ${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          currentLocationId: location.id,
         },
       });
       await tx.catTagOnCat.create({ data: { catId: cat.id, tagId: tag.id } });
@@ -73,9 +72,9 @@ describe("ListCatsHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Archived ${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          archivingReasonId: reason.id,
+          archivingReason: { connect: { id: reason.id } },
         },
       });
       const result = await new ListCatsHandler(

@@ -14,7 +14,7 @@ describe("ArchiveCatHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { name: `Archive ${Date.now()}-${Math.random()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Archive ${Date.now()}-${Math.random()}` },
       });
       const reason = await tx.catArchivingReason.create({
         data: { name: `Adopted ${Date.now()}-${Math.random()}` },
@@ -56,7 +56,7 @@ describe("ArchiveCatHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Regular cat ${Date.now()}-${Math.random()}`,
           isTest: false,
         },

@@ -26,7 +26,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-date-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Date cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Date cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -53,7 +53,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-duplicate-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Duplicate treatment cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Duplicate treatment cat" } });
       const date = day("2026-09-10");
       await tx.catTreatment.create({
         data: {
@@ -91,7 +91,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-record-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Record cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Record cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -126,7 +126,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-dose-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Dose cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Dose cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -161,7 +161,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-valid-reduce-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Valid reduce cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Valid reduce cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -188,7 +188,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-unchanged-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Unchanged cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Unchanged cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -222,7 +222,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-clear-end-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Clear end cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Clear end cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -253,7 +253,7 @@ describe("UpdateCatTreatmentHandler", () => {
         data: { email: `${Date.now()}-clear-instructions@example.com` },
       });
       const cat = await tx.cat.create({
-        data: { name: "Clear instructions cat" },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: "Clear instructions cat" },
       });
       const treatment = await tx.catTreatment.create({
         data: {
@@ -285,7 +285,7 @@ describe("UpdateCatTreatmentHandler", () => {
         data: { email: `${Date.now()}-add-instructions@example.com` },
       });
       const cat = await tx.cat.create({
-        data: { name: "Add instructions cat" },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: "Add instructions cat" },
       });
       const treatment = await tx.catTreatment.create({
         data: {
@@ -316,7 +316,7 @@ describe("UpdateCatTreatmentHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-success-update@example.com` },
       });
-      const cat = await tx.cat.create({ data: { name: "Success cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Success cat" } });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,

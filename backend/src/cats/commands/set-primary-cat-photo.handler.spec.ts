@@ -17,7 +17,7 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("sets an active photo as primary", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -44,7 +44,7 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("resets the position when replacing the primary photo without a coordinate", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           primaryPhotoKey: "old-key",
           primaryPhotoPositionY: 16,
@@ -72,7 +72,7 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("preserves the position when the same primary photo is selected without a coordinate", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           primaryPhotoKey: "current-key",
           primaryPhotoPositionY: 37,
@@ -97,7 +97,7 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("rejects an inactive or unrelated photo", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });

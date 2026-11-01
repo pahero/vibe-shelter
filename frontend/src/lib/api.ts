@@ -500,8 +500,9 @@ export const locationsApi = {
     return handleResponse<Location>(response);
   },
 
-  async archiveLocation(id: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/locations/${id}`, {
+  async archiveLocation(id: string, replacementLocationId?: string): Promise<void> {
+    const query = replacementLocationId ? `?replacementLocationId=${encodeURIComponent(replacementLocationId)}` : "";
+    const response = await authenticatedFetch(`${BACKEND_URL}/api/locations/${id}${query}`, {
       method: "DELETE",
       
     });

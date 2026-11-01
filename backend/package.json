@@ -10,7 +10,7 @@
     "format": "oxfmt --write src test prisma",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "test": "vitest run",
+    "test": "tsc --noEmit && vitest run",
     "test:cov": "vitest run --coverage",
     "knip": "knip"
   },

@@ -37,7 +37,7 @@ describe("AddCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -75,7 +75,7 @@ describe("AddCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -105,7 +105,7 @@ describe("AddCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}` },
       });
       const png = await sharp({ create: { width: 2, height: 2, channels: 3, background: { r: 20, g: 80, b: 140 } } }).png().toBuffer();
       const result = await new AddCatDocumentHandler(

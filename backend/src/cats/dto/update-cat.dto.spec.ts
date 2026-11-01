@@ -54,7 +54,7 @@ describe("UpdateCatDto.toCommand", () => {
       sponsorName: null,
       adopterName: "",
       adopterAddress: " ",
-      currentLocationId: "",
+      currentLocationId: " location-x ",
     });
     expect(dto.toCommand()).toEqual({
       color: null,
@@ -66,7 +66,7 @@ describe("UpdateCatDto.toCommand", () => {
       sponsorName: null,
       adopterName: null,
       adopterAddress: null,
-      currentLocationId: null,
+      currentLocationId: "location-x",
     });
   });
 

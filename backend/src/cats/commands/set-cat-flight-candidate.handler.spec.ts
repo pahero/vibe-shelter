@@ -7,7 +7,7 @@ describe("SetCatFlightCandidateHandler", () => {
   it("marks and unmarks a cat, auditing each state change", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({ data: { email: `${Date.now()}-${Math.random()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Candidate ${Date.now()}-${Math.random()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Candidate ${Date.now()}-${Math.random()}` } });
       const handler = new SetCatFlightCandidateHandler(tx as PrismaService);
       await expect(handler.handle(cat.id, true, actor.id, false)).resolves.toEqual({ id: cat.id });
       await expect(handler.handle(cat.id, false, actor.id, false)).resolves.toEqual({ id: cat.id });
@@ -22,7 +22,7 @@ describe("SetCatFlightCandidateHandler", () => {
   it("does not create duplicate audit events when state is unchanged", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({ data: { email: `${Date.now()}-${Math.random()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Candidate ${Date.now()}-${Math.random()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Candidate ${Date.now()}-${Math.random()}` } });
       await new SetCatFlightCandidateHandler(tx as PrismaService).handle(cat.id, false, actor.id, false);
       await expect(tx.auditEvent.count({ where: { catId: cat.id } })).resolves.toBe(0);
     });
@@ -30,7 +30,7 @@ describe("SetCatFlightCandidateHandler", () => {
 
   it("does not mutate cats outside the user's partition", async () => {
     await runInTestTransaction(async (tx) => {
-      const cat = await tx.cat.create({ data: { name: `Test candidate ${Date.now()}-${Math.random()}`, isTest: true } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test candidate ${Date.now()}-${Math.random()}`, isTest: true } });
       await expect(new SetCatFlightCandidateHandler(tx as PrismaService).handle(cat.id, true, "unused", false)).rejects.toThrow(NotFoundException);
     });
   });

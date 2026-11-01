@@ -31,7 +31,7 @@ describe("UpdatePrimaryCatPhotoHandler", () => {
   it("creates a photo and sets it as primary", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -58,7 +58,7 @@ describe("UpdatePrimaryCatPhotoHandler", () => {
   it("rejects a missing upload", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });

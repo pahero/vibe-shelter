@@ -10,6 +10,8 @@ import { CreateCatHandler } from "./create-cat.handler";
 import { WriteCatAuditEventCommand } from "./write-cat-audit-event.command";
 
 let photoUrls: CatPhotoUrlService;
+let regularFixtureLocationId = "";
+let testFixtureLocationId = "";
 
 describe("CreateCatHandler", () => {
   let s3Client: S3Client;
@@ -23,6 +25,8 @@ describe("CreateCatHandler", () => {
 
   it("creates a cat card and emits a value-free creation event", async () => {
     await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
       const prisma = tx as PrismaService;
       const actorUserId = await createActor(tx);
       const card = await createHandler(prisma).execute(
@@ -45,6 +49,8 @@ describe("CreateCatHandler", () => {
 
   it("assigns subsequent name numbers separately in each partition", async () => {
     await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
       const handler = createHandler(tx as PrismaService);
       const actorUserId = await createActor(tx);
       const name = unique("Tom");
@@ -64,6 +70,8 @@ describe("CreateCatHandler", () => {
 
   it("preserves an explicitly imported name number and checklist cat fields", async () => {
     await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
       const actorUserId = await createActor(tx);
       const name = unique("imported-cat");
       const created = await createHandler(tx as PrismaService).execute(
@@ -88,6 +96,8 @@ describe("CreateCatHandler", () => {
 
   it("persists command fields and returns the active location", async () => {
     await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
       const prisma = tx as PrismaService;
       const actorUserId = await createActor(tx);
       const location = await tx.location.create({
@@ -149,6 +159,8 @@ describe("CreateCatHandler", () => {
     "rejects a %s location",
     async (status) => {
       await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
         const actorUserId = await createActor(tx);
         const location = await tx.location.create({
           data: { name: unique(`${status}-location`), status },
@@ -167,6 +179,8 @@ describe("CreateCatHandler", () => {
 
   it("rejects a location from the other test partition and missing locations", async () => {
     await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
       const actorUserId = await createActor(tx);
       const handler = createHandler(tx as PrismaService);
       const testLocation = await tx.location.create({
@@ -193,6 +207,8 @@ describe("CreateCatHandler", () => {
 
   it("rejects a duplicate microchip number", async () => {
     await runInTestTransaction(async (tx) => {
+      regularFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-location") } })).id;
+      testFixtureLocationId = (await tx.location.create({ data: { name: unique("fixture-test-location"), isTest: true } })).id;
       const actorUserId = await createActor(tx);
       const handler = createHandler(tx as PrismaService);
       const value = unique("microchip");
@@ -256,7 +272,7 @@ function createCommand(
     overrides.passport ?? false,
     overrides.sponsorName ?? null,
     "UNKNOWN",
-    overrides.currentLocationId ?? null,
+    overrides.currentLocationId ?? (overrides.isTest ? testFixtureLocationId : regularFixtureLocationId),
     actorUserId,
     overrides.isTest ?? false,
     overrides.nameNumber,

@@ -37,7 +37,7 @@ describe("AddCatPhotoHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -94,7 +94,7 @@ describe("AddCatPhotoHandler", () => {
   it("rejects an empty upload", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -117,7 +117,7 @@ describe("AddCatPhotoHandler", () => {
     async ({ filename, mimetype }) => {
       await runInTestTransaction(async (tx) => {
         const cat = await tx.cat.create({
-          data: { name: `Video cat ${Date.now()}-${Math.random()}` },
+          data: { currentLocation: { create: { name: "Fixture location" } }, name: `Video cat ${Date.now()}-${Math.random()}` },
         });
         const result = await new AddCatPhotoHandler(
           tx as PrismaService,
@@ -153,7 +153,7 @@ describe("AddCatPhotoHandler", () => {
   it("rejects unsupported video MIME types", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { name: `Invalid video cat ${Date.now()}-${Math.random()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Invalid video cat ${Date.now()}-${Math.random()}` },
       });
       await expect(
         new AddCatPhotoHandler(

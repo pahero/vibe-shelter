@@ -12,7 +12,7 @@ describe("DeleteCatTagHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });

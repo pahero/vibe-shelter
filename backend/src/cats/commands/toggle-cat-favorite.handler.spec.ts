@@ -7,7 +7,7 @@ describe("ToggleCatFavoriteHandler", () => {
   it("adds a favorite for the specified user", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Favorite ${crypto.randomUUID()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Favorite ${crypto.randomUUID()}` } });
       await expect(new ToggleCatFavoriteHandler(tx as PrismaService).handle(cat.id, user.id)).resolves.toEqual({ favorite: true });
       await expect(tx.catFavorite.findUnique({ where: { userId_catId: { userId: user.id, catId: cat.id } } })).resolves.toMatchObject({ userId: user.id, catId: cat.id });
     });
@@ -17,7 +17,7 @@ describe("ToggleCatFavoriteHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
       const otherUser = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Shared ${crypto.randomUUID()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Shared ${crypto.randomUUID()}` } });
       await tx.catFavorite.createMany({ data: [{ userId: user.id, catId: cat.id }, { userId: otherUser.id, catId: cat.id }] });
       await expect(new ToggleCatFavoriteHandler(tx as PrismaService).handle(cat.id, user.id)).resolves.toEqual({ favorite: false });
       await expect(tx.catFavorite.findUnique({ where: { userId_catId: { userId: otherUser.id, catId: cat.id } } })).resolves.not.toBeNull();
@@ -36,7 +36,7 @@ describe("ToggleCatFavoriteHandler", () => {
   it("rejects a deleted cat", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Deleted ${crypto.randomUUID()}`, deletedAt: new Date() } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Deleted ${crypto.randomUUID()}`, deletedAt: new Date() } });
       const handler = new ToggleCatFavoriteHandler(tx as PrismaService);
       await expect(handler.handle(cat.id, user.id)).rejects.toThrow(NotFoundException);
     });

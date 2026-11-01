@@ -8,7 +8,7 @@ describe("UpdateCatNameNumberHandler", () => {
   it("updates a cat number", async () => {
     await runInTestTransaction(async (tx) => {
       const name = uniqueName();
-      const cat = await tx.cat.create({ data: { name } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name } });
       const actorUserId = await createActor(tx);
       await expect(
         new UpdateCatNameNumberHandler(tx as PrismaService).handle(
@@ -27,8 +27,8 @@ describe("UpdateCatNameNumberHandler", () => {
   it("rejects numbers already used in the same partition", async () => {
     await runInTestTransaction(async (tx) => {
       const name = uniqueName();
-      await tx.cat.create({ data: { name, nameNumber: 1 } });
-      const target = await tx.cat.create({ data: { name, nameNumber: 2 } });
+      await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name, nameNumber: 1 } });
+      const target = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name, nameNumber: 2 } });
       const actorUserId = await createActor(tx);
       await expect(
         new UpdateCatNameNumberHandler(tx as PrismaService).handle(
@@ -44,9 +44,9 @@ describe("UpdateCatNameNumberHandler", () => {
   it("allows the same number in the other partition", async () => {
     await runInTestTransaction(async (tx) => {
       const name = uniqueName();
-      await tx.cat.create({ data: { name, nameNumber: 1, isTest: false } });
+      await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name, nameNumber: 1, isTest: false } });
       const target = await tx.cat.create({
-        data: { name, nameNumber: 2, isTest: true },
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name, nameNumber: 2, isTest: true },
       });
       const actorUserId = await createActor(tx);
       await expect(
@@ -63,7 +63,7 @@ describe("UpdateCatNameNumberHandler", () => {
   it("does not reveal cats from another partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { name: uniqueName(), isTest: true },
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: uniqueName(), isTest: true },
       });
       const actorUserId = await createActor(tx);
       await expect(

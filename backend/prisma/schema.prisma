@@ -177,8 +177,8 @@ model Cat {
   archivingReasonId String?
   archivingReason   CatArchivingReason? @relation(fields: [archivingReasonId], references: [id], onDelete: Restrict)
   isTest              Boolean             @default(false)
-  currentLocationId   String?
-  currentLocation     Location?           @relation(fields: [currentLocationId], references: [id], onDelete: SetNull)
+  currentLocationId   String
+  currentLocation     Location            @relation(fields: [currentLocationId], references: [id], onDelete: Restrict)
   createdByUserId     String?
   createdByUser       User?               @relation("createdCats", fields: [createdByUserId], references: [id], onDelete: SetNull)
   primaryPhotoKey     String?

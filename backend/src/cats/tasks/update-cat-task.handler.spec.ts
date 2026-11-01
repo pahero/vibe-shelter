@@ -21,7 +21,7 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
@@ -39,7 +39,7 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: {
@@ -88,7 +88,7 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
@@ -140,7 +140,7 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-same-receivers@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Same receivers cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Same receivers cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Task", dueDate: new Date() },
@@ -170,7 +170,7 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },

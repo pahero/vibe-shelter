@@ -6,7 +6,7 @@ import { CreateVaccinationHandler } from "./create-vaccination.handler";
 describe("CreateVaccinationHandler", () => {
   it("creates a vaccination, increments the cat version, and writes a value-free audit event", async () => {
     await runInTestTransaction(async (tx) => {
-      const cat = await tx.cat.create({ data: { name: `Vax ${crypto.randomUUID()}`, isTest: true } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Vax ${crypto.randomUUID()}`, isTest: true } });
       const actor = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
       const result = await new CreateVaccinationHandler(tx as PrismaService).handle(cat.id, {
         type: "CORE", date: new Date("2026-01-01"), nextDueDate: null, vaccineName: "Core vaccine",
@@ -28,7 +28,7 @@ describe("CreateVaccinationHandler", () => {
   it("rejects a deleted cat", async () => {
     await runInTestTransaction(async (tx) => {
       const handler = new CreateVaccinationHandler(tx as PrismaService);
-      const cat = await tx.cat.create({ data: { name: `Deleted ${crypto.randomUUID()}`, deletedAt: new Date() } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Deleted ${crypto.randomUUID()}`, deletedAt: new Date() } });
       await expect(handler.handle(cat.id, { type: "OTHER", date: new Date("2026-01-01") }, "actor", false)).rejects.toThrow(new NotFoundException("Cat not found"));
     });
   });

@@ -31,7 +31,7 @@ export class CreateCatHandler {
         where: { name: command.name, isTest: command.isTest },
         _max: { nameNumber: true },
       });
-      if (command.currentLocationId) {
+      {
         const location = await transaction.location.findUnique({
           where: { id: command.currentLocationId },
           select: { status: true, isTest: true },
@@ -78,8 +78,8 @@ export class CreateCatHandler {
           adopterAddress: command.adopterAddress,
           felvFivTestDone: command.felvFivTestDone,
           sterilizationStatus: command.sterilizationStatus,
-          currentLocationId: command.currentLocationId,
-          createdByUserId: command.createdByUserId,
+          currentLocation: { connect: { id: command.currentLocationId } },
+          ...(command.createdByUserId ? { createdByUser: { connect: { id: command.createdByUserId } } } : {}),
           isTest: command.isTest,
         },
         include: CAT_CARD_INCLUDE,

@@ -80,7 +80,7 @@ export class CreateCatDto {
 
   @IsString()
   @IsOptional()
-  currentLocationId?: string | null;
+  currentLocationId!: string;
 
   toCommand(
     createdByUserId: string,
@@ -91,6 +91,8 @@ export class CreateCatDto {
       throw new BadRequestException("Cat name is required");
     }
 
+    const currentLocationId = this.optionalTrim(this.currentLocationId);
+    if (!currentLocationId) throw new BadRequestException("Cat location is required");
     return new CreateCatCommand(
       name,
       this.parseEnum(this.sex, CatSex, "sex"),
@@ -109,7 +111,7 @@ export class CreateCatDto {
         SterilizationStatus,
         "sterilizationStatus",
       ),
-      this.optionalTrim(this.currentLocationId),
+      currentLocationId,
       createdByUserId,
       currentUserIsTest,
       this.nameNumber,

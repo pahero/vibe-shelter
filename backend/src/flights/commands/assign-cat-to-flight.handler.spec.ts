@@ -106,7 +106,7 @@ describe("AssignCatToFlightHandler", () => {
       const actor = await createFlightTestActor(transaction);
       const flight = await createFlightFixture(transaction);
       const archivedCat = await transaction.cat.create({
-        data: { name: "Archived flight cat", archivedAt: new Date() },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: "Archived flight cat", archivedAt: new Date() },
       });
       const handler = new AssignCatToFlightHandler(
         transaction as PrismaService,

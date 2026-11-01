@@ -6,7 +6,7 @@ describe("DismissNotificationHandler", () => {
   it("soft deletes a notification belonging to the user and increments its version", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({ data: { email: `${Date.now()}-dismiss@example.com` } });
-      const cat = await transaction.cat.create({ data: { name: `Dismiss cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Dismiss cat ${Date.now()}` } });
       const treatment = await transaction.catTreatment.create({
         data: { catId: cat.id, createdByUserId: user.id, shortName: "Treatment", startDate: new Date(), dosesPerDay: 1 },
       });
@@ -23,7 +23,7 @@ describe("DismissNotificationHandler", () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({ data: { email: `${Date.now()}-not-owner@example.com` } });
       const owner = await transaction.user.create({ data: { email: `${Date.now()}-owner@example.com` } });
-      const cat = await transaction.cat.create({ data: { name: `Private cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Private cat ${Date.now()}` } });
       const task = await transaction.catTask.create({ data: { catId: cat.id, comment: "Private task", dueDate: new Date() } });
       const notification = await transaction.taskNotification.create({ data: { taskId: task.id, userId: owner.id } });
       const treatment = await transaction.catTreatment.create({

@@ -10,7 +10,7 @@ describe("SendDueTaskNotificationsHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: {
@@ -44,7 +44,7 @@ describe("SendDueTaskNotificationsHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: {

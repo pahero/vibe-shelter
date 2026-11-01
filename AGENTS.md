@@ -33,6 +33,14 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 - When an audit event concerns a linked entity, store a nullable foreign key to that entity on the audit record; do not store arbitrary target-description text. Include the linked entity's display data and current deletion state in history responses so the cat-page audit row can use a human-readable name such as `<entity> <name> <action>`.
 - Audit-row actions for soft-deleted linked entities (such as Restore) must be rendered only when the history response reports that the linked entity is currently deleted. Restoring must update the entity's concurrency token and emit a corresponding, value-free audit event linked to that entity.
 
+## Related entities and batch mutations
+
+- A mutation that changes a relationship must audit the change on every affected entity, not only on the entity that initiated the operation. For example, moving cats while archiving a location must emit one `current_location_changed` event for each moved cat, in addition to the location lifecycle event.
+- Batch relationship changes must create one field-change audit event per affected entity and changed field. Each event must identify the linked entity with its nullable foreign key and include scalar, human-readable `oldValue` and `newValue` values; never combine several entities or fields into one event or serialize a batch as JSON.
+- Perform the relationship updates, concurrency-token updates, and all corresponding audit writes in the same transaction so a partial batch cannot be committed without its audit trail.
+- Validate the replacement related entity (including its existence, active/deleted state, and partition) before applying a batch. Database foreign keys remain integrity backstops; do not rely on database constraint exceptions for normal control flow.
+- Required relationships must be non-null in the database and use restrictive delete behavior when deleting the referenced entity would invalidate the owning entity. If removal is a user workflow, require an eligible replacement and reassign affected entities before soft deletion.
+
 ## Forms
 
 - Do not label optional fields with an `(optional)` suffix. Every required form field must instead have a visually red asterisk (`*`) in its label, on the same line as the label text with a space before it. When the label uses a grid layout, wrap the text and asterisk in one inline container so they cannot split onto separate rows.

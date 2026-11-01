@@ -24,7 +24,7 @@ describe("ListCatTreatmentsHandler", () => {
           fullName: "Checker",
         },
       });
-      const cat = await tx.cat.create({ data: { name: "List cat" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "List cat" } });
       const first = await tx.catTreatment.create({
         data: {
           catId: cat.id,

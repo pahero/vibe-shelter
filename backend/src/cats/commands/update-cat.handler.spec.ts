@@ -26,10 +26,13 @@ describe("UpdateCatHandler", () => {
           name: `Location ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
+      const originalLocation = await tx.location.create({
+        data: { name: `Original ${Date.now()}-${Math.random().toString(36).slice(2)}` },
+      });
       const originalName = `Mila ${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const nextName = `Luna ${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const cat = await tx.cat.create({
-        data: { name: originalName, adopterName: null },
+        data: { currentLocation: { connect: { id: originalLocation.id } }, name: originalName, adopterName: null },
       });
       const result = await new UpdateCatHandler(
         tx as PrismaService,
@@ -114,7 +117,7 @@ describe("UpdateCatHandler", () => {
           }),
           expect.objectContaining({
             eventType: "current_location_changed",
-            oldValue: "Not set",
+            oldValue: originalLocation.name,
             newValue: location.name,
           }),
         ]),
@@ -125,8 +128,8 @@ describe("UpdateCatHandler", () => {
   it("assigns the next number when a cat is renamed", async () => {
     await runInTestTransaction(async (tx) => {
       const name = `Tom ${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      await tx.cat.create({ data: { name, nameNumber: 1 } });
-      const target = await tx.cat.create({ data: { name: `Other ${name}` } });
+      await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name, nameNumber: 1 } });
+      const target = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Other ${name}` } });
       const result = await new UpdateCatHandler(
         tx as PrismaService,
         urls,
@@ -144,7 +147,7 @@ describe("UpdateCatHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           color: "Black",
         },
@@ -168,7 +171,7 @@ describe("UpdateCatHandler", () => {
   it("rejects a cat outside the current partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
           name: `Test ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           isTest: true,
         },
@@ -187,7 +190,7 @@ describe("UpdateCatHandler", () => {
   it("rejects a location in the opposite partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -211,13 +214,13 @@ describe("UpdateCatHandler", () => {
   it("rejects duplicate microchip and passport values", async () => {
     await runInTestTransaction(async (tx) => {
       const existing = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Existing ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           microchipNumber: `chip-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
       const target = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Target ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -239,7 +242,7 @@ describe("UpdateCatHandler", () => {
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
         },
       });
-      const cat = await tx.cat.create({ data: { name: "Same" } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Same" } });
       await new UpdateCatHandler(tx as PrismaService, urls).handle(
         cat.id,
         { name: "Same" },

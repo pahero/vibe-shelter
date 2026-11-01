@@ -149,13 +149,17 @@ describe("Cats endpoints", () => {
 
   it("numbers matching cats and supports editing a cat name number", async () => {
     const name = unique("Tom");
+    const location = await authAgent
+      .post("/api/locations")
+      .send({ name: unique("cat-location") })
+      .expect(201);
     const first = await authAgent
       .post("/api/cats")
-      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN" })
+      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN", currentLocationId: location.body.id })
       .expect(201);
     const second = await authAgent
       .post("/api/cats")
-      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN" })
+      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN", currentLocationId: location.body.id })
       .expect(201);
 
     expect(first.body.nameNumber).toBe(1);
@@ -1184,7 +1188,7 @@ describe("Cats endpoints", () => {
     );
 
     const testCat = await prisma.cat.create({
-      data: { name: unique("test-tag-cat"), isTest: true },
+      data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: unique("test-tag-cat"), isTest: true },
     });
     await testAuth.agent
       .post(`/api/cats/${testCat.id}/tags/${regularTag.body.id}`)
@@ -1744,11 +1748,12 @@ async function createCat(
   },
 ) {
   return prisma.cat.create({
-    data: {
+    data: { currentLocation: data.currentLocationId
+      ? { connect: { id: data.currentLocationId } }
+      : { create: { name: unique("fixture-location") } },
       name: data.name,
       sex: "UNKNOWN",
       sterilizationStatus: "UNKNOWN",
-      currentLocationId: data.currentLocationId ?? null,
       microchipNumber: data.microchipNumber ?? null,
       passport: data.passport ?? false,
     },

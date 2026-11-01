@@ -9,7 +9,7 @@ describe("ListCurrentUserNotificationsQuery", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Medication", dueDate: new Date() },
@@ -42,7 +42,7 @@ describe("ListCurrentUserNotificationsQuery", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const testCat = await transaction.cat.create({
-        data: { name: `Test cat ${Date.now()}`, isTest: true },
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test cat ${Date.now()}`, isTest: true },
       });
       const task = await transaction.catTask.create({
         data: { catId: testCat.id, comment: "Test", dueDate: new Date() },
@@ -66,7 +66,7 @@ describe("ListCurrentUserNotificationsQuery", () => {
   it("returns treatment notifications in the same feed", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({ data: { email: `${Date.now()}-treatment-user@example.com` } });
-      const cat = await transaction.cat.create({ data: { name: `Treatment cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Treatment cat ${Date.now()}` } });
       const treatment = await transaction.catTreatment.create({
         data: {
           catId: cat.id,

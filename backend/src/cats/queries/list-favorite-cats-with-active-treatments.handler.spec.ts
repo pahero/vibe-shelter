@@ -8,9 +8,9 @@ describe("ListFavoriteCatsWithActiveTreatmentsHandler", () => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
       const now = new Date();
       const currentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      const active = await tx.cat.create({ data: { name: `Fav ${crypto.randomUUID()}` } });
-      const noTreatment = await tx.cat.create({ data: { name: `Empty ${crypto.randomUUID()}` } });
-      const inactiveTreatment = await tx.cat.create({ data: { name: `Old ${crypto.randomUUID()}` } });
+      const active = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Fav ${crypto.randomUUID()}` } });
+      const noTreatment = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Empty ${crypto.randomUUID()}` } });
+      const inactiveTreatment = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Old ${crypto.randomUUID()}` } });
       await tx.catFavorite.createMany({ data: [{ userId: user.id, catId: active.id }, { userId: user.id, catId: noTreatment.id }, { userId: user.id, catId: inactiveTreatment.id }] });
       await tx.catTreatment.createMany({ data: [
         { catId: active.id, shortName: "Current", startDate: currentDate, dosesPerDay: 1 },
@@ -28,10 +28,10 @@ describe("ListFavoriteCatsWithActiveTreatmentsHandler", () => {
       const otherUser = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
       const currentDate = new Date();
       const cats = await Promise.all([
-        tx.cat.create({ data: { name: `Regular ${crypto.randomUUID()}` } }),
-        tx.cat.create({ data: { name: `Other user ${crypto.randomUUID()}` } }),
-        tx.cat.create({ data: { name: `Test ${crypto.randomUUID()}`, isTest: true } }),
-        tx.cat.create({ data: { name: `Deleted ${crypto.randomUUID()}`, deletedAt: new Date() } }),
+        tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Regular ${crypto.randomUUID()}` } }),
+        tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Other user ${crypto.randomUUID()}` } }),
+        tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test ${crypto.randomUUID()}`, isTest: true } }),
+        tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Deleted ${crypto.randomUUID()}`, deletedAt: new Date() } }),
       ]);
       await tx.catFavorite.createMany({ data: [
         { userId: user.id, catId: cats[0].id }, { userId: otherUser.id, catId: cats[1].id },
@@ -47,7 +47,7 @@ describe("ListFavoriteCatsWithActiveTreatmentsHandler", () => {
   it("partitions test cats by the user's test environment", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Test ${crypto.randomUUID()}`, isTest: true } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test ${crypto.randomUUID()}`, isTest: true } });
       await tx.catFavorite.create({ data: { userId: user.id, catId: cat.id } });
       await tx.catTreatment.create({ data: { catId: cat.id, shortName: "Current", startDate: new Date(), dosesPerDay: 1 } });
       const result = await new ListFavoriteCatsWithActiveTreatmentsHandler(tx as PrismaService).handle(user.id, true);

@@ -16,10 +16,10 @@ describe("DearchiveCatHandler", () => {
         data: { name: `Reason ${Date.now()}-${Math.random()}` },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Archived ${Date.now()}-${Math.random()}`,
           archivedAt: new Date(),
-          archivingReasonId: reason.id,
+          archivingReason: { connect: { id: reason.id } },
         },
       });
 

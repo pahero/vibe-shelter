@@ -47,7 +47,7 @@ describe("CatPhotoCleanupService", () => {
       config.set("S3_DANGLING_PHOTO_CLEANUP_GRACE_MS", "1");
       config.set("S3_DANGLING_PHOTO_CLEANUP_PREFIX", prefix);
 
-      await tx.cat.create({ data: { id: catId, name: "Cleanup Cat" } });
+      await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, id: catId, name: "Cleanup Cat" } });
       const referencedKey = await photoUrls.uploadPrimaryPhoto({
         catId,
         originalName: "referenced.jpg",
@@ -84,7 +84,7 @@ describe("CatPhotoCleanupService", () => {
       config.set("S3_DANGLING_PHOTO_CLEANUP_PREFIX", prefix);
 
       await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           id: catId,
           name: `Document Cleanup Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },

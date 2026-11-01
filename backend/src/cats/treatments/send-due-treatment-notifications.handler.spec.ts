@@ -7,7 +7,7 @@ describe("SendDueTreatmentNotificationsHandler", () => {
   it("notifies the creator when a treatment has started", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({ data: { email: `${Date.now()}-creator@example.com` } });
-      const cat = await transaction.cat.create({ data: { name: `Treatment cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Treatment cat ${Date.now()}` } });
       const treatment = await transaction.catTreatment.create({
         data: { catId: cat.id, createdByUserId: user.id, updatedByUserId: user.id, shortName: "Medicine", startDate: new Date("2020-01-01T00:00:00.000Z"), dosesPerDay: 1 },
       });
@@ -23,7 +23,7 @@ describe("SendDueTreatmentNotificationsHandler", () => {
   it("does not notify for a future treatment", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({ data: { email: `${Date.now()}-future-creator@example.com` } });
-      const cat = await transaction.cat.create({ data: { name: `Future treatment cat ${Date.now()}` } });
+      const cat = await transaction.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Future treatment cat ${Date.now()}` } });
       const treatment = await transaction.catTreatment.create({
         data: { catId: cat.id, createdByUserId: user.id, updatedByUserId: user.id, shortName: "Future medicine", startDate: new Date("2030-01-01T00:00:00.000Z"), dosesPerDay: 1 },
       });

@@ -16,7 +16,7 @@ export type UpdateCatCommand = {
   adopterAddress?: string | null;
   felvFivTestDone?: boolean;
   sterilizationStatus?: "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
-  currentLocationId?: string | null;
+  currentLocationId?: string;
 };
 
 function optionalText(
@@ -99,11 +99,13 @@ export class UpdateCatDto {
 
   @IsString()
   @IsOptional()
-  currentLocationId?: string | null;
+  currentLocationId?: string;
 
   toCommand(): UpdateCatCommand {
     if (this.name !== undefined && !this.name.trim())
       throw new BadRequestException("Cat name is required");
+    if (this.currentLocationId === null || this.currentLocationId?.trim() === "")
+      throw new BadRequestException("Cat location cannot be empty");
     if (
       this.sex !== undefined &&
       (typeof this.sex !== "string" ||
@@ -186,8 +188,8 @@ export class UpdateCatDto {
               .sterilizationStatus as UpdateCatCommand["sterilizationStatus"],
           }
         : {}),
-      ...(this.currentLocationId !== undefined
-        ? { currentLocationId: this.currentLocationId || null }
+      ...(this.currentLocationId !== undefined && this.currentLocationId !== null
+        ? { currentLocationId: this.currentLocationId.trim() }
         : {}),
     };
   }

@@ -12,7 +12,7 @@ describe("AddCatWeightHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -40,7 +40,7 @@ describe("AddCatWeightHandler", () => {
   it("rejects nonpositive weights", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -58,7 +58,7 @@ describe("AddCatWeightHandler", () => {
   it("rejects invalid measured dates", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -76,7 +76,7 @@ describe("AddCatWeightHandler", () => {
   it("rejects cats outside the current partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
           name: `Test ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           isTest: true,
         },

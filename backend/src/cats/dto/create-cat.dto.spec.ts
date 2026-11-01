@@ -56,7 +56,7 @@ describe("CreateCatDto", () => {
     dto.intakeDate = value;
     dto.intakeDetails = value;
     dto.microchipNumber = value;
-    dto.currentLocationId = value;
+    dto.currentLocationId = value === null || value === undefined || value === "" ? "location-1" : value;
 
     expect(dto.toCommand("user-1", false)).toMatchObject({
       color: null,
@@ -66,7 +66,7 @@ describe("CreateCatDto", () => {
       microchipNumber: null,
       passport: false,
       sponsorName: null,
-      currentLocationId: null,
+      currentLocationId: "location-1",
     });
   });
 
@@ -147,5 +147,6 @@ function createRequiredDto(): CreateCatDto {
   dto.name = "Mila";
   dto.sex = "FEMALE";
   dto.sterilizationStatus = "STERILIZED";
+  dto.currentLocationId = "location-1";
   return dto;
 }

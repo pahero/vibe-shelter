@@ -77,7 +77,7 @@ export function toCatUpdateData(data: UpdateCatCommand) {
         }
       : {}),
     ...(data.currentLocationId !== undefined
-      ? { currentLocationId: data.currentLocationId || null }
+      ? { currentLocationId: data.currentLocationId }
       : {}),
   };
 }

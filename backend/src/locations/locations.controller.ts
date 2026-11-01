@@ -99,8 +99,9 @@ export class LocationsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteLocation(
     @Param("id") id: string,
+    @Query("replacementLocationId") replacementLocationId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.archiveLocationHandler.handle(id, user.isTest, user.id);
+    await this.archiveLocationHandler.handle(id, user.isTest, user.id, replacementLocationId);
   }
 }

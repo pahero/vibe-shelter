@@ -34,7 +34,7 @@ describe("CreateCatTreatmentHandler", () => {
         data: { email: `${Date.now()}-treatment@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { name: `Cat ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
       });
       const result = await new CreateCatTreatmentHandler(
         transaction as PrismaService,

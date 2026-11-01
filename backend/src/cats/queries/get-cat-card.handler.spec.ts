@@ -17,7 +17,7 @@ describe("GetCatCardHandler", () => {
   it("returns the requested cat card for its test partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location" } },
           name: `Card ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           adopterName: "Foster",
         },
@@ -34,7 +34,7 @@ describe("GetCatCardHandler", () => {
   it("includes favorite status for the requesting user", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Favorite card ${crypto.randomUUID()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Favorite card ${crypto.randomUUID()}` } });
       await tx.catFavorite.create({ data: { userId: user.id, catId: cat.id } });
       await expect(new GetCatCardHandler(tx as PrismaService, photoUrls).handle(cat.id, false, user.id)).resolves.toMatchObject({ id: cat.id, isFavorite: true });
     });
@@ -44,7 +44,7 @@ describe("GetCatCardHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
       const otherUser = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      const cat = await tx.cat.create({ data: { name: `Private favorite ${crypto.randomUUID()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Private favorite ${crypto.randomUUID()}` } });
       await tx.catFavorite.create({ data: { userId: user.id, catId: cat.id } });
       await expect(new GetCatCardHandler(tx as PrismaService, photoUrls).handle(cat.id, false, otherUser.id)).resolves.toMatchObject({ id: cat.id, isFavorite: false });
     });
@@ -53,7 +53,7 @@ describe("GetCatCardHandler", () => {
   it("hides cats from the opposite test partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
           name: `Test ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           isTest: true,
         },

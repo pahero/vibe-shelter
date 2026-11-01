@@ -61,6 +61,8 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
   const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [locationDraft, setLocationDraft] = useState<LocationDraft>(emptyLocation);
   const [editingLocation, setEditingLocation] = useState<EditingLocation | null>(null);
+  const [locationToRemove, setLocationToRemove] = useState<Location | null>(null);
+  const [replacementLocationId, setReplacementLocationId] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [isAddingReason, setIsAddingReason] = useState(false);
   const [tagName, setTagName] = useState("");
@@ -283,12 +285,13 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
     }
   }
 
-  async function removeLocation(location: Location) {
+  async function removeLocation(location: Location, replacementId?: string) {
     setIsSaving(true);
     setError(null);
     setMessage(null);
     try {
-      await locationsApi.archiveLocation(location.id);
+      await locationsApi.archiveLocation(location.id, replacementId);
+      setLocationToRemove(null);
       setMessage("Location removed.");
       await loadEditors();
     } catch (err) {
@@ -479,7 +482,7 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
                         </div>
                         <div className="flex shrink-0 gap-2">
                           <button type="button" onClick={() => setEditingLocation({ id: location.id, name: location.name, description: location.description ?? "", status: location.status })} aria-label={`Edit ${location.name}`} title={`Edit ${location.name}`} className="rounded-lg p-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800"><FontAwesomeIcon icon={faPen} /></button>
-                          <button type="button" onClick={() => removeLocation(location)} disabled={isSaving} aria-label={`Remove ${location.name}`} title={`Remove ${location.name}`} className="rounded-lg p-2 text-red-700 hover:bg-red-50 hover:text-red-800 disabled:opacity-60"><FontAwesomeIcon icon={faTrash} /></button>
+                          <button type="button" onClick={() => { setLocationToRemove(location); setReplacementLocationId(locations.find((candidate) => candidate.id !== location.id && candidate.status === "ACTIVE")?.id ?? ""); setError(null); }} disabled={isSaving} aria-label={`Remove ${location.name}`} title={`Remove ${location.name}`} className="rounded-lg p-2 text-red-700 hover:bg-red-50 hover:text-red-800 disabled:opacity-60"><FontAwesomeIcon icon={faTrash} /></button>
                         </div>
                       </div>
                     )}
@@ -487,6 +490,17 @@ export function EditShelterClient({ currentUser }: { currentUser: { id: string; 
                 );
               })}
             </div>
+            {locationToRemove && <div role="dialog" aria-modal="true" aria-labelledby="remove-location-title" className="rounded-xl border border-red-200 bg-red-50 p-4 text-left">
+              <h2 id="remove-location-title" className="font-semibold text-gray-900">Remove {locationToRemove.name}?</h2>
+              <p className="mt-1 text-sm text-gray-700">Cats assigned to this location must be moved to another active location.</p>
+              <label className="mt-3 block text-sm font-medium">Move cats to
+                <select value={replacementLocationId} onChange={(event) => setReplacementLocationId(event.target.value)} className="mt-1 w-full rounded-lg border border-[#d4c7b4] bg-white px-3 py-2">
+                  <option value="">Select a location</option>
+                  {locations.filter((candidate) => candidate.id !== locationToRemove.id && candidate.status === "ACTIVE").map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}
+                </select>
+              </label>
+              <div className="mt-3 flex gap-2"><button type="button" onClick={() => removeLocation(locationToRemove, replacementLocationId || undefined)} disabled={isSaving || !replacementLocationId} className={primaryButtonClass}>Move cats and remove</button><button type="button" onClick={() => setLocationToRemove(null)} className={secondaryButtonClass}>Cancel</button></div>
+            </div>}
             <PaginationControls page={sectionPages.locations} pageSize={pageSize} totalItems={locations.length} onPageChange={(page) => changePage("locations", page)} />
           </section>}
 

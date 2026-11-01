@@ -13,7 +13,7 @@ export class CreateCatCommand {
     readonly passport: boolean,
     readonly sponsorName: string | null,
     readonly sterilizationStatus: SterilizationStatus,
-    readonly currentLocationId: string | null,
+    readonly currentLocationId: string,
     readonly createdByUserId: string,
     readonly isTest: boolean,
     readonly nameNumber?: number,

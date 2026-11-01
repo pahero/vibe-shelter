@@ -54,7 +54,7 @@ describe("Cat treatment endpoints", () => {
 
   it("creates, lists, updates, checks, and unchecks a treatment with audit history", async () => {
     const cat = await prisma.cat.create({
-      data: { name: unique("treatment-cat") },
+      data: { currentLocation: { create: { name: "Fixture location" } }, name: unique("treatment-cat") },
     });
     const created = await agent
       .post(`/api/cats/${cat.id}/treatments`)

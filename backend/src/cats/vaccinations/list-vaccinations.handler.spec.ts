@@ -6,7 +6,7 @@ import { ListVaccinationsHandler } from "./list-vaccinations.handler";
 describe("ListVaccinationsHandler", () => {
   it("returns active vaccinations in descending date order with nullable fields", async () => {
     await runInTestTransaction(async (tx) => {
-      const cat = await tx.cat.create({ data: { name: `Vax list ${crypto.randomUUID()}` } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Vax list ${crypto.randomUUID()}` } });
       await tx.vaccination.createMany({ data: [
         { catId: cat.id, type: "CORE", date: new Date("2026-01-01"), concurrencyToken: crypto.randomUUID() },
         { catId: cat.id, type: "RABIES", date: new Date("2026-02-01"), vaccineName: "R", concurrencyToken: crypto.randomUUID() },
@@ -22,7 +22,7 @@ describe("ListVaccinationsHandler", () => {
   it("rejects cats outside the partition", async () => {
     await runInTestTransaction(async (tx) => {
       const handler = new ListVaccinationsHandler(tx as PrismaService);
-      const cat = await tx.cat.create({ data: { name: `Test partition ${crypto.randomUUID()}`, isTest: true } });
+      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test partition ${crypto.randomUUID()}`, isTest: true } });
       await expect(handler.handle(cat.id, false)).rejects.toThrow(new NotFoundException("Cat not found"));
     });
   });
@@ -30,7 +30,7 @@ describe("ListVaccinationsHandler", () => {
   it("rejects deleted cats", async () => {
     await runInTestTransaction(async (tx) => {
       const handler = new ListVaccinationsHandler(tx as PrismaService);
-      const deleted = await tx.cat.create({ data: { name: `Deleted vax ${crypto.randomUUID()}`, deletedAt: new Date() } });
+      const deleted = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Deleted vax ${crypto.randomUUID()}`, deletedAt: new Date() } });
       await expect(handler.handle(deleted.id, false)).rejects.toThrow(new NotFoundException("Cat not found"));
     });
   });

@@ -77,7 +77,10 @@ export class UpdateCatHandler {
       const updated = await tx.cat.update({
         where: { id },
         data: {
-          ...updateData,
+          ...(({ currentLocationId: _currentLocationId, ...fields }) => fields)(updateData),
+          ...(updateData.currentLocationId !== undefined
+            ? { currentLocation: { connect: { id: updateData.currentLocationId } } }
+            : {}),
           ...(assignedNameNumber !== undefined
             ? { nameNumber: assignedNameNumber }
             : {}),

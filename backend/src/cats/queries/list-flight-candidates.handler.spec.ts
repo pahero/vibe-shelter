@@ -16,10 +16,9 @@ describe("ListFlightCandidatesHandler", () => {
         data: { name: `Flight ${Date.now()}` },
       });
       const readyCat = await transaction.cat.create({
-        data: {
+        data: { currentLocation: { connect: { id: location.id } },
           name: `Ready ${Date.now()}`,
           isFlightCandidate: true,
-          currentLocationId: location.id,
           microchipNumber: `chip-${Date.now()}-${Math.random()}`,
           passport: true,
           adopterName: "Taylor Adopter",
@@ -46,7 +45,7 @@ describe("ListFlightCandidatesHandler", () => {
         },
       });
       const testCat = await transaction.cat.create({
-        data: { name: `Other partition ${Date.now()}`, isTest: true },
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Other partition ${Date.now()}`, isTest: true },
       });
       const activeFlight = await transaction.flight.create({
         data: { date: new Date("2026-10-01"), airport: "Larnaca", flightNumber: `CY${Date.now()}`, flightParent: "Parent" },
@@ -101,7 +100,7 @@ describe("ListFlightCandidatesHandler", () => {
   it("returns incomplete active cats but excludes archived cats in the test partition", async () => {
     await runInTestTransaction(async (transaction) => {
       const cat = await transaction.cat.create({
-        data: {
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
           name: `Needs details ${Date.now()}`,
           adopterName: "Name only",
           archivedAt: new Date("2026-05-01"),
@@ -109,10 +108,10 @@ describe("ListFlightCandidatesHandler", () => {
         },
       });
       const regularCat = await transaction.cat.create({
-        data: { name: `Regular partition ${Date.now()}` },
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Regular partition ${Date.now()}` },
       });
       const activeCat = await transaction.cat.create({
-        data: { name: `Active test cat ${Date.now()}`, isTest: true, isFlightCandidate: true },
+        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Active test cat ${Date.now()}`, isTest: true, isFlightCandidate: true },
       });
 
       const handler = new ListFlightCandidatesHandler(
