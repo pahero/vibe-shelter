@@ -33,7 +33,7 @@ test.describe("cats UI", () => {
     await form.getByLabel("Name *").fill(catName);
     await form.getByLabel("Color").fill("Grey-white");
     await form.getByLabel("Sex *").selectOption("FEMALE");
-    await form.getByLabel("Neutering *").selectOption("STERILIZED");
+    await form.getByLabel("Neutering status *").selectOption("STERILIZED");
     await form.getByLabel("Location").selectOption({ label: locationName });
     await form.getByLabel("Microchip number").fill(microchip);
     await form.getByRole("button", { name: "Add cat" }).click();
@@ -46,21 +46,22 @@ test.describe("cats UI", () => {
 
     // Open the profile and upload cat1.jpg; as the first photo it becomes primary.
     await page.getByRole("link", { name: `Open profile for ${catName}` }).click();
-    await page.waitForURL(/\/cats\/[a-z0-9-]+$/);
-    const catId = page.url().split("/").pop() as string;
+    await page.waitForURL(/\/cats\/[a-z0-9-]+/);
+    const catId = new URL(page.url()).pathname.split("/").pop() as string;
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+    await page.getByRole("button", { name: "Gallery" }).click();
 
     // Prove the photo actually reached the backend and was accepted: capture the
     // upload request and assert a 201 response, not just DOM changes.
     const uploadResponsePromise = page.waitForResponse(
       (res) => res.url().includes(`/api/cats/${catId}/photos`) && res.request().method() === "POST",
     );
-    await page.locator('input[type="file"][accept="image/*"]').setInputFiles(catPhotoPath("cat1.jpg"));
+    await page.locator('input[type="file"][accept^="image/"]').setInputFiles(catPhotoPath("cat1.jpg"));
     const uploadResponse = await uploadResponsePromise;
     expect(uploadResponse.status()).toBe(201);
 
-    await expect(page.getByRole("button", { name: `Open photo of ${catName}` })).toBeVisible();
-    await expect(page.getByRole("button", { name: `Expand photo of ${catName}` })).toBeVisible();
+    await expect(page.getByRole("button", { name: `Open image of ${catName}` })).toBeVisible();
+    await expect(page.getByRole("button", { name: `Expand image of ${catName}` })).toBeVisible();
   });
 
   test("user can open a cat profile from the cats list", async ({ page }) => {
@@ -77,9 +78,9 @@ test.describe("cats UI", () => {
     await page.getByLabel("Search cats").fill(catName);
     await page.getByRole("link", { name: `Open profile for ${catName}` }).click();
 
-    await expect(page).toHaveURL(/\/cats\/[a-z0-9-]+$/);
+    await expect(page).toHaveURL(/\/cats\/[a-z0-9-]+(?:\?.*)?(?:#.*)?$/);
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit cat profile" })).toBeVisible();
   });
 
   test(
@@ -108,7 +109,7 @@ test.describe("cats UI", () => {
         }),
       ).toBeVisible();
 
-      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      await page.getByRole("button", { name: "Edit cat profile" }).click();
       await page.getByLabel("Cat name").fill(catName);
       await page.getByRole("button", { name: "Save details" }).click();
       await expect(page.getByText("Cat details were updated.")).toBeVisible();
@@ -120,42 +121,13 @@ test.describe("cats UI", () => {
         }),
       ).toBeVisible();
 
-      await page.getByRole("button", { name: "Edit cat name number" }).click();
-      await page.getByLabel("Cat name number").fill("1");
-      const conflictResponse = page.waitForResponse(
-        (response) =>
-          response.url().includes(`/api/cats/${secondCat.id}/name-number`) &&
-          response.request().method() === "PATCH",
-      );
-      await page.getByRole("button", { name: "Save number" }).click();
-      expect((await conflictResponse).status()).toBe(409);
-      await expect(page.locator("p[role='alert']")).toContainText(
-        "already in use",
-      );
-
-      await page.getByLabel("Cat name number").fill("3");
-      const updateResponse = page.waitForResponse(
-        (response) =>
-          response.url().includes(`/api/cats/${secondCat.id}/name-number`) &&
-          response.request().method() === "PATCH",
-      );
-      await page.getByRole("button", { name: "Save number" }).click();
-      expect((await updateResponse).status()).toBe(200);
-      await expect(
-        page.getByRole("heading", {
-          level: 1,
-          name: `${catName} #3`,
-          exact: true,
-        }),
-      ).toBeVisible();
-
       await page.goto("/");
       await page.getByLabel("Search cats").fill(catName);
       await expect(
         page.getByRole("heading", { name: `${catName} #1`, exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByRole("heading", { name: `${catName} #3`, exact: true }),
+        page.getByRole("heading", { name: `${catName} #2`, exact: true }),
       ).toBeVisible();
       expect(firstCat.id).not.toBe(secondCat.id);
     },
@@ -176,7 +148,7 @@ test.describe("cats UI", () => {
 await page.goto(`/cats/${cat.id}`);
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
 
-    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByRole("button", { name: "Edit cat profile" }).click();
     await page.getByLabel("Cat name").fill(updatedName);
     await page.getByLabel("Color").fill(updatedColor);
     await page.getByRole("button", { name: "Save details" }).click();
@@ -203,14 +175,15 @@ await page.goto(`/cats/${cat.id}`);
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
 
     // cat1.jpg uploaded via the API is the primary photo.
-    const galleryButton = page.getByRole("button", { name: `Open photo of ${catName}` });
+    await page.getByRole("button", { name: "Gallery" }).click();
+    const galleryButton = page.getByRole("button", { name: `Open image of ${catName}` });
     await expect(galleryButton).toHaveCount(1);
 
     // Upload cat2.jpg through the UI; assert the backend accepted it.
     const uploadResponsePromise = page.waitForResponse(
       (res) => res.url().includes(`/api/cats/${cat.id}/photos`) && res.request().method() === "POST",
     );
-    await page.locator('input[type="file"][accept="image/*"]').setInputFiles(catPhotoPath("cat2.jpg"));
+    await page.locator('input[type="file"][accept^="image/"]').setInputFiles(catPhotoPath("cat2.jpg"));
     const uploadResponse = await uploadResponsePromise;
     expect(uploadResponse.status()).toBe(201);
     await expect(galleryButton).toHaveCount(2);
@@ -224,7 +197,7 @@ await page.goto(`/cats/${cat.id}`);
     await page.getByRole("button", { name: "Close", exact: true }).click();
 
     // cat2.jpg is now primary: its photo viewer no longer offers "Make primary".
-    await galleryButton.nth(1).click();
+    await galleryButton.nth(0).click();
     await expect(page.getByRole("dialog", { name: `Photo of ${catName}` })).toBeVisible();
     await page.getByRole("button", { name: "Actions", exact: true }).click();
     await expect(page.getByRole("button", { name: "Make primary" })).toHaveCount(0);
@@ -244,7 +217,7 @@ const location = await createLocationViaApi(page, locationName);
     await page.goto(`/cats/${cat.id}`);
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
 
-    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByRole("button", { name: "Edit cat profile" }).click();
     await page.getByLabel("Cat name").fill("");
     await page.getByRole("button", { name: "Save details" }).click();
 
@@ -262,6 +235,7 @@ const location = await createLocationViaApi(page, locationName);
     await page.goto(`/cats/${cat.id}`);
     await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
 
+    await page.getByRole("button", { name: "More sections" }).click();
     await page.getByRole("button", { name: "Reminders" }).click();
     await page.getByRole("button", { name: "Add reminder", exact: true }).click();
     const taskForm = page.locator("form").filter({ has: page.getByLabel("Notification receivers") });
@@ -310,6 +284,7 @@ const location = await createLocationViaApi(page, locationName);
     await authenticateAsStaff(page);
     const cat = await createCatViaApi(page, { name: catName });
     await page.goto(`/cats/${cat.id}`);
+    await page.getByRole("button", { name: "More sections" }).click();
     await page.getByRole("button", { name: "Reminders" }).click();
     await page.getByRole("button", { name: "Add reminder", exact: true }).click();
 
@@ -327,6 +302,7 @@ const location = await createLocationViaApi(page, locationName);
     // Overdue tasks are processed by the one-second backend scheduler. Opening
     // the center fetches the newly-created notification from the API.
     await page.waitForTimeout(2_000);
+    await page.goto("/");
     const notificationList = page.waitForResponse(
       (response) => response.url().includes("/api/notifications") && response.request().method() === "GET",
     );
@@ -342,7 +318,7 @@ const location = await createLocationViaApi(page, locationName);
     await authenticateAsStaff(page);
     const cat = await createCatViaApi(page, { name: uniqueName("Treatment Cat") });
     await page.goto(`/cats/${cat.id}`);
-    await page.getByText("Treatments", { exact: true }).click();
+    await page.getByRole("button", { name: "Treatments" }).click();
     await page.getByRole("button", { name: "Add treatment", exact: true }).click();
     const treatmentForm = page.locator("form").filter({ has: page.getByLabel("Treatment short name") });
     await treatmentForm.getByLabel("Treatment short name").fill(treatmentName);

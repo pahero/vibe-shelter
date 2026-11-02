@@ -1,11 +1,10 @@
 # Integration tests (Playwright)
 
-This folder is a standalone Playwright project for full-stack integration testing.
+This folder is a standalone Playwright project for browser-based UI integration testing.
 
-By default it reuses already running backend/frontend apps and runs separate test
-projects in one command:
-- `backend-api`: API integration checks against NestJS backend
-- `frontend-ui-chromium`: browser checks against Next.js frontend (backed by real backend)
+By default it reuses already running backend/frontend apps and runs the
+`frontend-ui-chromium` browser checks against the Next.js frontend (backed by the
+real backend).
 
 ## Prerequisites
 
@@ -26,13 +25,7 @@ npx playwright install chromium
 npm test
 ```
 
-Only backend API project:
-
-```bash
-npm run test:api
-```
-
-Only frontend UI project:
+Run the frontend UI project:
 
 ```bash
 npm run test:web

@@ -5,6 +5,9 @@
   "description": "Shelter app authentication backend",
   "license": "UNLICENSED",
   "author": "Team",
+  "engines": {
+    "node": ">=26"
+  },
   "scripts": {
     "build": "nest build",
     "format": "oxfmt --write src test prisma",

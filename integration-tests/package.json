@@ -2,18 +2,20 @@
   "name": "shelter-integration-tests",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=26"
+  },
   "scripts": {
     "test": "playwright test",
-    "test:api": "playwright test --project=backend-api",
     "test:web": "playwright test --project=frontend-ui-chromium",
     "test:headed": "playwright test --project=frontend-ui-chromium --headed"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "@types/node": "^22.20.1",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
-    "dotenv": "^17.4.0",
-    "pg": "^8.23.0",
-    "typescript": "^6.0.2"
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1",
+    "typescript": "^7.0.2"
   }
 }

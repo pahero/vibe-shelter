@@ -1,4 +1,4 @@
-FROM node:22-alpine AS dependencies
+FROM node:26-alpine AS dependencies
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY . .
 RUN DATABASE_URL=postgresql://unused:unused@localhost:5432/unused npx prisma generate
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 
 WORKDIR /app
 

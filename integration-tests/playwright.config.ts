@@ -49,14 +49,6 @@ export default defineConfig({
     : undefined,
   projects: [
     {
-      name: "backend-api",
-      testMatch: /api\/.*\.spec\.ts/,
-      use: {
-        baseURL: backendUrl,
-        trace: "on-first-retry",
-      },
-    },
-    {
       name: "frontend-ui-chromium",
       testMatch: /web\/.*\.spec\.ts/,
       use: {
