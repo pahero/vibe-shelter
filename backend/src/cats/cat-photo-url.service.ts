@@ -168,12 +168,29 @@ export class CatPhotoUrlService {
     previewBody: Buffer;
   }): Promise<{ key: string; previewKey: string }> {
     if (!this.bucketName) throw new Error("S3 bucket is not configured");
-    const baseKey = this.buildFlightPhotoBaseKey(input.flightId, input.originalName);
+    const baseKey = this.buildFlightPhotoBaseKey(
+      input.flightId,
+      input.originalName,
+    );
     const key = `${baseKey}/full.jpg`;
     const previewKey = `${baseKey}/preview.jpg`;
     await Promise.all([
-      this.client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: key, Body: input.fullBody, ContentType: input.contentType })),
-      this.client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: previewKey, Body: input.previewBody, ContentType: input.contentType })),
+      this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: input.fullBody,
+          ContentType: input.contentType,
+        }),
+      ),
+      this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: previewKey,
+          Body: input.previewBody,
+          ContentType: input.contentType,
+        }),
+      ),
     ]);
     return { key, previewKey };
   }
@@ -252,8 +269,14 @@ export class CatPhotoUrlService {
     return `cats/${catId}/photos/${Date.now()}-${randomUUID()}-${safeName}`;
   }
 
-  private buildFlightPhotoBaseKey(flightId: string, originalName?: string): string {
-    const safeName = (originalName ?? "photo").replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-").slice(0, 120);
+  private buildFlightPhotoBaseKey(
+    flightId: string,
+    originalName?: string,
+  ): string {
+    const safeName = (originalName ?? "photo")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
+      .slice(0, 120);
     return `flights/${flightId}/photos/${Date.now()}-${randomUUID()}-${safeName}`;
   }
 

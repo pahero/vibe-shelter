@@ -18,9 +18,20 @@ vi.mock("./logout-button", () => ({ LogoutButton: () => null }));
 
 describe("HomeHeader", () => {
   it("shows My treatments in the user menu for authenticated users", () => {
-    render(<HomeHeader user={{ id: "user-1", email: "staff@example.com", fullName: "Staff", role: "staff" }} />);
+    render(
+      <HomeHeader
+        user={{
+          id: "user-1",
+          email: "staff@example.com",
+          fullName: "Staff",
+          role: "staff",
+        }}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "User menu" }));
-    expect(screen.getByRole("menuitem", { name: "My treatments" })).toHaveAttribute("href", "/my-treatments");
+    expect(
+      screen.getByRole("menuitem", { name: "My treatments" }),
+    ).toHaveAttribute("href", "/my-treatments");
   });
 
   it("does not show My treatments to signed-out visitors", () => {
@@ -32,11 +43,23 @@ describe("HomeHeader", () => {
   });
 
   it("opens a user menu with a profile link", () => {
-    render(<HomeHeader user={{ id: "user-1", email: "staff@example.com", fullName: "Staff", role: "staff" }} />);
+    render(
+      <HomeHeader
+        user={{
+          id: "user-1",
+          email: "staff@example.com",
+          fullName: "Staff",
+          role: "staff",
+        }}
+      />,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "User menu" }));
 
     expect(screen.getByRole("menu", { name: "User menu" })).toBeVisible();
-    expect(screen.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("href", "/my-user");
+    expect(screen.getByRole("menuitem", { name: "Profile" })).toHaveAttribute(
+      "href",
+      "/my-user",
+    );
   });
 });

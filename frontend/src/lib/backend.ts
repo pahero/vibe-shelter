@@ -226,8 +226,14 @@ export async function updateCurrentUserName(fullName: string): Promise<void> {
   });
   if (!response.ok) throw new Error(await readErrorMessage(response));
 
-  const refreshResponse = await authenticatedFetch(`${getBackendUrl()}/auth/token`, { method: "POST" });
-  if (!refreshResponse.ok) throw new Error("Name was updated, but the session could not be refreshed. Please sign in again.");
+  const refreshResponse = await authenticatedFetch(
+    `${getBackendUrl()}/auth/token`,
+    { method: "POST" },
+  );
+  if (!refreshResponse.ok)
+    throw new Error(
+      "Name was updated, but the session could not be refreshed. Please sign in again.",
+    );
 }
 
 async function readErrorMessage(response: Response): Promise<string> {

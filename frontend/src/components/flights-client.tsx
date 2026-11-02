@@ -161,12 +161,17 @@ export function FlightsClient({
       return;
     }
     let cancelled = false;
-    flightsApi.listPhotos(selectedFlightId).then((items) => {
-      if (!cancelled) setPhotos(items);
-    }).catch((reason: unknown) => {
-      if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
-    });
-    return () => { cancelled = true; };
+    flightsApi
+      .listPhotos(selectedFlightId)
+      .then((items) => {
+        if (!cancelled) setPhotos(items);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedFlightId, isDeletedSelection]);
 
   const refreshLists = () => {
@@ -322,7 +327,11 @@ export function FlightsClient({
     setIsUploadingPhotos(true);
     setActionError(null);
     try {
-      await Promise.all(Array.from(files).map((file) => flightsApi.addPhoto(selectedFlightId, file)));
+      await Promise.all(
+        Array.from(files).map((file) =>
+          flightsApi.addPhoto(selectedFlightId, file),
+        ),
+      );
       setPhotos(await flightsApi.listPhotos(selectedFlightId));
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
@@ -574,7 +583,13 @@ export function FlightsClient({
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               <span>Flight number</span>
-              <input value={form.flightNumber ?? ""} onChange={(event) => setForm({ ...form, flightNumber: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" />
+              <input
+                value={form.flightNumber ?? ""}
+                onChange={(event) =>
+                  setForm({ ...form, flightNumber: event.target.value })
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               <span>
@@ -591,7 +606,13 @@ export function FlightsClient({
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
               <span>Comment</span>
-              <textarea value={form.comment ?? ""} onChange={(event) => setForm({ ...form, comment: event.target.value })} className="min-h-24 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" />
+              <textarea
+                value={form.comment ?? ""}
+                onChange={(event) =>
+                  setForm({ ...form, comment: event.target.value })
+                }
+                className="min-h-24 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+              />
             </label>
           </div>
           <div className="mt-4 flex justify-end gap-2">
@@ -711,11 +732,24 @@ export function FlightsClient({
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#d05a2c]">{isDeletedSelection ? "Deleted flight" : "Flight details"}</p>
-                    <h2 className="mt-1 text-2xl font-semibold text-gray-900">{selectedFlight.flightNumber ?? "Unnumbered flight"}</h2>
-                    <p className="mt-1 text-sm text-[#6d6a66]">{formatDateShort(selectedFlight.date)} В· {selectedFlight.airport}</p>
-                    <p className="mt-1 text-sm text-[#6d6a66]">Flight parent: {selectedFlight.flightParent}</p>
-                    {selectedFlight.comment && <p className="mt-1 whitespace-pre-wrap text-sm text-[#6d6a66]">{selectedFlight.comment}</p>}
+                    <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#d05a2c]">
+                      {isDeletedSelection ? "Deleted flight" : "Flight details"}
+                    </p>
+                    <h2 className="mt-1 text-2xl font-semibold text-gray-900">
+                      {selectedFlight.flightNumber ?? "Unnumbered flight"}
+                    </h2>
+                    <p className="mt-1 text-sm text-[#6d6a66]">
+                      {formatDateShort(selectedFlight.date)} В·{" "}
+                      {selectedFlight.airport}
+                    </p>
+                    <p className="mt-1 text-sm text-[#6d6a66]">
+                      Flight parent: {selectedFlight.flightParent}
+                    </p>
+                    {selectedFlight.comment && (
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-[#6d6a66]">
+                        {selectedFlight.comment}
+                      </p>
+                    )}
                   </div>
                   {!isDeletedSelection && (
                     <div className="flex gap-1">
@@ -752,18 +786,59 @@ export function FlightsClient({
               {!isDeletedSelection && (
                 <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
                   <div className="flex items-center justify-between gap-3">
-                    <div><h2 className="text-lg font-semibold text-gray-900">Photos</h2><p className="text-xs text-[#6d6a66]">Add images related to this flight.</p></div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        Photos
+                      </h2>
+                      <p className="text-xs text-[#6d6a66]">
+                        Add images related to this flight.
+                      </p>
+                    </div>
                     <label className="rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm font-semibold text-gray-800 cursor-pointer">
                       {isUploadingPhotos ? "Uploading..." : "Add photos"}
-                      <input type="file" accept="image/*" multiple disabled={isUploadingPhotos} onChange={(event) => { void addPhotos(event.target.files); event.target.value = ""; }} className="sr-only" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={isUploadingPhotos}
+                        onChange={(event) => {
+                          void addPhotos(event.target.files);
+                          event.target.value = "";
+                        }}
+                        className="sr-only"
+                      />
                     </label>
                   </div>
-                  {photos.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {photos.map((photo) => <div key={photo.id} className="group relative overflow-hidden rounded-xl border border-[#d4c7b4] bg-white">
-                      {photo.url ? <img src={photo.url} alt="Flight" className="aspect-square w-full object-cover" /> : <div className="aspect-square bg-gray-100" />}
-                      <button type="button" onClick={() => void removePhoto(photo.id)} disabled={photoActionId === photo.id} aria-label="Delete flight photo" title="Delete flight photo" className="absolute right-1 top-1 rounded-md bg-white/90 p-2 text-red-700 shadow disabled:opacity-50"><FontAwesomeIcon icon={faTrash} /></button>
-                    </div>)}
-                  </div>}
+                  {photos.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {photos.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="group relative overflow-hidden rounded-xl border border-[#d4c7b4] bg-white"
+                        >
+                          {photo.url ? (
+                            <img
+                              src={photo.url}
+                              alt="Flight"
+                              className="aspect-square w-full object-cover"
+                            />
+                          ) : (
+                            <div className="aspect-square bg-gray-100" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void removePhoto(photo.id)}
+                            disabled={photoActionId === photo.id}
+                            aria-label="Delete flight photo"
+                            title="Delete flight photo"
+                            className="absolute right-1 top-1 rounded-md bg-white/90 p-2 text-red-700 shadow disabled:opacity-50"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </section>
               )}
 

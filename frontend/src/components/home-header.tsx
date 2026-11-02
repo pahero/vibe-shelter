@@ -63,7 +63,9 @@ export function HomeHeader({ user }: HomeFooterProps) {
 
   const menuLinks = [
     { href: "/flights", label: "Flights" },
-    ...(user?.role === "admin" || user?.role === "owner" ? [{ href: "/shelter-management", label: "Shelter management" }] : []),
+    ...(user?.role === "admin" || user?.role === "owner"
+      ? [{ href: "/shelter-management", label: "Shelter management" }]
+      : []),
   ];
   const iconButtonClass =
     "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#4d514b] transition hover:bg-[#efe7da] hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]";
@@ -76,18 +78,93 @@ export function HomeHeader({ user }: HomeFooterProps) {
       <div className="flex items-center gap-1">
         {user && <NotificationCenter iconOnly />}
         <div className="relative" ref={menuRef}>
-          {user ? <>
-            <button type="button" className={iconButtonClass} aria-label="User menu" title="User menu" aria-haspopup="menu" aria-expanded={isUserMenuOpen} onClick={() => { setIsUserMenuOpen((open) => !open); setIsMenuOpen(false); }}><UserIcon /></button>
-            {isUserMenuOpen && <nav role="menu" aria-label="User menu" className="absolute right-0 top-full mt-3 w-48 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl">
-              <Link role="menuitem" href="/my-user" onClick={() => setIsUserMenuOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]">Profile</Link>
-              <Link role="menuitem" href="/my-treatments" onClick={() => setIsUserMenuOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]">My treatments</Link>
-            </nav>}
-          </> : <Link href="/login" className={iconButtonClass} aria-label="Sign in" title="Sign in"><UserIcon /></Link>}
-          <button type="button" className={iconButtonClass} aria-label="Open menu" title="Open menu" aria-haspopup="menu" aria-expanded={isMenuOpen} onClick={() => { setIsMenuOpen((open) => !open); setIsUserMenuOpen(false); }}><MenuIcon /></button>
-          {isMenuOpen && <nav role="menu" aria-label="Main menu" className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl">
-            {menuLinks.map(({ href, label }) => <Link key={href} role="menuitem" href={href} onClick={() => setIsMenuOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]">{label}</Link>)}
-            {user && <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />}
-          </nav>}
+          {user ? (
+            <>
+              <button
+                type="button"
+                className={iconButtonClass}
+                aria-label="User menu"
+                title="User menu"
+                aria-haspopup="menu"
+                aria-expanded={isUserMenuOpen}
+                onClick={() => {
+                  setIsUserMenuOpen((open) => !open);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <UserIcon />
+              </button>
+              {isUserMenuOpen && (
+                <nav
+                  role="menu"
+                  aria-label="User menu"
+                  className="absolute right-0 top-full mt-3 w-48 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl"
+                >
+                  <Link
+                    role="menuitem"
+                    href="/my-user"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    role="menuitem"
+                    href="/my-treatments"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+                  >
+                    My treatments
+                  </Link>
+                </nav>
+              )}
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className={iconButtonClass}
+              aria-label="Sign in"
+              title="Sign in"
+            >
+              <UserIcon />
+            </Link>
+          )}
+          <button
+            type="button"
+            className={iconButtonClass}
+            aria-label="Open menu"
+            title="Open menu"
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            onClick={() => {
+              setIsMenuOpen((open) => !open);
+              setIsUserMenuOpen(false);
+            }}
+          >
+            <MenuIcon />
+          </button>
+          {isMenuOpen && (
+            <nav
+              role="menu"
+              aria-label="Main menu"
+              className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl"
+            >
+              {menuLinks.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  role="menuitem"
+                  href={href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+                >
+                  {label}
+                </Link>
+              ))}
+              {user && (
+                <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />
+              )}
+            </nav>
+          )}
         </div>
       </div>
     </header>

@@ -142,10 +142,26 @@ describe("AddCatDocumentHandler", () => {
 
   it("accepts a JPEG identified by its file signature when the browser uses image/jpg", async () => {
     await runInTestTransaction(async (tx) => {
-      const actor = await tx.user.create({ data: { email: `${Date.now()}-${Math.random().toString(36).slice(2)}@example.com` } });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` } });
-      const jpeg = await sharp({ create: { width: 2, height: 2, channels: 3, background: "white" } }).jpeg().toBuffer();
-      const result = await new AddCatDocumentHandler(tx as PrismaService, new CatPhotoUrlService(config, s3Client)).handle(
+      const actor = await tx.user.create({
+        data: {
+          email: `${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
+        },
+      });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
+      });
+      const jpeg = await sharp({
+        create: { width: 2, height: 2, channels: 3, background: "white" },
+      })
+        .jpeg()
+        .toBuffer();
+      const result = await new AddCatDocumentHandler(
+        tx as PrismaService,
+        new CatPhotoUrlService(config, s3Client),
+      ).handle(
         cat.id,
         { originalname: "scan.jpg", mimetype: "image/jpg", buffer: jpeg },
         actor.id,

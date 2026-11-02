@@ -47,7 +47,14 @@ const listCats = vi.mocked(catsApi.listCats);
 const listFlightCandidateIds = vi.mocked(catsApi.listFlightCandidateIds);
 
 const flight: FlightListItem = {
-  id: "flight-1", date: "2026-10-15", airport: "Larnaca", flightNumber: "CY123", flightParent: "Morgan Parent", comment: null, deletedAt: null, catCount: 1,
+  id: "flight-1",
+  date: "2026-10-15",
+  airport: "Larnaca",
+  flightNumber: "CY123",
+  flightParent: "Morgan Parent",
+  comment: null,
+  deletedAt: null,
+  catCount: 1,
 };
 const detail: FlightDetails = {
   id: flight.id,
@@ -251,7 +258,9 @@ describe("FlightsClient", () => {
       name: /Flight audit history/,
     });
     expect(historyToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("flight_field_0 В· Mila")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("flight_field_0 В· Mila"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(historyToggle);
     expect(await screen.findByText("flight_field_0 В· Mila")).toBeVisible();
@@ -327,11 +336,26 @@ describe("FlightsClient", () => {
   it("submits a flight without a number and with an optional comment", async () => {
     render(<FlightsClient />);
     fireEvent.click(screen.getByRole("button", { name: "Add flight" }));
-    fireEvent.change(screen.getByLabelText(/Airport/), { target: { value: "Paphos" } });
-    fireEvent.change(screen.getByLabelText(/Flight parent/), { target: { value: "Taylor Parent" } });
-    fireEvent.change(screen.getByLabelText(/Comment/), { target: { value: "Meet at the terminal" } });
+    fireEvent.change(screen.getByLabelText(/Airport/), {
+      target: { value: "Paphos" },
+    });
+    fireEvent.change(screen.getByLabelText(/Flight parent/), {
+      target: { value: "Taylor Parent" },
+    });
+    fireEvent.change(screen.getByLabelText(/Comment/), {
+      target: { value: "Meet at the terminal" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save flight" }));
 
-    await waitFor(() => expect(createFlight).toHaveBeenCalledWith(expect.objectContaining({ airport: "Paphos", flightNumber: null, flightParent: "Taylor Parent", comment: "Meet at the terminal" })));
+    await waitFor(() =>
+      expect(createFlight).toHaveBeenCalledWith(
+        expect.objectContaining({
+          airport: "Paphos",
+          flightNumber: null,
+          flightParent: "Taylor Parent",
+          comment: "Meet at the terminal",
+        }),
+      ),
+    );
   });
 });

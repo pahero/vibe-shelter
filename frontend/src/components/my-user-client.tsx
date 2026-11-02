@@ -33,7 +33,9 @@ export function MyUserClient({ user }: MyUserClientProps) {
       setNameMessage("Name updated successfully.");
       router.refresh();
     } catch (cause) {
-      setNameError(cause instanceof Error ? cause.message : "Unable to update name.");
+      setNameError(
+        cause instanceof Error ? cause.message : "Unable to update name.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -61,7 +63,9 @@ export function MyUserClient({ user }: MyUserClientProps) {
       setNewPasswordConfirmation("");
       setPasswordMessage("Password changed successfully.");
     } catch (cause) {
-      setPasswordError(cause instanceof Error ? cause.message : "Unable to change password.");
+      setPasswordError(
+        cause instanceof Error ? cause.message : "Unable to change password.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -86,41 +90,112 @@ export function MyUserClient({ user }: MyUserClientProps) {
           <p className="mt-1 text-sm text-[#6d6a66]">{user.email}</p>
         )}
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Changing your name</h2>
-        <form className="mt-4 grid max-w-xl gap-4" onSubmit={submitName}>
-          {nameError && <p className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800" role="alert">{nameError}</p>}
-          {nameMessage && <p className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800" role="status">{nameMessage}</p>}
-          <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
-            <span className="inline-flex">Name <span className="text-red-700">*</span></span>
-            <input value={fullName} onChange={(event) => setFullName(event.target.value)} required className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal" />
-          </label>
-          <button type="submit" disabled={isSaving} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60">{isSaving ? "Saving name..." : "Save name"}</button>
-        </form>
-      </section>
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Changing your name
+          </h2>
+          <form className="mt-4 grid max-w-xl gap-4" onSubmit={submitName}>
+            {nameError && (
+              <p
+                className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800"
+                role="alert"
+              >
+                {nameError}
+              </p>
+            )}
+            {nameMessage && (
+              <p
+                className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800"
+                role="status"
+              >
+                {nameMessage}
+              </p>
+            )}
+            <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
+              <span className="inline-flex">
+                Name <span className="text-red-700">*</span>
+              </span>
+              <input
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Saving name..." : "Save name"}
+            </button>
+          </form>
+        </section>
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-gray-900">Changing the password</h2>
-        <form className="mt-4 grid max-w-xl gap-4" onSubmit={submit}>
-        {passwordError && <p className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800" role="alert">{passwordError}</p>}
-        {passwordMessage && <p className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800" role="status">{passwordMessage}</p>}
-        <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
-          Current password
-          <input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal" />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
-          New password
-          <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength={8} className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal" />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
-          Repeat new password
-          <input type="password" value={newPasswordConfirmation} onChange={(event) => setNewPasswordConfirmation(event.target.value)} required minLength={8} className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal" />
-        </label>
-        <button type="submit" disabled={isSaving} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60">
-          {isSaving ? "Saving password..." : "Change password"}
-        </button>
-        </form>
-      </section>
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Changing the password
+          </h2>
+          <form className="mt-4 grid max-w-xl gap-4" onSubmit={submit}>
+            {passwordError && (
+              <p
+                className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800"
+                role="alert"
+              >
+                {passwordError}
+              </p>
+            )}
+            {passwordMessage && (
+              <p
+                className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800"
+                role="status"
+              >
+                {passwordMessage}
+              </p>
+            )}
+            <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
+              Current password
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                required
+                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
+              New password
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+                minLength={8}
+                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
+              Repeat new password
+              <input
+                type="password"
+                value={newPasswordConfirmation}
+                onChange={(event) =>
+                  setNewPasswordConfirmation(event.target.value)
+                }
+                required
+                minLength={8}
+                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Saving password..." : "Change password"}
+            </button>
+          </form>
+        </section>
       </main>
     </>
   );

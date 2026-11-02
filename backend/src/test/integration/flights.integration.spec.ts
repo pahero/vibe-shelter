@@ -81,11 +81,19 @@ describe("Flights endpoints", () => {
         contentType: "image/jpeg",
       })
       .expect(201);
-    expect(uploadedPhoto.body).toMatchObject({ flightId, url: expect.any(String), fullUrl: expect.any(String) });
+    expect(uploadedPhoto.body).toMatchObject({
+      flightId,
+      url: expect.any(String),
+      fullUrl: expect.any(String),
+    });
     await authAgent
       .get(`/api/flights/${flightId}/photos`)
       .expect(200)
-      .then((response) => expect(response.body).toEqual([expect.objectContaining({ id: uploadedPhoto.body.id, flightId })]));
+      .then((response) =>
+        expect(response.body).toEqual([
+          expect.objectContaining({ id: uploadedPhoto.body.id, flightId }),
+        ]),
+      );
     expect(
       await authAgent
         .get("/api/flights")
@@ -93,7 +101,13 @@ describe("Flights endpoints", () => {
         .then((response) => response.body),
     ).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: flightId, catCount: 0, deletedAt: null, flightNumber: null, comment: "Meet at the terminal" }),
+        expect.objectContaining({
+          id: flightId,
+          catCount: 0,
+          deletedAt: null,
+          flightNumber: null,
+          comment: "Meet at the terminal",
+        }),
       ]),
     );
     expect(
@@ -105,9 +119,9 @@ describe("Flights endpoints", () => {
       id: flightId,
       date: "2026-10-15",
       airport: "Larnaca",
-        flightParent: "Morgan Parent",
-        flightNumber: null,
-        comment: "Meet at the terminal",
+      flightParent: "Morgan Parent",
+      flightNumber: null,
+      comment: "Meet at the terminal",
       cats: [],
     });
 
@@ -174,7 +188,11 @@ describe("Flights endpoints", () => {
           oldValue: "Morgan Parent",
           newValue: "Taylor Parent",
         }),
-        expect.objectContaining({ eventType: "flight_photo_created", oldValue: null, newValue: null }),
+        expect.objectContaining({
+          eventType: "flight_photo_created",
+          oldValue: null,
+          newValue: null,
+        }),
         expect.objectContaining({
           eventType: "flight_comment_changed",
           oldValue: "Meet at the terminal",
@@ -196,8 +214,13 @@ describe("Flights endpoints", () => {
         }),
       ]),
     );
-    await authAgent.delete(`/api/flights/${flightId}/photos/${uploadedPhoto.body.id}`).expect(204);
-    await authAgent.get(`/api/flights/${flightId}/photos`).expect(200).then((response) => expect(response.body).toEqual([]));
+    await authAgent
+      .delete(`/api/flights/${flightId}/photos/${uploadedPhoto.body.id}`)
+      .expect(204);
+    await authAgent
+      .get(`/api/flights/${flightId}/photos`)
+      .expect(200)
+      .then((response) => expect(response.body).toEqual([]));
     const catHistory = await authAgent
       .get(`/api/cats/${cat.id}/history`)
       .expect(200);

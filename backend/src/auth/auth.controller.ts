@@ -35,7 +35,13 @@ import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handl
 import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
 import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handler";
 import { UpdateCurrentUserNameHandler } from "./commands/update-current-user-name.handler";
-import { assertSameOrigin, clearAuthCookies, readCookie, refreshCookieName, setAuthCookies } from "./auth-cookie";
+import {
+  assertSameOrigin,
+  clearAuthCookies,
+  readCookie,
+  refreshCookieName,
+  setAuthCookies,
+} from "./auth-cookie";
 
 @Controller("auth")
 export class AuthController {
@@ -132,7 +138,10 @@ export class AuthController {
     @CurrentUser() user: Express.User,
     @Body() body: UpdateCurrentUserNameDto,
   ): Promise<{ id: string }> {
-    return this.updateCurrentUserNameHandler.handle(user.id, body.toCommand().fullName);
+    return this.updateCurrentUserNameHandler.handle(
+      user.id,
+      body.toCommand().fullName,
+    );
   }
 
   @Post("change-password")

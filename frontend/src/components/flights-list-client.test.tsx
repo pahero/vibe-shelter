@@ -15,7 +15,14 @@ vi.mock("@/lib/api", async () => {
 const listFlights = vi.mocked(flightsApi.list);
 const listCandidates = vi.mocked(catsApi.listFlightCandidates);
 const flight: FlightListItem = {
-  id: "flight-1", date: "2026-10-15", airport: "Larnaca", flightNumber: "CY123", flightParent: "Morgan Parent", comment: null, deletedAt: null, catCount: 1,
+  id: "flight-1",
+  date: "2026-10-15",
+  airport: "Larnaca",
+  flightNumber: "CY123",
+  flightParent: "Morgan Parent",
+  comment: null,
+  deletedAt: null,
+  catCount: 1,
 };
 
 describe("FlightsListClient", () => {
@@ -29,10 +36,17 @@ describe("FlightsListClient", () => {
   it("shows scheduled flights and links home using only the active flights query", async () => {
     render(<FlightsListClient />);
 
-    expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute(
+      "href",
+      "/",
+    );
     expect(await screen.findByText("Oct 15, 2026")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Flight candidates" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Scheduled flights" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Flight candidates" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Scheduled flights" }),
+    ).toBeVisible();
     expect(listFlights).toHaveBeenCalledTimes(1);
     expect(listFlights).toHaveBeenCalledWith(false);
   });
@@ -41,8 +55,14 @@ describe("FlightsListClient", () => {
     render(<FlightsListClient />);
     expect(await screen.findByText("Oct 15, 2026")).toBeVisible();
 
-    expect(screen.getByRole("link", { name: "Add flight" })).toHaveAttribute("href", "/flights/new");
-    expect(screen.getByRole("link", { name: /Oct 15, 2026/ })).toHaveAttribute("href", "/flights/flight-1");
+    expect(screen.getByRole("link", { name: "Add flight" })).toHaveAttribute(
+      "href",
+      "/flights/new",
+    );
+    expect(screen.getByRole("link", { name: /Oct 15, 2026/ })).toHaveAttribute(
+      "href",
+      "/flights/flight-1",
+    );
   });
 
   it("uses the deleted flights query when the checkbox is selected", async () => {

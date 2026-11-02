@@ -438,8 +438,19 @@ export type FlightAuditEvent = {
   oldValue: string | null;
   newValue: string | null;
   cat: { id: string; name: string; archivedAt: string | null } | null;
-  flight: { id: string; flightNumber: string | null; airport: string; date: string; isDeleted: boolean };
-  assignment: { id: string; f2fDone: boolean; tracesDone: boolean; isDeleted: boolean } | null;
+  flight: {
+    id: string;
+    flightNumber: string | null;
+    airport: string;
+    date: string;
+    isDeleted: boolean;
+  };
+  assignment: {
+    id: string;
+    f2fDone: boolean;
+    tracesDone: boolean;
+    isDeleted: boolean;
+  } | null;
 };
 
 export type FlightInput = {
@@ -1457,20 +1468,30 @@ export const flightsApi = {
   },
 
   async listPhotos(flightId: string): Promise<FlightPhoto[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/photos`, { method: "GET" });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}/photos`,
+      { method: "GET" },
+    );
     return handleResponse<FlightPhoto[]>(response);
   },
 
   async addPhoto(flightId: string, photo: File): Promise<FlightPhoto> {
-    return uploadWithRetry(`${BACKEND_URL}/api/flights/${flightId}/photos`, "POST", () => {
-      const formData = new FormData();
-      formData.append("photo", photo);
-      return formData;
-    });
+    return uploadWithRetry(
+      `${BACKEND_URL}/api/flights/${flightId}/photos`,
+      "POST",
+      () => {
+        const formData = new FormData();
+        formData.append("photo", photo);
+        return formData;
+      },
+    );
   },
 
   async deletePhoto(flightId: string, photoId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/photos/${photoId}`, { method: "DELETE" });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}/photos/${photoId}`,
+      { method: "DELETE" },
+    );
     return handleResponse<void>(response);
   },
 

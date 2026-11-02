@@ -71,7 +71,10 @@ export class FlightsController {
   }
 
   @Get(":id/photos")
-  listPhotos(@Param("id") flightId: string, @CurrentUser() user: AuthenticatedUser) {
+  listPhotos(
+    @Param("id") flightId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.listFlightPhotos.handle(flightId, user.isTest);
   }
 
@@ -88,8 +91,14 @@ export class FlightsController {
 
   @Post(":id/photos")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor("photo", { limits: { fileSize: 20 * 1024 * 1024 } }))
-  addPhoto(@Param("id") flightId: string, @CurrentUser() user: AuthenticatedUser, @UploadedFile() photo?: PrimaryPhotoUpload) {
+  @UseInterceptors(
+    FileInterceptor("photo", { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
+  addPhoto(
+    @Param("id") flightId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() photo?: PrimaryPhotoUpload,
+  ) {
     return this.addFlightPhoto.handle(flightId, photo, user.id, user.isTest);
   }
 
@@ -120,8 +129,17 @@ export class FlightsController {
 
   @Delete(":id/photos/:photoId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removePhoto(@Param("id") flightId: string, @Param("photoId") photoId: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.deleteFlightPhoto.handle(flightId, photoId, user.id, user.isTest);
+  async removePhoto(
+    @Param("id") flightId: string,
+    @Param("photoId") photoId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.deleteFlightPhoto.handle(
+      flightId,
+      photoId,
+      user.id,
+      user.isTest,
+    );
   }
 
   @Post(":id/restore")

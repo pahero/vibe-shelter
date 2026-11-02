@@ -36,7 +36,8 @@ export class AddCatDocumentHandler {
       document.mimetype === "application/pdf" &&
       document.buffer.subarray(0, 5).equals(Buffer.from("%PDF-"));
     const isJpeg =
-      document.mimetype === "image/jpeg" &&
+      (document.mimetype === "image/jpeg" ||
+        document.mimetype === "image/jpg") &&
       document.buffer[0] === 0xff &&
       document.buffer[1] === 0xd8 &&
       document.buffer[2] === 0xff;

@@ -207,8 +207,8 @@ export function FlightCandidatesClient({
                         <Link
                           key={flight.id}
                           href={`/flights/${flight.id}`}
-                          aria-label={`${flight.flightNumber} flight`}
-                          title={flight.flightNumber}
+                          aria-label={`${flight.flightNumber ?? "Unnumbered"} flight`}
+                          title={flight.flightNumber ?? "Unnumbered"}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-gray-200"
                         >
                           <FontAwesomeIcon icon={faPlane} aria-hidden="true" />

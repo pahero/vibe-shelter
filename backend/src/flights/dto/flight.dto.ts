@@ -95,7 +95,9 @@ export class UpdateFlightDto {
         : parseRequiredString(this.flightParent, "flightParent"),
       actorUserId,
       isTest,
-      this.comment === undefined ? undefined : parseOptionalString(this.comment),
+      this.comment === undefined
+        ? undefined
+        : parseOptionalString(this.comment),
     );
   }
 }
