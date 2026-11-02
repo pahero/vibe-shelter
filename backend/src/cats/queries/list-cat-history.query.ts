@@ -297,7 +297,7 @@ export class ListCatHistoryQuery {
     newValue: string | null;
     flight: {
       id: string;
-      flightNumber: string;
+      flightNumber: string | null;
       airport: string;
       date: Date;
       deletedAt: Date | null;

@@ -123,7 +123,7 @@ export function auditEventStyle(eventType: string): string {
 export function auditEventLabel(event: CatHistoryEvent): string {
   if (event.flight) {
     const label = eventLabels[event.eventType] ?? event.eventType;
-    return `Flight ${event.flight.flightNumber} · ${label}`;
+    return `Flight ${event.flight.flightNumber ?? "Unnumbered"} · ${label}`;
   }
   const administrationDate = event.treatmentAdministrationDate;
   if (

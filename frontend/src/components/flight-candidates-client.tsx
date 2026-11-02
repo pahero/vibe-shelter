@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -129,7 +129,7 @@ export function FlightCandidatesClient({
 
         {isLoading && (
           <p className="mt-4 text-sm text-[#6d6a66]" role="status">
-            Loading flight candidates…
+            Loading flight candidatesвЂ¦
           </p>
         )}
         {error && (
@@ -179,7 +179,7 @@ export function FlightCandidatesClient({
                         aria-label={`No photo for ${candidate.name}`}
                         className="text-2xl"
                       >
-                        🐾
+                        рџђѕ
                       </span>
                     )}
                   </div>
@@ -207,8 +207,8 @@ export function FlightCandidatesClient({
                         <Link
                           key={flight.id}
                           href={`/flights/${flight.id}`}
-                          aria-label={`${flight.flightNumber} flight`}
-                          title={flight.flightNumber}
+                          aria-label={`${flight.flightNumber ?? "Unnumbered"} flight`}
+                          title={flight.flightNumber ?? "Unnumbered"}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-gray-200"
                         >
                           <FontAwesomeIcon icon={faPlane} aria-hidden="true" />

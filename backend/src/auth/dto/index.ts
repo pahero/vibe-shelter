@@ -96,6 +96,18 @@ export type UpdateUserCommand = {
   isTest?: boolean;
 };
 
+export class UpdateCurrentUserNameDto {
+  @IsString()
+  @MinLength(1)
+  fullName!: string;
+
+  toCommand(): { fullName: string } {
+    const fullName = this.fullName.trim();
+    if (!fullName) throw new BadRequestException("fullName is required");
+    return { fullName };
+  }
+}
+
 export class UserResponseDto {
   id!: string;
 

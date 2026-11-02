@@ -26,6 +26,7 @@ export async function createFlightFixture(
       | "airport"
       | "flightNumber"
       | "flightParent"
+      | "comment"
     >
   > = {},
 ) {

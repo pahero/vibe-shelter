@@ -18,6 +18,7 @@ describe("CreateFlightHandler", () => {
           "Morgan Parent",
           actor.id,
           true,
+          "Meet at the terminal",
         ),
       );
 
@@ -30,6 +31,7 @@ describe("CreateFlightHandler", () => {
         airport: "Larnaca",
         flightNumber: "CY123",
         flightParent: "Morgan Parent",
+        comment: "Meet at the terminal",
         isTest: true,
       });
       expect(

@@ -20,6 +20,10 @@ function parseRequiredString(value: string, field: string): string {
   return normalized;
 }
 
+function parseOptionalString(value: string | null | undefined): string | null {
+  return value?.trim() || null;
+}
+
 export class CreateFlightDto {
   @IsDateString()
   date!: string;
@@ -27,20 +31,26 @@ export class CreateFlightDto {
   @IsString()
   airport!: string;
 
+  @IsOptional()
   @IsString()
-  flightNumber!: string;
+  flightNumber?: string | null;
 
   @IsString()
   flightParent!: string;
+
+  @IsOptional()
+  @IsString()
+  comment?: string | null;
 
   toCommand(actorUserId: string, isTest: boolean): CreateFlightCommand {
     return new CreateFlightCommand(
       parseDate(this.date),
       parseRequiredString(this.airport, "airport"),
-      parseRequiredString(this.flightNumber, "flightNumber"),
+      parseOptionalString(this.flightNumber),
       parseRequiredString(this.flightParent, "flightParent"),
       actorUserId,
       isTest,
+      parseOptionalString(this.comment),
     );
   }
 }
@@ -56,11 +66,15 @@ export class UpdateFlightDto {
 
   @IsString()
   @IsOptional()
-  flightNumber?: string;
+  flightNumber?: string | null;
 
   @IsString()
   @IsOptional()
   flightParent?: string;
+
+  @IsString()
+  @IsOptional()
+  comment?: string | null;
 
   toCommand(
     flightId: string,
@@ -75,12 +89,15 @@ export class UpdateFlightDto {
         : parseRequiredString(this.airport, "airport"),
       this.flightNumber === undefined
         ? undefined
-        : parseRequiredString(this.flightNumber, "flightNumber"),
+        : parseOptionalString(this.flightNumber),
       this.flightParent === undefined
         ? undefined
         : parseRequiredString(this.flightParent, "flightParent"),
       actorUserId,
       isTest,
+      this.comment === undefined
+        ? undefined
+        : parseOptionalString(this.comment),
     );
   }
 }

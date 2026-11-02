@@ -15,6 +15,7 @@ export class CreateFlightHandler {
           airport: command.airport,
           flightNumber: command.flightNumber,
           flightParent: command.flightParent,
+          comment: command.comment,
           isTest: command.isTest,
         },
         select: { id: true },

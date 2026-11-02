@@ -16,7 +16,7 @@ export type FlightCandidate = {
   primaryPhotoUrl: string | null;
   flights: {
     id: string;
-    flightNumber: string;
+    flightNumber: string | null;
   }[];
   requirements: {
     firstVaccine: boolean;

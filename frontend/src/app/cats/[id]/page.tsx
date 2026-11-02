@@ -58,6 +58,12 @@ import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 import { isSupportedGalleryUpload } from "@/lib/gallery-media";
 import { authenticatedFetch, BACKEND_URL } from "@/lib/backend";
 
+function isImageDocument(document: CatDocument): boolean {
+  return ["jpg", "jpeg", "png"].includes(
+    document.fileName.toLowerCase().split(".").pop() ?? "",
+  );
+}
+
 type CatEditForm = {
   name: string;
   nameNumber: number;
@@ -974,6 +980,10 @@ export default function CatProfilePage() {
   const sortedDocuments = [...documents].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
   );
+  const imageDocuments = sortedDocuments.filter(isImageDocument);
+  const fileDocuments = sortedDocuments.filter(
+    (document) => !isImageDocument(document),
+  );
   const primaryPhoto = sortedPhotos[0] ?? null;
   const expandedDocument = expandedDocumentId
     ? (sortedDocuments.find((document) => document.id === expandedDocumentId) ??
@@ -1267,7 +1277,7 @@ export default function CatProfilePage() {
                           {isUploadingPhoto ? "..." : "+"}
                           <input
                             type="file"
-                            accept="image/*,video/mp4,video/webm,.mp4,.webm"
+                            accept="image/*,.jpg,.jpeg,video/mp4,video/webm,.mp4,.webm"
                             multiple
                             disabled={isUploadingPhoto}
                             onChange={handlePhotoChange}
@@ -1326,9 +1336,43 @@ export default function CatProfilePage() {
                         No documents have been uploaded.
                       </p>
                     )}
-                    {!isLoadingDocuments && documents.length > 0 && (
+                    {!isLoadingDocuments && imageDocuments.length > 0 && (
+                      <div className="mt-3 grid w-fit grid-cols-4 gap-2">
+                        {imageDocuments.map((document) => (
+                          <div
+                            key={document.id}
+                            className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setExpandedDocumentId(document.id)}
+                              disabled={!document.url}
+                              className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
+                              style={
+                                document.url
+                                  ? { backgroundImage: `url(${document.url})` }
+                                  : undefined
+                              }
+                              aria-label={`Open image document ${document.fileName}`}
+                              title={document.fileName}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDocument(document.id)}
+                              disabled={removingDocumentId === document.id}
+                              aria-label="Delete document"
+                              title="Delete document"
+                              className="absolute right-0 top-0 rounded-bl-lg bg-white/90 p-1.5 text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!isLoadingDocuments && fileDocuments.length > 0 && (
                       <ul className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
-                        {sortedDocuments.map((document) => (
+                        {fileDocuments.map((document) => (
                           <li
                             key={document.id}
                             className="flex items-center gap-3 py-2.5"
@@ -1851,7 +1895,7 @@ export default function CatProfilePage() {
                             />
                           </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
-                            Intake details
+                            Comment
                             <textarea
                               value={editForm.intakeDetails}
                               onChange={(event) =>
@@ -2043,7 +2087,7 @@ export default function CatProfilePage() {
                             "Microchip number",
                             cat.microchipNumber || "Not set",
                           ],
-                          ["Intake details", cat.intakeDetails || "Not set"],
+                          ["Comment", cat.intakeDetails || "Not set"],
                           [
                             "Intake source",
                             cat.intakeSource

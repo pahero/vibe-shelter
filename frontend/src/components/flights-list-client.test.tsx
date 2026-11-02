@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+﻿import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { catsApi, flightsApi, FlightListItem } from "@/lib/api";
 import { FlightsListClient } from "./flights-list-client";
@@ -20,6 +20,7 @@ const flight: FlightListItem = {
   airport: "Larnaca",
   flightNumber: "CY123",
   flightParent: "Morgan Parent",
+  comment: null,
   deletedAt: null,
   catCount: 1,
 };
@@ -39,7 +40,7 @@ describe("FlightsListClient", () => {
       "href",
       "/",
     );
-    expect(await screen.findByText("CY123")).toBeVisible();
+    expect(await screen.findByText("Oct 15, 2026")).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Flight candidates" }),
     ).toBeVisible();
@@ -52,13 +53,13 @@ describe("FlightsListClient", () => {
 
   it("links to flight creation and opens flight rows as details", async () => {
     render(<FlightsListClient />);
-    expect(await screen.findByText("CY123")).toBeVisible();
+    expect(await screen.findByText("Oct 15, 2026")).toBeVisible();
 
     expect(screen.getByRole("link", { name: "Add flight" })).toHaveAttribute(
       "href",
       "/flights/new",
     );
-    expect(screen.getByRole("link", { name: /CY123/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Oct 15, 2026/ })).toHaveAttribute(
       "href",
       "/flights/flight-1",
     );
@@ -66,7 +67,7 @@ describe("FlightsListClient", () => {
 
   it("uses the deleted flights query when the checkbox is selected", async () => {
     render(<FlightsListClient />);
-    await screen.findByText("CY123");
+    await screen.findByText("Oct 15, 2026");
 
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Show deleted flights" }),

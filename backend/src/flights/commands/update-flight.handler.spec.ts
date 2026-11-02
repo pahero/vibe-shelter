@@ -20,10 +20,11 @@ describe("UpdateFlightHandler", () => {
           flight.id,
           new Date("2026-11-16"),
           "Paphos",
-          "CY456",
+          null,
           "Taylor Parent",
           actor.id,
           false,
+          "Gate changed",
         ),
       );
 
@@ -33,14 +34,15 @@ describe("UpdateFlightHandler", () => {
       expect(saved).toMatchObject({
         date: new Date("2026-11-16"),
         airport: "Paphos",
-        flightNumber: "CY456",
+        flightNumber: null,
         flightParent: "Taylor Parent",
+        comment: "Gate changed",
       });
       expect(saved.concurrencyToken).not.toBe(flight.concurrencyToken);
       const events = await transaction.auditEvent.findMany({
         where: { flightId: flight.id },
       });
-      expect(events).toHaveLength(4);
+      expect(events).toHaveLength(5);
       expect(events).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -58,13 +60,19 @@ describe("UpdateFlightHandler", () => {
           expect.objectContaining({
             eventType: "flight_number_changed",
             oldValue: flight.flightNumber,
-            newValue: "CY456",
+            newValue: "No flight number",
             actorUserId: actor.id,
           }),
           expect.objectContaining({
             eventType: "flight_parent_changed",
             oldValue: flight.flightParent,
             newValue: "Taylor Parent",
+            actorUserId: actor.id,
+          }),
+          expect.objectContaining({
+            eventType: "flight_comment_changed",
+            oldValue: "No comment",
+            newValue: "Gate changed",
             actorUserId: actor.id,
           }),
         ]),

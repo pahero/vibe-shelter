@@ -5,8 +5,9 @@ export type FlightListItem = {
   id: string;
   date: string;
   airport: string;
-  flightNumber: string;
+  flightNumber: string | null;
   flightParent: string;
+  comment: string | null;
   deletedAt: string | null;
   catCount: number;
 };
@@ -27,6 +28,7 @@ export class ListFlightsHandler {
         airport: true,
         flightNumber: true,
         flightParent: true,
+        comment: true,
         deletedAt: true,
         assignments: { where: { deletedAt: null }, select: { id: true } },
       },
@@ -38,6 +40,7 @@ export class ListFlightsHandler {
       airport: flight.airport,
       flightNumber: flight.flightNumber,
       flightParent: flight.flightParent,
+      comment: flight.comment,
       deletedAt: flight.deletedAt?.toISOString() ?? null,
       catCount: flight.assignments.length,
     }));

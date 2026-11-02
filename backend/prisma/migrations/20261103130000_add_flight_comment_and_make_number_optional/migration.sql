@@ -1,0 +1,2 @@
+ALTER TABLE "Flight" ALTER COLUMN "flightNumber" DROP NOT NULL;
+ALTER TABLE "Flight" ADD COLUMN "comment" TEXT;

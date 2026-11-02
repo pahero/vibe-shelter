@@ -11,7 +11,10 @@ import { GetFlightHandler } from "./get-flight.handler";
 describe("GetFlightHandler", () => {
   it("returns active cats and their F2F/traces status, excluding removed assignments", async () => {
     await runInTestTransaction(async (transaction) => {
-      const flight = await createFlightFixture(transaction);
+      const flight = await createFlightFixture(transaction, {
+        flightNumber: null,
+        comment: "Meet at the terminal",
+      });
       const cat = await createFlightTestCat(transaction);
       const otherCat = await createFlightTestCat(transaction);
       const active = await createFlightAssignment(
@@ -30,6 +33,8 @@ describe("GetFlightHandler", () => {
       expect(result).toMatchObject({
         id: flight.id,
         airport: flight.airport,
+        flightNumber: null,
+        comment: "Meet at the terminal",
         cats: [
           {
             assignmentId: active.id,

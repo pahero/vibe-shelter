@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+﻿import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   catsApi,
@@ -52,6 +52,7 @@ const flight: FlightListItem = {
   airport: "Larnaca",
   flightNumber: "CY123",
   flightParent: "Morgan Parent",
+  comment: null,
   deletedAt: null,
   catCount: 1,
 };
@@ -61,6 +62,7 @@ const detail: FlightDetails = {
   airport: flight.airport,
   flightNumber: flight.flightNumber,
   flightParent: flight.flightParent,
+  comment: flight.comment,
   updatedAt: "2026-10-10T10:00:00.000Z",
   cats: [
     {
@@ -182,7 +184,7 @@ describe("FlightsClient", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Flight audit history/ }),
     );
-    expect(screen.getByText("Traces status changed · Mila")).toBeVisible();
+    expect(screen.getByText("Traces status changed В· Mila")).toBeVisible();
   });
 
   it("loads deleted flight details from the deleted flights query when the active detail API returns 404", async () => {
@@ -256,15 +258,17 @@ describe("FlightsClient", () => {
       name: /Flight audit history/,
     });
     expect(historyToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("flight_field_0 · Mila")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("flight_field_0 В· Mila"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(historyToggle);
-    expect(await screen.findByText("flight_field_0 · Mila")).toBeVisible();
+    expect(await screen.findByText("flight_field_0 В· Mila")).toBeVisible();
     expect(
-      screen.queryByText("flight_field_10 · Mila"),
+      screen.queryByText("flight_field_10 В· Mila"),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(await screen.findByText("flight_field_10 · Mila")).toBeVisible();
+    expect(await screen.findByText("flight_field_10 В· Mila")).toBeVisible();
     expect(screen.getByText("Page 2 of 2")).toBeVisible();
   });
 
@@ -329,17 +333,17 @@ describe("FlightsClient", () => {
     expect(deleteFlight).toHaveBeenCalledWith(flight.id);
   });
 
-  it("submits a flight with date, airport, number, and parent", async () => {
+  it("submits a flight without a number and with an optional comment", async () => {
     render(<FlightsClient />);
     fireEvent.click(screen.getByRole("button", { name: "Add flight" }));
     fireEvent.change(screen.getByLabelText(/Airport/), {
       target: { value: "Paphos" },
     });
-    fireEvent.change(screen.getByLabelText(/Flight number/), {
-      target: { value: "CY456" },
-    });
     fireEvent.change(screen.getByLabelText(/Flight parent/), {
       target: { value: "Taylor Parent" },
+    });
+    fireEvent.change(screen.getByLabelText(/Comment/), {
+      target: { value: "Meet at the terminal" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save flight" }));
 
@@ -347,8 +351,9 @@ describe("FlightsClient", () => {
       expect(createFlight).toHaveBeenCalledWith(
         expect.objectContaining({
           airport: "Paphos",
-          flightNumber: "CY456",
+          flightNumber: null,
           flightParent: "Taylor Parent",
+          comment: "Meet at the terminal",
         }),
       ),
     );

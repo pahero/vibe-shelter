@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
@@ -15,6 +15,7 @@ export function FlightCreateClient() {
     airport: "",
     flightNumber: "",
     flightParent: "",
+    comment: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,8 +28,9 @@ export function FlightCreateClient() {
       await flightsApi.create({
         ...form,
         airport: form.airport.trim(),
-        flightNumber: form.flightNumber.trim(),
+        flightNumber: form.flightNumber?.trim() || null,
         flightParent: form.flightParent.trim(),
+        comment: form.comment?.trim() || null,
       });
       router.push("/flights");
     } catch (reason) {
@@ -90,12 +92,9 @@ export function FlightCreateClient() {
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
-              <span>
-                Flight number <span className="text-red-700">*</span>
-              </span>
+              <span>Flight number</span>
               <input
-                required
-                value={form.flightNumber}
+                value={form.flightNumber ?? ""}
                 onChange={(event) =>
                   setForm({ ...form, flightNumber: event.target.value })
                 }
@@ -115,20 +114,16 @@ export function FlightCreateClient() {
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
               />
             </label>
-          </div>
-          <div className="mt-4 flex justify-end gap-2">
-            <Link
-              href="/flights"
-              className="rounded-xl border border-[#d4c7b4] bg-white px-4 py-2 text-sm font-semibold"
-            >
-              Cancel
-            </Link>
-            <button
-              disabled={isSaving}
-              className="rounded-xl bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Save flight"}
-            </button>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              <span>Comment</span>
+              <textarea
+                value={form.comment ?? ""}
+                onChange={(event) =>
+                  setForm({ ...form, comment: event.target.value })
+                }
+                className="min-h-24 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+              />
+            </label>
           </div>
         </form>
       </section>

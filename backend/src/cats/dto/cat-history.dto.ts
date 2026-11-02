@@ -79,7 +79,7 @@ export type CatHistoryEventDto = {
   document: CatHistoryDocumentDto | null;
   flight?: {
     id: string;
-    flightNumber: string;
+    flightNumber: string | null;
     airport: string;
     date: string;
     isDeleted: boolean;

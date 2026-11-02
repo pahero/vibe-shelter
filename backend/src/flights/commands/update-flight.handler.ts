@@ -21,6 +21,7 @@ export class UpdateFlightHandler {
           airport: true,
           flightNumber: true,
           flightParent: true,
+          comment: true,
         },
       });
       if (!flight) throw new NotFoundException("Flight not found");
@@ -28,8 +29,9 @@ export class UpdateFlightHandler {
       const data: {
         date?: Date;
         airport?: string;
-        flightNumber?: string;
+        flightNumber?: string | null;
         flightParent?: string;
+        comment?: string | null;
         concurrencyToken?: string;
       } = {};
       const changes: {
@@ -63,8 +65,16 @@ export class UpdateFlightHandler {
         data.flightNumber = command.flightNumber;
         changes.push({
           eventType: "flight_number_changed",
-          oldValue: flight.flightNumber,
-          newValue: command.flightNumber,
+          oldValue: flight.flightNumber ?? "No flight number",
+          newValue: command.flightNumber ?? "No flight number",
+        });
+      }
+      if (command.comment !== undefined && command.comment !== flight.comment) {
+        data.comment = command.comment;
+        changes.push({
+          eventType: "flight_comment_changed",
+          oldValue: flight.comment ?? "No comment",
+          newValue: command.comment ?? "No comment",
         });
       }
       if (

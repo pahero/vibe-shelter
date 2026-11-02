@@ -14,9 +14,8 @@ test.describe("frontend auth flow", () => {
     await page.getByRole("button", { name: "Sign in with Email" }).click();
 
     await expect(page.getByLabel("Search cats")).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: "User profile" }),
-    ).toBeVisible();
+    await page.getByRole("button", { name: "User menu" }).click();
+    await expect(page.getByRole("menuitem", { name: "Profile" })).toBeVisible();
 
     await expect(
       page.getByRole("link", { name: "Register users" }),

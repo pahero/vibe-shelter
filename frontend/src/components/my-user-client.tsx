@@ -1,30 +1,53 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import { AuthUser, changePassword } from "@/lib/backend";
+import { AuthUser, changePassword, updateCurrentUserName } from "@/lib/backend";
 
 type MyUserClientProps = {
   user: AuthUser;
 };
 
 export function MyUserClient({ user }: MyUserClientProps) {
+  const router = useRouter();
+  const [fullName, setFullName] = useState(user.fullName ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState("");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [nameMessage, setNameMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  async function submitName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNameError("");
+    setNameMessage("");
+    setIsSaving(true);
+    try {
+      await updateCurrentUserName(fullName.trim());
+      setNameMessage("Name updated successfully.");
+      router.refresh();
+    } catch (cause) {
+      setNameError(
+        cause instanceof Error ? cause.message : "Unable to update name.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
-    setMessage("");
+    setPasswordError("");
+    setPasswordMessage("");
 
     if (newPassword !== newPasswordConfirmation) {
-      setError("New passwords do not match.");
+      setPasswordError("New passwords do not match.");
       return;
     }
 
@@ -38,9 +61,9 @@ export function MyUserClient({ user }: MyUserClientProps) {
       setCurrentPassword("");
       setNewPassword("");
       setNewPasswordConfirmation("");
-      setMessage("Password changed successfully.");
+      setPasswordMessage("Password changed successfully.");
     } catch (cause) {
-      setError(
+      setPasswordError(
         cause instanceof Error ? cause.message : "Unable to change password.",
       );
     } finally {
@@ -69,23 +92,65 @@ export function MyUserClient({ user }: MyUserClientProps) {
 
         <section className="mt-8">
           <h2 className="text-lg font-semibold text-gray-900">
-            Changing the password
+            Changing your name
           </h2>
-          <form className="mt-4 grid max-w-xl gap-4" onSubmit={submit}>
-            {error && (
+          <form className="mt-4 grid max-w-xl gap-4" onSubmit={submitName}>
+            {nameError && (
               <p
                 className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800"
                 role="alert"
               >
-                {error}
+                {nameError}
               </p>
             )}
-            {message && (
+            {nameMessage && (
               <p
                 className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800"
                 role="status"
               >
-                {message}
+                {nameMessage}
+              </p>
+            )}
+            <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
+              <span className="inline-flex">
+                Name <span className="text-red-700">*</span>
+              </span>
+              <input
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 font-normal"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "Saving name..." : "Save name"}
+            </button>
+          </form>
+        </section>
+
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Changing the password
+          </h2>
+          <form className="mt-4 grid max-w-xl gap-4" onSubmit={submit}>
+            {passwordError && (
+              <p
+                className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800"
+                role="alert"
+              >
+                {passwordError}
+              </p>
+            )}
+            {passwordMessage && (
+              <p
+                className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800"
+                role="status"
+              >
+                {passwordMessage}
               </p>
             )}
             <label className="grid gap-1 text-sm font-semibold text-[#1f2320]">
