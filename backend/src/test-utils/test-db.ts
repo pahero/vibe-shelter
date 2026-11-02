@@ -1,12 +1,9 @@
-import { PrismaService } from "@/database/prisma.service";
 import {
-  ensureTestDatabaseEnv,
   getGarageTestConnection,
   getUnitTestDatabaseUrl,
 } from "./test-db-env";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { ConfigService } from "@nestjs/config";
 import {
   CreateBucketCommand,
   DeleteBucketCommand,
@@ -14,17 +11,6 @@ import {
   ListObjectsV2Command,
   S3Client,
 } from "@aws-sdk/client-s3";
-
-export async function startTestDatabase(): Promise<PrismaService> {
-  ensureTestDatabaseEnv();
-
-  const prisma = new PrismaService(
-    new ConfigService({ database: { url: process.env.DATABASE_URL } }),
-  );
-  await prisma.$connect();
-
-  return prisma;
-}
 
 function getTestDatabase(): PrismaClient {
   const databaseUrl = getUnitTestDatabaseUrl();
@@ -54,7 +40,8 @@ export async function createBucket(
   prefix: string,
   s3Client: S3Client,
 ): Promise<string> {
-  const bucketName = `${prefix}-${Date.now()}`;
+  const safePrefix = prefix.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 12);
+  const bucketName = `${safePrefix}-${crypto.randomUUID().replaceAll("-", "")}`;
   await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
   return bucketName;
 }
@@ -71,18 +58,6 @@ export async function deleteBucket(
     );
   }
   await s3Client.send(new DeleteBucketCommand({ Bucket: bucketName }));
-}
-
-export async function beginTestTransaction(
-  prismaInstance: PrismaClient,
-): Promise<void> {
-  await prismaInstance.$executeRawUnsafe("BEGIN");
-}
-
-export async function rollbackTestTransaction(
-  prismaInstance: PrismaClient,
-): Promise<void> {
-  await prismaInstance.$executeRawUnsafe("ROLLBACK");
 }
 
 export async function runInTestTransaction(
