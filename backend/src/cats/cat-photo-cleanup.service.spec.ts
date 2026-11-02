@@ -16,25 +16,22 @@ describe("CatPhotoCleanupService", () => {
   let config: ConfigService;
   let bucketName: string;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     s3Client = getS3Client();
-    bucketName = await createBucket(
-      `cat-photo-cleanup-${Math.random().toString(36).slice(2, 10)}`,
-      s3Client,
-    );
+  });
+
+  beforeEach(async () => {
+    bucketName = await createBucket("cat-photo-cleanup", s3Client);
     config = new ConfigService();
     config.set("s3.bucketName", bucketName);
     photoUrls = new CatPhotoUrlService(config, s3Client);
   });
 
   afterEach(async () => {
-    for (const { key } of await photoUrls.listPhotoObjects("")) {
-      await photoUrls.deletePhoto(key);
-    }
+    await deleteBucket(bucketName, s3Client);
   });
 
-  afterAll(async () => {
-    await deleteBucket(bucketName, s3Client);
+  afterAll(() => {
     s3Client.destroy();
   });
 
@@ -47,7 +44,13 @@ describe("CatPhotoCleanupService", () => {
       config.set("S3_DANGLING_PHOTO_CLEANUP_GRACE_MS", "1");
       config.set("S3_DANGLING_PHOTO_CLEANUP_PREFIX", prefix);
 
-      await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, id: catId, name: "Cleanup Cat" } });
+      await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          id: catId,
+          name: "Cleanup Cat",
+        },
+      });
       const referencedKey = await photoUrls.uploadPrimaryPhoto({
         catId,
         originalName: "referenced.jpg",
@@ -84,7 +87,8 @@ describe("CatPhotoCleanupService", () => {
       config.set("S3_DANGLING_PHOTO_CLEANUP_PREFIX", prefix);
 
       await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           id: catId,
           name: `Document Cleanup Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
