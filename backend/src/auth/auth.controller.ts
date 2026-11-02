@@ -1,7 +1,8 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
+  Patch,
   UseGuards,
   Res,
   Req,
@@ -23,6 +24,7 @@ import {
   PasswordLoginDto,
   ReplaceTemporaryPasswordDto,
   ForgotPasswordDto,
+  UpdateCurrentUserNameDto,
 } from "./dto";
 import { ValidatePasswordCredentialsHandler } from "./queries/validate-password-credentials.handler";
 import { ChangePasswordHandler } from "./commands/change-password.handler";
@@ -32,13 +34,8 @@ import { signJwt } from "./jwt-token";
 import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handler";
 import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
 import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handler";
-import {
-  assertSameOrigin,
-  clearAuthCookies,
-  readCookie,
-  refreshCookieName,
-  setAuthCookies,
-} from "./auth-cookie";
+import { UpdateCurrentUserNameHandler } from "./commands/update-current-user-name.handler";
+import { assertSameOrigin, clearAuthCookies, readCookie, refreshCookieName, setAuthCookies } from "./auth-cookie";
 
 @Controller("auth")
 export class AuthController {
@@ -50,6 +47,7 @@ export class AuthController {
     private readonly rotateRefreshTokenHandler: RotateRefreshTokenHandler,
     private readonly revokeRefreshTokenHandler: RevokeRefreshTokenHandler,
     private readonly forgotPasswordHandler: ForgotPasswordHandler,
+    private readonly updateCurrentUserNameHandler: UpdateCurrentUserNameHandler,
     private readonly configService: ConfigService,
   ) {}
 
@@ -126,6 +124,15 @@ export class AuthController {
     }
 
     return this.toAuthMe(user);
+  }
+
+  @Patch("me")
+  @UseGuards(JwtAuthGuard)
+  async updateCurrentUserName(
+    @CurrentUser() user: Express.User,
+    @Body() body: UpdateCurrentUserNameDto,
+  ): Promise<{ id: string }> {
+    return this.updateCurrentUserNameHandler.handle(user.id, body.toCommand().fullName);
   }
 
   @Post("change-password")

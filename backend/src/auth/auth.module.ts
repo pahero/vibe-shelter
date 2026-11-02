@@ -13,6 +13,7 @@ import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handl
 import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
 import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handler";
 import { ForgotPasswordHandler } from "./commands/forgot-password.handler";
+import { UpdateCurrentUserNameHandler } from "./commands/update-current-user-name.handler";
 
 @Module({
   imports: [PassportModule, DatabaseModule],
@@ -29,6 +30,7 @@ import { ForgotPasswordHandler } from "./commands/forgot-password.handler";
     RotateRefreshTokenHandler,
     RevokeRefreshTokenHandler,
     ForgotPasswordHandler,
+    UpdateCurrentUserNameHandler,
   ],
 })
 export class AuthModule {}

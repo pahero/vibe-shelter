@@ -83,6 +83,16 @@ describe("Authentication endpoints", () => {
       );
     await agent.get("/auth/me").expect(200);
     await agent
+      .patch("/auth/me")
+      .send({ fullName: "Updated Auth User" })
+      .expect(200)
+      .expect(({ body }) => expect(body).toEqual({ id: user.id }));
+    await agent.post("/auth/token").expect(200);
+    await agent
+      .get("/auth/me")
+      .expect(200)
+      .expect(({ body }) => expect(body.fullName).toBe("Updated Auth User"));
+    await agent
       .post("/auth/change-password")
       .send({
         currentPassword: oldPassword,

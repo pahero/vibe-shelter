@@ -218,6 +218,18 @@ export async function replaceTemporaryPassword(
   }
 }
 
+export async function updateCurrentUserName(fullName: string): Promise<void> {
+  const response = await authenticatedFetch(`${getBackendUrl()}/auth/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullName }),
+  });
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+
+  const refreshResponse = await authenticatedFetch(`${getBackendUrl()}/auth/token`, { method: "POST" });
+  if (!refreshResponse.ok) throw new Error("Name was updated, but the session could not be refreshed. Please sign in again.");
+}
+
 async function readErrorMessage(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { message?: string | string[] };
