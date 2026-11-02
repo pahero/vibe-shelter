@@ -1,9 +1,22 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "node:crypto";
 import * as nodemailer from "nodemailer";
 import { PrismaService } from "../../database/prisma.service";
+
+export type SmtpConfig = {
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  password?: string;
+  from?: string;
+};
 
 @Injectable()
 export class ForgotPasswordHandler {
@@ -12,18 +25,42 @@ export class ForgotPasswordHandler {
     private readonly config: ConfigService,
   ) {}
 
+  protected sendMail(
+    smtp: SmtpConfig,
+    message: nodemailer.SendMailOptions,
+  ): Promise<unknown> {
+    return nodemailer
+      .createTransport({
+        host: smtp.host || "smtp.gmail.com",
+        port: smtp.port || 465,
+        secure: smtp.secure ?? true,
+        auth: { user: smtp.user, pass: smtp.password },
+      })
+      .sendMail(message);
+  }
+
   async handle(email: string, captchaToken: string): Promise<void> {
     const recaptchaSecret = this.config.get<string>("recaptcha.secretKey");
     if (!recaptchaSecret) {
-      throw new ServiceUnavailableException("CAPTCHA verification is not configured");
+      throw new ServiceUnavailableException(
+        "CAPTCHA verification is not configured",
+      );
     }
-    const captchaResponse = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret: recaptchaSecret, response: captchaToken }),
-    });
+    const captchaResponse = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: recaptchaSecret,
+          response: captchaToken,
+        }),
+      },
+    );
     if (!captchaResponse.ok) {
-      throw new ServiceUnavailableException("CAPTCHA verification is unavailable");
+      throw new ServiceUnavailableException(
+        "CAPTCHA verification is unavailable",
+      );
     }
     const captchaResult = (await captchaResponse.json()) as {
       success?: boolean;
@@ -45,26 +82,15 @@ export class ForgotPasswordHandler {
     });
     if (!user) return;
 
-    const smtp = this.config.get<{
-      host?: string;
-      port?: number;
-      secure?: boolean;
-      user?: string;
-      password?: string;
-      from?: string;
-    }>("email");
+    const smtp = this.config.get<SmtpConfig>("email");
     if (!smtp?.user || !smtp.password || !smtp.from) {
-      throw new ServiceUnavailableException("Password reset email is not configured");
+      throw new ServiceUnavailableException(
+        "Password reset email is not configured",
+      );
     }
 
     const temporaryPassword = randomBytes(12).toString("base64url");
-    const transporter = nodemailer.createTransport({
-      host: smtp.host || "smtp.gmail.com",
-      port: smtp.port || 465,
-      secure: smtp.secure ?? true,
-      auth: { user: smtp.user, pass: smtp.password },
-    });
-    await transporter.sendMail({
+    await this.sendMail(smtp, {
       from: smtp.from,
       to: user.email,
       subject: "Friends of Larnaca Cats password reset",

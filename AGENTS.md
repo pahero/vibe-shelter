@@ -21,6 +21,9 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 ## Testing
 
 - Every command and query handler must have complete automated test coverage for all of its behavior and branches before the work is considered complete.
+- Never mock databases or S3 in backend tests. Use real PostgreSQL with per-test rollback transactions for unit tests; use real S3/Garage with a unique bucket per test that writes objects. For other external dependencies, prefer a narrow injectable/overridable boundary and test-local doubles over module-level `vi.mock` when mocks could leak between files.
+- Keep all test-only classes, fakes, and subclasses inside `*.spec.ts` files. Never add test classes or test doubles to regular application source files.
+- Keep Vitest `isolate: false`; configure `unstubGlobals: true` so globals stubbed by one test are restored after it. Explicitly reset test-local mock call state and implementations between tests.
 - Do not run backend builds for validation. Always run the relevant backend tests instead.
 
 ## Audit events
