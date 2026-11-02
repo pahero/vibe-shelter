@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { type FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
@@ -395,7 +395,7 @@ export function HomeCatsList() {
                 placeholder="Mila"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
               Current location
               <select
                 value={createForm.currentLocationId}
@@ -544,6 +544,10 @@ export function HomeCatsList() {
                 ))}
               </select>
             </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              Comment
+              <textarea value={createForm.intakeDetails} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDetails: event.target.value }))} className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
+            </label>
           </div>
           <div className="mt-4 flex justify-end gap-3">
             <button
@@ -595,7 +599,7 @@ export function HomeCatsList() {
                   ? "Loading locations..."
                   : locationFilterLabel}
               </span>
-              <span className="text-[#6d6a66]">⌄</span>
+              <span className="text-[#6d6a66]">вЊ„</span>
             </button>
             {isLocationFilterOpen && (
               <div

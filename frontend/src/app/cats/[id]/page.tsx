@@ -1425,12 +1425,302 @@ export default function CatProfilePage() {
                       </div>
                     )}
 
-                    {photoError && (
-                      <p className="mt-3 text-sm font-medium text-red-700">
-                        {photoError}
-                      </p>
-                    )}
-                  </section>
+              {(detailsError || detailsSuccess) && (
+                <div className={`mt-5 rounded-lg border p-4 ${detailsError ? "border-red-300 bg-red-50" : "border-green-300 bg-green-50"}`}>
+                  <p className={`text-sm font-medium ${detailsError ? "text-red-800" : "text-green-800"}`}>
+                    {detailsError || detailsSuccess}
+                  </p>
+                </div>
+              )}
+
+              {isEditingDetails && editForm ? (
+                <form id="cat-details-form" onSubmit={handleDetailsSubmit} className="mt-6 space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Cat name
+                      <input
+                        value={editForm.name}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, name: event.target.value })}
+                        disabled={isSavingDetails}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Cat number
+                      <input
+                        aria-label="Cat number"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={editForm.nameNumber}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, nameNumber: Number(event.target.value) })}
+                        disabled={isSavingDetails}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Current location
+                      <select
+                        value={editForm.currentLocationId}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, currentLocationId: event.target.value })}
+                        disabled={isLoadingLocations}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {cat.currentLocationId && !locations.some((location) => location.id === cat.currentLocationId) && (
+                          <option value={cat.currentLocationId}>{cat.currentLocationName || "Current location"}</option>
+                        )}
+                        {locations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>
+                        ))}
+                      </select>
+                      {locationsError && <span className="text-xs font-medium text-red-700">Locations could not be loaded: {locationsError}</span>}
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Sex
+                      <select
+                        value={editForm.sex}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, sex: event.target.value as CatSex })}
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      >
+                        <option value="UNKNOWN">Unknown</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="MALE">Male</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Neutering status
+                      <select
+                        value={editForm.sterilizationStatus}
+                        onChange={(event) =>
+                          setEditForm((prev) => prev && { ...prev, sterilizationStatus: event.target.value as SterilizationStatus })
+                        }
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      >
+                        <option value="UNKNOWN">Unknown</option>
+                        <option value="STERILIZED">Neutered</option>
+                        <option value="NOT_STERILIZED">Not neutered</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Color
+                      <input
+                        value={editForm.color}
+                        onChange={(event) => setEditForm((prev) => prev && { ...prev, color: event.target.value })}
+                        list="cat-color-options"
+                        className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      />
+                      <CatColorDatalist />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Birth date
+                      <input type="date" value={editForm.estimatedBirthDate} onChange={(event) => setEditForm((prev) => prev && { ...prev, estimatedBirthDate: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Intake date
+                      <input type="date" value={editForm.intakeDate} onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeDate: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Microchip number
+                      <input value={editForm.microchipNumber} onChange={(event) => setEditForm((prev) => prev && { ...prev, microchipNumber: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                       Comment
+                      <textarea value={editForm.intakeDetails} onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeDetails: event.target.value })} className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Intake source
+                      <select value={editForm.intakeSource} onChange={(event) => setEditForm((prev) => prev && { ...prev, intakeSource: event.target.value as CatEditForm["intakeSource"] })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                        <option value="">Not set</option>
+                        {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <input type="checkbox" checked={editForm.passport} onChange={(event) => setEditForm((prev) => prev && { ...prev, passport: event.target.checked })} className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]" />
+                      Passport
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                      <input type="checkbox" checked={editForm.felvFivTestDone} onChange={(event) => setEditForm((prev) => prev && { ...prev, felvFivTestDone: event.target.checked })} className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]" />
+                      FIV/FeLV test
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Sponsor name
+                      <input value={editForm.sponsorName} onChange={(event) => setEditForm((prev) => prev && { ...prev, sponsorName: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Adopter name
+                      <input value={editForm.adopterName} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterName: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                      Adopter address
+                      <input value={editForm.adopterAddress} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterAddress: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium text-gray-800">
+                      Adopter country
+                      <select value={editForm.adopterCountry} onChange={(event) => setEditForm((prev) => prev && { ...prev, adopterCountry: event.target.value as AdopterCountry | "" })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+                        <option value="">Not set</option><option value="UK">UK</option><option value="EU">EU</option><option value="CY">CY</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={cancelEditingDetails}
+                      className="rounded-xl border border-[#d4c7b4] bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      disabled={isSavingDetails}
+                      className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSavingDetails ? "Saving..." : "Save details"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <dl className="mt-6 grid gap-x-6 gap-y-0 rounded-2xl bg-[#fff8ee]/85 p-4 sm:grid-cols-2">
+                  {[
+                    ["Current location", cat.currentLocationName || "Not assigned"],
+                    ["Sex", sexLabels[cat.sex]],
+                    ["Neutering status", sterilizationLabels[cat.sterilizationStatus]],
+                    ["Color", cat.color || "Not set"],
+                    ["Birth date", cat.estimatedBirthDate ? formatDateShort(cat.estimatedBirthDate) : "Not set"],
+                    ["Intake date", cat.intakeDate ? formatDateShort(cat.intakeDate) : "Not set"],
+                    ["Microchip number", cat.microchipNumber || "Not set"],
+                    ["Comment", cat.intakeDetails || "Not set"],
+                    ["Intake source", cat.intakeSource ? INTAKE_SOURCE_LABELS[cat.intakeSource] : "Not set"],
+                    ["Passport", cat.passport ? "Yes" : "No"],
+                    ["FIV/FeLV test", cat.felvFivTestDone ? "Done" : "Not done"],
+                    ["Sponsor name", cat.sponsorName || "Not set"],
+                    ["Adopter name", cat.adopterName || "Not set"],
+                    ["Adopter address", cat.adopterAddress || "Not set"],
+                    ["Adopter country", cat.adopterCountry || "Not set"],
+                    ...(cat.archivingReasonName ? [["Archiving reason", cat.archivingReasonName] as const] : []),
+                  ].map(([label, value]) => (
+                    <div key={label} className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}>
+                      <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66] sm:whitespace-nowrap">{label}</dt>
+                      <dd className="mt-0.5 truncate font-semibold text-gray-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              </div>
+            </section>
+            </>}
+            {selectedSection === "tasks" && <div id="tasks"><CatTasks catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "treatments" && <div id="treatments"><CatTreatments catId={cat.id} onChanged={refreshHistory} refreshVersion={treatmentRefreshVersion} /></div>}
+            {selectedSection === "medical-notes" && <div id="medical-notes"><CatMedicalNotes catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "vaccinations" && <div id="vaccinations"><CatVaccinations catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "parasite-treatments" && <div id="parasite-treatments"><CatParasiteTreatments catId={cat.id} onChanged={refreshHistory} /></div>}
+            {selectedSection === "weight-history" && <section id="weight-history" className="md:col-span-2">
+              <CatProfileSectionHeader title="Weight history" isExpanded={isWeightExpanded} onToggle={() => { setIsWeightFormOpen(false); setIsWeightExpanded((current) => !current); }} onAdd={() => setIsWeightFormOpen(true)} addLabel="Add weight" />
+
+              {isWeightExpanded && <>
+              {isWeightFormOpen && <form onSubmit={handleWeightSubmit} className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+                <label className="grid gap-1 text-sm font-medium text-gray-800">
+                  <span>Weight, kg <span className="text-red-700">*</span></span>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={weightKg}
+                    onChange={(event) => setWeightKg(event.target.value)}
+                    className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                    placeholder="4.25"
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium text-gray-800">
+                  <span>Date <span className="text-red-700">*</span></span>
+                  <input
+                    type="date"
+                    lang="en-GB"
+                    value={weightDate}
+                    onChange={(event) => setWeightDate(event.target.value)}
+                    className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={isAddingWeight}
+                  className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isAddingWeight ? "Adding..." : "Add weight"}
+                </button>
+              </form>}
+
+              {weightError && <p className="mt-3 text-sm font-medium text-red-700">{weightError}</p>}
+              {isLoadingWeights && <p className="mt-5 text-sm text-[#6d6a66]">Loading weight history...</p>}
+
+              {!isLoadingWeights && weights.length === 0 && (
+                <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/45 p-6 text-center">
+                  <p className="text-sm text-[#6d6a66]">No weights recorded yet.</p>
+                </div>
+              )}
+
+              {!isLoadingWeights && weights.length > 0 && (
+                <>
+                  <div className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/50 p-2">
+                    <Plot
+                      data={[{
+                        type: "scatter",
+                        mode: "lines+markers+text",
+                        x: graphWeights.map((weight) => formatDateShort(weight.measuredAt)),
+                        y: graphWeights.map((weight) => weight.weightKg),
+                        text: graphWeights.map((weight) => weight.weightKg.toFixed(2)),
+                        textposition: "top center",
+                        line: { color: "#d05a2c", width: 3 },
+                        marker: { color: "#d05a2c", size: 8 },
+                        hovertemplate: "%{x}: %{y:.2f} kg<extra></extra>",
+                      }]}
+                      layout={{
+                        autosize: true,
+                        height: 260,
+                        margin: { l: 50, r: 20, t: 30, b: 45 },
+                        paper_bgcolor: "rgba(0,0,0,0)",
+                        plot_bgcolor: "rgba(0,0,0,0)",
+                        font: { color: "#6d6a66" },
+                        xaxis: { title: "Date", fixedrange: true },
+                        yaxis: { title: "Weight, kg", fixedrange: true },
+                        showlegend: false,
+                      }}
+                      config={{ displayModeBar: false, responsive: true }}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <div className="mt-5 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/50">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#d05a2c]/10 text-[#6d6a66]">
+                        <tr>
+                          <th className="px-4 py-3 font-mono text-xs uppercase tracking-[0.1em]">Date</th>
+                          <th className="px-4 py-3 font-mono text-xs uppercase tracking-[0.1em]">Weight</th>
+                          <th className="px-4 py-3 text-right font-mono text-xs uppercase tracking-[0.1em]">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#d4c7b4]">
+                        {weights.map((weight) => (
+                          <tr key={weight.id}>
+                            <td className="px-4 py-3 font-medium text-gray-900">{formatDateShort(weight.measuredAt)}</td>
+                            <td className="px-4 py-3 text-gray-700">{weight.weightKg.toFixed(2)} kg</td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveWeight(weight.id)}
+                                disabled={removingWeightId === weight.id}
+                                aria-label="Delete weight"
+                                title="Delete weight"
+                                className="rounded-lg border border-red-300 bg-red-50 p-2 text-xs text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </>
               )}
               {selectedSection === "media" && (
