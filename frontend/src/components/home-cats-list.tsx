@@ -4,7 +4,18 @@ import { type FormEvent, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, CatSex, CatTag, CreateCatDto, IntakeSource, INTAKE_SOURCE_LABELS, Location, SterilizationStatus, catsApi, locationsApi } from "@/lib/api";
+import {
+  CatCard as CatCardType,
+  CatSex,
+  CatTag,
+  CreateCatDto,
+  IntakeSource,
+  INTAKE_SOURCE_LABELS,
+  Location,
+  SterilizationStatus,
+  catsApi,
+  locationsApi,
+} from "@/lib/api";
 
 const CATS_PER_PAGE = 6;
 
@@ -67,15 +78,28 @@ export function HomeCatsList() {
     if (tagFilter) params.set("tag", tagFilter);
     if (searchArchived) params.set("archived", "true");
     const query = params.toString();
-    window.history.replaceState(window.history.state, "", query ? `/?${query}` : "/");
-  }, [currentPage, search, locationFilter, tagFilter, searchArchived, hasRestoredListState]);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      query ? `/?${query}` : "/",
+    );
+  }, [
+    currentPage,
+    search,
+    locationFilter,
+    tagFilter,
+    searchArchived,
+    hasRestoredListState,
+  ]);
 
   useEffect(() => {
     if (isLoading) return;
     const savedScroll = sessionStorage.getItem("cat-list-scroll");
     if (savedScroll !== null) {
       sessionStorage.removeItem("cat-list-scroll");
-      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll))));
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll))),
+      );
     }
   }, [cats, isLoading]);
 
@@ -87,13 +111,20 @@ export function HomeCatsList() {
       setLocationError(null);
 
       try {
-        const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
+        const response = await locationsApi.listLocations({
+          status: "ACTIVE",
+          limit: 100,
+        });
 
         if (!cancelled) {
           setLocations(response.data);
           setCreateForm((prev) => ({
             ...prev,
-            currentLocationId: response.data.some((location) => location.id === prev.currentLocationId) ? prev.currentLocationId : response.data[0]?.id ?? "",
+            currentLocationId: response.data.some(
+              (location) => location.id === prev.currentLocationId,
+            )
+              ? prev.currentLocationId
+              : (response.data[0]?.id ?? ""),
           }));
         }
       } catch (err) {
@@ -164,7 +195,10 @@ export function HomeCatsList() {
         }
       } catch (err) {
         if (!cancelled) {
-          const statusCode = err && typeof err === "object" && "statusCode" in err ? (err.statusCode as number) : null;
+          const statusCode =
+            err && typeof err === "object" && "statusCode" in err
+              ? (err.statusCode as number)
+              : null;
           if (statusCode === 401 || statusCode === 403) {
             setNeedsSignIn(true);
           } else {
@@ -185,7 +219,14 @@ export function HomeCatsList() {
     return () => {
       cancelled = true;
     };
-  }, [currentPage, locationFilter, refreshKey, search, searchArchived, tagFilter]);
+  }, [
+    currentPage,
+    locationFilter,
+    refreshKey,
+    search,
+    searchArchived,
+    tagFilter,
+  ]);
 
   const handleCreateCat = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -197,7 +238,11 @@ export function HomeCatsList() {
       setError("Cat name is required.");
       return;
     }
-    if (!locations.some((location) => location.id === createForm.currentLocationId)) {
+    if (
+      !locations.some(
+        (location) => location.id === createForm.currentLocationId,
+      )
+    ) {
       setError("Choose an active location for this cat.");
       return;
     }
@@ -231,17 +276,59 @@ export function HomeCatsList() {
   };
 
   const totalPages = Math.ceil(total / CATS_PER_PAGE);
-  const locationFilterLabel = locations.find((location) => location.id === locationFilter)?.name ?? "All locations";
+  const locationFilterLabel =
+    locations.find((location) => location.id === locationFilter)?.name ??
+    "All locations";
 
   return (
     <section className="w-full animate-rise [animation-delay:160ms]">
       <div className="flex items-center gap-2">
         <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#d4c7b4] bg-white/70 px-3 py-2 text-[#6d6a66] focus-within:ring-2 focus-within:ring-[#d05a2c]">
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="10.8" cy="10.8" r="6.8" /><path strokeLinecap="round" d="m16 16 4.5 4.5" /></svg>
-          <input value={search} onChange={(event) => { setSearch(event.target.value); setCurrentPage(1); }} placeholder="Search cats" aria-label="Search cats" className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-[#8b8883]" />
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-5 w-5 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <circle cx="10.8" cy="10.8" r="6.8" />
+            <path strokeLinecap="round" d="m16 16 4.5 4.5" />
+          </svg>
+          <input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search cats"
+            aria-label="Search cats"
+            className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-[#8b8883]"
+          />
         </label>
-        <button type="button" aria-label="Filters" title="Filters" aria-expanded={isFiltersOpen} aria-controls="home-cat-filters" onClick={() => setIsFiltersOpen((open) => !open)} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#d4c7b4] bg-white/70 px-3 text-sm font-semibold text-[#333832] transition hover:bg-white">
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10m-7 6h4" /></svg>
+        <button
+          type="button"
+          aria-label="Filters"
+          title="Filters"
+          aria-expanded={isFiltersOpen}
+          aria-controls="home-cat-filters"
+          onClick={() => setIsFiltersOpen((open) => !open)}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#d4c7b4] bg-white/70 px-3 text-sm font-semibold text-[#333832] transition hover:bg-white"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6h16M7 12h10m-7 6h4"
+            />
+          </svg>
           <span className="hidden sm:inline">Filter</span>
         </button>
         <button
@@ -256,185 +343,368 @@ export function HomeCatsList() {
           }}
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d4c7b4] bg-white/70 text-[#333832] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]"
         >
-          {showCreateForm ? <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" /></svg> : <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" d="M12 5v14M5 12h14" /></svg>}
+          {showCreateForm ? (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          ) : (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+            </svg>
+          )}
         </button>
       </div>
 
-      {createSuccess && <p className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800">{createSuccess}</p>}
+      {createSuccess && (
+        <p className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-800">
+          {createSuccess}
+        </p>
+      )}
 
       {showCreateForm && (
-        <form onSubmit={handleCreateCat} className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4">
+        <form
+          onSubmit={handleCreateCat}
+          className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Name *
-              <input value={createForm.name} onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Mila" />
+              <input
+                value={createForm.name}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    name: event.target.value,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                placeholder="Mila"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
               Current location
-              <select value={createForm.currentLocationId} onChange={(event) => setCreateForm((prev) => ({ ...prev, currentLocationId: event.target.value }))} disabled={isLoadingLocations || locations.length === 0} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60">
-                {locations.length === 0 && <option value="">No active locations</option>}
-                {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+              <select
+                value={createForm.currentLocationId}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    currentLocationId: event.target.value,
+                  }))
+                }
+                disabled={isLoadingLocations || locations.length === 0}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {locations.length === 0 && (
+                  <option value="">No active locations</option>
+                )}
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Sex *
-              <select value={createForm.sex} onChange={(event) => setCreateForm((prev) => ({ ...prev, sex: event.target.value as CatSex }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
-                <option value="UNKNOWN">Unknown</option><option value="FEMALE">Female</option><option value="MALE">Male</option>
+              <select
+                value={createForm.sex}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    sex: event.target.value as CatSex,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              >
+                <option value="UNKNOWN">Unknown</option>
+                <option value="FEMALE">Female</option>
+                <option value="MALE">Male</option>
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Neutering status *
-              <select value={createForm.sterilizationStatus} onChange={(event) => setCreateForm((prev) => ({ ...prev, sterilizationStatus: event.target.value as SterilizationStatus }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
-                <option value="UNKNOWN">Unknown</option><option value="STERILIZED">Neutered</option><option value="NOT_STERILIZED">Not neutered</option>
+              <select
+                value={createForm.sterilizationStatus}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    sterilizationStatus: event.target
+                      .value as SterilizationStatus,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              >
+                <option value="UNKNOWN">Unknown</option>
+                <option value="STERILIZED">Neutered</option>
+                <option value="NOT_STERILIZED">Not neutered</option>
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Color
-              <input value={createForm.color} onChange={(event) => setCreateForm((prev) => ({ ...prev, color: event.target.value }))} list="cat-color-options" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Black-white" />
+              <input
+                value={createForm.color}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    color: event.target.value,
+                  }))
+                }
+                list="cat-color-options"
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                placeholder="Black-white"
+              />
               <CatColorDatalist />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Birth date
-              <input type="date" value={createForm.estimatedBirthDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, estimatedBirthDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <input
+                type="date"
+                value={createForm.estimatedBirthDate}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    estimatedBirthDate: event.target.value,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake date
-              <input type="date" value={createForm.intakeDate} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <input
+                type="date"
+                value={createForm.intakeDate}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    intakeDate: event.target.value,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Microchip number
-              <input value={createForm.microchipNumber} onChange={(event) => setCreateForm((prev) => ({ ...prev, microchipNumber: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <input
+                value={createForm.microchipNumber}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    microchipNumber: event.target.value,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake details
-              <textarea value={createForm.intakeDetails} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeDetails: event.target.value }))} className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Found near clinic" />
+              <textarea
+                value={createForm.intakeDetails}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    intakeDetails: event.target.value,
+                  }))
+                }
+                className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                placeholder="Found near clinic"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake source
-              <select value={createForm.intakeSource} onChange={(event) => setCreateForm((prev) => ({ ...prev, intakeSource: event.target.value as IntakeSource | "" }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]">
+              <select
+                value={createForm.intakeSource}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    intakeSource: event.target.value as IntakeSource | "",
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              >
                 <option value="">Not set</option>
-                {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
           <div className="mt-4 flex justify-end gap-3">
-            <button type="button" onClick={() => setShowCreateForm(false)} className="rounded-xl border border-[#d4c7b4] bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Cancel</button>
-            <button disabled={isCreating || isLoadingLocations || locations.length === 0} className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50">
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              className="rounded-xl border border-[#d4c7b4] bg-white px-5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={
+                isCreating || isLoadingLocations || locations.length === 0
+              }
+              className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {isCreating ? "Adding..." : "Add cat"}
             </button>
           </div>
         </form>
       )}
 
-      {isFiltersOpen && <div id="home-cat-filters" className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end">
-
-        <div className="relative grid gap-1 text-sm font-medium text-gray-800">
-          <span id="home-location-filter-label">Location</span>
-          <button
-            type="button"
-            aria-labelledby="home-location-filter-label"
-            aria-haspopup="listbox"
-            aria-expanded={isLocationFilterOpen}
-            disabled={isLoadingLocations || locations.length === 0}
-            onClick={() => setIsLocationFilterOpen((isOpen) => !isOpen)}
-            onBlur={(event) => {
-              if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) {
-                setIsLocationFilterOpen(false);
-              }
-            }}
-            className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <span>{isLoadingLocations ? "Loading locations..." : locationFilterLabel}</span>
-            <span className="text-[#6d6a66]">⌄</span>
-          </button>
-          {isLocationFilterOpen && (
-            <div
-              role="listbox"
+      {isFiltersOpen && (
+        <div
+          id="home-cat-filters"
+          className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end"
+        >
+          <div className="relative grid gap-1 text-sm font-medium text-gray-800">
+            <span id="home-location-filter-label">Location</span>
+            <button
+              type="button"
               aria-labelledby="home-location-filter-label"
-              className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
-            >
-              <button
-                type="button"
-                role="option"
-                aria-selected={locationFilter === ""}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  setLocationFilter("");
-                  setCurrentPage(1);
+              aria-haspopup="listbox"
+              aria-expanded={isLocationFilterOpen}
+              disabled={isLoadingLocations || locations.length === 0}
+              onClick={() => setIsLocationFilterOpen((isOpen) => !isOpen)}
+              onBlur={(event) => {
+                if (
+                  !event.currentTarget.parentElement?.contains(
+                    event.relatedTarget,
+                  )
+                ) {
                   setIsLocationFilterOpen(false);
-                }}
-                className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                  locationFilter === "" ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]" : "text-gray-900"
-                }`}
+                }
+              }}
+              className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span>
+                {isLoadingLocations
+                  ? "Loading locations..."
+                  : locationFilterLabel}
+              </span>
+              <span className="text-[#6d6a66]">⌄</span>
+            </button>
+            {isLocationFilterOpen && (
+              <div
+                role="listbox"
+                aria-labelledby="home-location-filter-label"
+                className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
               >
-                All locations
-              </button>
-              {locations.map((location) => (
                 <button
-                  key={location.id}
                   type="button"
                   role="option"
-                  aria-selected={locationFilter === location.id}
+                  aria-selected={locationFilter === ""}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
-                    setLocationFilter(location.id);
+                    setLocationFilter("");
                     setCurrentPage(1);
                     setIsLocationFilterOpen(false);
                   }}
                   className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                    locationFilter === location.id ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]" : "text-gray-900"
+                    locationFilter === ""
+                      ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
+                      : "text-gray-900"
                   }`}
                 >
-                  {location.name}
+                  All locations
                 </button>
+                {locations.map((location) => (
+                  <button
+                    key={location.id}
+                    type="button"
+                    role="option"
+                    aria-selected={locationFilter === location.id}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setLocationFilter(location.id);
+                      setCurrentPage(1);
+                      setIsLocationFilterOpen(false);
+                    }}
+                    className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
+                      locationFilter === location.id
+                        ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {location.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <label className="grid gap-1 text-sm font-medium text-gray-800">
+            Tag
+            <select
+              value={tagFilter}
+              onChange={(event) => {
+                setTagFilter(event.target.value);
+                setCurrentPage(1);
+              }}
+              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+            >
+              <option value="">All tags</option>
+              {tags.map((tag) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.name}
+                </option>
               ))}
-            </div>
-          )}
+            </select>
+          </label>
+
+          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-gray-800">
+            <input
+              type="checkbox"
+              checked={searchArchived}
+              onChange={(event) => {
+                setSearchArchived(event.target.checked);
+                setCurrentPage(1);
+              }}
+              className="h-4 w-4 rounded border-[#d4c7b4] text-[#d05a2c] focus:ring-[#d05a2c]"
+            />
+            Search archived
+          </label>
         </div>
+      )}
 
-        <label className="grid gap-1 text-sm font-medium text-gray-800">
-          Tag
-          <select
-            value={tagFilter}
-            onChange={(event) => {
-              setTagFilter(event.target.value);
-              setCurrentPage(1);
-            }}
-            className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-          >
-            <option value="">All tags</option>
-            {tags.map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      {locationError && (
+        <p className="mt-2 text-sm text-red-700">
+          Locations could not be loaded: {locationError}
+        </p>
+      )}
+      {tagError && (
+        <p className="mt-2 text-sm text-red-700">
+          Tags could not be loaded: {tagError}
+        </p>
+      )}
 
-        <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-gray-800">
-          <input
-            type="checkbox"
-            checked={searchArchived}
-            onChange={(event) => {
-              setSearchArchived(event.target.checked);
-              setCurrentPage(1);
-            }}
-            className="h-4 w-4 rounded border-[#d4c7b4] text-[#d05a2c] focus:ring-[#d05a2c]"
-          />
-          Search archived
-        </label>
-
-      </div>}
-
-      {locationError && <p className="mt-2 text-sm text-red-700">Locations could not be loaded: {locationError}</p>}
-      {tagError && <p className="mt-2 text-sm text-red-700">Tags could not be loaded: {tagError}</p>}
-
-      {isLoading && <p className="py-10 text-center text-sm text-[#6d6a66]">Loading cat cards...</p>}
+      {isLoading && (
+        <p className="py-10 text-center text-sm text-[#6d6a66]">
+          Loading cat cards...
+        </p>
+      )}
 
       {!isLoading && needsSignIn && (
         <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/45 p-8 text-center">
-          <p className="text-sm font-medium text-gray-900">Sign in to view the cats list.</p>
-          <p className="mt-1 text-sm text-[#6d6a66]">Cat records are protected for shelter staff.</p>
+          <p className="text-sm font-medium text-gray-900">
+            Sign in to view the cats list.
+          </p>
+          <p className="mt-1 text-sm text-[#6d6a66]">
+            Cat records are protected for shelter staff.
+          </p>
         </div>
       )}
 
@@ -453,7 +723,12 @@ export function HomeCatsList() {
       {!isLoading && cats.length > 0 && (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {cats.map((cat) => (
-            <CatCard key={cat.id} cat={cat} showTags={false} profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(searchArchived ? { archived: "true" } : {}) }).toString()}`} />
+            <CatCard
+              key={cat.id}
+              cat={cat}
+              showTags={false}
+              profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(searchArchived ? { archived: "true" } : {}) }).toString()}`}
+            />
           ))}
         </div>
       )}

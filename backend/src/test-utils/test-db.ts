@@ -1,7 +1,4 @@
-import {
-  getGarageTestConnection,
-  getUnitTestDatabaseUrl,
-} from "./test-db-env";
+import { getGarageTestConnection, getUnitTestDatabaseUrl } from "./test-db-env";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
@@ -40,7 +37,10 @@ export async function createBucket(
   prefix: string,
   s3Client: S3Client,
 ): Promise<string> {
-  const safePrefix = prefix.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 12);
+  const safePrefix = prefix
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .slice(0, 12);
   const bucketName = `${safePrefix}-${crypto.randomUUID().replaceAll("-", "")}`;
   await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
   return bucketName;

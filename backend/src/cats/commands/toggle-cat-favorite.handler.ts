@@ -8,11 +8,18 @@ export class ToggleCatFavoriteHandler {
 
   async handle(catId: string, userId: string): Promise<{ favorite: boolean }> {
     return runInNewTransaction(this.prisma, async (tx) => {
-      const cat = await tx.cat.findFirst({ where: { id: catId, deletedAt: null }, select: { id: true } });
+      const cat = await tx.cat.findFirst({
+        where: { id: catId, deletedAt: null },
+        select: { id: true },
+      });
       if (!cat) throw new NotFoundException("Cat not found");
-      const existing = await tx.catFavorite.findUnique({ where: { userId_catId: { userId, catId } } });
+      const existing = await tx.catFavorite.findUnique({
+        where: { userId_catId: { userId, catId } },
+      });
       if (existing) {
-        await tx.catFavorite.delete({ where: { userId_catId: { userId, catId } } });
+        await tx.catFavorite.delete({
+          where: { userId_catId: { userId, catId } },
+        });
         return { favorite: false };
       }
       await tx.catFavorite.create({ data: { userId, catId } });

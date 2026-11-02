@@ -13,7 +13,10 @@ import { CreateUserCommand } from "../../auth/dto";
 export class CreateUserHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(data: CreateUserCommand, actor: { role: "OWNER" | "ADMIN" | "STAFF" }): Promise<{ id: string }> {
+  async handle(
+    data: CreateUserCommand,
+    actor: { role: "OWNER" | "ADMIN" | "STAFF" },
+  ): Promise<{ id: string }> {
     if (!data.password?.trim())
       throw new BadRequestException("Password is required");
     if (typeof data.isTest !== "boolean")

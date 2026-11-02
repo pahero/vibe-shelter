@@ -107,8 +107,16 @@ export class CatsController {
   @Delete("permanent")
   @UseGuards(OwnerRoleGuard)
   async permanentlyDeleteCats(@Body() body: unknown) {
-    if (!body || typeof body !== "object" || !("ids" in body) || !Array.isArray(body.ids) || !body.ids.every((id) => typeof id === "string")) {
-      throw new BadRequestException("Request body must contain an ids array of strings");
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !("ids" in body) ||
+      !Array.isArray(body.ids) ||
+      !body.ids.every((id) => typeof id === "string")
+    ) {
+      throw new BadRequestException(
+        "Request body must contain an ids array of strings",
+      );
     }
     return this.permanentlyDeleteCatsHandler.handle(body.ids);
   }
@@ -137,13 +145,21 @@ export class CatsController {
   }
 
   @Post(":id/favorite")
-  async toggleFavorite(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+  async toggleFavorite(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.toggleCatFavoriteHandler.handle(id, user.id);
   }
 
   @Get("favorites/active-treatments")
-  async listFavoriteCatsWithActiveTreatments(@CurrentUser() user: AuthenticatedUser) {
-    return this.listFavoriteCatsWithActiveTreatmentsHandler.handle(user.id, user.isTest);
+  async listFavoriteCatsWithActiveTreatments(
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.listFavoriteCatsWithActiveTreatmentsHandler.handle(
+      user.id,
+      user.isTest,
+    );
   }
 
   @Get("tags")
@@ -187,8 +203,16 @@ export class CatsController {
 
   @Put(":id/trello-link")
   @UseGuards(OwnerRoleGuard)
-  async setTrelloLink(@Param("id") id: string, @Body() dto: SetCatTrelloLinkDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.setCatTrelloLinkHandler.handle(id, dto.toCommand().trelloUrl, user.isTest);
+  async setTrelloLink(
+    @Param("id") id: string,
+    @Body() dto: SetCatTrelloLinkDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.setCatTrelloLinkHandler.handle(
+      id,
+      dto.toCommand().trelloUrl,
+      user.isTest,
+    );
   }
 
   @Get(":id/weights")
@@ -269,7 +293,11 @@ export class CatsController {
     @Body() dto: CreateCatTagDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.createCatTagHandler.handle(dto.toCommand(), user.id, user.isTest);
+    return this.createCatTagHandler.handle(
+      dto.toCommand(),
+      user.id,
+      user.isTest,
+    );
   }
 
   @Patch("tags/:tagId")
@@ -279,7 +307,12 @@ export class CatsController {
     @Body() dto: UpdateCatTagDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.updateCatTagHandler.handle(tagId, dto.toCommand(), user.id, user.isTest);
+    return this.updateCatTagHandler.handle(
+      tagId,
+      dto.toCommand(),
+      user.id,
+      user.isTest,
+    );
   }
 
   @Delete("tags/:tagId")
@@ -355,7 +388,9 @@ export class CatsController {
 
   @Post(":id/photos")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor("photo", { limits: { fileSize: 500 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor("photo", { limits: { fileSize: 500 * 1024 * 1024 } }),
+  )
   async addPhoto(
     @Param("id") id: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -399,13 +434,29 @@ export class CatsController {
   }
 
   @Put(":id/flight-candidate")
-  async markFlightCandidate(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.setCatFlightCandidateHandler.handle(id, true, user.id, user.isTest);
+  async markFlightCandidate(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.setCatFlightCandidateHandler.handle(
+      id,
+      true,
+      user.id,
+      user.isTest,
+    );
   }
 
   @Delete(":id/flight-candidate")
-  async unmarkFlightCandidate(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.setCatFlightCandidateHandler.handle(id, false, user.id, user.isTest);
+  async unmarkFlightCandidate(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.setCatFlightCandidateHandler.handle(
+      id,
+      false,
+      user.id,
+      user.isTest,
+    );
   }
 
   @Delete(":id/photos/:photoId")

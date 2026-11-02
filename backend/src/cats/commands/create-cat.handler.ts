@@ -80,7 +80,9 @@ export class CreateCatHandler {
           felvFivTestDone: command.felvFivTestDone,
           sterilizationStatus: command.sterilizationStatus,
           currentLocation: { connect: { id: command.currentLocationId } },
-          ...(command.createdByUserId ? { createdByUser: { connect: { id: command.createdByUserId } } } : {}),
+          ...(command.createdByUserId
+            ? { createdByUser: { connect: { id: command.createdByUserId } } }
+            : {}),
           isTest: command.isTest,
         },
         include: CAT_CARD_INCLUDE,

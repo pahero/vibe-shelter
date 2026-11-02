@@ -24,7 +24,10 @@ describe("DeleteCatTreatmentHandler", () => {
         data: { email: `${Date.now()}-delete-treatment@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Delete treatment cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Delete treatment cat ${Date.now()}`,
+        },
       });
       const treatment = await transaction.catTreatment.create({
         data: {

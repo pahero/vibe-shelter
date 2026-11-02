@@ -21,7 +21,10 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
@@ -39,7 +42,10 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: {
@@ -88,7 +94,10 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
@@ -140,13 +149,19 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-same-receivers@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Same receivers cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Same receivers cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Task", dueDate: new Date() },
       });
       await transaction.catTaskReceiver.createMany({
-        data: [actor.id, receiver.id].map((userId) => ({ taskId: task.id, userId })),
+        data: [actor.id, receiver.id].map((userId) => ({
+          taskId: task.id,
+          userId,
+        })),
       });
 
       await new UpdateCatTaskHandler(transaction as PrismaService).handle(
@@ -170,7 +185,10 @@ describe("UpdateCatTaskHandler", () => {
         data: { email: `${Date.now()}-actor@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Before", dueDate: new Date() },
@@ -191,4 +209,3 @@ describe("UpdateCatTaskHandler", () => {
     });
   });
 });
-

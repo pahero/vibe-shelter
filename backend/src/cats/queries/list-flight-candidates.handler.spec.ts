@@ -6,7 +6,10 @@ import { CatPhotoUrlService } from "../cat-photo-url.service";
 import { ListFlightCandidatesHandler } from "./list-flight-candidates.handler";
 
 function createPhotoUrls(): CatPhotoUrlService {
-  return new CatPhotoUrlService(new ConfigService({ s3: { bucketName: "" } }), new S3Client({ region: "us-east-1" }));
+  return new CatPhotoUrlService(
+    new ConfigService({ s3: { bucketName: "" } }),
+    new S3Client({ region: "us-east-1" }),
+  );
 }
 
 describe("ListFlightCandidatesHandler", () => {
@@ -16,7 +19,8 @@ describe("ListFlightCandidatesHandler", () => {
         data: { name: `Flight ${Date.now()}` },
       });
       const readyCat = await transaction.cat.create({
-        data: { currentLocation: { connect: { id: location.id } },
+        data: {
+          currentLocation: { connect: { id: location.id } },
           name: `Ready ${Date.now()}`,
           isFlightCandidate: true,
           microchipNumber: `chip-${Date.now()}-${Math.random()}`,
@@ -45,16 +49,38 @@ describe("ListFlightCandidatesHandler", () => {
         },
       });
       const testCat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Other partition ${Date.now()}`, isTest: true },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
+          name: `Other partition ${Date.now()}`,
+          isTest: true,
+        },
       });
       const activeFlight = await transaction.flight.create({
-        data: { date: new Date("2026-10-01"), airport: "Larnaca", flightNumber: `CY${Date.now()}`, flightParent: "Parent" },
+        data: {
+          date: new Date("2026-10-01"),
+          airport: "Larnaca",
+          flightNumber: `CY${Date.now()}`,
+          flightParent: "Parent",
+        },
       });
       const removedFlight = await transaction.flight.create({
-        data: { date: new Date("2026-10-02"), airport: "Larnaca", flightNumber: `CY${Date.now()}R`, flightParent: "Parent", deletedAt: new Date() },
+        data: {
+          date: new Date("2026-10-02"),
+          airport: "Larnaca",
+          flightNumber: `CY${Date.now()}R`,
+          flightParent: "Parent",
+          deletedAt: new Date(),
+        },
       });
       const deletedAssignmentFlight = await transaction.flight.create({
-        data: { date: new Date("2026-10-03"), airport: "Larnaca", flightNumber: `CY${Date.now()}D`, flightParent: "Parent" },
+        data: {
+          date: new Date("2026-10-03"),
+          airport: "Larnaca",
+          flightNumber: `CY${Date.now()}D`,
+          flightParent: "Parent",
+        },
       });
       await transaction.flightCatAssignment.createMany({
         data: [
@@ -63,7 +89,11 @@ describe("ListFlightCandidatesHandler", () => {
         ],
       });
       await transaction.flightCatAssignment.create({
-        data: { flightId: deletedAssignmentFlight.id, catId: readyCat.id, deletedAt: new Date() },
+        data: {
+          flightId: deletedAssignmentFlight.id,
+          catId: readyCat.id,
+          deletedAt: new Date(),
+        },
       });
 
       const handler = new ListFlightCandidatesHandler(
@@ -100,7 +130,10 @@ describe("ListFlightCandidatesHandler", () => {
   it("returns incomplete active cats but excludes archived cats in the test partition", async () => {
     await runInTestTransaction(async (transaction) => {
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
           name: `Needs details ${Date.now()}`,
           adopterName: "Name only",
           archivedAt: new Date("2026-05-01"),
@@ -108,10 +141,22 @@ describe("ListFlightCandidatesHandler", () => {
         },
       });
       const regularCat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Regular partition ${Date.now()}` },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
+          name: `Regular partition ${Date.now()}`,
+        },
       });
       const activeCat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Active test cat ${Date.now()}`, isTest: true, isFlightCandidate: true },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
+          name: `Active test cat ${Date.now()}`,
+          isTest: true,
+          isFlightCandidate: true,
+        },
       });
 
       const handler = new ListFlightCandidatesHandler(

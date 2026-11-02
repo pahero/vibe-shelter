@@ -8,12 +8,24 @@ import { ParasiteTreatmentPayload } from "./parasite-treatment.dto";
 export class CreateParasiteTreatmentHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(catId: string, payload: ParasiteTreatmentPayload, actorUserId: string, isTest: boolean): Promise<{ id: string }> {
+  async handle(
+    catId: string,
+    payload: ParasiteTreatmentPayload,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (transaction) => {
-      const cat = await transaction.cat.findFirst({ where: { id: catId, isTest, deletedAt: null }, select: { id: true, version: true } });
+      const cat = await transaction.cat.findFirst({
+        where: { id: catId, isTest, deletedAt: null },
+        select: { id: true, version: true },
+      });
       if (!cat) throw new NotFoundException("Cat not found");
-      const versionUpdated = await transaction.cat.updateMany({ where: { id: cat.id, version: cat.version, deletedAt: null }, data: { version: { increment: 1 } } });
-      if (versionUpdated.count !== 1) throw new NotFoundException("Cat not found");
+      const versionUpdated = await transaction.cat.updateMany({
+        where: { id: cat.id, version: cat.version, deletedAt: null },
+        data: { version: { increment: 1 } },
+      });
+      if (versionUpdated.count !== 1)
+        throw new NotFoundException("Cat not found");
       const treatment = await transaction.parasiteTreatment.create({
         data: {
           catId,
@@ -23,7 +35,15 @@ export class CreateParasiteTreatmentHandler {
         },
         select: { id: true },
       });
-      await transaction.auditEvent.create({ data: { catId, parasiteTreatmentId: treatment.id, actorUserId, isTest, eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentCreated } });
+      await transaction.auditEvent.create({
+        data: {
+          catId,
+          parasiteTreatmentId: treatment.id,
+          actorUserId,
+          isTest,
+          eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentCreated,
+        },
+      });
       return { id: treatment.id };
     });
   }

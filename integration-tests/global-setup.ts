@@ -14,10 +14,15 @@ import { cleanupTestData } from "./tests/support/db-cleanup";
 const testRuntimeDir = path.resolve(__dirname, ".test-runtime");
 const envPath = path.join(testRuntimeDir, "test-env.json");
 
-async function ensureUser(api: Awaited<ReturnType<typeof request.newContext>>, account: Account) {
+async function ensureUser(
+  api: Awaited<ReturnType<typeof request.newContext>>,
+  account: Account,
+) {
   const list = await api.get("/admin/users");
   if (!list.ok()) {
-    throw new Error(`Could not list users (${list.status()}): ${await list.text()}`);
+    throw new Error(
+      `Could not list users (${list.status()}): ${await list.text()}`,
+    );
   }
   const users = (await list.json()) as Array<{ email: string }>;
   if (users.some((user) => user.email === account.email)) {
@@ -46,21 +51,30 @@ async function ensureUser(api: Awaited<ReturnType<typeof request.newContext>>, a
       data: { email: account.email, password: account.password },
     });
     if (login.status() !== 200) {
-      throw new Error(`Created test user ${account.email} cannot log in: ${await login.text()}`);
+      throw new Error(
+        `Created test user ${account.email} cannot log in: ${await login.text()}`,
+      );
     }
-    const replacePassword = await userApi.post("/auth/replace-temporary-password", {
-      data: {
-        newPassword: account.password,
-        newPasswordConfirmation: account.password,
+    const replacePassword = await userApi.post(
+      "/auth/replace-temporary-password",
+      {
+        data: {
+          newPassword: account.password,
+          newPasswordConfirmation: account.password,
+        },
       },
-    });
+    );
     if (replacePassword.status() !== 201) {
-      throw new Error(`Could not activate test user ${account.email}: ${await replacePassword.text()}`);
+      throw new Error(
+        `Could not activate test user ${account.email}: ${await replacePassword.text()}`,
+      );
     }
   } finally {
     await userApi.dispose();
   }
-  console.log(`Global setup: registered test user ${account.email} (${account.role})`);
+  console.log(
+    `Global setup: registered test user ${account.email} (${account.role})`,
+  );
 }
 
 export default async function globalSetup(_config: FullConfig) {

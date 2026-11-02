@@ -37,7 +37,8 @@ describe("AddCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -75,7 +76,8 @@ describe("AddCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -105,17 +107,34 @@ describe("AddCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        },
       });
-      const png = await sharp({ create: { width: 2, height: 2, channels: 3, background: { r: 20, g: 80, b: 140 } } }).png().toBuffer();
+      const png = await sharp({
+        create: {
+          width: 2,
+          height: 2,
+          channels: 3,
+          background: { r: 20, g: 80, b: 140 },
+        },
+      })
+        .png()
+        .toBuffer();
       const result = await new AddCatDocumentHandler(
         tx as PrismaService,
         new CatPhotoUrlService(config, s3Client),
-      ).handle(cat.id, {
-        originalname: "scan.png",
-        mimetype: "image/png",
-        buffer: png,
-      }, actor.id, false);
+      ).handle(
+        cat.id,
+        {
+          originalname: "scan.png",
+          mimetype: "image/png",
+          buffer: png,
+        },
+        actor.id,
+        false,
+      );
       expect(result.fileName).toBe("scan.jpg");
       expect(result.url).toContain("documents/");
     });

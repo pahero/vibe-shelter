@@ -9,5 +9,9 @@ export default async function NewFlightPage() {
   const cookieHeader = (await headers()).get("cookie") ?? "";
   const user = await fetchCurrentUser(cookieHeader);
   if (!user) redirect("/login?next=/flights/new");
-  return <main className="flex min-h-dvh w-full flex-col items-center p-6"><FlightCreateClient /></main>;
+  return (
+    <main className="flex min-h-dvh w-full flex-col items-center p-6">
+      <FlightCreateClient />
+    </main>
+  );
 }

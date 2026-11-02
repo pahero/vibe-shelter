@@ -9,7 +9,10 @@ describe("RestoreCatTreatmentHandler", () => {
         data: { email: `${Date.now()}-restore-treatment@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: "Restore treatment cat" },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Restore treatment cat",
+        },
       });
       const treatment = await transaction.catTreatment.create({
         data: {
@@ -52,7 +55,10 @@ describe("RestoreCatTreatmentHandler", () => {
         data: { email: `${Date.now()}-active-treatment@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: "Active treatment cat" },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Active treatment cat",
+        },
       });
       const treatment = await transaction.catTreatment.create({
         data: {

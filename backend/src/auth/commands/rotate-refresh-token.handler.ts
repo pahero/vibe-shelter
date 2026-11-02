@@ -15,14 +15,21 @@ export class RotateRefreshTokenHandler {
         where: { tokenHash: hashRefreshToken(token) },
         include: { user: true },
       });
-      if (!stored || stored.consumedAt || stored.expiresAt <= new Date() || stored.user.status !== "ACTIVE" || stored.user.deletedAt) {
+      if (
+        !stored ||
+        stored.consumedAt ||
+        stored.expiresAt <= new Date() ||
+        stored.user.status !== "ACTIVE" ||
+        stored.user.deletedAt
+      ) {
         throw new UnauthorizedException("Invalid refresh token");
       }
       const consumed = await tx.refreshToken.updateMany({
         where: { id: stored.id, consumedAt: null },
         data: { consumedAt: new Date() },
       });
-      if (consumed.count !== 1) throw new UnauthorizedException("Invalid refresh token");
+      if (consumed.count !== 1)
+        throw new UnauthorizedException("Invalid refresh token");
       await tx.refreshToken.create({
         data: {
           userId: stored.userId,

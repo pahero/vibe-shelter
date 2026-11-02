@@ -66,7 +66,11 @@ describe("Authentication endpoints", () => {
       .post("/auth/login")
       .send({ email, password: oldPassword })
       .expect(200);
-    expect(login.body).toMatchObject({ id: user.id, email, passwordChangeRequired: false });
+    expect(login.body).toMatchObject({
+      id: user.id,
+      email,
+      passwordChangeRequired: false,
+    });
     await agent
       .get("/auth/me")
       .expect(200)

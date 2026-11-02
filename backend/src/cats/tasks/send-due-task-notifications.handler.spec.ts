@@ -10,7 +10,10 @@ describe("SendDueTaskNotificationsHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: {
@@ -24,7 +27,9 @@ describe("SendDueTaskNotificationsHandler", () => {
       });
       const handler = new SendDueTaskNotificationsHandler(
         transaction as PrismaService,
-        { sendToUser: async () => undefined } as unknown as PushNotificationService,
+        {
+          sendToUser: async () => undefined,
+        } as unknown as PushNotificationService,
       );
 
       await handler.handle(new Date("2020-01-01T00:00:00.000Z"));
@@ -44,7 +49,10 @@ describe("SendDueTaskNotificationsHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: {
@@ -58,7 +66,9 @@ describe("SendDueTaskNotificationsHandler", () => {
       });
       const handler = new SendDueTaskNotificationsHandler(
         transaction as PrismaService,
-        { sendToUser: async () => undefined } as unknown as PushNotificationService,
+        {
+          sendToUser: async () => undefined,
+        } as unknown as PushNotificationService,
       );
 
       await handler.handle(new Date("2020-01-02T00:00:00.000Z"));

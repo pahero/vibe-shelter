@@ -17,7 +17,8 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("sets an active photo as primary", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -37,14 +38,17 @@ describe("SetPrimaryCatPhotoHandler", () => {
         primaryPhotoKey: "primary-key",
         primaryPhotoPositionY: 28,
       });
-      await expect(tx.auditEvent.count({ where: { catId: cat.id } })).resolves.toBe(0);
+      await expect(
+        tx.auditEvent.count({ where: { catId: cat.id } }),
+      ).resolves.toBe(0);
     });
   });
 
   it("resets the position when replacing the primary photo without a coordinate", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           primaryPhotoKey: "old-key",
           primaryPhotoPositionY: 16,
@@ -72,7 +76,8 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("preserves the position when the same primary photo is selected without a coordinate", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           primaryPhotoKey: "current-key",
           primaryPhotoPositionY: 37,
@@ -97,17 +102,18 @@ describe("SetPrimaryCatPhotoHandler", () => {
   it("rejects an inactive or unrelated photo", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
       await expect(
         new SetPrimaryCatPhotoHandler(tx as PrismaService, urls).handle(
-           cat.id,
-           "missing",
-           undefined,
-           undefined,
-           false,
+          cat.id,
+          "missing",
+          undefined,
+          undefined,
+          false,
         ),
       ).rejects.toThrow(NotFoundException);
     });

@@ -55,22 +55,49 @@ describe("Cats endpoints", () => {
 
   it("restricts shelter-management mutations to Admins and Owners", async () => {
     const staff = await createAuthenticatedAgent(app, prisma, false, "STAFF");
-    await staff.agent.post("/api/locations").send({ name: unique("guard-location") }).expect(403);
-    await staff.agent.patch("/api/locations/missing").send({ name: unique("guard-location") }).expect(403);
+    await staff.agent
+      .post("/api/locations")
+      .send({ name: unique("guard-location") })
+      .expect(403);
+    await staff.agent
+      .patch("/api/locations/missing")
+      .send({ name: unique("guard-location") })
+      .expect(403);
     await staff.agent.delete("/api/locations/missing").expect(403);
-    await staff.agent.post("/api/cats/tags").send({ name: unique("guard-tag"), color: "#ffffff" }).expect(403);
-    await staff.agent.patch("/api/cats/tags/missing").send({ name: "blocked" }).expect(403);
+    await staff.agent
+      .post("/api/cats/tags")
+      .send({ name: unique("guard-tag"), color: "#ffffff" })
+      .expect(403);
+    await staff.agent
+      .patch("/api/cats/tags/missing")
+      .send({ name: "blocked" })
+      .expect(403);
     await staff.agent.delete("/api/cats/tags/missing").expect(403);
-    await staff.agent.post("/api/cats/archiving-reasons").send({ name: unique("guard-reason") }).expect(403);
-    await staff.agent.patch("/api/cats/archiving-reasons/missing").send({ name: "blocked" }).expect(403);
-    await staff.agent.delete("/api/cats/archiving-reasons/missing").send({}).expect(403);
+    await staff.agent
+      .post("/api/cats/archiving-reasons")
+      .send({ name: unique("guard-reason") })
+      .expect(403);
+    await staff.agent
+      .patch("/api/cats/archiving-reasons/missing")
+      .send({ name: "blocked" })
+      .expect(403);
+    await staff.agent
+      .delete("/api/cats/archiving-reasons/missing")
+      .send({})
+      .expect(403);
   });
 
   it("allows only Owners to invoke permanent cat deletion", async () => {
     const staff = await createAuthenticatedAgent(app, prisma, false, "STAFF");
     const admin = await createAuthenticatedAgent(app, prisma, false, "ADMIN");
-    await staff.agent.delete("/api/cats/permanent").send({ ids: ["missing"] }).expect(403);
-    await admin.agent.delete("/api/cats/permanent").send({ ids: ["missing"] }).expect(403);
+    await staff.agent
+      .delete("/api/cats/permanent")
+      .send({ ids: ["missing"] })
+      .expect(403);
+    await admin.agent
+      .delete("/api/cats/permanent")
+      .send({ ids: ["missing"] })
+      .expect(403);
     await authAgent.delete("/api/cats/permanent").send({ ids: [] }).expect(400);
   });
 
@@ -163,11 +190,21 @@ describe("Cats endpoints", () => {
       .expect(201);
     const first = await authAgent
       .post("/api/cats")
-      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN", currentLocationId: location.body.id })
+      .send({
+        name,
+        sex: "UNKNOWN",
+        sterilizationStatus: "UNKNOWN",
+        currentLocationId: location.body.id,
+      })
       .expect(201);
     const second = await authAgent
       .post("/api/cats")
-      .send({ name, sex: "UNKNOWN", sterilizationStatus: "UNKNOWN", currentLocationId: location.body.id })
+      .send({
+        name,
+        sex: "UNKNOWN",
+        sterilizationStatus: "UNKNOWN",
+        currentLocationId: location.body.id,
+      })
       .expect(201);
 
     expect(first.body.nameNumber).toBe(1);
@@ -1196,7 +1233,11 @@ describe("Cats endpoints", () => {
     );
 
     const testCat = await prisma.cat.create({
-      data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: unique("test-tag-cat"), isTest: true },
+      data: {
+        currentLocation: { create: { name: "Fixture location", isTest: true } },
+        name: unique("test-tag-cat"),
+        isTest: true,
+      },
     });
     await testAuth.agent
       .post(`/api/cats/${testCat.id}/tags/${regularTag.body.id}`)
@@ -1757,9 +1798,10 @@ async function createCat(
   },
 ) {
   return prisma.cat.create({
-    data: { currentLocation: data.currentLocationId
-      ? { connect: { id: data.currentLocationId } }
-      : { create: { name: unique("fixture-location") } },
+    data: {
+      currentLocation: data.currentLocationId
+        ? { connect: { id: data.currentLocationId } }
+        : { create: { name: unique("fixture-location") } },
       name: data.name,
       sex: "UNKNOWN",
       sterilizationStatus: "UNKNOWN",

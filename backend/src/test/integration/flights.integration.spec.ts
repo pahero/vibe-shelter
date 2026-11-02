@@ -56,7 +56,11 @@ describe("Flights endpoints", () => {
 
   it("creates, edits, assigns cats, audits, soft-deletes, and restores flights", async () => {
     const cat = await prisma.cat.create({
-      data: { currentLocation: { create: { name: "Fixture location" } }, name: unique("flight-cat"), isFlightCandidate: true },
+      data: {
+        currentLocation: { create: { name: "Fixture location" } },
+        name: unique("flight-cat"),
+        isFlightCandidate: true,
+      },
     });
     const created = await authAgent
       .post("/api/flights")
@@ -308,7 +312,10 @@ async function createAuthenticatedAgent(
     },
   });
   const agent = request.agent(app.getHttpServer());
-  const login = await agent.post("/auth/login").send({ email, password }).expect(200);
+  const login = await agent
+    .post("/auth/login")
+    .send({ email, password })
+    .expect(200);
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });
   return { agent, user: { id: user.id, email, isTest: user.isTest } };
 }

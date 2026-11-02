@@ -4,10 +4,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: process.cwd(),
   turbopack: {
-    root: process.cwd()
+    root: process.cwd(),
   },
   experimental: {
-    webpackMemoryOptimizations: true
+    webpackMemoryOptimizations: true,
   },
   async rewrites() {
     const backendUrl = process.env.INTERNAL_API_URL ?? "http://localhost:4000";

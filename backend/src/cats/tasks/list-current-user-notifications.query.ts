@@ -40,27 +40,29 @@ export class ListCurrentUserNotificationsQuery {
       this.prisma.taskNotification.count({ where }),
     ]);
     return {
-      data: notifications.map((notification) => notification.task
-        ? {
-            id: notification.id,
-            type: "task" as const,
-            taskId: notification.task.id,
-            catId: notification.task.catId,
-            comment: notification.task.comment,
-            dueDate: notification.task.dueDate.toISOString(),
-            createdAt: notification.createdAt.toISOString(),
-          }
-        : {
-            id: notification.id,
-            type: "treatment" as const,
-            treatmentId: notification.treatment!.id,
-            catId: notification.treatment!.catId,
-            catName: notification.treatment!.cat.name,
-            catNameNumber: notification.treatment!.cat.nameNumber,
-            comment: notification.treatment!.shortName,
-            dueDate: notification.treatment!.startDate.toISOString(),
-            createdAt: notification.createdAt.toISOString(),
-          }),
+      data: notifications.map((notification) =>
+        notification.task
+          ? {
+              id: notification.id,
+              type: "task" as const,
+              taskId: notification.task.id,
+              catId: notification.task.catId,
+              comment: notification.task.comment,
+              dueDate: notification.task.dueDate.toISOString(),
+              createdAt: notification.createdAt.toISOString(),
+            }
+          : {
+              id: notification.id,
+              type: "treatment" as const,
+              treatmentId: notification.treatment!.id,
+              catId: notification.treatment!.catId,
+              catName: notification.treatment!.cat.name,
+              catNameNumber: notification.treatment!.cat.nameNumber,
+              comment: notification.treatment!.shortName,
+              dueDate: notification.treatment!.startDate.toISOString(),
+              createdAt: notification.createdAt.toISOString(),
+            },
+      ),
       total,
       skip,
       limit,

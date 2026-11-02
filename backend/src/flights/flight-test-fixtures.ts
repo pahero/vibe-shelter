@@ -45,7 +45,11 @@ export async function createFlightTestCat(
   isTest = false,
 ) {
   return prisma.cat.create({
-    data: { currentLocation: { create: { name: "Fixture location" } }, name: uniqueFlightTestValue("cat"), isTest },
+    data: {
+      currentLocation: { create: { name: "Fixture location" } },
+      name: uniqueFlightTestValue("cat"),
+      isTest,
+    },
   });
 }
 

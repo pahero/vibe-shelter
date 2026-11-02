@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { runInNewTransaction } from "../../database/helpers";
 import { PrismaService } from "../../database/prisma.service";
 import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
@@ -23,7 +27,9 @@ export class CreateCatMedicalNoteHandler {
         select: { id: true, deletedAt: true, comment: true },
       });
       if (duplicate && duplicate.deletedAt === null)
-        throw new ConflictException("You already have a medical note for this cat on that date");
+        throw new ConflictException(
+          "You already have a medical note for this cat on that date",
+        );
       if (duplicate) {
         await transaction.catMedicalNote.update({
           where: { id: duplicate.id },
@@ -41,14 +47,16 @@ export class CreateCatMedicalNoteHandler {
             eventType: CAT_AUDIT_EVENT_TYPES.medicalNoteRestored,
           },
           ...(duplicate.comment !== payload.comment
-            ? [{
-                catId,
-                medicalNoteId: duplicate.id,
-                actorUserId,
-                eventType: CAT_AUDIT_EVENT_TYPES.medicalNoteCommentChanged,
-                oldValue: duplicate.comment,
-                newValue: payload.comment,
-              }]
+            ? [
+                {
+                  catId,
+                  medicalNoteId: duplicate.id,
+                  actorUserId,
+                  eventType: CAT_AUDIT_EVENT_TYPES.medicalNoteCommentChanged,
+                  oldValue: duplicate.comment,
+                  newValue: payload.comment,
+                },
+              ]
             : []),
         ];
         await transaction.auditEvent.createMany({ data: events });

@@ -1,5 +1,10 @@
 import { BadRequestException } from "@nestjs/common";
-import { CatAdopterCountry, CatIntakeSource, CatSex, SterilizationStatus } from "@prisma/client";
+import {
+  CatAdopterCountry,
+  CatIntakeSource,
+  CatSex,
+  SterilizationStatus,
+} from "@prisma/client";
 import {
   IsBoolean,
   IsIn,
@@ -96,7 +101,8 @@ export class CreateCatDto {
     }
 
     const currentLocationId = this.optionalTrim(this.currentLocationId);
-    if (!currentLocationId) throw new BadRequestException("Cat location is required");
+    if (!currentLocationId)
+      throw new BadRequestException("Cat location is required");
     return new CreateCatCommand(
       name,
       this.parseEnum(this.sex, CatSex, "sex"),
@@ -123,7 +129,11 @@ export class CreateCatDto {
       this.optionalTrim(this.adopterAddress),
       this.felvFivTestDone ?? false,
       this.adopterCountry
-        ? this.parseEnum(this.adopterCountry, CatAdopterCountry, "adopterCountry")
+        ? this.parseEnum(
+            this.adopterCountry,
+            CatAdopterCountry,
+            "adopterCountry",
+          )
         : null,
     );
   }

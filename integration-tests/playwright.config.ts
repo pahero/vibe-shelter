@@ -8,7 +8,8 @@ const backendUrl = process.env.BACKEND_URL ?? "http://localhost:4000";
 const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:4001";
 const backendDir = path.resolve(__dirname, "../backend");
 const frontendDir = path.resolve(__dirname, "../frontend");
-const shouldManageWebServers = process.env.CI === "true" || process.env.MANAGE_WEB_SERVERS === "1";
+const shouldManageWebServers =
+  process.env.CI === "true" || process.env.MANAGE_WEB_SERVERS === "1";
 
 export default defineConfig({
   testDir: "./tests",

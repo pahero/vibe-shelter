@@ -54,7 +54,10 @@ describe("Cat treatment endpoints", () => {
 
   it("creates, lists, updates, checks, and unchecks a treatment with audit history", async () => {
     const cat = await prisma.cat.create({
-      data: { currentLocation: { create: { name: "Fixture location" } }, name: unique("treatment-cat") },
+      data: {
+        currentLocation: { create: { name: "Fixture location" } },
+        name: unique("treatment-cat"),
+      },
     });
     const created = await agent
       .post(`/api/cats/${cat.id}/treatments`)
@@ -67,7 +70,9 @@ describe("Cat treatment endpoints", () => {
       })
       .expect(201);
     expect(created.body).toEqual({ id: expect.any(String) });
-    await expect(prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } }),
+    ).resolves.toMatchObject({
       createdByUserId: userId,
       updatedByUserId: userId,
     });
@@ -80,7 +85,9 @@ describe("Cat treatment endpoints", () => {
       })
       .expect(200)
       .expect({ id: created.body.id });
-    await expect(prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } })).resolves.toMatchObject({
+    await expect(
+      prisma.catTreatment.findUniqueOrThrow({ where: { id: created.body.id } }),
+    ).resolves.toMatchObject({
       createdByUserId: userId,
       updatedByUserId: userId,
     });
@@ -123,7 +130,9 @@ describe("Cat treatment endpoints", () => {
         where: { treatmentId: created.body.id },
       }),
     ).resolves.toMatchObject({ deletedAt: expect.any(Date), version: 1 });
-    const afterUncheck = await agent.get(`/api/cats/${cat.id}/treatments`).expect(200);
+    const afterUncheck = await agent
+      .get(`/api/cats/${cat.id}/treatments`)
+      .expect(200);
     expect(afterUncheck.body[0].administrations).toEqual([]);
 
     await agent
@@ -195,7 +204,10 @@ async function createAuthenticatedAgent(
     },
   });
   const agent = request.agent(app.getHttpServer());
-  const login = await agent.post("/auth/login").send({ email, password }).expect(200);
+  const login = await agent
+    .post("/auth/login")
+    .send({ email, password })
+    .expect(200);
   const user = await prisma.user.findUniqueOrThrow({
     where: { email },
     select: { id: true },

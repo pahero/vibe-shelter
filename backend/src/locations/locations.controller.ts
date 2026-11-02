@@ -102,6 +102,11 @@ export class LocationsController {
     @Query("replacementLocationId") replacementLocationId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.archiveLocationHandler.handle(id, user.isTest, user.id, replacementLocationId);
+    await this.archiveLocationHandler.handle(
+      id,
+      user.isTest,
+      user.id,
+      replacementLocationId,
+    );
   }
 }

@@ -24,7 +24,9 @@ export class ApiErrorHandler {
   static handle(error: unknown): string {
     if (error && typeof error === "object" && "message" in error) {
       const message = (error as { message?: unknown }).message;
-      return typeof message === "string" ? message : "An unexpected error occurred";
+      return typeof message === "string"
+        ? message
+        : "An unexpected error occurred";
     }
     return "An unexpected error occurred";
   }

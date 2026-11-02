@@ -31,16 +31,28 @@ describe("AppHeader", () => {
   it("shows sign in link for anonymous users", () => {
     render(<AppHeader user={null} />);
 
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
-    expect(screen.queryByRole("button", { name: "Log out" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Log out" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows admin navigation and user controls for admins", () => {
     render(<AppHeader user={adminUser} />);
 
-    expect(screen.getByRole("link", { name: "Flights" })).toHaveAttribute("href", "/flights");
-    expect(screen.queryByRole("link", { name: "Flight candidates" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Shelter management" })).toHaveAttribute("href", "/shelter-management");
+    expect(screen.getByRole("link", { name: "Flights" })).toHaveAttribute(
+      "href",
+      "/flights",
+    );
+    expect(
+      screen.queryByRole("link", { name: "Flight candidates" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Shelter management" }),
+    ).toHaveAttribute("href", "/shelter-management");
     expect(screen.getByText("Admin User")).toBeVisible();
     expect(screen.getByRole("button", { name: "Log out" })).toBeVisible();
   });
@@ -48,15 +60,24 @@ describe("AppHeader", () => {
   it("hides edit shelter navigation when requested", () => {
     render(<AppHeader user={adminUser} hideEditShelterLink />);
 
-    expect(screen.queryByRole("link", { name: "Shelter management" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Shelter management" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show admin navigation for staff users", () => {
     render(<AppHeader user={staffUser} />);
 
-    expect(screen.getByRole("link", { name: "Flights" })).toHaveAttribute("href", "/flights");
-    expect(screen.queryByRole("link", { name: "Flight candidates" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Shelter management" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Flights" })).toHaveAttribute(
+      "href",
+      "/flights",
+    );
+    expect(
+      screen.queryByRole("link", { name: "Flight candidates" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Shelter management" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("staff@shelter.local")).toBeVisible();
   });
 });

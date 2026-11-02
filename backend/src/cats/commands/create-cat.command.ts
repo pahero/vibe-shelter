@@ -20,6 +20,8 @@ export class CreateCatCommand {
     readonly adopterName: string | null = null,
     readonly adopterAddress: string | null = null,
     readonly felvFivTestDone = false,
-    readonly adopterCountry: import("@prisma/client").CatAdopterCountry | null = null,
+    readonly adopterCountry:
+      | import("@prisma/client").CatAdopterCountry
+      | null = null,
   ) {}
 }

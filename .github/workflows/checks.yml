@@ -1,0 +1,95 @@
+name: Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-component:
+    name: Lint, format and frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            integration-tests/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm ci --prefix integration-tests
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test --prefix frontend
+      - run: npm run test:components --prefix frontend
+
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npx prisma generate
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+      - run: npm test
+        working-directory: backend
+
+  playwright:
+    name: Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: postgresql://shelter_user:shelter_password@localhost:5435/shelter
+      AWS_ENDPOINT_URL_S3: http://localhost:3900
+      S3_BUCKET: shelter
+      AWS_ACCESS_KEY_ID: GKcc07e066098775f0bfd9a3f74a8b00fa
+      AWS_SECRET_ACCESS_KEY: ca4915e4ecba9c92d21e2a93d6c61fbaf68af324a6158160bc061c93cfd9e560
+      AWS_REGION: garage
+      S3_FORCE_PATH_STYLE: "true"
+      JWT_SECRET: ci-only-secret-not-for-production
+      SEED_ADMIN_PASSWORD: admin12345
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            integration-tests/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm ci --prefix integration-tests
+      - run: docker compose up -d --wait
+        working-directory: backend
+      - run: npx prisma generate
+        working-directory: backend
+      - run: npx prisma migrate deploy
+        working-directory: backend
+      - run: npx prisma db seed
+        working-directory: backend
+      - run: npx playwright install --with-deps chromium
+        working-directory: integration-tests
+      - run: npm test
+        working-directory: integration-tests
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: integration-tests/playwright-report/
+          if-no-files-found: ignore

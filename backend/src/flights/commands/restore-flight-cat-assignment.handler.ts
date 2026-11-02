@@ -23,15 +23,24 @@ export class RestoreFlightCatAssignmentHandler {
           flight: { isTest, deletedAt: null },
           cat: { archivedAt: null },
         },
-        select: { id: true, flightId: true, catId: true, cat: { select: { concurrencyToken: true } } },
+        select: {
+          id: true,
+          flightId: true,
+          catId: true,
+          cat: { select: { concurrencyToken: true } },
+        },
       });
       if (!assignment)
         throw new NotFoundException("Deleted flight cat assignment not found");
       const catLock = await transaction.cat.updateMany({
-        where: { id: assignment.catId, concurrencyToken: assignment.cat.concurrencyToken },
+        where: {
+          id: assignment.catId,
+          concurrencyToken: assignment.cat.concurrencyToken,
+        },
         data: { concurrencyToken: crypto.randomUUID() },
       });
-      if (catLock.count !== 1) throw new ConflictException("Cat was changed; refresh and try again");
+      if (catLock.count !== 1)
+        throw new ConflictException("Cat was changed; refresh and try again");
       const activeAssignment = await transaction.flightCatAssignment.findFirst({
         where: {
           catId: assignment.catId,

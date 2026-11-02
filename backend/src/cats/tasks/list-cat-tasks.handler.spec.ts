@@ -21,7 +21,10 @@ describe("ListCatTasksHandler", () => {
         },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const activeTask = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Active", dueDate: new Date() },

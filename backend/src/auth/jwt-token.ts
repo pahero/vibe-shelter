@@ -8,16 +8,23 @@ export type JwtUser = Pick<
 
 const ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
-export function signJwt(user: JwtUser, secret: string, now = Date.now()): string {
+export function signJwt(
+  user: JwtUser,
+  secret: string,
+  now = Date.now(),
+): string {
   if (!secret) throw new Error("JWT_SECRET must be configured");
-  return jwt.sign(
-    { ...user, iat: Math.floor(now / 1000) },
-    secret,
-    { algorithm: "HS256", expiresIn: ACCESS_TOKEN_TTL_SECONDS },
-  );
+  return jwt.sign({ ...user, iat: Math.floor(now / 1000) }, secret, {
+    algorithm: "HS256",
+    expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+  });
 }
 
-export function verifyJwt(token: string, secret: string, now = Date.now()): JwtUser {
+export function verifyJwt(
+  token: string,
+  secret: string,
+  now = Date.now(),
+): JwtUser {
   try {
     if (!secret) throw new Error("JWT_SECRET must be configured");
     const decoded: unknown = jwt.verify(token, secret, {
@@ -44,7 +51,9 @@ function isJwtUser(value: unknown): value is JwtUser & { exp: number } {
   return (
     typeof payload.id === "string" &&
     typeof payload.email === "string" &&
-    (payload.role === "OWNER" || payload.role === "ADMIN" || payload.role === "STAFF") &&
+    (payload.role === "OWNER" ||
+      payload.role === "ADMIN" ||
+      payload.role === "STAFF") &&
     typeof payload.isTest === "boolean" &&
     typeof payload.passwordChangeRequired === "boolean" &&
     (payload.fullName === null || typeof payload.fullName === "string") &&

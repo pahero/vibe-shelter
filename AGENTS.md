@@ -20,6 +20,8 @@ All commands in this workspace must use PowerShell-compatible syntax and cmdlets
 
 ## Testing
 
+- For every behavioral change, add or update automated tests covering the changed behavior and relevant branches. If tests are not applicable, explain why in the final response and pull request.
+- Before completing work, run `npm run check` from the repository root, including both frontend component tests and Playwright. If a prerequisite prevents a check from running, report the exact blocker and checks not run; never claim validation passed.
 - Every command and query handler must have complete automated test coverage for all of its behavior and branches before the work is considered complete.
 - Never mock databases or S3 in backend tests. Use real PostgreSQL with per-test rollback transactions for unit tests; use real S3/Garage with a unique bucket per test that writes objects. For other external dependencies, prefer a narrow injectable/overridable boundary and test-local doubles over module-level `vi.mock` when mocks could leak between files.
 - Keep all test-only classes, fakes, and subclasses inside `*.spec.ts` files. Never add test classes or test doubles to regular application source files.

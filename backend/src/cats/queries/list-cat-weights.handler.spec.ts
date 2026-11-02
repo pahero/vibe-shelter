@@ -7,7 +7,8 @@ describe("ListCatWeightsHandler", () => {
   it("returns the cat weights newest measured first", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Weight ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -37,7 +38,10 @@ describe("ListCatWeightsHandler", () => {
   it("rejects cats outside the partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
           name: `Test ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           isTest: true,
         },

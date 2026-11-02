@@ -8,7 +8,11 @@ import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 export class DeleteVaccinationHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(id: string, actorUserId: string, isTest: boolean): Promise<void> {
+  async handle(
+    id: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<void> {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const vaccination = await transaction.vaccination.findFirst({
         where: { id, deletedAt: null, cat: { isTest, deletedAt: null } },
@@ -24,7 +28,13 @@ export class DeleteVaccinationHandler {
         },
       });
       await transaction.auditEvent.create({
-        data: { catId: vaccination.catId, vaccinationId: id, actorUserId, isTest, eventType: CAT_AUDIT_EVENT_TYPES.vaccinationDeleted },
+        data: {
+          catId: vaccination.catId,
+          vaccinationId: id,
+          actorUserId,
+          isTest,
+          eventType: CAT_AUDIT_EVENT_TYPES.vaccinationDeleted,
+        },
       });
     });
   }

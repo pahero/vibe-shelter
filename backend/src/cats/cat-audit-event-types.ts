@@ -63,7 +63,8 @@ export const CAT_AUDIT_EVENT_TYPES = {
   parasiteTreatmentDeleted: "parasite_treatment_deleted",
   parasiteTreatmentTypeChanged: "parasite_treatment_type_changed",
   parasiteTreatmentDateChanged: "parasite_treatment_date_changed",
-  parasiteTreatmentNextDueDateChanged: "parasite_treatment_next_due_date_changed",
+  parasiteTreatmentNextDueDateChanged:
+    "parasite_treatment_next_due_date_changed",
   productNameChanged: "product_name_changed",
   noteCreated: "note_created",
   noteDeleted: "note_deleted",

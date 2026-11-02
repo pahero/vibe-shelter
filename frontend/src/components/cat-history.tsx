@@ -78,7 +78,8 @@ export const eventLabels: Record<string, string> = {
   parasite_treatment_deleted: "Parasite treatment deleted",
   parasite_treatment_type_changed: "Parasite treatment type changed",
   parasite_treatment_date_changed: "Parasite treatment date changed",
-  parasite_treatment_next_due_date_changed: "Parasite treatment next due date changed",
+  parasite_treatment_next_due_date_changed:
+    "Parasite treatment next due date changed",
   product_name_changed: "Product name changed",
   note_created: "Note created",
   note_deleted: "Note deleted",
@@ -103,8 +104,19 @@ export function historyValueText(value: string | null): string {
 }
 
 export function auditEventStyle(eventType: string): string {
-  if (eventType.endsWith("_created") || eventType.endsWith("_create") || eventType.endsWith("_restored") || eventType === "cat_dearchived") return "border-l-4 border-l-[#31734b] bg-[#31734b]/10";
-  if (eventType.endsWith("_deleted") || eventType.endsWith("_delete") || eventType === "cat_archived") return "border-l-4 border-l-red-700 bg-red-50/70";
+  if (
+    eventType.endsWith("_created") ||
+    eventType.endsWith("_create") ||
+    eventType.endsWith("_restored") ||
+    eventType === "cat_dearchived"
+  )
+    return "border-l-4 border-l-[#31734b] bg-[#31734b]/10";
+  if (
+    eventType.endsWith("_deleted") ||
+    eventType.endsWith("_delete") ||
+    eventType === "cat_archived"
+  )
+    return "border-l-4 border-l-red-700 bg-red-50/70";
   return "border-l-4 border-l-amber-600 bg-amber-50/70";
 }
 
@@ -114,8 +126,18 @@ export function auditEventLabel(event: CatHistoryEvent): string {
     return `Flight ${event.flight.flightNumber} · ${label}`;
   }
   const administrationDate = event.treatmentAdministrationDate;
-  if (event.treatment && administrationDate && event.eventType === "treatment_administration_checked") return `Treatment ${event.treatment.shortName} ${administrationDate} Checked`;
-  if (event.treatment && administrationDate && event.eventType === "treatment_administration_unchecked") return `Treatment ${event.treatment.shortName} ${administrationDate} Unchecked`;
+  if (
+    event.treatment &&
+    administrationDate &&
+    event.eventType === "treatment_administration_checked"
+  )
+    return `Treatment ${event.treatment.shortName} ${administrationDate} Checked`;
+  if (
+    event.treatment &&
+    administrationDate &&
+    event.eventType === "treatment_administration_unchecked"
+  )
+    return `Treatment ${event.treatment.shortName} ${administrationDate} Unchecked`;
   if (event.treatment) {
     const treatmentActions: Record<string, string> = {
       treatment_created: "Created",
@@ -131,36 +153,52 @@ export function auditEventLabel(event: CatHistoryEvent): string {
     if (action) return `Treatment ${event.treatment.shortName} ${action}`;
   }
   if (event.tag) {
-    const action = ({
-      tag_added_to_cat: "Added to cat",
-      tag_removed_from_cat: "Removed from cat",
-      tag_create: "Created",
-      tag_update: "Updated",
-      tag_name_changed: "Name changed",
-      tag_color_changed: "Color changed",
-      tag_delete: "Deleted",
-    } as Record<string, string>)[event.eventType] ?? eventLabels[event.eventType] ?? event.eventType;
+    const action =
+      (
+        {
+          tag_added_to_cat: "Added to cat",
+          tag_removed_from_cat: "Removed from cat",
+          tag_create: "Created",
+          tag_update: "Updated",
+          tag_name_changed: "Name changed",
+          tag_color_changed: "Color changed",
+          tag_delete: "Deleted",
+        } as Record<string, string>
+      )[event.eventType] ??
+      eventLabels[event.eventType] ??
+      event.eventType;
     return `Tag ${event.tag.name} ${action}`;
   }
   if (event.weight) {
-    const action = event.eventType === "weight_created" ? "added" : event.eventType === "weight_deleted" ? "deleted" : "changed";
+    const action =
+      event.eventType === "weight_created"
+        ? "added"
+        : event.eventType === "weight_deleted"
+          ? "deleted"
+          : "changed";
     return `Weight ${event.weight.measuredAt} (${event.weight.weightKg} kg) ${action}`;
   }
   if (event.vaccination) {
-    const action = event.eventType.replace("vaccination_", "").replaceAll("_", " ");
+    const action = event.eventType
+      .replace("vaccination_", "")
+      .replaceAll("_", " ");
     return `Vaccination ${event.vaccination.vaccineName || event.vaccination.type} ${event.vaccination.date} · ${action}`;
   }
   if (event.parasiteTreatment) {
-    const action = event.eventType.replace("parasite_treatment_", "").replaceAll("_", " ");
+    const action = event.eventType
+      .replace("parasite_treatment_", "")
+      .replaceAll("_", " ");
     return `Parasite treatment ${event.parasiteTreatment.productName} ${event.parasiteTreatment.date} · ${action}`;
   }
   if (event.medicalNote) {
-    const action = event.eventType.replace("medical_note_", "").replaceAll("_", " ");
+    const action = event.eventType
+      .replace("medical_note_", "")
+      .replaceAll("_", " ");
     return `Medical note ${event.medicalNote.date}${event.medicalNote.author ? ` · ${event.medicalNote.author}` : ""} · ${action}`;
   }
   if (event.note) {
     const action = event.eventType.replace("note_", "").replaceAll("_", " ");
-     return `Note ${event.note.date}${event.note.author ? ` · ${event.note.author}` : ""} · ${action}`;
+    return `Note ${event.note.date}${event.note.author ? ` · ${event.note.author}` : ""} · ${action}`;
   }
   if (event.task) {
     const action = event.eventType.replace("task_", "").replaceAll("_", " ");
@@ -171,7 +209,9 @@ export function auditEventLabel(event: CatHistoryEvent): string {
     return `Archiving reason ${event.archivingReason.name} · ${action}`;
   }
   if (event.location) {
-    const action = event.eventType.replace("location_", "").replaceAll("_", " ");
+    const action = event.eventType
+      .replace("location_", "")
+      .replaceAll("_", " ");
     return `Location ${event.location.name} · ${action}`;
   }
   if (event.relatedUser)
@@ -183,17 +223,56 @@ export function auditEventLabel(event: CatHistoryEvent): string {
   return eventLabels[event.eventType] ?? event.eventType;
 }
 
-export function CatHistory({ events, isLoading, error, total = events.length, skip = 0, limit = 50, onPageChange, onRestoreTreatment, onRestoreFlight }: CatHistoryProps) {
+export function CatHistory({
+  events,
+  isLoading,
+  error,
+  total = events.length,
+  skip = 0,
+  limit = 50,
+  onPageChange,
+  onRestoreTreatment,
+  onRestoreFlight,
+}: CatHistoryProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const [restoringTreatmentId, setRestoringTreatmentId] = useState<string | null>(null);
-  const [restoringFlightId, setRestoringFlightId] = useState<string | null>(null);
+  const [restoringTreatmentId, setRestoringTreatmentId] = useState<
+    string | null
+  >(null);
+  const [restoringFlightId, setRestoringFlightId] = useState<string | null>(
+    null,
+  );
   const [restoreError, setRestoreError] = useState<string | null>(null);
-  const restoreTreatment = async (treatmentId: string) => { if (!onRestoreTreatment) return; setRestoringTreatmentId(treatmentId); setRestoreError(null); try { await onRestoreTreatment(treatmentId); } catch (reason) { setRestoreError(ApiErrorHandler.handle(reason)); } finally { setRestoringTreatmentId(null); } };
-  const restoreFlight = async (flightId: string) => { if (!onRestoreFlight) return; setRestoringFlightId(flightId); setRestoreError(null); try { await onRestoreFlight(flightId); } catch (reason) { setRestoreError(ApiErrorHandler.handle(reason)); } finally { setRestoringFlightId(null); } };
+  const restoreTreatment = async (treatmentId: string) => {
+    if (!onRestoreTreatment) return;
+    setRestoringTreatmentId(treatmentId);
+    setRestoreError(null);
+    try {
+      await onRestoreTreatment(treatmentId);
+    } catch (reason) {
+      setRestoreError(ApiErrorHandler.handle(reason));
+    } finally {
+      setRestoringTreatmentId(null);
+    }
+  };
+  const restoreFlight = async (flightId: string) => {
+    if (!onRestoreFlight) return;
+    setRestoringFlightId(flightId);
+    setRestoreError(null);
+    try {
+      await onRestoreFlight(flightId);
+    } catch (reason) {
+      setRestoreError(ApiErrorHandler.handle(reason));
+    } finally {
+      setRestoringFlightId(null);
+    }
+  };
   const restoredFlightActionIds = new Set<string>();
   const flightRestoreEventIds = new Set<string>();
   for (const event of events) {
-    if (event.flight?.isDeleted && !restoredFlightActionIds.has(event.flight.id)) {
+    if (
+      event.flight?.isDeleted &&
+      !restoredFlightActionIds.has(event.flight.id)
+    ) {
       restoredFlightActionIds.add(event.flight.id);
       flightRestoreEventIds.add(event.id);
     }
@@ -201,52 +280,161 @@ export function CatHistory({ events, isLoading, error, total = events.length, sk
 
   return (
     <section className="md:col-span-2">
-      <CatProfileSectionHeader title="Audit" isExpanded={isOpen} onToggle={() => setIsOpen((open) => !open)} />
+      <CatProfileSectionHeader
+        title="Audit"
+        isExpanded={isOpen}
+        onToggle={() => setIsOpen((open) => !open)}
+      />
 
       {isOpen && (
         <>
-          {isLoading && <p className="mt-5 text-sm text-[#6d6a66]">Loading cat history...</p>}
-           {error && <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">{error}</p>}
-           {restoreError && <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">{restoreError}</p>}
+          {isLoading && (
+            <p className="mt-5 text-sm text-[#6d6a66]">
+              Loading cat history...
+            </p>
+          )}
+          {error && (
+            <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">
+              {error}
+            </p>
+          )}
+          {restoreError && (
+            <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">
+              {restoreError}
+            </p>
+          )}
 
           {!isLoading && !error && events.length === 0 && (
             <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/45 p-6 text-center">
-              <p className="text-sm text-[#6d6a66]">No changes have been recorded for this cat yet.</p>
+              <p className="text-sm text-[#6d6a66]">
+                No changes have been recorded for this cat yet.
+              </p>
             </div>
           )}
 
           {!isLoading && !error && events.length > 0 && (
             <ol className="mt-4 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
               {events.map((event) => (
-                <li key={event.id} className={`px-3 py-2.5 ${auditEventStyle(event.eventType)}`}>
+                <li
+                  key={event.id}
+                  className={`px-3 py-2.5 ${auditEventStyle(event.eventType)}`}
+                >
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                     <p className="min-w-0 text-gray-800">
-                      <span className="font-semibold text-gray-900">{auditEventLabel(event)}</span>
-                      <span className="text-[#6d6a66]"> by {event.actor.displayName || event.actor.email}</span>
+                      <span className="font-semibold text-gray-900">
+                        {auditEventLabel(event)}
+                      </span>
+                      <span className="text-[#6d6a66]">
+                        {" "}
+                        by {event.actor.displayName || event.actor.email}
+                      </span>
                     </p>
-                     <div className="flex shrink-0 items-center gap-2"><time className="text-xs font-medium text-[#6d6a66]" dateTime={event.occurredAt}>{formatDate(event.occurredAt)}</time>{event.eventType === "treatment_deleted" && event.treatment?.isDeleted && onRestoreTreatment && <button type="button" disabled={restoringTreatmentId === event.treatment.id} onClick={() => void restoreTreatment(event.treatment!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringTreatmentId === event.treatment.id ? "Restoring..." : "Restore"}</button>}{event.flight?.isDeleted && flightRestoreEventIds.has(event.id) && onRestoreFlight && <button type="button" disabled={restoringFlightId === event.flight.id} onClick={() => void restoreFlight(event.flight!.id)} className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50">{restoringFlightId === event.flight.id ? "Restoring..." : "Restore flight"}</button>}</div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <time
+                        className="text-xs font-medium text-[#6d6a66]"
+                        dateTime={event.occurredAt}
+                      >
+                        {formatDate(event.occurredAt)}
+                      </time>
+                      {event.eventType === "treatment_deleted" &&
+                        event.treatment?.isDeleted &&
+                        onRestoreTreatment && (
+                          <button
+                            type="button"
+                            disabled={
+                              restoringTreatmentId === event.treatment.id
+                            }
+                            onClick={() =>
+                              void restoreTreatment(event.treatment!.id)
+                            }
+                            className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {restoringTreatmentId === event.treatment.id
+                              ? "Restoring..."
+                              : "Restore"}
+                          </button>
+                        )}
+                      {event.flight?.isDeleted &&
+                        flightRestoreEventIds.has(event.id) &&
+                        onRestoreFlight && (
+                          <button
+                            type="button"
+                            disabled={restoringFlightId === event.flight.id}
+                            onClick={() => void restoreFlight(event.flight!.id)}
+                            className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {restoringFlightId === event.flight.id
+                              ? "Restoring..."
+                              : "Restore flight"}
+                          </button>
+                        )}
+                    </div>
                   </div>
 
                   {event.photo ? (
                     <p className="mt-1 text-xs">
-                      <a className="font-semibold text-[#b24a20] underline-offset-2 hover:underline" href={event.photo.link ?? "#"} target="_blank" rel="noreferrer">
-                        {event.photo.status === "DELETED" ? "Open historical deleted-photo link" : "Open photo link"}
+                      <a
+                        className="font-semibold text-[#b24a20] underline-offset-2 hover:underline"
+                        href={event.photo.link ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {event.photo.status === "DELETED"
+                          ? "Open historical deleted-photo link"
+                          : "Open photo link"}
                       </a>
                     </p>
                   ) : event.document ? (
                     <p className="mt-1 text-xs">
-                      <a className="font-semibold text-[#b24a20] underline-offset-2 hover:underline" href={event.document.link ?? "#"} target="_blank" rel="noreferrer">
-                        Open {event.document.status === "DELETED" ? "removed " : ""}PDF: {event.document.fileName}
+                      <a
+                        className="font-semibold text-[#b24a20] underline-offset-2 hover:underline"
+                        href={event.document.link ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open{" "}
+                        {event.document.status === "DELETED" ? "removed " : ""}
+                        PDF: {event.document.fileName}
                       </a>
                     </p>
                   ) : event.oldValue !== null || event.newValue !== null ? (
-                    <p className="mt-1 text-xs text-[#6d6a66]">{historyValueText(event.oldValue)} -&gt; {historyValueText(event.newValue)}</p>
+                    <p className="mt-1 text-xs text-[#6d6a66]">
+                      {historyValueText(event.oldValue)} -&gt;{" "}
+                      {historyValueText(event.newValue)}
+                    </p>
                   ) : null}
                 </li>
               ))}
             </ol>
           )}
-          {!isLoading && !error && total > limit && <nav aria-label="Audit pagination" className="mt-4 flex items-center justify-between gap-3"><p className="text-sm text-[#6d6a66]">Showing {skip + 1}-{Math.min(skip + limit, total)} of {total}</p><div className="flex gap-2"><button type="button" onClick={() => onPageChange?.(Math.max(0, skip - limit))} disabled={skip === 0} className="rounded-lg border border-[#d4c7b4] px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">Previous</button><button type="button" onClick={() => onPageChange?.(skip + limit)} disabled={skip + limit >= total} className="rounded-lg border border-[#d4c7b4] px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">Next</button></div></nav>}
+          {!isLoading && !error && total > limit && (
+            <nav
+              aria-label="Audit pagination"
+              className="mt-4 flex items-center justify-between gap-3"
+            >
+              <p className="text-sm text-[#6d6a66]">
+                Showing {skip + 1}-{Math.min(skip + limit, total)} of {total}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => onPageChange?.(Math.max(0, skip - limit))}
+                  disabled={skip === 0}
+                  className="rounded-lg border border-[#d4c7b4] px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onPageChange?.(skip + limit)}
+                  disabled={skip + limit >= total}
+                  className="rounded-lg border border-[#d4c7b4] px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </nav>
+          )}
         </>
       )}
     </section>

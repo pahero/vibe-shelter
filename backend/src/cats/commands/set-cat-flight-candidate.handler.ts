@@ -7,7 +7,12 @@ import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 export class SetCatFlightCandidateHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(catId: string, isFlightCandidate: boolean, actorUserId: string, isTest: boolean): Promise<{ id: string }> {
+  async handle(
+    catId: string,
+    isFlightCandidate: boolean,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (tx) => {
       const cat = await tx.cat.findFirst({
         where: { id: catId, isTest },
@@ -15,7 +20,10 @@ export class SetCatFlightCandidateHandler {
       });
       if (!cat) throw new NotFoundException("Cat not found");
       if (cat.isFlightCandidate !== isFlightCandidate) {
-        await tx.cat.update({ where: { id: catId }, data: { isFlightCandidate } });
+        await tx.cat.update({
+          where: { id: catId },
+          data: { isFlightCandidate },
+        });
         await tx.auditEvent.create({
           data: {
             catId,

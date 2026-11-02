@@ -18,7 +18,10 @@ export function LogoutButton({ className }: { className?: string }) {
 
   return (
     <button
-      className={className ?? "inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d4c7b4] px-4 text-sm font-semibold text-[#1f2320] transition hover:-translate-y-px hover:bg-black/5"}
+      className={
+        className ??
+        "inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d4c7b4] px-4 text-sm font-semibold text-[#1f2320] transition hover:-translate-y-px hover:bg-black/5"
+      }
       onClick={onLogout}
       type="button"
     >

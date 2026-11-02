@@ -23,8 +23,7 @@ export class DeleteArchivingReasonCommand {
         where: { id, isTest, deletedAt: null },
         select: { id: true },
       });
-      if (!existing)
-        throw new NotFoundException("Archiving reason not found");
+      if (!existing) throw new NotFoundException("Archiving reason not found");
       const used = await transaction.cat.count({
         where: { archivingReasonId: id, isTest },
       });

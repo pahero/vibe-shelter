@@ -1,4 +1,11 @@
-export const catColorOptions = ["Black", "Black-white", "Ginger", "White", "Tortie", "Tri-colored"];
+export const catColorOptions = [
+  "Black",
+  "Black-white",
+  "Ginger",
+  "White",
+  "Tortie",
+  "Tri-colored",
+];
 
 export function CatColorDatalist() {
   return (
