@@ -1,4 +1,4 @@
-import { authenticatedFetch, BACKEND_URL } from "./backend";
+﻿import { authenticatedFetch, BACKEND_URL } from "./backend";
 
 export type Location = {
   id: string;
@@ -334,7 +334,7 @@ export type CatHistoryEvent = {
   } | null;
   flight?: {
     id: string;
-    flightNumber: string;
+    flightNumber: string | null;
     airport: string;
     date: string;
     isDeleted: boolean;
@@ -390,8 +390,9 @@ export type FlightListItem = {
   id: string;
   date: string;
   airport: string;
-  flightNumber: string;
+  flightNumber: string | null;
   flightParent: string;
+  comment: string | null;
   deletedAt: string | null;
   catCount: number;
 };
@@ -413,10 +414,19 @@ export type FlightDetails = {
   id: string;
   date: string;
   airport: string;
-  flightNumber: string;
+  flightNumber: string | null;
   flightParent: string;
+  comment: string | null;
   updatedAt: string;
   cats: FlightCatAssignment[];
+};
+
+export type FlightPhoto = {
+  id: string;
+  flightId: string;
+  url: string | null;
+  fullUrl: string | null;
+  createdAt: string;
 };
 
 export type FlightAuditEvent = {
@@ -428,26 +438,16 @@ export type FlightAuditEvent = {
   oldValue: string | null;
   newValue: string | null;
   cat: { id: string; name: string; archivedAt: string | null } | null;
-  flight: {
-    id: string;
-    flightNumber: string;
-    airport: string;
-    date: string;
-    isDeleted: boolean;
-  };
-  assignment: {
-    id: string;
-    f2fDone: boolean;
-    tracesDone: boolean;
-    isDeleted: boolean;
-  } | null;
+  flight: { id: string; flightNumber: string | null; airport: string; date: string; isDeleted: boolean };
+  assignment: { id: string; f2fDone: boolean; tracesDone: boolean; isDeleted: boolean } | null;
 };
 
 export type FlightInput = {
   date: string;
   airport: string;
-  flightNumber: string;
+  flightNumber?: string | null;
   flightParent: string;
+  comment?: string | null;
 };
 
 export type FlightCatAssignmentUpdate = {
@@ -477,7 +477,7 @@ export type FlightCandidate = {
   adopterName: string | null;
   adopterAddress: string | null;
   adopterCountry?: AdopterCountry | null;
-  flights: Array<{ id: string; flightNumber: string }>;
+  flights: Array<{ id: string; flightNumber: string | null }>;
   requirements: FlightCandidateRequirements;
 };
 
@@ -1454,6 +1454,24 @@ export const flightsApi = {
       { method: "GET" },
     );
     return handleResponse<FlightAuditEvent[]>(response);
+  },
+
+  async listPhotos(flightId: string): Promise<FlightPhoto[]> {
+    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/photos`, { method: "GET" });
+    return handleResponse<FlightPhoto[]>(response);
+  },
+
+  async addPhoto(flightId: string, photo: File): Promise<FlightPhoto> {
+    return uploadWithRetry(`${BACKEND_URL}/api/flights/${flightId}/photos`, "POST", () => {
+      const formData = new FormData();
+      formData.append("photo", photo);
+      return formData;
+    });
+  },
+
+  async deletePhoto(flightId: string, photoId: string): Promise<void> {
+    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/photos/${photoId}`, { method: "DELETE" });
+    return handleResponse<void>(response);
   },
 
   async create(data: FlightInput): Promise<MutationResult> {

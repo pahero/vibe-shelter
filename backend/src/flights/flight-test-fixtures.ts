@@ -24,8 +24,9 @@ export async function createFlightFixture(
       | "deletedAt"
       | "date"
       | "airport"
-      | "flightNumber"
-      | "flightParent"
+       | "flightNumber"
+       | "flightParent"
+       | "comment"
     >
   > = {},
 ) {

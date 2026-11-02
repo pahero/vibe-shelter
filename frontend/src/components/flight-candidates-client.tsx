@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -129,7 +129,7 @@ export function FlightCandidatesClient({
 
         {isLoading && (
           <p className="mt-4 text-sm text-[#6d6a66]" role="status">
-            Loading flight candidates…
+            Loading flight candidatesвЂ¦
           </p>
         )}
         {error && (
@@ -179,7 +179,7 @@ export function FlightCandidatesClient({
                         aria-label={`No photo for ${candidate.name}`}
                         className="text-2xl"
                       >
-                        🐾
+                        рџђѕ
                       </span>
                     )}
                   </div>

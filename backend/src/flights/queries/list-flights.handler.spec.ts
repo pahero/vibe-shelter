@@ -22,6 +22,7 @@ describe("ListFlightsHandler", () => {
           expect.objectContaining({
             id: active.id,
             date: "2026-10-15",
+            comment: null,
             catCount: 0,
             deletedAt: null,
           }),

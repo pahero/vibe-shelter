@@ -14,6 +14,7 @@ export class GetFlightHandler {
         airport: true,
         flightNumber: true,
         flightParent: true,
+        comment: true,
         updatedAt: true,
         assignments: {
           where: { deletedAt: null },
@@ -42,6 +43,7 @@ export class GetFlightHandler {
       airport: flight.airport,
       flightNumber: flight.flightNumber,
       flightParent: flight.flightParent,
+      comment: flight.comment,
       updatedAt: flight.updatedAt.toISOString(),
       cats: flight.assignments.map((assignment) => ({
         assignmentId: assignment.id,

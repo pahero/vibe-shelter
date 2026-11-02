@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -105,16 +105,9 @@ export function FlightsListClient() {
                 className="rounded-xl border border-[#d4c7b4] bg-white/70 p-3"
               >
                 <Link href={`/flights/${flight.id}`} className="block">
-                  <span className="block font-semibold text-gray-900">
-                    {flight.flightNumber}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-[#6d6a66]">
-                    {formatDateShort(flight.date)} · {flight.airport} ·{" "}
-                    {flight.catCount} cats
-                  </span>
-                  <span className="mt-1 block truncate text-xs text-[#6d6a66]">
-                    Flight parent: {flight.flightParent}
-                  </span>
+                <span className="block font-semibold text-gray-900">{formatDateShort(flight.date)}</span>
+                <span className="mt-0.5 block text-xs text-[#6d6a66]">{flight.flightNumber ? `${flight.flightNumber} В· ` : ""}{flight.airport} В· {flight.catCount} cats</span>
+                <span className="mt-1 block truncate text-xs text-[#6d6a66]">Flight parent: {flight.flightParent}</span>
                 </Link>
               </li>
             ))}

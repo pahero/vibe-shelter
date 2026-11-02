@@ -388,8 +388,9 @@ model Flight {
   id                String   @id @default(cuid())
   date              DateTime @db.Date
   airport           String
-  flightNumber      String
+  flightNumber      String?
   flightParent      String
+  comment           String?
   isTest            Boolean  @default(false)
   deletedAt         DateTime?
   concurrencyToken  String   @default(cuid())
@@ -397,10 +398,27 @@ model Flight {
   updatedAt         DateTime @updatedAt
   assignments       FlightCatAssignment[]
   auditEvents       AuditEvent[] @relation("auditFlights")
+  photos            FlightPhoto[]
 
   @@index([date])
   @@index([deletedAt])
   @@index([isTest])
+}
+
+model FlightPhoto {
+  id               String   @id @default(cuid())
+  flightId         String
+  flight           Flight   @relation(fields: [flightId], references: [id], onDelete: Restrict)
+  key              String   @unique
+  previewKey       String?
+  deletedAt        DateTime?
+  concurrencyToken String   @default(cuid())
+  createdAt        DateTime @default(now())
+  auditEvents      AuditEvent[] @relation("auditFlightPhotos")
+
+  @@index([flightId, deletedAt])
+  @@index([deletedAt])
+  @@index([concurrencyToken])
 }
 
 model FlightCatAssignment {
@@ -441,6 +459,8 @@ model AuditEvent {
   treatment CatTreatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
   photoId String?
   photo CatPhoto? @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  flightPhotoId String?
+  flightPhoto FlightPhoto? @relation("auditFlightPhotos", fields: [flightPhotoId], references: [id], onDelete: SetNull)
   documentId String?
   document CatDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
   weightId String?
@@ -481,6 +501,7 @@ model AuditEvent {
   @@index([vaccinationId])
   @@index([parasiteTreatmentId])
   @@index([noteId])
+  @@index([flightPhotoId])
 }
 model CatMedicalNote {
   id               String   @id @default(cuid())

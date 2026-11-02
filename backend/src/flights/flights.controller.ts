@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Delete,
+  UploadedFile,
+  UseInterceptors,
   Get,
   HttpCode,
   HttpStatus,
@@ -10,11 +12,15 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { CurrentUser, JwtAuthGuard } from "../auth";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
 import { CreateFlightHandler } from "./commands/create-flight.handler";
 import { DeleteFlightCatAssignmentHandler } from "./commands/delete-flight-cat-assignment.handler";
 import { DeleteFlightHandler } from "./commands/delete-flight.handler";
+import { AddFlightPhotoHandler } from "./commands/add-flight-photo.handler";
+import { DeleteFlightPhotoHandler } from "./commands/delete-flight-photo.handler";
+import { PrimaryPhotoUpload } from "../cats/cats.types";
 import { RestoreFlightCatAssignmentHandler } from "./commands/restore-flight-cat-assignment.handler";
 import { RestoreFlightHandler } from "./commands/restore-flight.handler";
 import { UpdateFlightCatAssignmentHandler } from "./commands/update-flight-cat-assignment.handler";
@@ -27,6 +33,7 @@ import { CreateFlightDto, UpdateFlightDto } from "./dto/flight.dto";
 import { GetFlightHandler } from "./queries/get-flight.handler";
 import { ListFlightHistoryHandler } from "./queries/list-flight-history.handler";
 import { ListFlightsHandler } from "./queries/list-flights.handler";
+import { ListFlightPhotosHandler } from "./queries/list-flight-photos.handler";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -35,6 +42,8 @@ type AuthenticatedUser = { id: string; isTest: boolean };
 export class FlightsController {
   constructor(
     private readonly createFlight: CreateFlightHandler,
+    private readonly addFlightPhoto: AddFlightPhotoHandler,
+    private readonly deleteFlightPhoto: DeleteFlightPhotoHandler,
     private readonly updateFlight: UpdateFlightHandler,
     private readonly deleteFlight: DeleteFlightHandler,
     private readonly restoreFlight: RestoreFlightHandler,
@@ -43,6 +52,7 @@ export class FlightsController {
     private readonly deleteAssignment: DeleteFlightCatAssignmentHandler,
     private readonly restoreAssignment: RestoreFlightCatAssignmentHandler,
     private readonly listFlights: ListFlightsHandler,
+    private readonly listFlightPhotos: ListFlightPhotosHandler,
     private readonly getFlight: GetFlightHandler,
     private readonly listHistory: ListFlightHistoryHandler,
   ) {}
@@ -60,6 +70,11 @@ export class FlightsController {
     return this.listHistory.handle(flightId, user.isTest);
   }
 
+  @Get(":id/photos")
+  listPhotos(@Param("id") flightId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.listFlightPhotos.handle(flightId, user.isTest);
+  }
+
   @Get()
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.listFlights.handle(user.isTest, false);
@@ -69,6 +84,13 @@ export class FlightsController {
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateFlightDto, @CurrentUser() user: AuthenticatedUser) {
     return this.createFlight.handle(dto.toCommand(user.id, user.isTest));
+  }
+
+  @Post(":id/photos")
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor("photo", { limits: { fileSize: 20 * 1024 * 1024 } }))
+  addPhoto(@Param("id") flightId: string, @CurrentUser() user: AuthenticatedUser, @UploadedFile() photo?: PrimaryPhotoUpload) {
+    return this.addFlightPhoto.handle(flightId, photo, user.id, user.isTest);
   }
 
   @Get(":id")
@@ -94,6 +116,12 @@ export class FlightsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     await this.deleteFlight.handle(flightId, user.id, user.isTest);
+  }
+
+  @Delete(":id/photos/:photoId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removePhoto(@Param("id") flightId: string, @Param("photoId") photoId: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.deleteFlightPhoto.handle(flightId, photoId, user.id, user.isTest);
   }
 
   @Post(":id/restore")

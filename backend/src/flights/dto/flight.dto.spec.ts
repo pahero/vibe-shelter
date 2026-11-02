@@ -8,12 +8,14 @@ describe("Flight DTOs", () => {
       airport: "  Larnaca  ",
       flightNumber: "  CY123  ",
       flightParent: "  Morgan Parent  ",
+      comment: "  Meet at the terminal  ",
     });
     expect(dto.toCommand("user-1", true)).toMatchObject({
       date: new Date("2026-10-15T00:00:00.000Z"),
       airport: "Larnaca",
       flightNumber: "CY123",
       flightParent: "Morgan Parent",
+      comment: "Meet at the terminal",
       actorUserId: "user-1",
       isTest: true,
     });
@@ -21,7 +23,6 @@ describe("Flight DTOs", () => {
 
   it.each([
     ["airport", "  "],
-    ["flightNumber", ""],
     ["flightParent", "  "],
   ])("rejects an empty create %s", (field, value) => {
     const dto = Object.assign(new CreateFlightDto(), {
@@ -54,6 +55,7 @@ describe("Flight DTOs", () => {
       airport: "  Paphos ",
       flightNumber: "  CY456 ",
       flightParent: "  Jamie Parent  ",
+      comment: "  Gate changed  ",
     });
     expect(dto.toCommand("flight-1", "user-2", false)).toMatchObject({
       flightId: "flight-1",
@@ -61,6 +63,7 @@ describe("Flight DTOs", () => {
       airport: "Paphos",
       flightNumber: "CY456",
       flightParent: "Jamie Parent",
+      comment: "Gate changed",
       actorUserId: "user-2",
       isTest: false,
     });
@@ -70,6 +73,7 @@ describe("Flight DTOs", () => {
       airport: undefined,
       flightNumber: undefined,
       flightParent: undefined,
+      comment: undefined,
     });
   });
 
@@ -86,12 +90,34 @@ describe("Flight DTOs", () => {
 
   it.each([
     ["airport", "  "],
-    ["flightNumber", "  "],
     ["flightParent", "  "],
   ])("rejects an empty optional update %s", (field, value) => {
     const dto = Object.assign(new UpdateFlightDto(), { [field]: value });
     expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(
       BadRequestException,
     );
+  });
+
+  it("normalizes blank optional flight number and comment values to null", () => {
+    const create = Object.assign(new CreateFlightDto(), {
+      date: "2026-10-15",
+      airport: "Larnaca",
+      flightNumber: "  ",
+      flightParent: "Morgan Parent",
+      comment: "  ",
+    });
+    expect(create.toCommand("user-1", false)).toMatchObject({
+      flightNumber: null,
+      comment: null,
+    });
+
+    const update = Object.assign(new UpdateFlightDto(), {
+      flightNumber: null,
+      comment: "  ",
+    });
+    expect(update.toCommand("flight-1", "user-2", false)).toMatchObject({
+      flightNumber: null,
+      comment: null,
+    });
   });
 });

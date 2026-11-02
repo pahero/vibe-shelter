@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import {
   FlightDetails,
   FlightInput,
   FlightListItem,
+  FlightPhoto,
   flightsApi,
 } from "@/lib/api";
 
@@ -23,6 +24,7 @@ const auditLabels: Record<string, string> = {
   flight_airport_changed: "Airport changed",
   flight_number_changed: "Flight number changed",
   flight_parent_changed: "Flight parent changed",
+  flight_comment_changed: "Comment changed",
   flight_cat_assigned: "Cat assigned",
   flight_cat_unassigned: "Cat removed from flight",
   flight_cat_restored: "Cat assignment restored",
@@ -36,6 +38,7 @@ function emptyFlightForm(): FlightInput {
     airport: "",
     flightNumber: "",
     flightParent: "",
+    comment: "",
   };
 }
 
@@ -71,6 +74,9 @@ export function FlightsClient({
     null,
   );
   const [flightActionId, setFlightActionId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<FlightPhoto[]>([]);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const [photoActionId, setPhotoActionId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +136,7 @@ export function FlightsClient({
             airport: deletedFlight.airport,
             flightNumber: deletedFlight.flightNumber,
             flightParent: deletedFlight.flightParent,
+            comment: deletedFlight.comment,
             updatedAt: "",
             cats: [],
           });
@@ -147,6 +154,20 @@ export function FlightsClient({
       cancelled = true;
     };
   }, [standaloneFlightId]);
+
+  useEffect(() => {
+    if (!selectedFlightId || isDeletedSelection) {
+      setPhotos([]);
+      return;
+    }
+    let cancelled = false;
+    flightsApi.listPhotos(selectedFlightId).then((items) => {
+      if (!cancelled) setPhotos(items);
+    }).catch((reason: unknown) => {
+      if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
+    });
+    return () => { cancelled = true; };
+  }, [selectedFlightId, isDeletedSelection]);
 
   const refreshLists = () => {
     setIsLoading(true);
@@ -169,6 +190,7 @@ export function FlightsClient({
           airport: flight.airport,
           flightNumber: flight.flightNumber,
           flightParent: flight.flightParent,
+          comment: flight.comment,
           updatedAt: "",
           cats: [],
         });
@@ -217,6 +239,7 @@ export function FlightsClient({
       airport: selectedFlight.airport,
       flightNumber: selectedFlight.flightNumber,
       flightParent: selectedFlight.flightParent,
+      comment: selectedFlight.comment,
     });
     setIsEditing(true);
     setIsFormOpen(true);
@@ -225,15 +248,8 @@ export function FlightsClient({
 
   const saveFlight = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (
-      !form.date ||
-      !form.airport.trim() ||
-      !form.flightNumber.trim() ||
-      !form.flightParent.trim()
-    ) {
-      setActionError(
-        "Enter the date, airport, flight number, and flight parent.",
-      );
+    if (!form.date || !form.airport.trim() || !form.flightParent.trim()) {
+      setActionError("Enter the date, airport, and flight parent.");
       return;
     }
     setIsSaving(true);
@@ -242,8 +258,9 @@ export function FlightsClient({
       const payload = {
         ...form,
         airport: form.airport.trim(),
-        flightNumber: form.flightNumber.trim(),
+        flightNumber: form.flightNumber?.trim() || null,
         flightParent: form.flightParent.trim(),
+        comment: form.comment?.trim() || null,
       };
       if (isEditing && selectedFlightId) {
         await flightsApi.update(selectedFlightId, payload);
@@ -297,6 +314,34 @@ export function FlightsClient({
       setActionError(ApiErrorHandler.handle(reason));
     } finally {
       setFlightActionId(null);
+    }
+  };
+
+  const addPhotos = async (files: FileList | null) => {
+    if (!selectedFlightId || !files?.length) return;
+    setIsUploadingPhotos(true);
+    setActionError(null);
+    try {
+      await Promise.all(Array.from(files).map((file) => flightsApi.addPhoto(selectedFlightId, file)));
+      setPhotos(await flightsApi.listPhotos(selectedFlightId));
+    } catch (reason) {
+      setActionError(ApiErrorHandler.handle(reason));
+    } finally {
+      setIsUploadingPhotos(false);
+    }
+  };
+
+  const removePhoto = async (photoId: string) => {
+    if (!selectedFlightId) return;
+    setPhotoActionId(photoId);
+    setActionError(null);
+    try {
+      await flightsApi.deletePhoto(selectedFlightId, photoId);
+      setPhotos((items) => items.filter((photo) => photo.id !== photoId));
+    } catch (reason) {
+      setActionError(ApiErrorHandler.handle(reason));
+    } finally {
+      setPhotoActionId(null);
     }
   };
 
@@ -528,17 +573,8 @@ export function FlightsClient({
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
-              <span>
-                Flight number <span className="text-red-700">*</span>
-              </span>
-              <input
-                required
-                value={form.flightNumber}
-                onChange={(event) =>
-                  setForm({ ...form, flightNumber: event.target.value })
-                }
-                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
-              />
+              <span>Flight number</span>
+              <input value={form.flightNumber ?? ""} onChange={(event) => setForm({ ...form, flightNumber: event.target.value })} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               <span>
@@ -552,6 +588,10 @@ export function FlightsClient({
                 }
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
               />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              <span>Comment</span>
+              <textarea value={form.comment ?? ""} onChange={(event) => setForm({ ...form, comment: event.target.value })} className="min-h-24 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" />
             </label>
           </div>
           <div className="mt-4 flex justify-end gap-2">
@@ -618,7 +658,7 @@ export function FlightsClient({
                         {flight.flightNumber}
                       </span>
                       <span className="mt-0.5 block text-xs text-[#6d6a66]">
-                        {formatDateShort(flight.date)} · {flight.airport} ·{" "}
+                        {formatDateShort(flight.date)} В· {flight.airport} В·{" "}
                         {flight.catCount} cats
                       </span>
                       <span className="mt-1 block truncate text-xs text-[#6d6a66]">
@@ -671,19 +711,11 @@ export function FlightsClient({
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#d05a2c]">
-                      {isDeletedSelection ? "Deleted flight" : "Flight details"}
-                    </p>
-                    <h2 className="mt-1 text-2xl font-semibold text-gray-900">
-                      {selectedFlight.flightNumber}
-                    </h2>
-                    <p className="mt-1 text-sm text-[#6d6a66]">
-                      {formatDateShort(selectedFlight.date)} ·{" "}
-                      {selectedFlight.airport}
-                    </p>
-                    <p className="mt-1 text-sm text-[#6d6a66]">
-                      Flight parent: {selectedFlight.flightParent}
-                    </p>
+                    <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#d05a2c]">{isDeletedSelection ? "Deleted flight" : "Flight details"}</p>
+                    <h2 className="mt-1 text-2xl font-semibold text-gray-900">{selectedFlight.flightNumber ?? "Unnumbered flight"}</h2>
+                    <p className="mt-1 text-sm text-[#6d6a66]">{formatDateShort(selectedFlight.date)} В· {selectedFlight.airport}</p>
+                    <p className="mt-1 text-sm text-[#6d6a66]">Flight parent: {selectedFlight.flightParent}</p>
+                    {selectedFlight.comment && <p className="mt-1 whitespace-pre-wrap text-sm text-[#6d6a66]">{selectedFlight.comment}</p>}
                   </div>
                   {!isDeletedSelection && (
                     <div className="flex gap-1">
@@ -718,6 +750,24 @@ export function FlightsClient({
               </section>
 
               {!isDeletedSelection && (
+                <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div><h2 className="text-lg font-semibold text-gray-900">Photos</h2><p className="text-xs text-[#6d6a66]">Add images related to this flight.</p></div>
+                    <label className="rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm font-semibold text-gray-800 cursor-pointer">
+                      {isUploadingPhotos ? "Uploading..." : "Add photos"}
+                      <input type="file" accept="image/*" multiple disabled={isUploadingPhotos} onChange={(event) => { void addPhotos(event.target.files); event.target.value = ""; }} className="sr-only" />
+                    </label>
+                  </div>
+                  {photos.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {photos.map((photo) => <div key={photo.id} className="group relative overflow-hidden rounded-xl border border-[#d4c7b4] bg-white">
+                      {photo.url ? <img src={photo.url} alt="Flight" className="aspect-square w-full object-cover" /> : <div className="aspect-square bg-gray-100" />}
+                      <button type="button" onClick={() => void removePhoto(photo.id)} disabled={photoActionId === photo.id} aria-label="Delete flight photo" title="Delete flight photo" className="absolute right-1 top-1 rounded-md bg-white/90 p-2 text-red-700 shadow disabled:opacity-50"><FontAwesomeIcon icon={faTrash} /></button>
+                    </div>)}
+                  </div>}
+                </section>
+              )}
+
+              {!isDeletedSelection && (
                 <section className="overflow-hidden rounded-2xl border border-[#d4c7b4] bg-white/60">
                   <div className="flex flex-col gap-3 border-b border-[#d4c7b4] bg-[#f1d8c7]/45 p-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -725,7 +775,7 @@ export function FlightsClient({
                         Assigned cats
                       </h2>
                       <p className="text-xs text-[#6d6a66]">
-                        Record each cat’s fit-to-fly (F2F) and traces status.
+                        Record each catвЂ™s fit-to-fly (F2F) and traces status.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -962,7 +1012,7 @@ export function FlightsClient({
                     Flight audit history
                   </h2>
                   <span aria-hidden="true" className="text-[#6d6a66]">
-                    {isFlightHistoryOpen ? "−" : "+"}
+                    {isFlightHistoryOpen ? "в€’" : "+"}
                   </span>
                 </button>
                 {isFlightHistoryOpen &&
@@ -982,7 +1032,7 @@ export function FlightsClient({
                               <p className="text-sm font-semibold text-gray-900">
                                 {auditLabels[event.eventType] ??
                                   event.eventType}
-                                {event.cat ? ` · ${event.cat.name}` : ""}
+                                {event.cat ? ` В· ${event.cat.name}` : ""}
                                 <span className="font-normal text-[#6d6a66]">
                                   {" "}
                                   by {event.actor.displayName}
