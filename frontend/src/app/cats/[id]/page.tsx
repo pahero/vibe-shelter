@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
@@ -57,6 +57,12 @@ import { TAG_COLOR_OPTIONS, tagChipStyle } from "@/lib/tag-colors";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 import { isSupportedGalleryUpload } from "@/lib/gallery-media";
 import { authenticatedFetch, BACKEND_URL } from "@/lib/backend";
+
+function isImageDocument(document: CatDocument): boolean {
+  return ["jpg", "jpeg", "png"].includes(
+    document.fileName.toLowerCase().split(".").pop() ?? "",
+  );
+}
 
 type CatEditForm = {
   name: string;
@@ -966,14 +972,10 @@ export default function CatProfilePage() {
   );
   const currentTagIds = new Set(cat?.tags.map((tag) => tag.id) ?? []);
   const tagsToAdd = availableTags.filter((tag) => !currentTagIds.has(tag.id));
-  const sortedPhotos = [...photos].sort(
-    (a, b) =>
-      Number(b.isPrimary) - Number(a.isPrimary) ||
-      b.createdAt.localeCompare(a.createdAt),
-  );
-  const sortedDocuments = [...documents].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+  const sortedPhotos = [...photos].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || b.createdAt.localeCompare(a.createdAt));
+  const sortedDocuments = [...documents].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const imageDocuments = sortedDocuments.filter(isImageDocument);
+  const fileDocuments = sortedDocuments.filter((document) => !isImageDocument(document));
   const primaryPhoto = sortedPhotos[0] ?? null;
   const expandedDocument = expandedDocumentId
     ? (sortedDocuments.find((document) => document.id === expandedDocumentId) ??
@@ -1186,7 +1188,7 @@ export default function CatProfilePage() {
                               className="absolute inset-0 flex items-center justify-center text-5xl text-white drop-shadow"
                               aria-hidden="true"
                             >
-                              ▶
+                              в–¶
                             </span>
                           </>
                         )}
@@ -1196,7 +1198,7 @@ export default function CatProfilePage() {
                         className="flex aspect-video w-full items-center justify-center text-5xl"
                         aria-label={`No photo for ${cat.name}`}
                       >
-                        🐾
+                        рџђѕ
                       </div>
                     )}
                     <TagColorStrip tags={cat.tags} overlay />
@@ -1235,12 +1237,158 @@ export default function CatProfilePage() {
                       </p>
                     )}
 
-                    {!isLoadingPhotos && (
-                      <div className="mt-3 grid w-fit grid-cols-4 gap-2">
-                        {visibleGalleryPhotos.map((photo) => (
-                          <div
-                            key={photo.id}
-                            className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                {!isLoadingPhotos && (
+                  <div className="mt-3 grid w-fit grid-cols-4 gap-2">
+                    {visibleGalleryPhotos.map((photo) => (
+                      <div key={photo.id} className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]">
+                        <button
+                          type="button"
+                          onClick={() => openPhoto(photo.id)}
+                          className={`block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 ${photo.mediaType === "video" ? "flex items-center justify-center bg-black text-2xl text-white" : ""}`}
+                          style={photo.mediaType !== "video" && photo.url ? { backgroundImage: `url(${photo.url})` } : undefined}
+                          aria-label={`Open ${photo.mediaType} of ${cat.name}`}
+                        >{photo.mediaType === "video" && <span aria-hidden="true">в–¶</span>}</button>
+                      </div>
+                    ))}
+                    <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-2xl font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60" aria-label="Add photo or video" title="Add photo or video">
+                      {isUploadingPhoto ? "..." : "+"}
+                      <input type="file" accept="image/*,.jpg,.jpeg,video/mp4,video/webm,.mp4,.webm" multiple disabled={isUploadingPhoto} onChange={handlePhotoChange} className="sr-only" />
+                    </label>
+                  </div>
+                )}
+
+               {photoError && <p className="mt-3 text-sm font-medium text-red-700">{photoError}</p>}
+              </section>
+              </>}
+              {selectedSection === "media" && <>
+              <section id="documents" className="scroll-mt-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Documents</p>
+                    <p className="mt-1 text-xs text-[#6d6a66]">PDF, JPEG, or PNG files</p>
+                  </div>
+                  <label aria-label="Upload document or image" title="Upload document or image" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60">
+                    {isUploadingDocument ? "вЂ¦" : <FontAwesomeIcon icon={faPlus} className="text-sm" />}
+                    <input type="file" accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png" disabled={isUploadingDocument} onChange={handleDocumentChange} className="sr-only" />
+                  </label>
+                </div>
+                {isLoadingDocuments && <p className="mt-4 text-sm text-[#6d6a66]">Loading documents...</p>}
+                {!isLoadingDocuments && documents.length === 0 && <p className="mt-4 text-sm text-[#6d6a66]">No documents have been uploaded.</p>}
+                {!isLoadingDocuments && imageDocuments.length > 0 && (
+                  <div className="mt-3 grid w-fit grid-cols-4 gap-2">
+                    {imageDocuments.map((document) => (
+                      <div key={document.id} className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]">
+                        <button type="button" onClick={() => setExpandedDocumentId(document.id)} disabled={!document.url} className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed" style={document.url ? { backgroundImage: `url(${document.url})` } : undefined} aria-label={`Open image document ${document.fileName}`} title={document.fileName} />
+                        <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} aria-label="Delete document" title="Delete document" className="absolute right-0 top-0 rounded-bl-lg bg-white/90 p-1.5 text-red-700 transition hover:bg-red-100 disabled:opacity-50"><FontAwesomeIcon icon={faTrash} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!isLoadingDocuments && fileDocuments.length > 0 && (
+                  <ul className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
+                    {fileDocuments.map((document) => (
+                      <li key={document.id} className="flex items-center gap-3 py-2.5">
+                        <div className="min-w-0 flex-1">
+                          <button type="button" onClick={() => setExpandedDocumentId(document.id)} disabled={!document.url} className="block max-w-full truncate text-left text-sm font-semibold text-[#b24a20] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-gray-800 disabled:no-underline" title={document.fileName}>
+                            {document.fileName}
+                          </button>
+                          <p className="mt-0.5 text-xs text-[#6d6a66]">Added {formatDate(document.createdAt)}</p>
+                        </div>
+                        <button type="button" onClick={() => handleDeleteDocument(document.id)} disabled={removingDocumentId === document.id} aria-label="Delete document" title="Delete document" className="shrink-0 rounded-lg p-2 text-red-700 transition hover:bg-red-100 disabled:opacity-50">
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {documentError && <p className="mt-3 text-sm font-medium text-red-700">{documentError}</p>}
+              </section>
+              </>}
+            </div>
+            {selectedSection === "profile" && <>
+            <section id="profile" className="md:col-span-2">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cat profile</h2>
+                {!isEditingDetails && <div className="flex items-center gap-2">
+                  {cat.archivingReasonId ? (
+                    <button type="button" onClick={dearchiveCat} disabled={isArchiving} aria-label="Restore cat" title="Restore cat" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#31734b] text-[#31734b] transition hover:bg-green-50 disabled:opacity-50"><FontAwesomeIcon icon={faRotateLeft} /></button>
+                  ) : (
+                    <button type="button" onClick={openArchiveForm} aria-label="Archive cat" title="Archive cat" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-700 text-red-700 transition hover:bg-red-50"><FontAwesomeIcon icon={faBoxArchive} /></button>
+                  )}
+                  {!cat.archivingReasonId && <button type="button" onClick={toggleFlightCandidate} disabled={isMarkingFlightCandidate} aria-label={isFlightCandidate ? "Unmark flight candidate" : "Mark as flight candidate"} title={isFlightCandidate ? "Unmark flight candidate" : "Mark as flight candidate"} className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:opacity-50 ${isFlightCandidate ? "border-amber-700 text-amber-700 hover:bg-amber-50" : "border-[#31734b] text-[#31734b] hover:bg-green-50"}`}><FontAwesomeIcon icon={faPlane} /></button>}
+                  {!cat.archivingReasonId && <button type="button" onClick={startEditingDetails} aria-label="Edit cat profile" title="Edit cat profile" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-white transition hover:bg-[#b24a20]"><FontAwesomeIcon icon={faPen} /></button>}
+                </div>}
+              </div>
+              <div className={`${isCatProfileExpanded ? "block" : "hidden"} md:block`}>
+
+              <div className="mt-3 rounded-lg border border-[#d4c7b4] bg-white/60 px-3 py-2 text-sm">
+                {cat.trelloUrl ? <a href={cat.trelloUrl} target="_blank" rel="noreferrer" className="font-medium text-[#b24a20] underline">Trello card</a> : <span className="text-[#6d6a66]">No Trello card linked</span>}
+                {isOwner && <div className="mt-2 flex gap-2">
+                  <input aria-label="Trello card URL" type="url" placeholder="https://trello.com/c/wqNVNDIs" value={trelloUrlDraft} onChange={(event) => setTrelloUrlDraft(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm" />
+                  <button type="button" onClick={saveTrelloUrl} disabled={isSavingTrelloUrl} className="rounded-lg border border-[#b24a20] bg-[#d05a2c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{isSavingTrelloUrl ? "Saving..." : "Save"}</button>
+                </div>}
+                {trelloUrlError && <p className="mt-2 text-sm text-red-700">{trelloUrlError}</p>}
+              </div>
+
+              {!isArchiveFormOpen && archiveError && <p className="mt-3 text-sm text-red-700">{archiveError}</p>}
+              {flightCandidateError && <p className="mt-3 text-sm text-red-700">{flightCandidateError}</p>}
+
+              {isArchiveFormOpen && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+                  <label className="grid gap-1 text-sm font-medium text-gray-800">Archiving reason
+                    <select value={archivingReasonId} onChange={(event) => setArchivingReasonId(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2">
+                      {archivingReasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="mt-3 grid gap-1 text-sm font-medium text-gray-800"><span>Archiving date <span className="text-red-700">*</span></span><input aria-label="Archiving date" type="date" required value={archivingDate} onChange={(event) => setArchivingDate(event.target.value)} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2" /></label>
+                  {archivingReasons.length === 0 && <p className="mt-2 text-sm text-red-700">Create an archiving reason in shelter settings first.</p>}
+                  {archiveError && <p className="mt-2 text-sm text-red-700">{archiveError}</p>}
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={archiveCat} disabled={isArchiving || !archivingReasonId} className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{isArchiving ? "Archiving..." : "Confirm archive"}</button>
+                    <button type="button" onClick={() => setIsArchiveFormOpen(false)} className="rounded-lg border border-[#d4c7b4] px-4 py-2 text-sm font-semibold">Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="relative mt-3 flex flex-wrap items-center gap-1.5">
+                {cat.tags.map((tag) => (
+                  <span key={tag.id} style={tagChipStyle(tag)} className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold text-gray-900">
+                    {tag.name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag.id)}
+                      disabled={removingTagId === tag.id}
+                      className="text-gray-700 transition hover:text-red-700 disabled:opacity-50"
+                      aria-label={`Remove ${tag.name} tag`}
+                    >
+                      Г—
+                    </button>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTagPickerOpen((isOpen) => !isOpen);
+                    setTagError(null);
+                  }}
+                  aria-label="Add tag"
+                  title="Add tag"
+                  className="inline-flex items-center justify-center rounded-full border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 px-2.5 py-1 text-xs font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20"
+                >
+                  + tag
+                </button>
+                {isTagPickerOpen && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-3 shadow-lg">
+                    {tagsToAdd.length > 0 && (
+                      <div className="flex max-h-28 flex-wrap gap-1.5 overflow-auto">
+                        {tagsToAdd.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => addTagByName(tag.name)}
+                            disabled={isSavingTag}
+                            style={tagChipStyle(tag)}
+                            className="rounded-full border px-2.5 py-1 text-xs font-semibold text-gray-900 transition brightness-100 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <button
                               type="button"
@@ -1254,7 +1402,7 @@ export default function CatProfilePage() {
                               aria-label={`Open ${photo.mediaType} of ${cat.name}`}
                             >
                               {photo.mediaType === "video" && (
-                                <span aria-hidden="true">▶</span>
+                                <span aria-hidden="true">в–¶</span>
                               )}
                             </button>
                           </div>
@@ -1303,7 +1451,7 @@ export default function CatProfilePage() {
                         className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-xl font-semibold leading-none text-white transition hover:bg-[#b24a20] has-disabled:cursor-not-allowed has-disabled:opacity-60"
                       >
                         {isUploadingDocument ? (
-                          "…"
+                          "вЂ¦"
                         ) : (
                           <FontAwesomeIcon icon={faPlus} className="text-sm" />
                         )}
@@ -1575,7 +1723,7 @@ export default function CatProfilePage() {
                             className="text-gray-700 transition hover:text-red-700 disabled:opacity-50"
                             aria-label={`Remove ${tag.name} tag`}
                           >
-                            ×
+                            Г—
                           </button>
                         </span>
                       ))}
@@ -2461,7 +2609,7 @@ export default function CatProfilePage() {
                 className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
                 aria-label="Previous photo"
               >
-                ‹
+                вЂ№
               </button>
             )}
 
@@ -2601,7 +2749,7 @@ export default function CatProfilePage() {
                       }
                       className="rounded-lg bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {isSavingPhotoPosition ? "Saving…" : "Save position"}
+                      {isSavingPhotoPosition ? "SavingвЂ¦" : "Save position"}
                     </button>
                   </div>
                 )}
@@ -2617,7 +2765,7 @@ export default function CatProfilePage() {
                 className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
                 aria-label="Next photo"
               >
-                ›
+                вЂє
               </button>
             )}
           </div>
@@ -2643,7 +2791,7 @@ export default function CatProfilePage() {
                 className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
                 aria-label="Previous document"
               >
-                ‹
+                вЂ№
               </button>
             )}
             <div className="relative z-10 flex h-[92dvh] w-[95vw] max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -2672,7 +2820,7 @@ export default function CatProfilePage() {
                     className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d05a2c] text-2xl font-light leading-none text-white transition hover:bg-[#b24a20]"
                     aria-label="Close document preview"
                   >
-                    ×
+                    Г—
                   </button>
                 </div>
               </div>
@@ -2703,7 +2851,7 @@ export default function CatProfilePage() {
                 className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
                 aria-label="Next document"
               >
-                ›
+                вЂє
               </button>
             )}
           </div>
