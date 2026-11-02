@@ -26,7 +26,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-dose-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Admin cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Admin cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -53,7 +58,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-period-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Period cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Period cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -80,7 +90,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-after-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "After cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "After cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -107,7 +122,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-create-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Create admin cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Create admin cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -159,7 +179,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-remove-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Remove admin cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Remove admin cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -218,7 +243,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-restore-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Restore admin cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Restore admin cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,
@@ -260,7 +290,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       ).resolves.toMatchObject({ deletedAt: null, version: 2 });
       await expect(
         tx.auditEvent.findMany({
-          where: { catId: cat.id, eventType: "treatment_administration_checked" },
+          where: {
+            catId: cat.id,
+            eventType: "treatment_administration_checked",
+          },
         }),
       ).resolves.toHaveLength(1);
     });
@@ -271,7 +304,12 @@ describe("SetCatTreatmentAdministrationHandler", () => {
       const actor = await tx.user.create({
         data: { email: `${Date.now()}-same-admin@example.com` },
       });
-      const cat = await tx.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: "Same admin cat" } });
+      const cat = await tx.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: "Same admin cat",
+        },
+      });
       const treatment = await tx.catTreatment.create({
         data: {
           catId: cat.id,

@@ -11,6 +11,8 @@
   "scripts": {
     "build": "nest build",
     "format": "oxfmt --write src test prisma",
+    "format:check": "oxfmt --check src test prisma",
+    "lint": "oxlint -D correctness -A no-unused-vars -A no-useless-escape src test prisma",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "test": "tsc --noEmit && vitest run",
@@ -57,6 +59,7 @@
     "@types/web-push": "^3.6.4",
     "knip": "^6.44.1",
     "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
     "prisma": "^7.10.1",
     "supertest": "^7.3.1",
     "testcontainers": "^12.2.1",

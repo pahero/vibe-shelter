@@ -19,7 +19,13 @@ describe("CatTasks", () => {
   beforeEach(() => {
     listTasks.mockReset().mockResolvedValue([]);
     listUsers.mockReset().mockResolvedValue([
-      { id: "user-1", email: "receiver@example.com", fullName: "Receiver", status: "active", isTest: false },
+      {
+        id: "user-1",
+        email: "receiver@example.com",
+        fullName: "Receiver",
+        status: "active",
+        isTest: false,
+      },
     ]);
   });
 
@@ -27,16 +33,24 @@ describe("CatTasks", () => {
     render(<CatTasks catId="cat-1" />);
     await screen.findByText("No reminders yet.");
     fireEvent.click(screen.getByRole("button", { name: "Add reminder" }));
-    const select = screen.getByRole("combobox", { name: "Notification receivers" });
+    const select = screen.getByRole("combobox", {
+      name: "Notification receivers",
+    });
     fireEvent.change(select, { target: { value: "user-1" } });
 
-    const removeButton = screen.getByRole("button", { name: "Remove Receiver" });
+    const removeButton = screen.getByRole("button", {
+      name: "Remove Receiver",
+    });
     expect(removeButton.querySelector("svg")).toBeInTheDocument();
     expect(select.querySelector('option[value="user-1"]')).toBeDisabled();
 
     fireEvent.click(removeButton);
 
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Remove Receiver" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Remove Receiver" }),
+      ).not.toBeInTheDocument(),
+    );
     expect(select.querySelector('option[value="user-1"]')).not.toBeDisabled();
   });
 });

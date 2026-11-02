@@ -9,7 +9,13 @@ type AddNewButtonProps = {
   className?: string;
 };
 
-export function AddNewButton({ label, onClick, disabled = false, isOpen = false, className }: AddNewButtonProps) {
+export function AddNewButton({
+  label,
+  onClick,
+  disabled = false,
+  isOpen = false,
+  className,
+}: AddNewButtonProps) {
   return (
     <button
       type="button"
@@ -17,9 +23,16 @@ export function AddNewButton({ label, onClick, disabled = false, isOpen = false,
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={className ?? "inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"}
+      className={
+        className ??
+        "inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-[#b24a20] bg-[#d05a2c] text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+      }
     >
-      <FontAwesomeIcon icon={isOpen ? faXmark : faPlus} className="text-sm" aria-hidden="true" />
+      <FontAwesomeIcon
+        icon={isOpen ? faXmark : faPlus}
+        className="text-sm"
+        aria-hidden="true"
+      />
     </button>
   );
 }

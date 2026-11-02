@@ -13,7 +13,11 @@ import { ForbiddenException } from "@nestjs/common";
 export class UpdateUserHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(id: string, data: UpdateUserCommand, actor: { id: string; role: "OWNER" | "ADMIN" | "STAFF" }): Promise<{ id: string }> {
+  async handle(
+    id: string,
+    data: UpdateUserCommand,
+    actor: { id: string; role: "OWNER" | "ADMIN" | "STAFF" },
+  ): Promise<{ id: string }> {
     if (
       data.role !== undefined &&
       data.role !== "admin" &&
@@ -38,11 +42,20 @@ export class UpdateUserHandler {
       if (!existing) throw new NotFoundException("User not found");
       if (data.role !== undefined && actor.id === id)
         throw new ForbiddenException("You cannot change your own role");
-      if (data.role !== undefined && actor.role === "ADMIN" &&
-          (existing.role === "OWNER" || data.role === "owner"))
+      if (
+        data.role !== undefined &&
+        actor.role === "ADMIN" &&
+        (existing.role === "OWNER" || data.role === "owner")
+      )
         throw new ForbiddenException("Only Owners can change Owner roles");
-      if (data.role !== undefined && actor.role !== "OWNER" && actor.role !== "ADMIN")
-        throw new ForbiddenException("Only Owners and Admins can change user roles");
+      if (
+        data.role !== undefined &&
+        actor.role !== "OWNER" &&
+        actor.role !== "ADMIN"
+      )
+        throw new ForbiddenException(
+          "Only Owners and Admins can change user roles",
+        );
       await tx.user.update({
         where: { id },
         data: {

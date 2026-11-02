@@ -18,17 +18,23 @@ describe("ArchiveCatDto", () => {
   });
 
   it("rejects a missing or invalid archiving date", async () => {
-    const missingDate = Object.assign(new ArchiveCatDto(), { reasonId: "reason-id" });
+    const missingDate = Object.assign(new ArchiveCatDto(), {
+      reasonId: "reason-id",
+    });
     const invalidDate = Object.assign(new ArchiveCatDto(), {
       reasonId: "reason-id",
       archivingDate: "not-a-date",
     });
 
     await expect(validate(missingDate)).resolves.toEqual(
-      expect.arrayContaining([expect.objectContaining({ property: "archivingDate" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ property: "archivingDate" }),
+      ]),
     );
     await expect(validate(invalidDate)).resolves.toEqual(
-      expect.arrayContaining([expect.objectContaining({ property: "archivingDate" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ property: "archivingDate" }),
+      ]),
     );
   });
 });

@@ -49,13 +49,13 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.intakeDetails !== undefined
       ? { intakeDetails: optionalTrim(data.intakeDetails) }
       : {}),
-    ...(data.intakeSource !== undefined ? { intakeSource: data.intakeSource } : {}),
+    ...(data.intakeSource !== undefined
+      ? { intakeSource: data.intakeSource }
+      : {}),
     ...(data.microchipNumber !== undefined
       ? { microchipNumber: optionalTrim(data.microchipNumber) }
       : {}),
-    ...(data.passport !== undefined
-      ? { passport: data.passport }
-      : {}),
+    ...(data.passport !== undefined ? { passport: data.passport } : {}),
     ...(data.sponsorName !== undefined
       ? { sponsorName: optionalTrim(data.sponsorName) }
       : {}),
@@ -65,7 +65,9 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.adopterAddress !== undefined
       ? { adopterAddress: optionalTrim(data.adopterAddress) }
       : {}),
-    ...(data.adopterCountry !== undefined ? { adopterCountry: data.adopterCountry } : {}),
+    ...(data.adopterCountry !== undefined
+      ? { adopterCountry: data.adopterCountry }
+      : {}),
     ...(data.felvFivTestDone !== undefined
       ? { felvFivTestDone: data.felvFivTestDone }
       : {}),

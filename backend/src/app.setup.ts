@@ -21,7 +21,6 @@ export function setupApp(app: INestApplication) {
     allowedHeaders: "Content-Type,Authorization",
   });
 
-
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({

@@ -12,7 +12,10 @@ export function refreshCookieName(nodeEnv: string): string {
   return nodeEnv === "production" ? "__Host-refresh" : "shelter_refresh";
 }
 
-export function readCookie(cookieHeader: string | undefined, name: string): string | null {
+export function readCookie(
+  cookieHeader: string | undefined,
+  name: string,
+): string | null {
   if (!cookieHeader) return null;
   const value = cookieHeader
     .split(";")
@@ -26,7 +29,12 @@ export function readCookie(cookieHeader: string | undefined, name: string): stri
   }
 }
 
-export function setAuthCookies(response: Response, accessToken: string, refreshToken: string, nodeEnv: string): void {
+export function setAuthCookies(
+  response: Response,
+  accessToken: string,
+  refreshToken: string,
+  nodeEnv: string,
+): void {
   const secure = nodeEnv === "production";
   response.cookie(accessCookieName(nodeEnv), accessToken, {
     httpOnly: true,
@@ -45,7 +53,12 @@ export function setAuthCookies(response: Response, accessToken: string, refreshT
 }
 
 export function clearAuthCookies(response: Response, nodeEnv: string): void {
-  const options = { httpOnly: true, secure: nodeEnv === "production", sameSite: "lax" as const, path: "/" };
+  const options = {
+    httpOnly: true,
+    secure: nodeEnv === "production",
+    sameSite: "lax" as const,
+    path: "/",
+  };
   response.clearCookie(accessCookieName(nodeEnv), options);
   response.clearCookie(refreshCookieName(nodeEnv), options);
 }

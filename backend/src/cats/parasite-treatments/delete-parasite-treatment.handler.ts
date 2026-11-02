@@ -8,10 +8,18 @@ import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
 export class DeleteParasiteTreatmentHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(id: string, actorUserId: string, isTest: boolean): Promise<void> {
+  async handle(
+    id: string,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<void> {
     await runInNewTransaction(this.prisma, async (transaction) => {
-      const treatment = await transaction.parasiteTreatment.findFirst({ where: { id, deletedAt: null, cat: { isTest, deletedAt: null } }, select: { id: true, catId: true } });
-      if (!treatment) throw new NotFoundException("Parasite treatment not found");
+      const treatment = await transaction.parasiteTreatment.findFirst({
+        where: { id, deletedAt: null, cat: { isTest, deletedAt: null } },
+        select: { id: true, catId: true },
+      });
+      if (!treatment)
+        throw new NotFoundException("Parasite treatment not found");
       await transaction.parasiteTreatment.update({
         where: { id },
         data: {
@@ -20,7 +28,15 @@ export class DeleteParasiteTreatmentHandler {
           concurrencyToken: randomUUID(),
         },
       });
-      await transaction.auditEvent.create({ data: { catId: treatment.catId, parasiteTreatmentId: id, actorUserId, isTest, eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentDeleted } });
+      await transaction.auditEvent.create({
+        data: {
+          catId: treatment.catId,
+          parasiteTreatmentId: id,
+          actorUserId,
+          isTest,
+          eventType: CAT_AUDIT_EVENT_TYPES.parasiteTreatmentDeleted,
+        },
+      });
     });
   }
 }

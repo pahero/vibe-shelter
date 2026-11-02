@@ -156,7 +156,10 @@ export class ForgotPasswordDto {
   captchaToken!: string;
 
   toCommand(): { email: string; captchaToken: string } {
-    return { email: this.email.trim().toLowerCase(), captchaToken: this.captchaToken };
+    return {
+      email: this.email.trim().toLowerCase(),
+      captchaToken: this.captchaToken,
+    };
   }
 }
 

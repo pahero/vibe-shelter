@@ -15,7 +15,10 @@ export class CreateRefreshTokenHandler {
         select: { id: true },
       });
       if (!user) throw new UnauthorizedException("User account is inactive");
-      await tx.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
+      await tx.user.update({
+        where: { id: userId },
+        data: { lastLoginAt: new Date() },
+      });
       await tx.refreshToken.create({
         data: {
           userId,

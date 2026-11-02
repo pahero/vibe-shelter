@@ -31,8 +31,12 @@ describe("ListCatTagsHandler", () => {
         data: { name: `${suffix} regular`, isTest: false },
       });
 
-      const testTags = await new ListCatTagsHandler(tx as PrismaService).handle(true);
-      const regularTags = await new ListCatTagsHandler(tx as PrismaService).handle(false);
+      const testTags = await new ListCatTagsHandler(tx as PrismaService).handle(
+        true,
+      );
+      const regularTags = await new ListCatTagsHandler(
+        tx as PrismaService,
+      ).handle(false);
 
       expect(testTags.map((tag) => tag.id)).toContain(testTag.id);
       expect(testTags.map((tag) => tag.id)).not.toContain(regularTag.id);

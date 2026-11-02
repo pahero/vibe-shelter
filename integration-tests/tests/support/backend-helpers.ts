@@ -10,14 +10,21 @@ export function catPhotoPath(photo: CatPhotoName): string {
   return path.resolve(__dirname, "../../data", photo);
 }
 
-export async function loginViaApi(page: Page, email: string, password: string): Promise<void> {
+export async function loginViaApi(
+  page: Page,
+  email: string,
+  password: string,
+): Promise<void> {
   const response = await page.request.post(`${BACKEND_URL}/auth/login`, {
     data: { email, password },
   });
   if (response.status() !== 200) {
-    throw new Error(`Login via API failed (${response.status()}): ${await response.text()}`);
+    throw new Error(
+      `Login via API failed (${response.status()}): ${await response.text()}`,
+    );
   }
-  const cookies = response.headersArray()
+  const cookies = response
+    .headersArray()
     .filter((header) => header.name.toLowerCase() === "set-cookie")
     .map(({ value }) => {
       const [pair, ...attributes] = value.split(";");
@@ -25,13 +32,20 @@ export async function loginViaApi(page: Page, email: string, password: string): 
       return {
         name: pair.slice(0, separator),
         value: pair.slice(separator + 1),
-        httpOnly: attributes.some((attribute) => attribute.trim().toLowerCase() === "httponly"),
-        secure: attributes.some((attribute) => attribute.trim().toLowerCase() === "secure"),
+        httpOnly: attributes.some(
+          (attribute) => attribute.trim().toLowerCase() === "httponly",
+        ),
+        secure: attributes.some(
+          (attribute) => attribute.trim().toLowerCase() === "secure",
+        ),
       };
     });
   const authCookie = (suffix: "session" | "refresh") => {
-    const cookie = cookies.find(({ name }) => name === `shelter_${suffix}` || name === `__Host-${suffix}`);
-    if (!cookie) throw new Error(`Login response did not set the ${suffix} cookie`);
+    const cookie = cookies.find(
+      ({ name }) => name === `shelter_${suffix}` || name === `__Host-${suffix}`,
+    );
+    if (!cookie)
+      throw new Error(`Login response did not set the ${suffix} cookie`);
     return cookie;
   };
   const sessionCookie = authCookie("session");
@@ -44,8 +58,16 @@ export async function loginViaApi(page: Page, email: string, password: string): 
 
 async function authHeaders(page: Page): Promise<Record<string, string>> {
   const cookies = await page.context().cookies(FRONTEND_URL);
-  if (!cookies.some((cookie) => cookie.name === "shelter_session" || cookie.name === "__Host-session")) throw new Error("Authenticated API helper requires loginViaApi first");
-  return { Cookie: cookies.map(({ name, value }) => `${name}=${value}`).join("; ") };
+  if (
+    !cookies.some(
+      (cookie) =>
+        cookie.name === "shelter_session" || cookie.name === "__Host-session",
+    )
+  )
+    throw new Error("Authenticated API helper requires loginViaApi first");
+  return {
+    Cookie: cookies.map(({ name, value }) => `${name}=${value}`).join("; "),
+  };
 }
 
 export async function createLocationViaApi(
@@ -60,9 +82,12 @@ export async function createLocationViaApi(
       data: { email: adminTestUser.email, password: adminTestUser.password },
     });
     if (loginResponse.status() !== 200) {
-      throw new Error(`Admin API login failed (${loginResponse.status()}): ${await loginResponse.text()}`);
+      throw new Error(
+        `Admin API login failed (${loginResponse.status()}): ${await loginResponse.text()}`,
+      );
     }
-    const cookieHeader = loginResponse.headersArray()
+    const cookieHeader = loginResponse
+      .headersArray()
       .filter((header) => header.name.toLowerCase() === "set-cookie")
       .map((header) => header.value.split(";", 1)[0])
       .join("; ");
@@ -71,7 +96,9 @@ export async function createLocationViaApi(
       data: { name, ...(description ? { description } : {}) },
     });
     if (response.status() !== 201) {
-      throw new Error(`Could not create location via API (${response.status()}): ${await response.text()}`);
+      throw new Error(
+        `Could not create location via API (${response.status()}): ${await response.text()}`,
+      );
     }
     return (await response.json()) as { id: string; name: string };
   } finally {
@@ -90,7 +117,9 @@ export async function createCatViaApi(
     microchipNumber?: string;
   },
 ): Promise<{ id: string; name: string }> {
-  const locationId = input.locationId ?? (await createLocationViaApi(page, uniqueName("Cat location"))).id;
+  const locationId =
+    input.locationId ??
+    (await createLocationViaApi(page, uniqueName("Cat location"))).id;
   const response = await page.request.post(`${BACKEND_URL}/api/cats`, {
     headers: await authHeaders(page),
     data: {
@@ -116,16 +145,19 @@ export async function uploadCatPhotoViaApi(
   photoFile: string,
   mimeType = "image/jpeg",
 ): Promise<void> {
-  const response = await page.request.post(`${BACKEND_URL}/api/cats/${catId}/photos`, {
-    headers: await authHeaders(page),
-    multipart: {
-      photo: {
-        name: path.basename(photoFile),
-        mimeType,
-        buffer: fs.readFileSync(photoFile),
+  const response = await page.request.post(
+    `${BACKEND_URL}/api/cats/${catId}/photos`,
+    {
+      headers: await authHeaders(page),
+      multipart: {
+        photo: {
+          name: path.basename(photoFile),
+          mimeType,
+          buffer: fs.readFileSync(photoFile),
+        },
       },
     },
-  });
+  );
   if (response.status() !== 201) {
     throw new Error(
       `Could not upload cat photo via API (${response.status()}): ${await response.text()}`,

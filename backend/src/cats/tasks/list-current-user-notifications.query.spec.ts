@@ -9,7 +9,10 @@ describe("ListCurrentUserNotificationsQuery", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Medication", dueDate: new Date() },
@@ -42,7 +45,13 @@ describe("ListCurrentUserNotificationsQuery", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const testCat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test cat ${Date.now()}`, isTest: true },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
+          name: `Test cat ${Date.now()}`,
+          isTest: true,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: testCat.id, comment: "Test", dueDate: new Date() },
@@ -65,8 +74,15 @@ describe("ListCurrentUserNotificationsQuery", () => {
 
   it("returns treatment notifications in the same feed", async () => {
     await runInTestTransaction(async (transaction) => {
-      const user = await transaction.user.create({ data: { email: `${Date.now()}-treatment-user@example.com` } });
-      const cat = await transaction.cat.create({ data: { currentLocation: { create: { name: "Fixture location" } }, name: `Treatment cat ${Date.now()}` } });
+      const user = await transaction.user.create({
+        data: { email: `${Date.now()}-treatment-user@example.com` },
+      });
+      const cat = await transaction.cat.create({
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Treatment cat ${Date.now()}`,
+        },
+      });
       const treatment = await transaction.catTreatment.create({
         data: {
           catId: cat.id,
@@ -77,11 +93,24 @@ describe("ListCurrentUserNotificationsQuery", () => {
           dosesPerDay: 1,
         },
       });
-      await transaction.taskNotification.create({ data: { treatmentId: treatment.id, userId: user.id } });
-      const query = new ListCurrentUserNotificationsQuery(transaction as PrismaService);
+      await transaction.taskNotification.create({
+        data: { treatmentId: treatment.id, userId: user.id },
+      });
+      const query = new ListCurrentUserNotificationsQuery(
+        transaction as PrismaService,
+      );
 
       await expect(query.handle(user.id, false, 0, 10)).resolves.toMatchObject({
-        data: [expect.objectContaining({ type: "treatment", treatmentId: treatment.id, comment: "Antibiotics", catId: cat.id, catName: cat.name, catNameNumber: cat.nameNumber })],
+        data: [
+          expect.objectContaining({
+            type: "treatment",
+            treatmentId: treatment.id,
+            comment: "Antibiotics",
+            catId: cat.id,
+            catName: cat.name,
+            catNameNumber: cat.nameNumber,
+          }),
+        ],
         total: 1,
       });
     });

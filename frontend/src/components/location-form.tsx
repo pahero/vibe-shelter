@@ -10,15 +10,25 @@ export type LocationFormProps = {
   error?: string | null;
 };
 
-export function LocationForm({ initialData, onSubmit, isLoading = false, error }: LocationFormProps) {
+export function LocationForm({
+  initialData,
+  onSubmit,
+  isLoading = false,
+  error,
+}: LocationFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name ?? "",
     description: initialData?.description ?? "",
     ownerId: initialData?.ownerId ?? "",
-    status: (initialData?.status ?? "ACTIVE") as "ACTIVE" | "INACTIVE" | "ARCHIVED",
+    status: (initialData?.status ?? "ACTIVE") as
+      | "ACTIVE"
+      | "INACTIVE"
+      | "ARCHIVED",
   });
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -61,12 +71,12 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
     }
 
     const submitData = initialData
-        ? {
-            name: formData.name,
-            description: formData.description || null,
-            ownerId: formData.ownerId || null,
-            status: formData.status,
-          }
+      ? {
+          name: formData.name,
+          description: formData.description || null,
+          ownerId: formData.ownerId || null,
+          status: formData.status,
+        }
       : {
           name: formData.name,
           description: formData.description || undefined,
@@ -90,7 +100,10 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
 
       {/* Location Name */}
       <div>
-        <label htmlFor="name" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+        <label
+          htmlFor="name"
+          className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]"
+        >
           Location Name *
         </label>
         <input
@@ -105,12 +118,17 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
               : "border-[#d4c7b4] bg-white focus:ring-[#d05a2c]"
           }`}
         />
-        {validationErrors.name && <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>}
+        {validationErrors.name && (
+          <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
+        )}
       </div>
 
       {/* Description */}
       <div>
-        <label htmlFor="description" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+        <label
+          htmlFor="description"
+          className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]"
+        >
           Description
         </label>
         <textarea
@@ -125,7 +143,10 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
 
       {!initialData && (
         <div>
-          <label htmlFor="ownerId" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+          <label
+            htmlFor="ownerId"
+            className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]"
+          >
             Owner ID
           </label>
           <input
@@ -140,14 +161,21 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
                 : "border-[#d4c7b4] bg-white focus:ring-[#d05a2c]"
             }`}
           />
-          {validationErrors.ownerId && <p className="mt-1 text-xs text-red-600">{validationErrors.ownerId}</p>}
+          {validationErrors.ownerId && (
+            <p className="mt-1 text-xs text-red-600">
+              {validationErrors.ownerId}
+            </p>
+          )}
         </div>
       )}
 
       {/* Status (Edit only) */}
       {initialData && (
         <div>
-          <label htmlFor="status" className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+          <label
+            htmlFor="status"
+            className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]"
+          >
             Status
           </label>
           <select
@@ -169,7 +197,11 @@ export function LocationForm({ initialData, onSubmit, isLoading = false, error }
         disabled={isLoading}
         className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#b24a20] bg-[#d05a2c] px-6 text-sm font-semibold text-white transition hover:-translate-y-px hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isLoading ? "Saving..." : initialData ? "Update Location" : "Create Location"}
+        {isLoading
+          ? "Saving..."
+          : initialData
+            ? "Update Location"
+            : "Create Location"}
       </button>
     </form>
   );

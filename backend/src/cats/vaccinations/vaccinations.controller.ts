@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { CurrentUser, JwtAuthGuard } from "../../auth";
 import { CreateVaccinationHandler } from "./create-vaccination.handler";
 import { DeleteVaccinationHandler } from "./delete-vaccination.handler";
@@ -25,18 +36,39 @@ export class VaccinationsController {
 
   @Post(":id/vaccinations")
   @HttpCode(HttpStatus.CREATED)
-  create(@Param("id") catId: string, @Body() dto: CreateVaccinationDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.createVaccination.handle(catId, dto.toCommand(), user.id, user.isTest);
+  create(
+    @Param("id") catId: string,
+    @Body() dto: CreateVaccinationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.createVaccination.handle(
+      catId,
+      dto.toCommand(),
+      user.id,
+      user.isTest,
+    );
   }
 
   @Patch("vaccinations/:vaccinationId")
-  update(@Param("vaccinationId") id: string, @Body() dto: UpdateVaccinationDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.updateVaccination.handle(id, dto.toCommand(), user.id, user.isTest);
+  update(
+    @Param("vaccinationId") id: string,
+    @Body() dto: UpdateVaccinationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.updateVaccination.handle(
+      id,
+      dto.toCommand(),
+      user.id,
+      user.isTest,
+    );
   }
 
   @Delete("vaccinations/:vaccinationId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("vaccinationId") id: string, @CurrentUser() user: AuthenticatedUser) {
+  async remove(
+    @Param("vaccinationId") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     await this.deleteVaccination.handle(id, user.id, user.isTest);
   }
 }

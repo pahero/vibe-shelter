@@ -3,7 +3,10 @@ export const BACKEND_URL =
 
 function getBackendUrl(): string {
   if (typeof window === "undefined") {
-    return process.env.INTERNAL_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
+    return (
+      process.env.INTERNAL_API_URL?.replace(/\/$/, "") ??
+      "http://localhost:4000"
+    );
   }
 
   return BACKEND_URL;
@@ -45,7 +48,9 @@ export type ChangePasswordInput = {
   newPasswordConfirmation: string;
 };
 
-export async function fetchCurrentUser(cookieHeader: string): Promise<AuthUser | null> {
+export async function fetchCurrentUser(
+  cookieHeader: string,
+): Promise<AuthUser | null> {
   let response: Response;
   try {
     response = await fetch(`${getBackendUrl()}/auth/me`, {
@@ -64,7 +69,9 @@ export async function fetchCurrentUser(cookieHeader: string): Promise<AuthUser |
   return (await response.json()) as AuthUser;
 }
 
-export async function fetchAdminUsers(cookieHeader?: string): Promise<AdminUser[]> {
+export async function fetchAdminUsers(
+  cookieHeader?: string,
+): Promise<AdminUser[]> {
   const response = await fetch(`${getBackendUrl()}/admin/users`, {
     method: "GET",
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
@@ -79,7 +86,9 @@ export async function fetchAdminUsers(cookieHeader?: string): Promise<AdminUser[
   return (await response.json()) as AdminUser[];
 }
 
-export async function createAdminUser(input: CreateAdminUserInput): Promise<AdminUser> {
+export async function createAdminUser(
+  input: CreateAdminUserInput,
+): Promise<AdminUser> {
   const response = await authenticatedFetch(`${getBackendUrl()}/admin/users`, {
     method: "POST",
     headers: {
@@ -93,68 +102,102 @@ export async function createAdminUser(input: CreateAdminUserInput): Promise<Admi
     throw new Error(message);
   }
   const users = await fetchAdminUsers();
-  const matchingUser = users.find((user) => user.email.toLowerCase() === input.email.toLowerCase());
-  if (!matchingUser) throw new Error("The user was created but could not be loaded.");
+  const matchingUser = users.find(
+    (user) => user.email.toLowerCase() === input.email.toLowerCase(),
+  );
+  if (!matchingUser)
+    throw new Error("The user was created but could not be loaded.");
   return matchingUser;
 }
 
-export async function setAdminUserTemporaryPassword(userId: string, password: string): Promise<void> {
-  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password }),
-  });
+export async function setAdminUserTemporaryPassword(
+  userId: string,
+  password: string,
+): Promise<void> {
+  const response = await authenticatedFetch(
+    `${getBackendUrl()}/admin/users/${userId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    },
+  );
 
   if (!response.ok) {
     throw new Error(await readErrorMessage(response));
   }
 }
 
-export async function setAdminUserTestStatus(userId: string, isTest: boolean): Promise<AdminUser> {
-  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ isTest }),
-  });
+export async function setAdminUserTestStatus(
+  userId: string,
+  isTest: boolean,
+): Promise<AdminUser> {
+  const response = await authenticatedFetch(
+    `${getBackendUrl()}/admin/users/${userId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isTest }),
+    },
+  );
 
   if (!response.ok) throw new Error(await readErrorMessage(response));
   return fetchAdminUser(userId);
 }
 
-export async function setAdminUserRole(userId: string, role: AdminUser["role"]): Promise<AdminUser> {
-  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role }),
-  });
+export async function setAdminUserRole(
+  userId: string,
+  role: AdminUser["role"],
+): Promise<AdminUser> {
+  const response = await authenticatedFetch(
+    `${getBackendUrl()}/admin/users/${userId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    },
+  );
   if (!response.ok) throw new Error(await readErrorMessage(response));
   return fetchAdminUser(userId);
 }
 
 async function fetchAdminUser(userId: string): Promise<AdminUser> {
-  const response = await authenticatedFetch(`${getBackendUrl()}/admin/users/${userId}`, { method: "GET" });
+  const response = await authenticatedFetch(
+    `${getBackendUrl()}/admin/users/${userId}`,
+    { method: "GET" },
+  );
   if (!response.ok) throw new Error(await readErrorMessage(response));
   return (await response.json()) as AdminUser;
 }
 
-export async function changePassword(input: ChangePasswordInput): Promise<void> {
-  const response = await authenticatedFetch(`${getBackendUrl()}/auth/change-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+export async function changePassword(
+  input: ChangePasswordInput,
+): Promise<void> {
+  const response = await authenticatedFetch(
+    `${getBackendUrl()}/auth/change-password`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
 
   if (!response.ok) {
     throw new Error(await readErrorMessage(response));
   }
 }
 
-export async function replaceTemporaryPassword(input: Pick<ChangePasswordInput, "newPassword" | "newPasswordConfirmation">): Promise<void> {
-  const response = await authenticatedFetch(`${getBackendUrl()}/auth/replace-temporary-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+export async function replaceTemporaryPassword(
+  input: Pick<ChangePasswordInput, "newPassword" | "newPasswordConfirmation">,
+): Promise<void> {
+  const response = await authenticatedFetch(
+    `${getBackendUrl()}/auth/replace-temporary-password`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
 
   if (!response.ok) {
     throw new Error(await readErrorMessage(response));
@@ -162,11 +205,16 @@ export async function replaceTemporaryPassword(input: Pick<ChangePasswordInput, 
 
   // The access token still contains passwordChangeRequired=true. Rotate it
   // now so subsequent page requests see the updated account state.
-  const refreshResponse = await authenticatedFetch(`${getBackendUrl()}/auth/token`, {
-    method: "POST",
-  });
+  const refreshResponse = await authenticatedFetch(
+    `${getBackendUrl()}/auth/token`,
+    {
+      method: "POST",
+    },
+  );
   if (!refreshResponse.ok) {
-    throw new Error("Password was changed, but the session could not be refreshed. Please sign in again.");
+    throw new Error(
+      "Password was changed, but the session could not be refreshed. Please sign in again.",
+    );
   }
 }
 
@@ -185,7 +233,10 @@ async function readErrorMessage(response: Response): Promise<string> {
 
   return response.statusText || "User registration failed";
 }
-export async function authenticatedFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+export async function authenticatedFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
   const send = () => fetch(input, { ...init, credentials: "include" });
   const response = await send();
   if (response.status !== 401 || typeof window === "undefined") return response;

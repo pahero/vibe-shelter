@@ -13,13 +13,18 @@ const TYPES = Object.values(ParasiteTreatmentType);
 
 function parseDate(value: string): Date {
   const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
     throw new BadRequestException("Date must be a valid ISO date");
   }
   return date;
 }
 
-function parseOptionalDate(value: string | null | undefined): Date | null | undefined {
+function parseOptionalDate(
+  value: string | null | undefined,
+): Date | null | undefined {
   if (value === undefined) return undefined;
   if (value === null || value === "") return null;
   return parseDate(value);
@@ -32,7 +37,8 @@ function requiredText(value: string): string {
 }
 
 function parseType(value: string): ParasiteTreatmentType {
-  if (TYPES.includes(value as ParasiteTreatmentType)) return value as ParasiteTreatmentType;
+  if (TYPES.includes(value as ParasiteTreatmentType))
+    return value as ParasiteTreatmentType;
   throw new BadRequestException(`type must be one of: ${TYPES.join(", ")}`);
 }
 
@@ -81,8 +87,12 @@ export class UpdateParasiteTreatmentDto {
     return {
       ...(this.type !== undefined ? { type: parseType(this.type) } : {}),
       ...(this.date !== undefined ? { date: parseDate(this.date) } : {}),
-      ...(this.nextDueDate !== undefined ? { nextDueDate: parseOptionalDate(this.nextDueDate) } : {}),
-      ...(this.productName !== undefined ? { productName: requiredText(this.productName) } : {}),
+      ...(this.nextDueDate !== undefined
+        ? { nextDueDate: parseOptionalDate(this.nextDueDate) }
+        : {}),
+      ...(this.productName !== undefined
+        ? { productName: requiredText(this.productName) }
+        : {}),
     };
   }
 }

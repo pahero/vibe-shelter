@@ -5,7 +5,17 @@ import { CatCard } from "@/components/cat-card";
 import { AddNewButton } from "@/components/add-new-button";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ApiErrorHandler } from "@/lib/utils";
-import { CatCard as CatCardType, CatSex, CreateCatDto, IntakeSource, INTAKE_SOURCE_LABELS, Location, catsApi, locationsApi, SterilizationStatus } from "@/lib/api";
+import {
+  CatCard as CatCardType,
+  CatSex,
+  CreateCatDto,
+  IntakeSource,
+  INTAKE_SOURCE_LABELS,
+  Location,
+  catsApi,
+  locationsApi,
+  SterilizationStatus,
+} from "@/lib/api";
 
 type LocationCatsSectionProps = {
   locationId: string;
@@ -29,7 +39,10 @@ function emptyForm(locationId: string) {
   };
 }
 
-export function LocationCatsSection({ locationId, locationName }: LocationCatsSectionProps) {
+export function LocationCatsSection({
+  locationId,
+  locationName,
+}: LocationCatsSectionProps) {
   const [cats, setCats] = useState<CatCardType[]>([]);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,14 +66,19 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
     async function fetchLocations() {
       setIsLoadingLocations(true);
       try {
-        const response = await locationsApi.listLocations({ status: "ACTIVE", limit: 100 });
+        const response = await locationsApi.listLocations({
+          status: "ACTIVE",
+          limit: 100,
+        });
         if (!cancelled) {
           setLocations(response.data);
           setForm((prev) => ({
             ...prev,
-            currentLocationId: response.data.some((location) => location.id === prev.currentLocationId)
+            currentLocationId: response.data.some(
+              (location) => location.id === prev.currentLocationId,
+            )
               ? prev.currentLocationId
-              : response.data[0]?.id ?? "",
+              : (response.data[0]?.id ?? ""),
           }));
         }
       } catch (err) {
@@ -142,7 +160,9 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
       }
       setForm(emptyForm(locationId));
       setShowForm(false);
-      setSuccess(`${created.name} was added to ${created.currentLocationName || "the selected location"}.`);
+      setSuccess(
+        `${created.name} was added to ${created.currentLocationName || "the selected location"}.`,
+      );
       setCurrentPage(1);
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
@@ -157,54 +177,105 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
     <section className="mt-8 rounded-[22px] border border-[#d4c7b4] bg-[#fff8ee]/85 p-6 shadow-panel backdrop-blur-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">Cats at this location</p>
-          <h2 className="mt-1 text-2xl font-semibold text-gray-900">Cat cards</h2>
-          <p className="mt-1 text-sm text-[#6d6a66]">Active cats assigned to {locationName}.</p>
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d05a2c]">
+            Cats at this location
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold text-gray-900">
+            Cat cards
+          </h2>
+          <p className="mt-1 text-sm text-[#6d6a66]">
+            Active cats assigned to {locationName}.
+          </p>
         </div>
-        <AddNewButton label={showForm ? "Close add cat form" : "Add cat"} isOpen={showForm} onClick={() => setShowForm((value) => !value)} />
+        <AddNewButton
+          label={showForm ? "Close add cat form" : "Add cat"}
+          isOpen={showForm}
+          onClick={() => setShowForm((value) => !value)}
+        />
       </div>
 
       {(error || success) && (
-        <div className={`mt-5 rounded-lg border p-4 ${error ? "border-red-300 bg-red-50" : "border-green-300 bg-green-50"}`}>
-          <p className={`text-sm font-medium ${error ? "text-red-800" : "text-green-800"}`}>{error || success}</p>
+        <div
+          className={`mt-5 rounded-lg border p-4 ${error ? "border-red-300 bg-red-50" : "border-green-300 bg-green-50"}`}
+        >
+          <p
+            className={`text-sm font-medium ${error ? "text-red-800" : "text-green-800"}`}
+          >
+            {error || success}
+          </p>
         </div>
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4">
+        <form
+          onSubmit={handleCreate}
+          className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Name *
               <input
                 value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, name: event.target.value }))
+                }
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                 placeholder="Mila"
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Current location
-              <select value={form.currentLocationId} onChange={(event) => setForm((prev) => ({ ...prev, currentLocationId: event.target.value }))} disabled={isLoadingLocations || locations.length === 0} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60">
-                {locations.length === 0 && <option value="">No active locations</option>}
-                {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+              <select
+                value={form.currentLocationId}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    currentLocationId: event.target.value,
+                  }))
+                }
+                disabled={isLoadingLocations || locations.length === 0}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {locations.length === 0 && (
+                  <option value="">No active locations</option>
+                )}
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake source
               <select
                 value={form.intakeSource}
-                onChange={(event) => setForm((prev) => ({ ...prev, intakeSource: event.target.value as IntakeSource | "" }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    intakeSource: event.target.value as IntakeSource | "",
+                  }))
+                }
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               >
                 <option value="">Not set</option>
-                {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Sex *
               <select
                 value={form.sex}
-                onChange={(event) => setForm((prev) => ({ ...prev, sex: event.target.value as CatSex }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    sex: event.target.value as CatSex,
+                  }))
+                }
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               >
                 <option value="UNKNOWN">Unknown</option>
@@ -217,7 +288,11 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               <select
                 value={form.sterilizationStatus}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, sterilizationStatus: event.target.value as SterilizationStatus }))
+                  setForm((prev) => ({
+                    ...prev,
+                    sterilizationStatus: event.target
+                      .value as SterilizationStatus,
+                  }))
                 }
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               >
@@ -228,22 +303,55 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Color
-              <input value={form.color} onChange={(event) => setForm((prev) => ({ ...prev, color: event.target.value }))} list="cat-color-options" className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" placeholder="Black-white" />
+              <input
+                value={form.color}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, color: event.target.value }))
+                }
+                list="cat-color-options"
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                placeholder="Black-white"
+              />
               <CatColorDatalist />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Birth date
-              <input type="date" value={form.estimatedBirthDate} onChange={(event) => setForm((prev) => ({ ...prev, estimatedBirthDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <input
+                type="date"
+                value={form.estimatedBirthDate}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    estimatedBirthDate: event.target.value,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake date
-              <input type="date" value={form.intakeDate} onChange={(event) => setForm((prev) => ({ ...prev, intakeDate: event.target.value }))} className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]" />
+              <input
+                type="date"
+                value={form.intakeDate}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    intakeDate: event.target.value,
+                  }))
+                }
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Microchip number
               <input
                 value={form.microchipNumber}
-                onChange={(event) => setForm((prev) => ({ ...prev, microchipNumber: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    microchipNumber: event.target.value,
+                  }))
+                }
                 className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
               />
             </label>
@@ -251,7 +359,12 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               Intake details
               <textarea
                 value={form.intakeDetails}
-                onChange={(event) => setForm((prev) => ({ ...prev, intakeDetails: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    intakeDetails: event.target.value,
+                  }))
+                }
                 className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                 placeholder="Found near clinic"
               />
@@ -266,7 +379,9 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
               Cancel
             </button>
             <button
-              disabled={isCreating || isLoadingLocations || locations.length === 0}
+              disabled={
+                isCreating || isLoadingLocations || locations.length === 0
+              }
               className="rounded-xl border border-[#b24a20] bg-[#d05a2c] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isCreating ? "Adding..." : "Add cat"}
@@ -288,14 +403,22 @@ export function LocationCatsSection({ locationId, locationName }: LocationCatsSe
             className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
           />
         </label>
-        <p className="text-sm text-[#6d6a66]">{total} active cat{total === 1 ? "" : "s"}</p>
+        <p className="text-sm text-[#6d6a66]">
+          {total} active cat{total === 1 ? "" : "s"}
+        </p>
       </div>
 
-      {isLoading && <p className="py-10 text-center text-sm text-[#6d6a66]">Loading cat cards...</p>}
+      {isLoading && (
+        <p className="py-10 text-center text-sm text-[#6d6a66]">
+          Loading cat cards...
+        </p>
+      )}
 
       {!isLoading && cats.length === 0 && (
         <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/40 p-8 text-center">
-          <p className="text-sm text-[#6d6a66]">No active cats found for this location.</p>
+          <p className="text-sm text-[#6d6a66]">
+            No active cats found for this location.
+          </p>
         </div>
       )}
 

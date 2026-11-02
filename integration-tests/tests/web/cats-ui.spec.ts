@@ -14,7 +14,9 @@ async function authenticateAsStaff(page: Page) {
 }
 
 test.describe("cats UI", () => {
-  test("user can create a cat with a unique prefix, upload a photo and find it via search", async ({ page }) => {
+  test("user can create a cat with a unique prefix, upload a photo and find it via search", async ({
+    page,
+  }) => {
     const locationName = uniqueName("Cat Housing Location");
     const catName = uniqueName("Misty");
     const microchip = `CHIP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -22,12 +24,18 @@ test.describe("cats UI", () => {
     await authenticateAsStaff(page);
     await page.goto("/");
 
-    await createLocationViaApi(page, locationName, "Active location for new cats");
+    await createLocationViaApi(
+      page,
+      locationName,
+      "Active location for new cats",
+    );
     await page.reload();
 
     await page.getByRole("button", { name: "Add cat" }).click();
 
-    const form = page.locator("form").filter({ has: page.getByRole("button", { name: "Add cat" }) });
+    const form = page
+      .locator("form")
+      .filter({ has: page.getByRole("button", { name: "Add cat" }) });
     await expect(form.getByLabel("Location")).toBeEnabled();
 
     await form.getByLabel("Name *").fill(catName);
@@ -45,23 +53,35 @@ test.describe("cats UI", () => {
     await expect(page.getByRole("heading", { name: catName })).toBeVisible();
 
     // Open the profile and upload cat1.jpg; as the first photo it becomes primary.
-    await page.getByRole("link", { name: `Open profile for ${catName}` }).click();
+    await page
+      .getByRole("link", { name: `Open profile for ${catName}` })
+      .click();
     await page.waitForURL(/\/cats\/[a-z0-9-]+/);
     const catId = new URL(page.url()).pathname.split("/").pop() as string;
-    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Gallery" }).click();
 
     // Prove the photo actually reached the backend and was accepted: capture the
     // upload request and assert a 201 response, not just DOM changes.
     const uploadResponsePromise = page.waitForResponse(
-      (res) => res.url().includes(`/api/cats/${catId}/photos`) && res.request().method() === "POST",
+      (res) =>
+        res.url().includes(`/api/cats/${catId}/photos`) &&
+        res.request().method() === "POST",
     );
-    await page.locator('input[type="file"][accept^="image/"]').setInputFiles(catPhotoPath("cat1.jpg"));
+    await page
+      .locator('input[type="file"][accept^="image/"]')
+      .setInputFiles(catPhotoPath("cat1.jpg"));
     const uploadResponse = await uploadResponsePromise;
     expect(uploadResponse.status()).toBe(201);
 
-    await expect(page.getByRole("button", { name: `Open image of ${catName}` })).toBeVisible();
-    await expect(page.getByRole("button", { name: `Expand image of ${catName}` })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Open image of ${catName}` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Expand image of ${catName}` }),
+    ).toBeVisible();
   });
 
   test("user can open a cat profile from the cats list", async ({ page }) => {
@@ -76,64 +96,71 @@ test.describe("cats UI", () => {
     await page.reload();
 
     await page.getByLabel("Search cats").fill(catName);
-    await page.getByRole("link", { name: `Open profile for ${catName}` }).click();
+    await page
+      .getByRole("link", { name: `Open profile for ${catName}` })
+      .click();
 
     await expect(page).toHaveURL(/\/cats\/[a-z0-9-]+(?:\?.*)?(?:#.*)?$/);
-    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Edit cat profile" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Edit cat profile" }),
+    ).toBeVisible();
   });
 
-  test(
-    "cat name numbers display, increment on rename, and can be edited uniquely",
-    async ({ page }) => {
-      const catName = uniqueName("Numbered Cat");
-      const otherName = uniqueName("Other Cat");
+  test("cat name numbers display, increment on rename, and can be edited uniquely", async ({
+    page,
+  }) => {
+    const catName = uniqueName("Numbered Cat");
+    const otherName = uniqueName("Other Cat");
 
-      await authenticateAsStaff(page);
-      const location = await createLocationViaApi(
-        page,
-        uniqueName("Cat numbering location"),
-      );
-      const firstCat = await createCatViaApi(page, { name: catName });
-      const secondCat = await createCatViaApi(page, {
-        name: otherName,
-        locationId: location.id,
-      });
+    await authenticateAsStaff(page);
+    const location = await createLocationViaApi(
+      page,
+      uniqueName("Cat numbering location"),
+    );
+    const firstCat = await createCatViaApi(page, { name: catName });
+    const secondCat = await createCatViaApi(page, {
+      name: otherName,
+      locationId: location.id,
+    });
 
-      await page.goto(`/cats/${secondCat.id}`);
-      await expect(
-        page.getByRole("heading", {
-          level: 1,
-          name: `${otherName} #1`,
-          exact: true,
-        }),
-      ).toBeVisible();
+    await page.goto(`/cats/${secondCat.id}`);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: `${otherName} #1`,
+        exact: true,
+      }),
+    ).toBeVisible();
 
-      await page.getByRole("button", { name: "Edit cat profile" }).click();
-      await page.getByLabel("Cat name").fill(catName);
-      await page.getByRole("button", { name: "Save details" }).click();
-      await expect(page.getByText("Cat details were updated.")).toBeVisible();
-      await expect(
-        page.getByRole("heading", {
-          level: 1,
-          name: `${catName} #2`,
-          exact: true,
-        }),
-      ).toBeVisible();
+    await page.getByRole("button", { name: "Edit cat profile" }).click();
+    await page.getByLabel("Cat name").fill(catName);
+    await page.getByRole("button", { name: "Save details" }).click();
+    await expect(page.getByText("Cat details were updated.")).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: `${catName} #2`,
+        exact: true,
+      }),
+    ).toBeVisible();
 
-      await page.goto("/");
-      await page.getByLabel("Search cats").fill(catName);
-      await expect(
-        page.getByRole("heading", { name: `${catName} #1`, exact: true }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("heading", { name: `${catName} #2`, exact: true }),
-      ).toBeVisible();
-      expect(firstCat.id).not.toBe(secondCat.id);
-    },
-  );
+    await page.goto("/");
+    await page.getByLabel("Search cats").fill(catName);
+    await expect(
+      page.getByRole("heading", { name: `${catName} #1`, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: `${catName} #2`, exact: true }),
+    ).toBeVisible();
+    expect(firstCat.id).not.toBe(secondCat.id);
+  });
 
-  test("user can edit cat details and see them reflected on the profile", async ({ page }) => {
+  test("user can edit cat details and see them reflected on the profile", async ({
+    page,
+  }) => {
     const locationName = uniqueName("Edit Location");
     const catName = uniqueName("Original Name");
     const updatedName = uniqueName("Renamed Cat");
@@ -143,10 +170,16 @@ test.describe("cats UI", () => {
     await page.goto("/");
 
     const location = await createLocationViaApi(page, locationName);
-    const cat = await createCatViaApi(page, { name: catName, locationId: location.id, color: "Grey-white" });
+    const cat = await createCatViaApi(page, {
+      name: catName,
+      locationId: location.id,
+      color: "Grey-white",
+    });
 
-await page.goto(`/cats/${cat.id}`);
-    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+    await page.goto(`/cats/${cat.id}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Edit cat profile" }).click();
     await page.getByLabel("Cat name").fill(updatedName);
@@ -154,13 +187,19 @@ await page.goto(`/cats/${cat.id}`);
     await page.getByRole("button", { name: "Save details" }).click();
 
     await expect(page.getByText("Cat details were updated.")).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1, name: updatedName })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: updatedName }),
+    ).toBeVisible();
 
     const details = page.locator("dl");
-    await expect(details.getByText(updatedColor, { exact: true })).toBeVisible();
+    await expect(
+      details.getByText(updatedColor, { exact: true }),
+    ).toBeVisible();
   });
 
-  test("user can add a second photo and make it the primary photo", async ({ page }) => {
+  test("user can add a second photo and make it the primary photo", async ({
+    page,
+  }) => {
     const locationName = uniqueName("Photo Update Location");
     const catName = uniqueName("Photo Cat");
 
@@ -168,29 +207,42 @@ await page.goto(`/cats/${cat.id}`);
     await page.goto("/");
 
     const location = await createLocationViaApi(page, locationName);
-    const cat = await createCatViaApi(page, { name: catName, locationId: location.id });
+    const cat = await createCatViaApi(page, {
+      name: catName,
+      locationId: location.id,
+    });
     await uploadCatPhotoViaApi(page, cat.id, catPhotoPath("cat1.jpg"));
 
     await page.goto(`/cats/${cat.id}`);
-    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
 
     // cat1.jpg uploaded via the API is the primary photo.
     await page.getByRole("button", { name: "Gallery" }).click();
-    const galleryButton = page.getByRole("button", { name: `Open image of ${catName}` });
+    const galleryButton = page.getByRole("button", {
+      name: `Open image of ${catName}`,
+    });
     await expect(galleryButton).toHaveCount(1);
 
     // Upload cat2.jpg through the UI; assert the backend accepted it.
     const uploadResponsePromise = page.waitForResponse(
-      (res) => res.url().includes(`/api/cats/${cat.id}/photos`) && res.request().method() === "POST",
+      (res) =>
+        res.url().includes(`/api/cats/${cat.id}/photos`) &&
+        res.request().method() === "POST",
     );
-    await page.locator('input[type="file"][accept^="image/"]').setInputFiles(catPhotoPath("cat2.jpg"));
+    await page
+      .locator('input[type="file"][accept^="image/"]')
+      .setInputFiles(catPhotoPath("cat2.jpg"));
     const uploadResponse = await uploadResponsePromise;
     expect(uploadResponse.status()).toBe(201);
     await expect(galleryButton).toHaveCount(2);
 
     // The newest photo (cat2.jpg) is second in the gallery; make it primary.
     await galleryButton.nth(1).click();
-    await expect(page.getByRole("dialog", { name: `Photo of ${catName}` })).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: `Photo of ${catName}` }),
+    ).toBeVisible();
     await expect(page.getByText("2 / 2")).toBeVisible();
     await page.getByRole("button", { name: "Actions", exact: true }).click();
     await page.getByRole("button", { name: "Make primary" }).click();
@@ -198,9 +250,13 @@ await page.goto(`/cats/${cat.id}`);
 
     // cat2.jpg is now primary: its photo viewer no longer offers "Make primary".
     await galleryButton.nth(0).click();
-    await expect(page.getByRole("dialog", { name: `Photo of ${catName}` })).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: `Photo of ${catName}` }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Actions", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Make primary" })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Make primary" }),
+    ).toHaveCount(0);
     await page.getByRole("button", { name: "Close", exact: true }).click();
   });
 
@@ -211,11 +267,16 @@ await page.goto(`/cats/${cat.id}`);
     await authenticateAsStaff(page);
     await page.goto("/");
 
-const location = await createLocationViaApi(page, locationName);
-    const cat = await createCatViaApi(page, { name: catName, locationId: location.id });
+    const location = await createLocationViaApi(page, locationName);
+    const cat = await createCatViaApi(page, {
+      name: catName,
+      locationId: location.id,
+    });
 
     await page.goto(`/cats/${cat.id}`);
-    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Edit cat profile" }).click();
     await page.getByLabel("Cat name").fill("");
@@ -224,7 +285,9 @@ const location = await createLocationViaApi(page, locationName);
     await expect(page.getByText("Cat name is required.")).toBeVisible();
   });
 
-  test("user can create, edit, complete, and delete a cat task", async ({ page }) => {
+  test("user can create, edit, complete, and delete a cat task", async ({
+    page,
+  }) => {
     const catName = uniqueName("Task Cat");
     const initialComment = uniqueName("Give medication");
     const updatedComment = uniqueName("Give evening medication");
@@ -233,18 +296,28 @@ const location = await createLocationViaApi(page, locationName);
     await authenticateAsStaff(page);
     const cat = await createCatViaApi(page, { name: catName });
     await page.goto(`/cats/${cat.id}`);
-    await expect(page.getByRole("heading", { level: 1, name: catName })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "More sections" }).click();
     await page.getByRole("button", { name: "Reminders" }).click();
-    await page.getByRole("button", { name: "Add reminder", exact: true }).click();
-    const taskForm = page.locator("form").filter({ has: page.getByLabel("Notification receivers") });
+    await page
+      .getByRole("button", { name: "Add reminder", exact: true })
+      .click();
+    const taskForm = page
+      .locator("form")
+      .filter({ has: page.getByLabel("Notification receivers") });
     await taskForm.getByLabel("Comment").fill(initialComment);
     await taskForm.getByLabel("Due date").fill("2030-01-02T10:00");
-    await taskForm.getByLabel("Notification receivers").selectOption({ label: `${staffTestUser.fullName} (${staffTestUser.email})` });
+    await taskForm.getByLabel("Notification receivers").selectOption({
+      label: `${staffTestUser.fullName} (${staffTestUser.email})`,
+    });
 
     const createTask = page.waitForResponse(
-      (response) => response.url().includes(`/api/cats/${cat.id}/tasks`) && response.request().method() === "POST",
+      (response) =>
+        response.url().includes(`/api/cats/${cat.id}/tasks`) &&
+        response.request().method() === "POST",
     );
     await taskForm.getByRole("button", { name: "Save" }).click();
     expect((await createTask).status()).toBe(201);
@@ -254,29 +327,43 @@ const location = await createLocationViaApi(page, locationName);
     await taskCard.getByRole("button", { name: "Edit reminder" }).click();
     await taskForm.getByLabel("Comment").fill(updatedComment);
     const updateTask = page.waitForResponse(
-      (response) => response.url().includes("/api/cats/tasks/") && response.request().method() === "PATCH",
+      (response) =>
+        response.url().includes("/api/cats/tasks/") &&
+        response.request().method() === "PATCH",
     );
     await taskForm.getByRole("button", { name: "Save" }).click();
     expect((await updateTask).status()).toBe(200);
     await expect(page.getByText(updatedComment, { exact: true })).toBeVisible();
 
-    const updatedTaskCard = page.locator("li").filter({ hasText: updatedComment });
+    const updatedTaskCard = page
+      .locator("li")
+      .filter({ hasText: updatedComment });
     const completeTask = page.waitForResponse(
-      (response) => response.url().includes("/complete") && response.request().method() === "POST",
+      (response) =>
+        response.url().includes("/complete") &&
+        response.request().method() === "POST",
     );
     await updatedTaskCard.getByRole("button", { name: "Complete" }).click();
     expect((await completeTask).status()).toBe(201);
     await expect(updatedTaskCard.getByText(/Completed/)).toBeVisible();
 
     const deleteTask = page.waitForResponse(
-      (response) => response.url().includes("/api/cats/tasks/") && response.request().method() === "DELETE",
+      (response) =>
+        response.url().includes("/api/cats/tasks/") &&
+        response.request().method() === "DELETE",
     );
-    await updatedTaskCard.getByRole("button", { name: "Delete reminder" }).click();
+    await updatedTaskCard
+      .getByRole("button", { name: "Delete reminder" })
+      .click();
     expect((await deleteTask).status()).toBe(204);
-    await expect(page.getByText(updatedComment, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(updatedComment, { exact: true })).toHaveCount(
+      0,
+    );
   });
 
-  test("creating an overdue reminder creates a notification for its receiver", async ({ page }) => {
+  test("creating an overdue reminder creates a notification for its receiver", async ({
+    page,
+  }) => {
     const catName = uniqueName("Notification Cat");
     const reminderComment = uniqueName("Overdue notification reminder");
     const { staffTestUser } = getTestEnv();
@@ -286,15 +373,23 @@ const location = await createLocationViaApi(page, locationName);
     await page.goto(`/cats/${cat.id}`);
     await page.getByRole("button", { name: "More sections" }).click();
     await page.getByRole("button", { name: "Reminders" }).click();
-    await page.getByRole("button", { name: "Add reminder", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Add reminder", exact: true })
+      .click();
 
-    const taskForm = page.locator("form").filter({ has: page.getByLabel("Notification receivers") });
+    const taskForm = page
+      .locator("form")
+      .filter({ has: page.getByLabel("Notification receivers") });
     await taskForm.getByLabel("Comment").fill(reminderComment);
     await taskForm.getByLabel("Due date").fill("2020-01-02T10:00");
-    await taskForm.getByLabel("Notification receivers").selectOption({ label: `${staffTestUser.fullName} (${staffTestUser.email})` });
+    await taskForm.getByLabel("Notification receivers").selectOption({
+      label: `${staffTestUser.fullName} (${staffTestUser.email})`,
+    });
 
     const createTask = page.waitForResponse(
-      (response) => response.url().includes(`/api/cats/${cat.id}/tasks`) && response.request().method() === "POST",
+      (response) =>
+        response.url().includes(`/api/cats/${cat.id}/tasks`) &&
+        response.request().method() === "POST",
     );
     await taskForm.getByRole("button", { name: "Save" }).click();
     expect((await createTask).status()).toBe(201);
@@ -304,33 +399,57 @@ const location = await createLocationViaApi(page, locationName);
     await page.waitForTimeout(2_000);
     await page.goto("/");
     const notificationList = page.waitForResponse(
-      (response) => response.url().includes("/api/notifications") && response.request().method() === "GET",
+      (response) =>
+        response.url().includes("/api/notifications") &&
+        response.request().method() === "GET",
     );
     await page.getByRole("button", { name: "Notifications" }).click();
     expect((await notificationList).status()).toBe(200);
-    await expect(page.getByRole("dialog", { name: "Notifications" }).getByText(reminderComment, { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole("dialog", { name: "Notifications" })
+        .getByText(reminderComment, { exact: true }),
+    ).toBeVisible();
   });
 
-  test("user can create a treatment and record a medication dose", async ({ page }) => {
+  test("user can create a treatment and record a medication dose", async ({
+    page,
+  }) => {
     const treatmentName = uniqueName("Antibiotic");
     const treatmentDate = new Date().toISOString().slice(0, 10);
 
     await authenticateAsStaff(page);
-    const cat = await createCatViaApi(page, { name: uniqueName("Treatment Cat") });
+    const cat = await createCatViaApi(page, {
+      name: uniqueName("Treatment Cat"),
+    });
     await page.goto(`/cats/${cat.id}`);
     await page.getByRole("button", { name: "Treatments" }).click();
-    await page.getByRole("button", { name: "Add treatment", exact: true }).click();
-    const treatmentForm = page.locator("form").filter({ has: page.getByLabel("Treatment short name") });
+    await page
+      .getByRole("button", { name: "Add treatment", exact: true })
+      .click();
+    const treatmentForm = page
+      .locator("form")
+      .filter({ has: page.getByLabel("Treatment short name") });
     await treatmentForm.getByLabel("Treatment short name").fill(treatmentName);
     await treatmentForm.getByLabel("Treatment start date").fill(treatmentDate);
     await treatmentForm.getByLabel("Doses per day").selectOption("2");
-    const createTreatment = page.waitForResponse((response) => response.url().includes(`/api/cats/${cat.id}/treatments`) && response.request().method() === "POST");
+    const createTreatment = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/cats/${cat.id}/treatments`) &&
+        response.request().method() === "POST",
+    );
     await treatmentForm.getByRole("button", { name: "Save" }).click();
     expect((await createTreatment).status()).toBe(201);
 
-    const eveningDose = page.getByLabel(`${treatmentName} ${treatmentDate} dose 2`);
+    const eveningDose = page.getByLabel(
+      `${treatmentName} ${treatmentDate} dose 2`,
+    );
     await expect(eveningDose).toBeVisible();
-    const checkDose = page.waitForResponse((response) => response.url().includes("/administrations") && response.request().method() === "PUT");
+    const checkDose = page.waitForResponse(
+      (response) =>
+        response.url().includes("/administrations") &&
+        response.request().method() === "PUT",
+    );
     await eveningDose.check();
     expect((await checkDose).status()).toBe(200);
     await expect(eveningDose).toBeChecked();

@@ -21,7 +21,10 @@ describe("CompleteCatTaskHandler", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: {
@@ -44,7 +47,10 @@ describe("CompleteCatTaskHandler", () => {
         data: { email: `${Date.now()}-user@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Open", dueDate: new Date() },
@@ -62,7 +68,10 @@ describe("CompleteCatTaskHandler", () => {
         data: { email: `${Date.now()}-receiver@example.com` },
       });
       const cat = await transaction.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } }, name: `Cat ${Date.now()}` },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
+          name: `Cat ${Date.now()}`,
+        },
       });
       const task = await transaction.catTask.create({
         data: { catId: cat.id, comment: "Complete", dueDate: new Date() },

@@ -50,7 +50,8 @@ describe("DeleteArchivingReasonCommand", () => {
         data: { name: `Replacement ${Date.now()}-${Math.random()}` },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Archived ${Date.now()}-${Math.random()}`,
           archivingReason: { connect: { id: reason.id } },
         },
@@ -79,7 +80,8 @@ describe("DeleteArchivingReasonCommand", () => {
         data: { name: `Used ${Date.now()}-${Math.random()}` },
       });
       await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Archived ${Date.now()}-${Math.random()}`,
           archivingReason: { connect: { id: reason.id } },
         },

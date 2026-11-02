@@ -35,7 +35,9 @@ export class AdminUsersController {
     @Body() createUserDto: CreateUserDto,
     @CurrentUser() user: Express.User,
   ): Promise<{ id: string }> {
-    return this.createUserHandler.handle(createUserDto.toCommand(), { role: user.role });
+    return this.createUserHandler.handle(createUserDto.toCommand(), {
+      role: user.role,
+    });
   }
 
   @Get()
@@ -57,7 +59,10 @@ export class AdminUsersController {
     @Body() updateUserDto: UpdateUserDto,
     @CurrentUser() user: Express.User,
   ): Promise<{ id: string }> {
-    return this.updateUserHandler.handle(id, updateUserDto.toCommand(), { id: user.id, role: user.role });
+    return this.updateUserHandler.handle(id, updateUserDto.toCommand(), {
+      id: user.id,
+      role: user.role,
+    });
   }
 
   @Patch(":id/status")
@@ -66,7 +71,11 @@ export class AdminUsersController {
     @Body() body: { status: "active" | "inactive" },
     @CurrentUser() user: Express.User,
   ): Promise<{ id: string }> {
-    return this.updateUserHandler.handle(id, { status: body.status }, { id: user.id, role: user.role });
+    return this.updateUserHandler.handle(
+      id,
+      { status: body.status },
+      { id: user.id, role: user.role },
+    );
   }
 
   @Delete(":id")

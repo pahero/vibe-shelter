@@ -32,7 +32,13 @@ import { signJwt } from "./jwt-token";
 import { CreateRefreshTokenHandler } from "./commands/create-refresh-token.handler";
 import { RotateRefreshTokenHandler } from "./commands/rotate-refresh-token.handler";
 import { RevokeRefreshTokenHandler } from "./commands/revoke-refresh-token.handler";
-import { assertSameOrigin, clearAuthCookies, readCookie, refreshCookieName, setAuthCookies } from "./auth-cookie";
+import {
+  assertSameOrigin,
+  clearAuthCookies,
+  readCookie,
+  refreshCookieName,
+  setAuthCookies,
+} from "./auth-cookie";
 
 @Controller("auth")
 export class AuthController {
@@ -98,10 +104,18 @@ export class AuthController {
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
   @Public()
-  async forgotPassword(@Body() body: ForgotPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(
+    @Body() body: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     const command = body.toCommand();
-    await this.forgotPasswordHandler.handle(command.email, command.captchaToken);
-    return { message: "If an eligible account exists, a temporary password has been emailed." };
+    await this.forgotPasswordHandler.handle(
+      command.email,
+      command.captchaToken,
+    );
+    return {
+      message:
+        "If an eligible account exists, a temporary password has been emailed.",
+    };
   }
 
   @Get("me")
@@ -145,9 +159,18 @@ export class AuthController {
   @Post("logout")
   @HttpCode(HttpStatus.OK)
   @Public()
-  async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    assertSameOrigin(request, this.configService.get<string>("frontendUrl", "http://localhost:4001"));
-    const refreshToken = readCookie(request.headers.cookie, refreshCookieName(this.nodeEnv));
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    assertSameOrigin(
+      request,
+      this.configService.get<string>("frontendUrl", "http://localhost:4001"),
+    );
+    const refreshToken = readCookie(
+      request.headers.cookie,
+      refreshCookieName(this.nodeEnv),
+    );
     if (refreshToken) await this.revokeRefreshTokenHandler.handle(refreshToken);
     clearAuthCookies(response, this.nodeEnv);
     return { message: "Logged out successfully" };
@@ -156,12 +179,27 @@ export class AuthController {
   @Post("token")
   @HttpCode(HttpStatus.OK)
   @Public()
-  async refreshToken(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    assertSameOrigin(request, this.configService.get<string>("frontendUrl", "http://localhost:4001"));
-    const refreshToken = readCookie(request.headers.cookie, refreshCookieName(this.nodeEnv));
-    if (!refreshToken) throw new UnauthorizedException("Refresh cookie required");
+  async refreshToken(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    assertSameOrigin(
+      request,
+      this.configService.get<string>("frontendUrl", "http://localhost:4001"),
+    );
+    const refreshToken = readCookie(
+      request.headers.cookie,
+      refreshCookieName(this.nodeEnv),
+    );
+    if (!refreshToken)
+      throw new UnauthorizedException("Refresh cookie required");
     const rotated = await this.rotateRefreshTokenHandler.handle(refreshToken);
-    setAuthCookies(response, this.issueToken(rotated.user), rotated.refreshToken, this.nodeEnv);
+    setAuthCookies(
+      response,
+      this.issueToken(rotated.user),
+      rotated.refreshToken,
+      this.nodeEnv,
+    );
     return { message: "Tokens refreshed" };
   }
 

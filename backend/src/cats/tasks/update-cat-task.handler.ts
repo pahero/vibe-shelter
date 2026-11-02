@@ -35,8 +35,11 @@ export class UpdateCatTaskHandler {
       const requestedReceiverIds = payload.receiverIds;
       const receiversChanged =
         requestedReceiverIds !== undefined &&
-        (new Set(currentReceiverIds).size !== new Set(requestedReceiverIds).size ||
-          currentReceiverIds.some((userId) => !requestedReceiverIds.includes(userId)));
+        (new Set(currentReceiverIds).size !==
+          new Set(requestedReceiverIds).size ||
+          currentReceiverIds.some(
+            (userId) => !requestedReceiverIds.includes(userId),
+          ));
 
       if (receiversChanged && requestedReceiverIds) {
         const receivers = await transaction.user.findMany({
@@ -103,7 +106,9 @@ export class UpdateCatTaskHandler {
           where: {
             taskId: task.id,
             deletedAt: null,
-            ...(receiversChanged && requestedReceiverIds !== undefined && !dueDateChanged
+            ...(receiversChanged &&
+            requestedReceiverIds !== undefined &&
+            !dueDateChanged
               ? { userId: { notIn: requestedReceiverIds } }
               : {}),
           },
@@ -153,7 +158,7 @@ export class UpdateCatTaskHandler {
           },
         });
       }
-       if (receiversChanged && requestedReceiverIds !== undefined) {
+      if (receiversChanged && requestedReceiverIds !== undefined) {
         await transaction.auditEvent.create({
           data: {
             catId: task.catId,
@@ -169,4 +174,3 @@ export class UpdateCatTaskHandler {
     });
   }
 }
-

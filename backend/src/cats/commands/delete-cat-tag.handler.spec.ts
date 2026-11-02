@@ -12,7 +12,8 @@ describe("DeleteCatTagHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -44,7 +45,9 @@ describe("DeleteCatTagHandler", () => {
           where: { catId_tagId: { catId: cat.id, tagId: tag.id } },
         }),
       ).resolves.toMatchObject({ deletedAt: null, version: 0 });
-      await expect(tx.auditEvent.count({ where: { catId: cat.id, tagId: tag.id } })).resolves.toBe(0);
+      await expect(
+        tx.auditEvent.count({ where: { catId: cat.id, tagId: tag.id } }),
+      ).resolves.toBe(0);
     });
   });
 
@@ -63,7 +66,11 @@ describe("DeleteCatTagHandler", () => {
       });
 
       await expect(
-        new DeleteCatTagHandler(tx as PrismaService).handle(tag.id, undefined, true),
+        new DeleteCatTagHandler(tx as PrismaService).handle(
+          tag.id,
+          undefined,
+          true,
+        ),
       ).rejects.toThrow(NotFoundException);
       await expect(
         tx.catTag.findUniqueOrThrow({ where: { id: tag.id } }),

@@ -71,23 +71,62 @@ describe("CatCard", () => {
       tags: [],
     } as CatCardType;
 
-    render(<CatCard cat={cat} showProfileLink={false} onPhotoClick={vi.fn()} />);
+    render(
+      <CatCard cat={cat} showProfileLink={false} onPhotoClick={vi.fn()} />,
+    );
 
-    expect(screen.getByRole("button", { name: "Expand video of Video Cat" }).querySelector("video"))
-      .toHaveAttribute("src", cat.primaryPhotoUrl);
+    expect(
+      screen
+        .getByRole("button", { name: "Expand video of Video Cat" })
+        .querySelector("video"),
+    ).toHaveAttribute("src", cat.primaryPhotoUrl);
   });
 
   it("only renders the favorite heart when enabled and toggles its selected state", async () => {
-    const cat: CatCardType = { id: "cat-heart", name: "Mimi", nameNumber: 2, sex: "FEMALE", color: null, estimatedBirthDate: null, intakeDate: null, sterilizationStatus: "UNKNOWN", currentLocationId: null, currentLocationName: null, createdByUserId: null, isTest: false, primaryPhotoUrl: null, primaryPhotoPositionY: null, microchipNumber: null, passport: false, sponsorName: null, adopterName: null, adopterAddress: null, felvFivTestDone: false, intakeDetails: null, intakeSource: null, updatedAt: "2026-10-03T00:00:00.000Z", tags: [], isFavorite: false };
-    const toggle = vi.spyOn(catsApi, "toggleCatFavorite").mockResolvedValue({ favorite: true });
+    const cat: CatCardType = {
+      id: "cat-heart",
+      name: "Mimi",
+      nameNumber: 2,
+      sex: "FEMALE",
+      color: null,
+      estimatedBirthDate: null,
+      intakeDate: null,
+      sterilizationStatus: "UNKNOWN",
+      currentLocationId: null,
+      currentLocationName: null,
+      createdByUserId: null,
+      isTest: false,
+      primaryPhotoUrl: null,
+      primaryPhotoPositionY: null,
+      microchipNumber: null,
+      passport: false,
+      sponsorName: null,
+      adopterName: null,
+      adopterAddress: null,
+      felvFivTestDone: false,
+      intakeDetails: null,
+      intakeSource: null,
+      updatedAt: "2026-10-03T00:00:00.000Z",
+      tags: [],
+      isFavorite: false,
+    };
+    const toggle = vi
+      .spyOn(catsApi, "toggleCatFavorite")
+      .mockResolvedValue({ favorite: true });
     const { rerender } = render(<CatCard cat={cat} showProfileLink={false} />);
-    expect(screen.queryByRole("button", { name: "Add Mimi to favorites" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add Mimi to favorites" }),
+    ).not.toBeInTheDocument();
     rerender(<CatCard cat={cat} showProfileLink={false} showFavorite />);
-    const button = screen.getByRole("button", { name: "Add Mimi to favorites" });
+    const button = screen.getByRole("button", {
+      name: "Add Mimi to favorites",
+    });
     expect(button.querySelector("svg")).toHaveAttribute("fill", "none");
     fireEvent.click(button);
     expect(toggle).toHaveBeenCalledWith(cat.id);
-    expect(await screen.findByRole("button", { name: "Remove Mimi from favorites" })).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "Remove Mimi from favorites" }),
+    ).toBeVisible();
     toggle.mockRestore();
   });
 });

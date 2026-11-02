@@ -22,7 +22,8 @@ describe("RemoveCatTagHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -57,7 +58,10 @@ describe("RemoveCatTagHandler", () => {
   it("rejects cats outside the current partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
           name: `Test ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           isTest: true,
         },
@@ -76,7 +80,13 @@ describe("RemoveCatTagHandler", () => {
   it("rejects a tag from the other partition", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location", isTest: true } }, name: `Test ${Date.now()}`, isTest: true },
+        data: {
+          currentLocation: {
+            create: { name: "Fixture location", isTest: true },
+          },
+          name: `Test ${Date.now()}`,
+          isTest: true,
+        },
       });
       const tag = await tx.catTag.create({
         data: { name: `Regular ${Date.now()}`, isTest: false },

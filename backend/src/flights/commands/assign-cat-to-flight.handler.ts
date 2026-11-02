@@ -32,7 +32,8 @@ export class AssignCatToFlightHandler {
         },
         select: { id: true, concurrencyToken: true },
       });
-      if (!cat) throw new NotFoundException("Active flight candidate not found");
+      if (!cat)
+        throw new NotFoundException("Active flight candidate not found");
       const catLock = await transaction.cat.updateMany({
         where: {
           id: cat.id,
@@ -43,7 +44,8 @@ export class AssignCatToFlightHandler {
         },
         data: { concurrencyToken: crypto.randomUUID() },
       });
-      if (catLock.count !== 1) throw new ConflictException("Cat was changed; refresh and try again");
+      if (catLock.count !== 1)
+        throw new ConflictException("Cat was changed; refresh and try again");
       const existing = await transaction.flightCatAssignment.findFirst({
         where: {
           catId: cat.id,
@@ -53,7 +55,9 @@ export class AssignCatToFlightHandler {
         select: { id: true },
       });
       if (existing)
-        throw new ConflictException("Cat is already assigned to an active flight");
+        throw new ConflictException(
+          "Cat is already assigned to an active flight",
+        );
 
       const assignment = await transaction.flightCatAssignment.create({
         data: { flightId: flight.id, catId: cat.id },

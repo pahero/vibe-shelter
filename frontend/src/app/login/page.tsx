@@ -10,7 +10,11 @@ type LoginPageProps = {
 };
 
 function getSafeNextPath(next: string | string[] | undefined): string {
-  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//")) {
+  if (
+    typeof next !== "string" ||
+    !next.startsWith("/") ||
+    next.startsWith("//")
+  ) {
     return "/";
   }
 
@@ -40,8 +44,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           Sign in
         </h1>
         <p className="mt-3 max-w-[62ch] text-base leading-relaxed text-[#6d6a66] md:text-lg">
-          Access is granted only to pre-created active users in the Shelter backend via
-          password or Google sign-in.
+          Access is granted only to pre-created active users in the Shelter
+          backend via password or Google sign-in.
         </p>
 
         <PasswordLoginForm nextPath={nextPath} />
@@ -62,7 +66,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ) : null}
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <AuthLinkButton href={`${BACKEND_URL}/auth/google`} label="Continue with Google" />
+          <AuthLinkButton
+            href={`${BACKEND_URL}/auth/google`}
+            label="Continue with Google"
+          />
           <Link
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d4c7b4] px-4 text-sm font-semibold text-[#1f2320] transition hover:-translate-y-px hover:bg-black/5"
             href="/"

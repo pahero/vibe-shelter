@@ -17,7 +17,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/backend", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/backend")>("@/lib/backend");
+  const actual =
+    await vi.importActual<typeof import("@/lib/backend")>("@/lib/backend");
   return {
     ...actual,
     fetchCurrentUser: vi.fn(),
@@ -41,19 +42,31 @@ describe("AdminUsersPage", () => {
   it("redirects anonymous users to login", async () => {
     fetchCurrentUserMock.mockResolvedValue(null);
 
-    await expect(AdminUsersPage()).rejects.toThrow("redirect:/login?next=/admin/users");
+    await expect(AdminUsersPage()).rejects.toThrow(
+      "redirect:/login?next=/admin/users",
+    );
     expect(fetchAdminUsersMock).not.toHaveBeenCalled();
   });
 
   it("redirects non-admin users home", async () => {
-    fetchCurrentUserMock.mockResolvedValue({ id: "staff-1", email: "staff@example.com", fullName: null, role: "staff" });
+    fetchCurrentUserMock.mockResolvedValue({
+      id: "staff-1",
+      email: "staff@example.com",
+      fullName: null,
+      role: "staff",
+    });
 
     await expect(AdminUsersPage()).rejects.toThrow("redirect:/");
     expect(fetchAdminUsersMock).not.toHaveBeenCalled();
   });
 
   it("renders the admin registration experience for admins", async () => {
-    fetchCurrentUserMock.mockResolvedValue({ id: "admin-1", email: "admin@example.com", fullName: "Admin", role: "admin" });
+    fetchCurrentUserMock.mockResolvedValue({
+      id: "admin-1",
+      email: "admin@example.com",
+      fullName: "Admin",
+      role: "admin",
+    });
     fetchAdminUsersMock.mockResolvedValue([
       {
         id: "user-1",
@@ -62,7 +75,7 @@ describe("AdminUsersPage", () => {
         role: "staff",
         status: "active",
         isTest: false,
-      passwordChangeRequired: false,
+        passwordChangeRequired: false,
         lastLoginAt: null,
         createdAt: "2026-08-17T10:00:00.000Z",
         updatedAt: "2026-08-17T10:00:00.000Z",
@@ -73,7 +86,9 @@ describe("AdminUsersPage", () => {
 
     expect(screen.getByText("Listed User")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Register user" }));
-    expect(screen.getByRole("heading", { name: "Register a user" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Register a user" }),
+    ).toBeVisible();
     expect(screen.queryByText("Listed User")).not.toBeInTheDocument();
     expect(fetchAdminUsersMock).toHaveBeenCalledWith("shelter_token=abc");
   });

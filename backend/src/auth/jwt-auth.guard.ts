@@ -16,13 +16,20 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const frontendUrl = this.configService.get<string>("frontendUrl", "http://localhost:4001");
+    const frontendUrl = this.configService.get<string>(
+      "frontendUrl",
+      "http://localhost:4001",
+    );
     assertSameOrigin(request, frontendUrl);
     const nodeEnv = this.configService.get<string>("nodeEnv", "development");
     const token = readCookie(request.headers.cookie, accessCookieName(nodeEnv));
-    if (!token) throw new UnauthorizedException("Authentication cookie required");
+    if (!token)
+      throw new UnauthorizedException("Authentication cookie required");
     try {
-      const user = verifyJwt(token, this.configService.get<string>("jwtSecret") ?? "");
+      const user = verifyJwt(
+        token,
+        this.configService.get<string>("jwtSecret") ?? "",
+      );
       const permittedPaths = [
         "/auth/me",
         "/auth/change-password",

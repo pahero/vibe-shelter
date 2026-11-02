@@ -9,7 +9,12 @@ import { VaccinationPayload } from "./vaccination.dto";
 export class CreateVaccinationHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(catId: string, payload: VaccinationPayload, actorUserId: string, isTest: boolean): Promise<{ id: string }> {
+  async handle(
+    catId: string,
+    payload: VaccinationPayload,
+    actorUserId: string,
+    isTest: boolean,
+  ): Promise<{ id: string }> {
     return runInNewTransaction(this.prisma, async (transaction) => {
       const cat = await transaction.cat.findFirst({
         where: { id: catId, isTest, deletedAt: null },
@@ -20,7 +25,8 @@ export class CreateVaccinationHandler {
         where: { id: cat.id, version: cat.version, deletedAt: null },
         data: { version: { increment: 1 } },
       });
-      if (versionUpdated.count !== 1) throw new NotFoundException("Cat not found");
+      if (versionUpdated.count !== 1)
+        throw new NotFoundException("Cat not found");
       const vaccination = await transaction.vaccination.create({
         data: {
           catId,

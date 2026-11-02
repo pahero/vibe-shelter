@@ -32,13 +32,27 @@ export class AddCatDocumentHandler {
     if (!cat) throw new NotFoundException("Cat not found");
     if (!document?.buffer?.length)
       throw new BadRequestException("Document file is required");
-    const isPdf = document.mimetype === "application/pdf" && document.buffer.subarray(0, 5).equals(Buffer.from("%PDF-"));
-    const isJpeg = document.mimetype === "image/jpeg" && document.buffer[0] === 0xff && document.buffer[1] === 0xd8 && document.buffer[2] === 0xff;
-    const isPng = document.mimetype === "image/png" && document.buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    const isPdf =
+      document.mimetype === "application/pdf" &&
+      document.buffer.subarray(0, 5).equals(Buffer.from("%PDF-"));
+    const isJpeg =
+      document.mimetype === "image/jpeg" &&
+      document.buffer[0] === 0xff &&
+      document.buffer[1] === 0xd8 &&
+      document.buffer[2] === 0xff;
+    const isPng =
+      document.mimetype === "image/png" &&
+      document.buffer
+        .subarray(0, 8)
+        .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
     if (!isPdf && !isJpeg && !isPng) {
-      throw new BadRequestException("Document must be a PDF, JPEG, or PNG file");
+      throw new BadRequestException(
+        "Document must be a PDF, JPEG, or PNG file",
+      );
     }
-    const processed = isPdf ? document : (await CatPhotoCompressionService.compress(document)).full;
+    const processed = isPdf
+      ? document
+      : (await CatPhotoCompressionService.compress(document)).full;
     const key = await this.photoUrls.uploadDocument({
       catId,
       originalName: processed.originalname,

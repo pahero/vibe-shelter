@@ -60,7 +60,11 @@ describe("UpdateUserHandler", () => {
         },
       });
       await expect(
-        new UpdateUserHandler(tx as PrismaService).handle(deleted.id, {}, owner),
+        new UpdateUserHandler(tx as PrismaService).handle(
+          deleted.id,
+          {},
+          owner,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -103,22 +107,46 @@ describe("UpdateUserHandler", () => {
 
   it("prevents an Admin from promoting a user to Owner", async () => {
     await runInTestTransaction(async (tx) => {
-      const target = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com` } });
-      await expect(new UpdateUserHandler(tx as PrismaService).handle(target.id, { role: "owner" }, { id: "admin-actor", role: "ADMIN" })).rejects.toThrow("Only Owners can change Owner roles");
+      const target = await tx.user.create({
+        data: { email: `${crypto.randomUUID()}@example.com` },
+      });
+      await expect(
+        new UpdateUserHandler(tx as PrismaService).handle(
+          target.id,
+          { role: "owner" },
+          { id: "admin-actor", role: "ADMIN" },
+        ),
+      ).rejects.toThrow("Only Owners can change Owner roles");
     });
   });
 
   it("prevents an Admin from changing an Owner's role", async () => {
     await runInTestTransaction(async (tx) => {
-      const target = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" } });
-      await expect(new UpdateUserHandler(tx as PrismaService).handle(target.id, { role: "staff" }, { id: "admin-actor", role: "ADMIN" })).rejects.toThrow("Only Owners can change Owner roles");
+      const target = await tx.user.create({
+        data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" },
+      });
+      await expect(
+        new UpdateUserHandler(tx as PrismaService).handle(
+          target.id,
+          { role: "staff" },
+          { id: "admin-actor", role: "ADMIN" },
+        ),
+      ).rejects.toThrow("Only Owners can change Owner roles");
     });
   });
 
   it("prevents users from changing their own role", async () => {
     await runInTestTransaction(async (tx) => {
-      const actor = await tx.user.create({ data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" } });
-      await expect(new UpdateUserHandler(tx as PrismaService).handle(actor.id, { role: "staff" }, { id: actor.id, role: "OWNER" })).rejects.toThrow("You cannot change your own role");
+      const actor = await tx.user.create({
+        data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" },
+      });
+      await expect(
+        new UpdateUserHandler(tx as PrismaService).handle(
+          actor.id,
+          { role: "staff" },
+          { id: actor.id, role: "OWNER" },
+        ),
+      ).rejects.toThrow("You cannot change your own role");
     });
   });
 });

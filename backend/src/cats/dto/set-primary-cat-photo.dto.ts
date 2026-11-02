@@ -12,7 +12,9 @@ export class SetPrimaryCatPhotoDto {
     if (
       this.positionY !== undefined &&
       this.positionY !== null &&
-      (!Number.isFinite(this.positionY) || this.positionY < 0 || this.positionY > 100)
+      (!Number.isFinite(this.positionY) ||
+        this.positionY < 0 ||
+        this.positionY > 100)
     ) {
       throw new BadRequestException("positionY must be between 0 and 100");
     }

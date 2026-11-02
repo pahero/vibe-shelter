@@ -13,9 +13,16 @@ export function TagColorStrip({ tags, overlay = false }: TagColorStripProps) {
   if (visibleTags.length === 0) return null;
 
   return (
-    <div className={`grid h-1.5 w-full overflow-hidden ${overlay ? "absolute bottom-0 left-0 grid-cols-8" : "grid-cols-8"}`} aria-hidden="true">
+    <div
+      className={`grid h-1.5 w-full overflow-hidden ${overlay ? "absolute bottom-0 left-0 grid-cols-8" : "grid-cols-8"}`}
+      aria-hidden="true"
+    >
       {visibleTags.map((tag) => (
-        <span key={tag.id} className="h-full" style={{ backgroundColor: tag.color }} />
+        <span
+          key={tag.id}
+          className="h-full"
+          style={{ backgroundColor: tag.color }}
+        />
       ))}
     </div>
   );

@@ -58,7 +58,10 @@ describe("CreateCatDto", () => {
     dto.intakeDate = value;
     dto.intakeDetails = value;
     dto.microchipNumber = value;
-    dto.currentLocationId = value === null || value === undefined || value === "" ? "location-1" : value;
+    dto.currentLocationId =
+      value === null || value === undefined || value === ""
+        ? "location-1"
+        : value;
 
     expect(dto.toCommand("user-1", false)).toMatchObject({
       color: null,
@@ -79,11 +82,16 @@ describe("CreateCatDto", () => {
     expect(dto.toCommand("user-1", false).passport).toBe(false);
   });
 
-  it.each(["UK", "EU", "CY"] as const)("accepts adopter country %s", (adopterCountry) => {
-    const dto = createRequiredDto();
-    dto.adopterCountry = adopterCountry;
-    expect(dto.toCommand("user-1", false).adopterCountry).toBe(adopterCountry);
-  });
+  it.each(["UK", "EU", "CY"] as const)(
+    "accepts adopter country %s",
+    (adopterCountry) => {
+      const dto = createRequiredDto();
+      dto.adopterCountry = adopterCountry;
+      expect(dto.toCommand("user-1", false).adopterCountry).toBe(
+        adopterCountry,
+      );
+    },
+  );
 
   it("normalizes whitespace-only optional strings", () => {
     const dto = createRequiredDto();

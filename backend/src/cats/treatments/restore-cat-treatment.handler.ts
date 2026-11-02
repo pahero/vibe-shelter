@@ -19,7 +19,13 @@ export class RestoreCatTreatmentHandler {
     return runInNewTransaction(this.prisma, async (transaction) => {
       const treatment = await transaction.catTreatment.findFirst({
         where: { id: treatmentId, cat: { isTest } },
-        select: { id: true, catId: true, deletedAt: true, shortName: true, startDate: true },
+        select: {
+          id: true,
+          catId: true,
+          deletedAt: true,
+          shortName: true,
+          startDate: true,
+        },
       });
       if (!treatment)
         throw new NotFoundException("Deleted treatment not found");
@@ -38,7 +44,9 @@ export class RestoreCatTreatmentHandler {
         select: { id: true },
       });
       if (activeDuplicate)
-        throw new ConflictException("An active treatment with this name and start date already exists for this cat");
+        throw new ConflictException(
+          "An active treatment with this name and start date already exists for this cat",
+        );
       await transaction.catTreatment.update({
         where: { id: treatment.id },
         data: {

@@ -34,7 +34,10 @@ describe("RestoreFlightCatAssignmentHandler", () => {
       });
       expect(saved.deletedAt).toBeNull();
       expect(saved.concurrencyToken).not.toBe(assignment.concurrencyToken);
-      expect((await transaction.cat.findUniqueOrThrow({ where: { id: cat.id } })).concurrencyToken).not.toBe(cat.concurrencyToken);
+      expect(
+        (await transaction.cat.findUniqueOrThrow({ where: { id: cat.id } }))
+          .concurrencyToken,
+      ).not.toBe(cat.concurrencyToken);
       expect(
         (
           await transaction.flight.findUniqueOrThrow({

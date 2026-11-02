@@ -7,7 +7,11 @@ import { validateCatId } from "../cats.handler-utils";
 export class DeleteCatTagHandler {
   constructor(private readonly prisma: PrismaService) {}
 
-  async handle(id: string, actorUserId?: string, isTest = false): Promise<void> {
+  async handle(
+    id: string,
+    actorUserId?: string,
+    isTest = false,
+  ): Promise<void> {
     validateCatId(id, "Tag ID");
     await runInNewTransaction(this.prisma, async (tx) => {
       const tag = await tx.catTag.findFirst({

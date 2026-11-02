@@ -12,7 +12,8 @@ describe("DeleteCatDocumentHandler", () => {
         },
       });
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });
@@ -47,7 +48,8 @@ describe("DeleteCatDocumentHandler", () => {
   it("rejects a missing or already deleted document", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });

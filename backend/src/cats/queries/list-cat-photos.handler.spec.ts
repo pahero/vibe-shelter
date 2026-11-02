@@ -17,7 +17,8 @@ describe("ListCatPhotosHandler", () => {
   it("lists active photos and marks the primary photo", async () => {
     await runInTestTransaction(async (tx) => {
       const cat = await tx.cat.create({
-        data: { currentLocation: { create: { name: "Fixture location" } },
+        data: {
+          currentLocation: { create: { name: "Fixture location" } },
           name: `Cat ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
       });

@@ -5,7 +5,16 @@ import { CatVaccinations } from "./cat-vaccinations";
 
 vi.mock("@/lib/api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api")>("@/lib/api");
-  return { ...actual, catsApi: { ...actual.catsApi, listVaccinations: vi.fn(), createVaccination: vi.fn(), updateVaccination: vi.fn(), deleteVaccination: vi.fn() } };
+  return {
+    ...actual,
+    catsApi: {
+      ...actual.catsApi,
+      listVaccinations: vi.fn(),
+      createVaccination: vi.fn(),
+      updateVaccination: vi.fn(),
+      deleteVaccination: vi.fn(),
+    },
+  };
 });
 
 const list = vi.mocked(catsApi.listVaccinations);
@@ -24,8 +33,12 @@ describe("CatVaccinations", () => {
     await screen.findByText("No vaccinations recorded.");
     fireEvent.click(screen.getByRole("button", { name: "Add vaccination" }));
     expect(screen.getByLabelText("Vaccine Type")).toBeInTheDocument();
-    expect(screen.getByLabelText("Vaccine Type").querySelectorAll("option")).toHaveLength(3);
-    expect(screen.getByLabelText("Vaccination next due date")).not.toBeRequired();
+    expect(
+      screen.getByLabelText("Vaccine Type").querySelectorAll("option"),
+    ).toHaveLength(3);
+    expect(
+      screen.getByLabelText("Vaccination next due date"),
+    ).not.toBeRequired();
     expect(screen.getByLabelText("Vaccine Name")).not.toBeRequired();
     expect(screen.getByLabelText("Vaccination date")).toBeRequired();
   });
@@ -35,10 +48,23 @@ describe("CatVaccinations", () => {
     render(<CatVaccinations catId="cat-1" onChanged={onChanged} />);
     await screen.findByText("No vaccinations recorded.");
     fireEvent.click(screen.getByRole("button", { name: "Add vaccination" }));
-    fireEvent.change(screen.getByLabelText("Vaccine Name"), { target: { value: "Core vaccine" } });
-    fireEvent.change(screen.getByLabelText("Vaccination next due date"), { target: { value: "2027-01-01" } });
+    fireEvent.change(screen.getByLabelText("Vaccine Name"), {
+      target: { value: "Core vaccine" },
+    });
+    fireEvent.change(screen.getByLabelText("Vaccination next due date"), {
+      target: { value: "2027-01-01" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith("cat-1", expect.objectContaining({ type: "CORE", vaccineName: "Core vaccine", nextDueDate: "2027-01-01" })));
+    await waitFor(() =>
+      expect(create).toHaveBeenCalledWith(
+        "cat-1",
+        expect.objectContaining({
+          type: "CORE",
+          vaccineName: "Core vaccine",
+          nextDueDate: "2027-01-01",
+        }),
+      ),
+    );
     await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
   });
 });

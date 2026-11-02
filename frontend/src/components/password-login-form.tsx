@@ -9,7 +9,10 @@ declare global {
   interface Window {
     grecaptcha?: {
       ready: (callback: () => void) => void;
-      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      execute: (
+        siteKey: string,
+        options: { action: string },
+      ) => Promise<string>;
     };
   }
 }
@@ -52,7 +55,9 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
       if (!response.ok) {
         let message = "Unable to sign in";
         try {
-          const body = (await response.json()) as { message?: string | string[] };
+          const body = (await response.json()) as {
+            message?: string | string[];
+          };
           if (Array.isArray(body.message)) {
             message = body.message.join(", ");
           } else if (typeof body.message === "string") {
@@ -66,7 +71,9 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
       }
 
       const user = (await response.json()) as AuthUser;
-      router.push(user.passwordChangeRequired ? "/replace-temporary-password" : nextPath);
+      router.push(
+        user.passwordChangeRequired ? "/replace-temporary-password" : nextPath,
+      );
     } catch {
       setErrorMessage("Unable to sign in");
     } finally {
@@ -90,7 +97,9 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
     try {
       const captchaToken = await new Promise<string>((resolve, reject) => {
         window.grecaptcha?.ready(() => {
-          window.grecaptcha?.execute(recaptchaSiteKey, { action: "forgot_password" }).then(resolve, reject);
+          window.grecaptcha
+            ?.execute(recaptchaSiteKey, { action: "forgot_password" })
+            .then(resolve, reject);
         });
       });
       const response = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
@@ -99,11 +108,16 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
         body: JSON.stringify({ email, captchaToken }),
       });
       if (!response.ok) {
-        setErrorMessage("Unable to request a password reset. Please try again.");
+        setErrorMessage(
+          "Unable to request a password reset. Please try again.",
+        );
         return;
       }
       const body = (await response.json()) as { message?: string };
-      setResetMessage(body.message ?? "If an eligible account exists, a temporary password has been emailed.");
+      setResetMessage(
+        body.message ??
+          "If an eligible account exists, a temporary password has been emailed.",
+      );
     } catch {
       setErrorMessage("Unable to request a password reset. Please try again.");
     } finally {
@@ -114,7 +128,9 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
   return (
     <form className="mt-6 grid gap-3" onSubmit={onSubmit}>
       <label className="grid gap-1.5">
-        <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Email</span>
+        <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+          Email
+        </span>
         <input
           className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white/80 px-3 text-sm outline-none transition focus:border-[#d05a2c] focus:ring-2 focus:ring-[#d05a2c]/20"
           type="email"
@@ -126,7 +142,9 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
       </label>
 
       <label className="grid gap-1.5">
-        <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">Password</span>
+        <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+          Password
+        </span>
         <input
           className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white/80 px-3 text-sm outline-none transition focus:border-[#d05a2c] focus:ring-2 focus:ring-[#d05a2c]/20"
           type="password"
@@ -148,7 +166,10 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
       </button>
 
       {resetMessage ? (
-        <div className="rounded-xl border border-[#9caa7b] bg-[#f2f5e9] px-3 py-2.5 text-sm text-[#46552e]" role="status">
+        <div
+          className="rounded-xl border border-[#9caa7b] bg-[#f2f5e9] px-3 py-2.5 text-sm text-[#46552e]"
+          role="status"
+        >
           {resetMessage}
         </div>
       ) : null}

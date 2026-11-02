@@ -11,5 +11,10 @@ export default async function PermanentCatDeletionPage() {
   const user = await fetchCurrentUser(cookieHeader);
   if (!user) redirect("/login?next=/shelter-management/permanent-delete");
   if (user.role !== "owner") redirect("/shelter-management");
-  return <main className="flex min-h-dvh w-full flex-col items-center gap-6 bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32"><AppHeader user={user} /><PermanentCatDeletionClient /></main>;
+  return (
+    <main className="flex min-h-dvh w-full flex-col items-center gap-6 bg-gradient-to-br from-[#f5ece1] to-[#fff8ee] p-6 pb-32">
+      <AppHeader user={user} />
+      <PermanentCatDeletionClient />
+    </main>
+  );
 }

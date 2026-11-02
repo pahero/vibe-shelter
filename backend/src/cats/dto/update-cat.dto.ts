@@ -8,7 +8,14 @@ export type UpdateCatCommand = {
   estimatedBirthDate?: Date | null;
   intakeDate?: Date | null;
   intakeDetails?: string | null;
-  intakeSource?: "SHELTER_VOLUNTEER" | "OWNER_SURRENDER" | "RESCUE_REQUEST" | "VET_CLINIC" | "RESCUE_ORGANISATION" | "OTHER" | null;
+  intakeSource?:
+    | "SHELTER_VOLUNTEER"
+    | "OWNER_SURRENDER"
+    | "RESCUE_REQUEST"
+    | "VET_CLINIC"
+    | "RESCUE_ORGANISATION"
+    | "OTHER"
+    | null;
   microchipNumber?: string | null;
   passport?: boolean;
   sponsorName?: string | null;
@@ -66,7 +73,14 @@ export class UpdateCatDto {
   @IsOptional()
   intakeDetails?: string | null;
 
-  @IsIn(["SHELTER_VOLUNTEER", "OWNER_SURRENDER", "RESCUE_REQUEST", "VET_CLINIC", "RESCUE_ORGANISATION", "OTHER"])
+  @IsIn([
+    "SHELTER_VOLUNTEER",
+    "OWNER_SURRENDER",
+    "RESCUE_REQUEST",
+    "VET_CLINIC",
+    "RESCUE_ORGANISATION",
+    "OTHER",
+  ])
   @IsOptional()
   intakeSource?: string | null;
 
@@ -109,7 +123,10 @@ export class UpdateCatDto {
   toCommand(): UpdateCatCommand {
     if (this.name !== undefined && !this.name.trim())
       throw new BadRequestException("Cat name is required");
-    if (this.currentLocationId === null || this.currentLocationId?.trim() === "")
+    if (
+      this.currentLocationId === null ||
+      this.currentLocationId?.trim() === ""
+    )
       throw new BadRequestException("Cat location cannot be empty");
     if (
       this.sex !== undefined &&
@@ -148,9 +165,14 @@ export class UpdateCatDto {
         `Invalid intakeSource. Must be one of: ${validIntakeSources.join(", ")}`,
       );
     }
-    if (this.adopterCountry !== undefined && this.adopterCountry !== null &&
-      !["UK", "EU", "CY"].includes(this.adopterCountry)) {
-      throw new BadRequestException("Invalid adopterCountry. Must be one of: UK, EU, CY");
+    if (
+      this.adopterCountry !== undefined &&
+      this.adopterCountry !== null &&
+      !["UK", "EU", "CY"].includes(this.adopterCountry)
+    ) {
+      throw new BadRequestException(
+        "Invalid adopterCountry. Must be one of: UK, EU, CY",
+      );
     }
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
@@ -173,7 +195,9 @@ export class UpdateCatDto {
         ? { intakeDetails: optionalText(this.intakeDetails) }
         : {}),
       ...(this.intakeSource !== undefined
-        ? { intakeSource: this.intakeSource as UpdateCatCommand["intakeSource"] }
+        ? {
+            intakeSource: this.intakeSource as UpdateCatCommand["intakeSource"],
+          }
         : {}),
       ...(this.microchipNumber !== undefined
         ? { microchipNumber: optionalText(this.microchipNumber) }
@@ -188,7 +212,9 @@ export class UpdateCatDto {
       ...(this.adopterAddress !== undefined
         ? { adopterAddress: optionalText(this.adopterAddress) }
         : {}),
-      ...(this.adopterCountry !== undefined ? { adopterCountry: this.adopterCountry } : {}),
+      ...(this.adopterCountry !== undefined
+        ? { adopterCountry: this.adopterCountry }
+        : {}),
       ...(this.felvFivTestDone !== undefined
         ? { felvFivTestDone: this.felvFivTestDone }
         : {}),
@@ -198,7 +224,8 @@ export class UpdateCatDto {
               .sterilizationStatus as UpdateCatCommand["sterilizationStatus"],
           }
         : {}),
-      ...(this.currentLocationId !== undefined && this.currentLocationId !== null
+      ...(this.currentLocationId !== undefined &&
+      this.currentLocationId !== null
         ? { currentLocationId: this.currentLocationId.trim() }
         : {}),
     };

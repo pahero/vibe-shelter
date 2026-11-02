@@ -38,7 +38,12 @@ export class ListFlightCandidatesHandler {
 
   async handle(isTest: boolean): Promise<FlightCandidate[]> {
     const cats = await this.prisma.cat.findMany({
-      where: { isTest, archivedAt: null, deletedAt: null, isFlightCandidate: true },
+      where: {
+        isTest,
+        archivedAt: null,
+        deletedAt: null,
+        isFlightCandidate: true,
+      },
       select: {
         id: true,
         name: true,
@@ -58,7 +63,9 @@ export class ListFlightCandidatesHandler {
         flightAssignments: {
           where: { deletedAt: null, flight: { deletedAt: null } },
           select: {
-            flight: { select: { id: true, flightNumber: true, deletedAt: true } },
+            flight: {
+              select: { id: true, flightNumber: true, deletedAt: true },
+            },
           },
           orderBy: { createdAt: "asc" },
         },
@@ -66,33 +73,41 @@ export class ListFlightCandidatesHandler {
       orderBy: [{ name: "asc" }, { id: "asc" }],
     });
 
-    return Promise.all(cats.map(async (cat) => {
-      const coreVaccineCount = cat.vaccinations.filter(({ type }) => type === VaccinationType.CORE).length;
-      return {
-        id: cat.id,
-        name: cat.name,
-        primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey),
-        currentLocationName: cat.currentLocation?.name ?? null,
-        archivedAt: cat.archivedAt?.toISOString() ?? null,
-        microchipNumber: cat.microchipNumber,
-        passport: cat.passport,
-        sponsorName: cat.sponsorName,
-        adopterName: cat.adopterName,
-        adopterAddress: cat.adopterAddress,
-        flights: cat.flightAssignments.map(({ flight }) => ({
-          id: flight.id,
-          flightNumber: flight.flightNumber,
-        })),
-        requirements: {
-          firstVaccine: coreVaccineCount >= 1,
-          secondVaccine: coreVaccineCount >= 2,
-          rabies: cat.vaccinations.some(({ type }) => type === VaccinationType.RABIES),
+    return Promise.all(
+      cats.map(async (cat) => {
+        const coreVaccineCount = cat.vaccinations.filter(
+          ({ type }) => type === VaccinationType.CORE,
+        ).length;
+        return {
+          id: cat.id,
+          name: cat.name,
+          primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(
+            cat.primaryPhotoKey,
+          ),
+          currentLocationName: cat.currentLocation?.name ?? null,
+          archivedAt: cat.archivedAt?.toISOString() ?? null,
+          microchipNumber: cat.microchipNumber,
           passport: cat.passport,
-          chipped: cat.microchipNumber !== null,
-          adopter: Boolean(cat.adopterName && cat.adopterAddress),
-          felvFivTestDone: cat.felvFivTestDone,
-        },
-      };
-    }));
+          sponsorName: cat.sponsorName,
+          adopterName: cat.adopterName,
+          adopterAddress: cat.adopterAddress,
+          flights: cat.flightAssignments.map(({ flight }) => ({
+            id: flight.id,
+            flightNumber: flight.flightNumber,
+          })),
+          requirements: {
+            firstVaccine: coreVaccineCount >= 1,
+            secondVaccine: coreVaccineCount >= 2,
+            rabies: cat.vaccinations.some(
+              ({ type }) => type === VaccinationType.RABIES,
+            ),
+            passport: cat.passport,
+            chipped: cat.microchipNumber !== null,
+            adopter: Boolean(cat.adopterName && cat.adopterAddress),
+            felvFivTestDone: cat.felvFivTestDone,
+          },
+        };
+      }),
+    );
   }
 }

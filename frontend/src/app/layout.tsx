@@ -26,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${plexMono.variable}`}>
-      <body suppressHydrationWarning><PushNotificationSetup />{children}</body>
+      <body suppressHydrationWarning>
+        <PushNotificationSetup />
+        {children}
+      </body>
     </html>
   );
 }

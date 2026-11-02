@@ -28,7 +28,13 @@ export type ListLocationsResponse = {
 export type CatSex = "FEMALE" | "MALE" | "UNKNOWN";
 export type AdopterCountry = "UK" | "EU" | "CY";
 export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
-export type IntakeSource = "SHELTER_VOLUNTEER" | "OWNER_SURRENDER" | "RESCUE_REQUEST" | "VET_CLINIC" | "RESCUE_ORGANISATION" | "OTHER";
+export type IntakeSource =
+  | "SHELTER_VOLUNTEER"
+  | "OWNER_SURRENDER"
+  | "RESCUE_REQUEST"
+  | "VET_CLINIC"
+  | "RESCUE_ORGANISATION"
+  | "OTHER";
 export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
   SHELTER_VOLUNTEER: "Shelter volunteer",
   OWNER_SURRENDER: "Owner Surrender",
@@ -129,7 +135,10 @@ export type CatTreatment = {
   }[];
 };
 
-export type FavoriteCatWithActiveTreatment = Pick<CatCard, "id" | "name" | "nameNumber" | "updatedAt">;
+export type FavoriteCatWithActiveTreatment = Pick<
+  CatCard,
+  "id" | "name" | "nameNumber" | "updatedAt"
+>;
 
 export type TreatmentInput = {
   shortName: string;
@@ -139,15 +148,57 @@ export type TreatmentInput = {
   dosesPerDay: 1 | 2;
 };
 
-export type CatMedicalNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
+export type CatMedicalNote = {
+  id: string;
+  date: string;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+};
 export type MedicalNoteInput = { date: string; comment: string };
 export type VaccinationType = "CORE" | "RABIES" | "OTHER";
-export type CatVaccination = { id: string; type: VaccinationType; date: string; nextDueDate: string | null; vaccineName: string | null; createdAt: string; updatedAt: string };
-export type VaccinationInput = { type: VaccinationType; date: string; nextDueDate?: string | null; vaccineName?: string | null };
-export type ParasiteTreatmentType = "FLEAS_TICKS" | "DEWORMING" | "COMBINED" | "OTHER";
-export type CatParasiteTreatment = { id: string; type: ParasiteTreatmentType; date: string; nextDueDate: string | null; productName: string; createdAt: string; updatedAt: string };
-export type ParasiteTreatmentInput = { type: ParasiteTreatmentType; date: string; nextDueDate?: string | null; productName: string };
-export type CatNote = { id: string; date: string; comment: string; createdAt: string; updatedAt: string };
+export type CatVaccination = {
+  id: string;
+  type: VaccinationType;
+  date: string;
+  nextDueDate: string | null;
+  vaccineName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type VaccinationInput = {
+  type: VaccinationType;
+  date: string;
+  nextDueDate?: string | null;
+  vaccineName?: string | null;
+};
+export type ParasiteTreatmentType =
+  | "FLEAS_TICKS"
+  | "DEWORMING"
+  | "COMBINED"
+  | "OTHER";
+export type CatParasiteTreatment = {
+  id: string;
+  type: ParasiteTreatmentType;
+  date: string;
+  nextDueDate: string | null;
+  productName: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ParasiteTreatmentInput = {
+  type: ParasiteTreatmentType;
+  date: string;
+  nextDueDate?: string | null;
+  productName: string;
+};
+export type CatNote = {
+  id: string;
+  date: string;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+};
 export type NoteInput = { date: string; comment: string };
 
 export type TaskNotification = {
@@ -224,12 +275,48 @@ export type CatHistoryEvent = {
   treatmentAdministrationDate: string | null;
   treatment: { id: string; shortName: string; isDeleted: boolean } | null;
   tag?: { id: string; name: string; isDeleted: boolean } | null;
-  weight?: { id: string; measuredAt: string; weightKg: number; isDeleted: boolean } | null;
-  task?: { id: string; comment: string; dueDate: string; isDeleted: boolean } | null;
-  medicalNote?: { id: string; date: string; comment: string; author: string | null; isDeleted: boolean } | null;
-  vaccination?: { id: string; date: string; nextDueDate: string | null; vaccineName: string | null; type: string; isDeleted: boolean } | null;
-  parasiteTreatment?: { id: string; date: string; nextDueDate: string | null; productName: string; type: string; isDeleted: boolean } | null;
-   note?: { id: string; date: string; comment: string; author: string | null; isDeleted: boolean } | null;
+  weight?: {
+    id: string;
+    measuredAt: string;
+    weightKg: number;
+    isDeleted: boolean;
+  } | null;
+  task?: {
+    id: string;
+    comment: string;
+    dueDate: string;
+    isDeleted: boolean;
+  } | null;
+  medicalNote?: {
+    id: string;
+    date: string;
+    comment: string;
+    author: string | null;
+    isDeleted: boolean;
+  } | null;
+  vaccination?: {
+    id: string;
+    date: string;
+    nextDueDate: string | null;
+    vaccineName: string | null;
+    type: string;
+    isDeleted: boolean;
+  } | null;
+  parasiteTreatment?: {
+    id: string;
+    date: string;
+    nextDueDate: string | null;
+    productName: string;
+    type: string;
+    isDeleted: boolean;
+  } | null;
+  note?: {
+    id: string;
+    date: string;
+    comment: string;
+    author: string | null;
+    isDeleted: boolean;
+  } | null;
   archivingReason?: { id: string; name: string; isDeleted: boolean } | null;
   location?: { id: string; name: string; isDeleted: boolean } | null;
   relatedUser?: { id: string; displayName: string; isDeleted: boolean } | null;
@@ -295,7 +382,9 @@ export type CreateCatDto = {
   currentLocationId?: string | null;
 };
 
-export type UpdateCatDto = Partial<CreateCatDto> & { felvFivTestDone?: boolean };
+export type UpdateCatDto = Partial<CreateCatDto> & {
+  felvFivTestDone?: boolean;
+};
 
 export type FlightListItem = {
   id: string;
@@ -339,8 +428,19 @@ export type FlightAuditEvent = {
   oldValue: string | null;
   newValue: string | null;
   cat: { id: string; name: string; archivedAt: string | null } | null;
-  flight: { id: string; flightNumber: string; airport: string; date: string; isDeleted: boolean };
-  assignment: { id: string; f2fDone: boolean; tracesDone: boolean; isDeleted: boolean } | null;
+  flight: {
+    id: string;
+    flightNumber: string;
+    airport: string;
+    date: string;
+    isDeleted: boolean;
+  };
+  assignment: {
+    id: string;
+    f2fDone: boolean;
+    tracesDone: boolean;
+    isDeleted: boolean;
+  } | null;
 };
 
 export type FlightInput = {
@@ -402,7 +502,10 @@ export type ApiError = {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    if ((response.status === 401 || response.status === 403) && typeof window !== "undefined") {
+    if (
+      (response.status === 401 || response.status === 403) &&
+      typeof window !== "undefined"
+    ) {
       const nextPath = `${window.location.pathname}${window.location.search}`;
       window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
     }
@@ -429,12 +532,19 @@ function isRetryableUploadStatus(status: number): boolean {
 }
 
 function waitForUploadRetry(attempt: number): Promise<void> {
-  const exponentialDelay = Math.min(UPLOAD_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1), UPLOAD_RETRY_MAX_DELAY_MS);
+  const exponentialDelay = Math.min(
+    UPLOAD_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1),
+    UPLOAD_RETRY_MAX_DELAY_MS,
+  );
   const jitteredDelay = exponentialDelay * (0.8 + Math.random() * 0.4);
   return new Promise((resolve) => setTimeout(resolve, jitteredDelay));
 }
 
-async function uploadWithRetry<T>(url: string, method: "POST" | "PUT", createBody: () => FormData): Promise<T> {
+async function uploadWithRetry<T>(
+  url: string,
+  method: "POST" | "PUT",
+  createBody: () => FormData,
+): Promise<T> {
   for (let attempt = 1; attempt <= UPLOAD_MAX_ATTEMPTS; attempt += 1) {
     let response: Response;
     try {
@@ -445,7 +555,10 @@ async function uploadWithRetry<T>(url: string, method: "POST" | "PUT", createBod
       continue;
     }
 
-    if (attempt < UPLOAD_MAX_ATTEMPTS && isRetryableUploadStatus(response.status)) {
+    if (
+      attempt < UPLOAD_MAX_ATTEMPTS &&
+      isRetryableUploadStatus(response.status)
+    ) {
       await waitForUploadRetry(attempt);
       continue;
     }
@@ -456,11 +569,15 @@ async function uploadWithRetry<T>(url: string, method: "POST" | "PUT", createBod
 }
 
 export const locationsApi = {
-  async listLocations(params?: ListLocationsParams): Promise<ListLocationsResponse> {
+  async listLocations(
+    params?: ListLocationsParams,
+  ): Promise<ListLocationsResponse> {
     const query = new URLSearchParams();
     if (params?.ownerId) query.append("ownerId", params.ownerId);
-    if (params?.skip !== undefined) query.append("skip", params.skip.toString());
-    if (params?.limit !== undefined) query.append("limit", params.limit.toString());
+    if (params?.skip !== undefined)
+      query.append("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      query.append("limit", params.limit.toString());
 
     const url = query.toString()
       ? `${BACKEND_URL}/api/locations?${query.toString()}`
@@ -468,23 +585,24 @@ export const locationsApi = {
 
     const response = await authenticatedFetch(url, {
       method: "GET",
-      
     });
     return handleResponse<ListLocationsResponse>(response);
   },
 
   async getLocation(id: string): Promise<Location> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/locations/${id}`, {
-      method: "GET",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/locations/${id}`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<Location>(response);
   },
 
   async createLocation(data: CreateLocationDto): Promise<Location> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/locations`, {
       method: "POST",
-      
+
       headers: {
         "Content-Type": "application/json",
       },
@@ -494,155 +612,376 @@ export const locationsApi = {
   },
 
   async updateLocation(id: string, data: UpdateLocationDto): Promise<Location> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/locations/${id}`, {
-      method: "PATCH",
-      
-      headers: {
-        "Content-Type": "application/json",
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/locations/${id}`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       },
-      body: JSON.stringify(data),
-    });
+    );
     return handleResponse<Location>(response);
   },
 
-  async archiveLocation(id: string, replacementLocationId?: string): Promise<void> {
-    const query = replacementLocationId ? `?replacementLocationId=${encodeURIComponent(replacementLocationId)}` : "";
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/locations/${id}${query}`, {
-      method: "DELETE",
-      
-    });
+  async archiveLocation(
+    id: string,
+    replacementLocationId?: string,
+  ): Promise<void> {
+    const query = replacementLocationId
+      ? `?replacementLocationId=${encodeURIComponent(replacementLocationId)}`
+      : "";
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/locations/${id}${query}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<void>(response);
   },
 };
 
 export const usersApi = {
   async listUsers(): Promise<User[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/users`, { method: "GET", });
+    const response = await authenticatedFetch(`${BACKEND_URL}/users`, {
+      method: "GET",
+    });
     return handleResponse<User[]>(response);
   },
 };
 
 export const notificationsApi = {
   async list(skip = 0, limit = 20): Promise<ListNotificationsResponse> {
-    const query = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() });
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/notifications?${query.toString()}`, {
-      method: "GET",
-      
+    const query = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
     });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/notifications?${query.toString()}`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<ListNotificationsResponse>(response);
   },
   async dismiss(notificationId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/notifications/${notificationId}`, {
-      method: "DELETE",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/notifications/${notificationId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<void>(response);
   },
 };
 
 export const catsApi = {
-  async listFavoriteCatsWithActiveTreatments(): Promise<FavoriteCatWithActiveTreatment[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/favorites/active-treatments`, { method: "GET" });
+  async listFavoriteCatsWithActiveTreatments(): Promise<
+    FavoriteCatWithActiveTreatment[]
+  > {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/favorites/active-treatments`,
+      { method: "GET" },
+    );
     return handleResponse<FavoriteCatWithActiveTreatment[]>(response);
   },
   async listFlightCandidates(): Promise<FlightCandidate[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/flight-candidates`, { method: "GET", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/flight-candidates`,
+      { method: "GET" },
+    );
     return handleResponse<FlightCandidate[]>(response);
   },
-  async listNotes(catId: string): Promise<CatNote[]> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "GET", }); return handleResponse<CatNote[]>(response); },
-  async createNote(catId: string, data: NoteInput): Promise<MutationResult> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/notes`, { method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async updateNote(id: string, data: Partial<NoteInput>): Promise<MutationResult> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async deleteNote(id: string): Promise<void> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/notes/${id}`, { method: "DELETE", }); return handleResponse<void>(response); },
-  async listVaccinations(catId: string): Promise<CatVaccination[]> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/vaccinations`, { method: "GET", }); return handleResponse<CatVaccination[]>(response); },
-  async createVaccination(catId: string, data: VaccinationInput): Promise<MutationResult> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/vaccinations`, { method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async updateVaccination(id: string, data: Partial<VaccinationInput>): Promise<MutationResult> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/vaccinations/${id}`, { method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async deleteVaccination(id: string): Promise<void> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/vaccinations/${id}`, { method: "DELETE", }); return handleResponse<void>(response); },
-  async listParasiteTreatments(catId: string): Promise<CatParasiteTreatment[]> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/parasite-treatments`, { method: "GET", }); return handleResponse<CatParasiteTreatment[]>(response); },
-  async createParasiteTreatment(catId: string, data: ParasiteTreatmentInput): Promise<MutationResult> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/parasite-treatments`, { method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async updateParasiteTreatment(id: string, data: Partial<ParasiteTreatmentInput>): Promise<MutationResult> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/parasite-treatments/${id}`, { method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); return handleResponse<MutationResult>(response); },
-  async deleteParasiteTreatment(id: string): Promise<void> { const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/parasite-treatments/${id}`, { method: "DELETE", }); return handleResponse<void>(response); },
-  async listMedicalNotes(catId: string): Promise<CatMedicalNote[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/medical-notes`, { method: "GET", });
-    return handleResponse<CatMedicalNote[]>(response);
+  async listNotes(catId: string): Promise<CatNote[]> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/notes`,
+      { method: "GET" },
+    );
+    return handleResponse<CatNote[]>(response);
   },
-  async createMedicalNote(catId: string, data: MedicalNoteInput): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/medical-notes`, { method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  async createNote(catId: string, data: NoteInput): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/notes`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
-  async updateMedicalNote(noteId: string, data: Partial<MedicalNoteInput>): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/medical-notes/${noteId}`, { method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  async updateNote(
+    id: string,
+    data: Partial<NoteInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/notes/${id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+  async deleteNote(id: string): Promise<void> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/notes/${id}`,
+      { method: "DELETE" },
+    );
+    return handleResponse<void>(response);
+  },
+  async listVaccinations(catId: string): Promise<CatVaccination[]> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/vaccinations`,
+      { method: "GET" },
+    );
+    return handleResponse<CatVaccination[]>(response);
+  },
+  async createVaccination(
+    catId: string,
+    data: VaccinationInput,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/vaccinations`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+  async updateVaccination(
+    id: string,
+    data: Partial<VaccinationInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/vaccinations/${id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+  async deleteVaccination(id: string): Promise<void> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/vaccinations/${id}`,
+      { method: "DELETE" },
+    );
+    return handleResponse<void>(response);
+  },
+  async listParasiteTreatments(catId: string): Promise<CatParasiteTreatment[]> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/parasite-treatments`,
+      { method: "GET" },
+    );
+    return handleResponse<CatParasiteTreatment[]>(response);
+  },
+  async createParasiteTreatment(
+    catId: string,
+    data: ParasiteTreatmentInput,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/parasite-treatments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+  async updateParasiteTreatment(
+    id: string,
+    data: Partial<ParasiteTreatmentInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/parasite-treatments/${id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+  async deleteParasiteTreatment(id: string): Promise<void> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/parasite-treatments/${id}`,
+      { method: "DELETE" },
+    );
+    return handleResponse<void>(response);
+  },
+  async listMedicalNotes(catId: string): Promise<CatMedicalNote[]> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/medical-notes`,
+      { method: "GET" },
+    );
+    return handleResponse<CatMedicalNote[]>(response);
+  },
+  async createMedicalNote(
+    catId: string,
+    data: MedicalNoteInput,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/medical-notes`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+  async updateMedicalNote(
+    noteId: string,
+    data: Partial<MedicalNoteInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/medical-notes/${noteId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
   async deleteMedicalNote(noteId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/medical-notes/${noteId}`, { method: "DELETE", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/medical-notes/${noteId}`,
+      { method: "DELETE" },
+    );
     return handleResponse<void>(response);
   },
   async listTreatments(catId: string): Promise<CatTreatment[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/treatments`, { method: "GET", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/treatments`,
+      { method: "GET" },
+    );
     return handleResponse<CatTreatment[]>(response);
   },
 
-  async createTreatment(catId: string, data: TreatmentInput): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/treatments`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
-    });
+  async createTreatment(
+    catId: string,
+    data: TreatmentInput,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/treatments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
-  async updateTreatment(treatmentId: string, data: Partial<TreatmentInput>): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}`, {
-      method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
-    });
+  async updateTreatment(
+    treatmentId: string,
+    data: Partial<TreatmentInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/treatments/${treatmentId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async deleteTreatment(treatmentId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}`, {
-      method: "DELETE", 
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/treatments/${treatmentId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<void>(response);
   },
 
   async restoreTreatment(treatmentId: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}/restore`, {
-      method: "POST", 
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/treatments/${treatmentId}/restore`,
+      {
+        method: "POST",
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
-  async setTreatmentAdministration(treatmentId: string, date: string, doseNumber: number, checked: boolean): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/treatments/${treatmentId}/administrations`, {
-      method: "PUT",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, doseNumber, checked }),
-    });
+  async setTreatmentAdministration(
+    treatmentId: string,
+    date: string,
+    doseNumber: number,
+    checked: boolean,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/treatments/${treatmentId}/administrations`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, doseNumber, checked }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async listTasks(catId: string): Promise<CatTask[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/tasks`, { method: "GET", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/tasks`,
+      { method: "GET" },
+    );
     return handleResponse<CatTask[]>(response);
   },
 
   async createTask(catId: string, data: TaskInput): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${catId}/tasks`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${catId}/tasks`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
-  async updateTask(taskId: string, data: Partial<TaskInput>): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tasks/${taskId}`, {
-      method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
-    });
+  async updateTask(
+    taskId: string,
+    data: Partial<TaskInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tasks/${taskId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async deleteTask(taskId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tasks/${taskId}`, { method: "DELETE", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tasks/${taskId}`,
+      { method: "DELETE" },
+    );
     return handleResponse<void>(response);
   },
 
   async completeTask(taskId: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tasks/${taskId}/complete`, { method: "POST", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tasks/${taskId}/complete`,
+      { method: "POST" },
+    );
     return handleResponse<MutationResult>(response);
   },
 
@@ -652,8 +991,10 @@ export const catsApi = {
     if (params?.search) query.append("search", params.search);
     if (params?.tagId) query.append("tagId", params.tagId);
     if (params?.archived) query.append("archived", "true");
-    if (params?.skip !== undefined) query.append("skip", params.skip.toString());
-    if (params?.limit !== undefined) query.append("limit", params.limit.toString());
+    if (params?.skip !== undefined)
+      query.append("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      query.append("limit", params.limit.toString());
 
     const url = query.toString()
       ? `${BACKEND_URL}/api/cats?${query.toString()}`
@@ -661,43 +1002,58 @@ export const catsApi = {
 
     const response = await authenticatedFetch(url, {
       method: "GET",
-      
     });
     return handleResponse<ListCatsResponse>(response);
   },
 
   async getCatCard(id: string): Promise<CatCard> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/card`, {
-      method: "GET",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/card`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<CatCard>(response);
   },
 
-  async setTrelloLink(id: string, trelloUrl: string | null): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/trello-link`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ trelloUrl }),
-    });
+  async setTrelloLink(
+    id: string,
+    trelloUrl: string | null,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/trello-link`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trelloUrl }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async toggleCatFavorite(id: string): Promise<{ favorite: boolean }> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/favorite`, { method: "POST" });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/favorite`,
+      { method: "POST" },
+    );
     return handleResponse<{ favorite: boolean }>(response);
   },
 
-
-  async listHistory(id: string, params?: { skip?: number; limit?: number }): Promise<CatHistoryResponse> {
+  async listHistory(
+    id: string,
+    params?: { skip?: number; limit?: number },
+  ): Promise<CatHistoryResponse> {
     const query = new URLSearchParams();
     if (params?.skip !== undefined) query.set("skip", params.skip.toString());
-    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    if (params?.limit !== undefined)
+      query.set("limit", params.limit.toString());
     const suffix = query.size ? `?${query.toString()}` : "";
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/history${suffix}`, {
-      method: "GET",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/history${suffix}`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<CatHistoryResponse>(response);
   },
 
@@ -714,13 +1070,16 @@ export const catsApi = {
     if (params?.catId) query.append("catId", params.catId);
     if (params?.from) query.append("from", params.from);
     if (params?.to) query.append("to", params.to);
-    if (params?.skip !== undefined) query.append("skip", params.skip.toString());
-    if (params?.limit !== undefined) query.append("limit", params.limit.toString());
+    if (params?.skip !== undefined)
+      query.append("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      query.append("limit", params.limit.toString());
 
-    const url = query.toString() ? `/api/cats/history?${query.toString()}` : "/api/cats/history";
+    const url = query.toString()
+      ? `/api/cats/history?${query.toString()}`
+      : "/api/cats/history";
     const response = await authenticatedFetch(`${BACKEND_URL}${url}`, {
       method: "GET",
-      
     });
     return handleResponse<CatHistoryResponse>(response);
   },
@@ -728,77 +1087,120 @@ export const catsApi = {
   async listTags(): Promise<CatTag[]> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tags`, {
       method: "GET",
-      
     });
     return handleResponse<CatTag[]>(response);
   },
 
   async listArchivingReasons(): Promise<CatArchivingReason[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/archiving-reasons`, { method: "GET", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/archiving-reasons`,
+      { method: "GET" },
+    );
     return handleResponse<CatArchivingReason[]>(response);
   },
 
   async createArchivingReason(name: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/archiving-reasons`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/archiving-reasons`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
-  async updateArchivingReason(id: string, name: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/archiving-reasons/${id}`, {
-      method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
-    });
+  async updateArchivingReason(
+    id: string,
+    name: string,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/archiving-reasons/${id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
-  async deleteArchivingReason(id: string, replacementReasonId?: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/archiving-reasons/${id}`, {
-      method: "DELETE",  headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(replacementReasonId ? { replacementReasonId } : {}),
-    });
+  async deleteArchivingReason(
+    id: string,
+    replacementReasonId?: string,
+  ): Promise<void> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/archiving-reasons/${id}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          replacementReasonId ? { replacementReasonId } : {},
+        ),
+      },
+    );
     return handleResponse<void>(response);
   },
 
-  async archiveCat(id: string, reasonId: string, archivingDate: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/archive`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reasonId, archivingDate }),
-    });
+  async archiveCat(
+    id: string,
+    reasonId: string,
+    archivingDate: string,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/archive`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reasonId, archivingDate }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async dearchiveCat(id: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/dearchive`, {
-      method: "POST", 
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/dearchive`,
+      {
+        method: "POST",
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async markFlightCandidate(id: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/flight-candidate`, {
-      method: "PUT", 
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/flight-candidate`,
+      {
+        method: "PUT",
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async unmarkFlightCandidate(id: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/flight-candidate`, {
-      method: "DELETE", 
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/flight-candidate`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async listFlightCandidateIds(): Promise<Array<{ id: string }>> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/flight-candidates`, {
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/flight-candidates`,
+      {},
+    );
     return handleResponse<Array<{ id: string }>>(response);
   },
 
   async createTag(name: string, color?: string): Promise<CatTag> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tags`, {
       method: "POST",
-      
+
       headers: {
         "Content-Type": "application/json",
       },
@@ -807,46 +1209,58 @@ export const catsApi = {
     return handleResponse<CatTag>(response);
   },
 
-  async updateTag(id: string, data: { name?: string; color?: string }): Promise<CatTag> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tags/${id}`, {
-      method: "PATCH",
-      
-      headers: {
-        "Content-Type": "application/json",
+  async updateTag(
+    id: string,
+    data: { name?: string; color?: string },
+  ): Promise<CatTag> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tags/${id}`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       },
-      body: JSON.stringify(data),
-    });
+    );
     return handleResponse<CatTag>(response);
   },
 
   async deleteTag(id: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/tags/${id}`, {
-      method: "DELETE",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tags/${id}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<void>(response);
   },
 
   async addTag(id: string, tagId: string): Promise<CatCard> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/tags/${tagId}`, {
-      method: "POST",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/tags/${tagId}`,
+      {
+        method: "POST",
+      },
+    );
     return handleResponse<CatCard>(response);
   },
 
   async removeTag(id: string, tagId: string): Promise<CatCard> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/tags/${tagId}`, {
-      method: "DELETE",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/tags/${tagId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<CatCard>(response);
   },
 
   async createCat(data: CreateCatDto): Promise<CatCard> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/cats`, {
       method: "POST",
-      
+
       headers: {
         "Content-Type": "application/json",
       },
@@ -858,7 +1272,7 @@ export const catsApi = {
   async updateCat(id: string, data: UpdateCatDto): Promise<CatCard> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}`, {
       method: "PATCH",
-      
+
       headers: {
         "Content-Type": "application/json",
       },
@@ -867,107 +1281,150 @@ export const catsApi = {
     return handleResponse<CatCard>(response);
   },
 
-  async updateCatNameNumber(id: string, nameNumber: number): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/name-number`, {
-      method: "PATCH",
-      
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nameNumber }),
-    });
+  async updateCatNameNumber(
+    id: string,
+    nameNumber: number,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/name-number`,
+      {
+        method: "PATCH",
+
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nameNumber }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async updatePrimaryPhoto(id: string, photo: File): Promise<CatCard> {
-    return uploadWithRetry(`${BACKEND_URL}/api/cats/${id}/primary-photo`, "PUT", () => {
-      const formData = new FormData();
-      formData.append("photo", photo);
-      return formData;
-    });
+    return uploadWithRetry(
+      `${BACKEND_URL}/api/cats/${id}/primary-photo`,
+      "PUT",
+      () => {
+        const formData = new FormData();
+        formData.append("photo", photo);
+        return formData;
+      },
+    );
   },
 
   async listPhotos(id: string): Promise<CatPhoto[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/photos`, {
-      method: "GET",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/photos`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<CatPhoto[]>(response);
   },
 
   async listDocuments(id: string): Promise<CatDocument[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/documents`, {
-      method: "GET",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/documents`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<CatDocument[]>(response);
   },
 
   async addDocument(id: string, document: File): Promise<CatDocument> {
-    return uploadWithRetry(`${BACKEND_URL}/api/cats/${id}/documents`, "POST", () => {
-      const formData = new FormData();
-      formData.append("document", document);
-      return formData;
-    });
+    return uploadWithRetry(
+      `${BACKEND_URL}/api/cats/${id}/documents`,
+      "POST",
+      () => {
+        const formData = new FormData();
+        formData.append("document", document);
+        return formData;
+      },
+    );
   },
 
   async deleteDocument(id: string, documentId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/documents/${documentId}`, {
-      method: "DELETE",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/documents/${documentId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<void>(response);
   },
 
   async addPhoto(id: string, photo: File): Promise<CatPhoto> {
-    return uploadWithRetry(`${BACKEND_URL}/api/cats/${id}/photos`, "POST", () => {
-      const formData = new FormData();
-      formData.append("photo", photo);
-      return formData;
-    });
+    return uploadWithRetry(
+      `${BACKEND_URL}/api/cats/${id}/photos`,
+      "POST",
+      () => {
+        const formData = new FormData();
+        formData.append("photo", photo);
+        return formData;
+      },
+    );
   },
 
-  async setPrimaryPhoto(id: string, photoId: string, positionY?: number | null): Promise<CatCard> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/photos/${photoId}/primary`, {
-      method: "PUT",
-      
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(positionY === undefined ? {} : { positionY }),
-    });
+  async setPrimaryPhoto(
+    id: string,
+    photoId: string,
+    positionY?: number | null,
+  ): Promise<CatCard> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/photos/${photoId}/primary`,
+      {
+        method: "PUT",
+
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(positionY === undefined ? {} : { positionY }),
+      },
+    );
     return handleResponse<CatCard>(response);
   },
 
   async deletePhoto(id: string, photoId: string): Promise<CatCard> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/photos/${photoId}`, {
-      method: "DELETE",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/photos/${photoId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return handleResponse<CatCard>(response);
   },
 
   async listWeights(id: string): Promise<CatWeight[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/weights`, {
-      method: "GET",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/weights`,
+      {
+        method: "GET",
+      },
+    );
     return handleResponse<CatWeight[]>(response);
   },
 
-  async addWeight(id: string, data: { weightKg: number; measuredAt: string }): Promise<CatWeight> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/weights`, {
-      method: "POST",
-      
-      headers: {
-        "Content-Type": "application/json",
+  async addWeight(
+    id: string,
+    data: { weightKg: number; measuredAt: string },
+  ): Promise<CatWeight> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/weights`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       },
-      body: JSON.stringify(data),
-    });
+    );
     return handleResponse<CatWeight>(response);
   },
 
   async removeWeight(id: string, weightId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/cats/${id}/weights/${weightId}`, {
-      method: "DELETE",
-      
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/${id}/weights/${weightId}`,
+      {
+        method: "DELETE",
+      },
+    );
     if (!response.ok) {
       await handleResponse<never>(response);
     }
@@ -977,65 +1434,108 @@ export const catsApi = {
 export const flightsApi = {
   async list(includeDeleted = false): Promise<FlightListItem[]> {
     const path = includeDeleted ? "/api/flights/deleted" : "/api/flights";
-    const response = await authenticatedFetch(`${BACKEND_URL}${path}`, { method: "GET", });
+    const response = await authenticatedFetch(`${BACKEND_URL}${path}`, {
+      method: "GET",
+    });
     return handleResponse<FlightListItem[]>(response);
   },
 
   async get(flightId: string): Promise<FlightDetails> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}`, { method: "GET", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}`,
+      { method: "GET" },
+    );
     return handleResponse<FlightDetails>(response);
   },
 
   async history(flightId: string): Promise<FlightAuditEvent[]> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/history`, { method: "GET", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}/history`,
+      { method: "GET" },
+    );
     return handleResponse<FlightAuditEvent[]>(response);
   },
 
   async create(data: FlightInput): Promise<MutationResult> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/flights`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     });
     return handleResponse<MutationResult>(response);
   },
 
-  async update(flightId: string, data: Partial<FlightInput>): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}`, {
-      method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
-    });
+  async update(
+    flightId: string,
+    data: Partial<FlightInput>,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async delete(flightId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}`, { method: "DELETE", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}`,
+      { method: "DELETE" },
+    );
     return handleResponse<void>(response);
   },
 
   async restore(flightId: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/restore`, { method: "POST", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}/restore`,
+      { method: "POST" },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async assignCat(flightId: string, catId: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/${flightId}/cats`, {
-      method: "POST",  headers: { "Content-Type": "application/json" }, body: JSON.stringify({ catId }),
-    });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}/cats`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ catId }),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
-  async updateAssignment(assignmentId: string, data: FlightCatAssignmentUpdate): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/assignments/${assignmentId}`, {
-      method: "PATCH",  headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
-    });
+  async updateAssignment(
+    assignmentId: string,
+    data: FlightCatAssignmentUpdate,
+  ): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/assignments/${assignmentId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
     return handleResponse<MutationResult>(response);
   },
 
   async deleteAssignment(assignmentId: string): Promise<void> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/assignments/${assignmentId}`, { method: "DELETE", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/assignments/${assignmentId}`,
+      { method: "DELETE" },
+    );
     return handleResponse<void>(response);
   },
 
   async restoreAssignment(assignmentId: string): Promise<MutationResult> {
-    const response = await authenticatedFetch(`${BACKEND_URL}/api/flights/assignments/${assignmentId}/restore`, { method: "POST", });
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/assignments/${assignmentId}/restore`,
+      { method: "POST" },
+    );
     return handleResponse<MutationResult>(response);
   },
 };

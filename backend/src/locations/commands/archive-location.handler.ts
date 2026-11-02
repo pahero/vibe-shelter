@@ -33,28 +33,40 @@ export class ArchiveLocationHandler {
         );
       if (assignedCats.length > 0) {
         if (replacementLocationId === id)
-          throw new ConflictException("Choose a different replacement location.");
+          throw new ConflictException(
+            "Choose a different replacement location.",
+          );
         const replacement = await tx.location.findFirst({
-          where: { id: replacementLocationId, isTest, deletedAt: null, status: "ACTIVE" },
+          where: {
+            id: replacementLocationId,
+            isTest,
+            deletedAt: null,
+            status: "ACTIVE",
+          },
           select: { id: true, name: true },
         });
         if (!replacement)
           throw new NotFoundException("Replacement location not found");
         await tx.cat.updateMany({
           where: { currentLocationId: id, isTest },
-          data: { currentLocationId: replacement.id, version: { increment: 1 }, concurrencyToken: randomUUID() },
+          data: {
+            currentLocationId: replacement.id,
+            version: { increment: 1 },
+            concurrencyToken: randomUUID(),
+          },
         });
-        if (actorUserId) await tx.auditEvent.createMany({
-          data: assignedCats.map((cat) => ({
-            catId: cat.id,
-            actorUserId,
-            eventType: "current_location_changed",
-            locationId: replacement.id,
-            isTest,
-            oldValue: location.name,
-            newValue: replacement.name,
-          })),
-        });
+        if (actorUserId)
+          await tx.auditEvent.createMany({
+            data: assignedCats.map((cat) => ({
+              catId: cat.id,
+              actorUserId,
+              eventType: "current_location_changed",
+              locationId: replacement.id,
+              isTest,
+              oldValue: location.name,
+              newValue: replacement.name,
+            })),
+          });
       }
       await tx.location.update({
         where: { id },
