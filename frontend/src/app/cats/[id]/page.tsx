@@ -1,6 +1,12 @@
 "use client";
 
-import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import {
+  Fragment,
+  type ChangeEvent,
+  type FormEvent,
+  useEffect,
+  useState,
+} from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -1895,22 +1901,6 @@ export default function CatProfilePage() {
                             />
                           </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
-                            Comment
-                            <textarea
-                              value={editForm.intakeDetails}
-                              onChange={(event) =>
-                                setEditForm(
-                                  (prev) =>
-                                    prev && {
-                                      ...prev,
-                                      intakeDetails: event.target.value,
-                                    },
-                                )
-                              }
-                              className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                            />
-                          </label>
-                          <label className="grid gap-1 text-sm font-medium text-gray-800">
                             Intake source
                             <select
                               value={editForm.intakeSource}
@@ -1986,6 +1976,28 @@ export default function CatProfilePage() {
                               className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                             />
                           </label>
+                          <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                            Comment
+                            <textarea
+                              value={editForm.intakeDetails}
+                              onChange={(event) =>
+                                setEditForm(
+                                  (prev) =>
+                                    prev && {
+                                      ...prev,
+                                      intakeDetails: event.target.value,
+                                    },
+                                )
+                              }
+                              className="min-h-24 resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                            />
+                          </label>
+                          <div className="mt-3 flex items-center gap-3 md:col-span-2">
+                            <span className="font-mono text-xs uppercase tracking-[0.14em] text-[#a83f1a]">
+                              Adoption
+                            </span>
+                            <span className="h-px flex-1 bg-[#d4c7b4]/80" />
+                          </div>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
                             Adopter name
                             <input
@@ -2059,7 +2071,7 @@ export default function CatProfilePage() {
                         </div>
                       </form>
                     ) : (
-                      <dl className="mt-6 grid gap-x-6 gap-y-0 rounded-2xl bg-[#fff8ee]/85 p-4 sm:grid-cols-2">
+                      <dl className="mt-4 grid gap-x-6 gap-y-0 sm:grid-cols-2">
                         {[
                           [
                             "Current location",
@@ -2087,7 +2099,6 @@ export default function CatProfilePage() {
                             "Microchip number",
                             cat.microchipNumber || "Not set",
                           ],
-                          ["Comment", cat.intakeDetails || "Not set"],
                           [
                             "Intake source",
                             cat.intakeSource
@@ -2100,6 +2111,7 @@ export default function CatProfilePage() {
                             cat.felvFivTestDone ? "Done" : "Not done",
                           ],
                           ["Sponsor name", cat.sponsorName || "Not set"],
+                          ["Comment", cat.intakeDetails || "Not set"],
                           ["Adopter name", cat.adopterName || "Not set"],
                           ["Adopter address", cat.adopterAddress || "Not set"],
                           ["Adopter country", cat.adopterCountry || "Not set"],
@@ -2112,17 +2124,26 @@ export default function CatProfilePage() {
                               ]
                             : []),
                         ].map(([label, value]) => (
-                          <div
-                            key={label}
-                            className={`min-w-0 border-b border-[#d4c7b4]/70 pb-2 last:border-b-0 ${label === "Birth date" && !cat.archivingReasonName ? "border-b-0 border-t sm:col-span-2" : (label === "Microchip number" && !cat.archivingReasonName) || label === "Intake date" || label === "Birth date" ? "border-b-0" : "sm:[&:nth-last-child(2)]:border-b-0"}`}
-                          >
-                            <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66] sm:whitespace-nowrap">
-                              {label}
-                            </dt>
-                            <dd className="mt-0.5 truncate font-semibold text-gray-900">
-                              {value}
-                            </dd>
-                          </div>
+                          <Fragment key={label}>
+                            {label === "Adopter name" && (
+                              <div className="mt-3 flex items-center gap-3 sm:col-span-2">
+                                <span className="font-mono text-xs uppercase tracking-[0.14em] text-[#a83f1a]">
+                                  Adoption
+                                </span>
+                                <span className="h-px flex-1 bg-[#d4c7b4]/80" />
+                              </div>
+                            )}
+                            <div
+                              className={`min-w-0 border-b border-[#d4c7b4]/65 py-2 ${label === "Comment" ? "border-b-0 sm:col-span-2" : ""}`}
+                            >
+                              <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
+                                {label}
+                              </dt>
+                              <dd className="mt-0.5 break-words whitespace-pre-wrap text-sm font-semibold leading-5 text-gray-900">
+                                {value}
+                              </dd>
+                            </div>
+                          </Fragment>
                         ))}
                       </dl>
                     )}

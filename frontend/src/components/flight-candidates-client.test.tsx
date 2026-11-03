@@ -25,8 +25,18 @@ const candidate: FlightCandidate = {
   adopterName: "Alex Adopter",
   adopterAddress: "12 Cat Street",
   flights: [
-    { id: "flight-active", flightNumber: "CY123" },
-    { id: "flight-active-2", flightNumber: "CY124" },
+    {
+      id: "flight-active",
+      flightNumber: "CY123",
+      f2fDone: true,
+      tracesDone: false,
+    },
+    {
+      id: "flight-active-2",
+      flightNumber: "CY124",
+      f2fDone: false,
+      tracesDone: true,
+    },
   ],
   requirements: {
     firstVaccine: true,
@@ -100,6 +110,14 @@ describe("FlightCandidatesClient", () => {
     });
 
     expect(screen.getByText("No cats match your search.")).toBeVisible();
+  });
+
+  it("uses a cat icon when a candidate has no photo", async () => {
+    listCandidates.mockResolvedValue([{ ...candidate, primaryPhotoUrl: null }]);
+    render(<FlightCandidatesClient />);
+
+    expect(await screen.findByLabelText("No photo for Mila")).toBeVisible();
+    expect(screen.queryByRole("img", { name: "Mila" })).not.toBeInTheDocument();
   });
 
   it("shows an API error and can retry", async () => {

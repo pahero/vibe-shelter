@@ -115,6 +115,10 @@ export async function createCatViaApi(
     sterilizationStatus?: "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
     color?: string;
     microchipNumber?: string;
+    intakeDetails?: string;
+    adopterName?: string;
+    adopterAddress?: string;
+    adopterCountry?: "UK" | "EU" | "CY";
   },
 ): Promise<{ id: string; name: string }> {
   const locationId =
@@ -128,6 +132,10 @@ export async function createCatViaApi(
       sterilizationStatus: input.sterilizationStatus ?? "UNKNOWN",
       color: input.color ?? null,
       microchipNumber: input.microchipNumber ?? null,
+      intakeDetails: input.intakeDetails ?? null,
+      adopterName: input.adopterName ?? null,
+      adopterAddress: input.adopterAddress ?? null,
+      adopterCountry: input.adopterCountry ?? null,
       currentLocationId: locationId,
     },
   });
