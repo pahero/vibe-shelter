@@ -95,12 +95,14 @@ export class ListFlightCandidatesHandler {
           sponsorName: cat.sponsorName,
           adopterName: cat.adopterName,
           adopterAddress: cat.adopterAddress,
-          flights: cat.flightAssignments.map(({ flight, f2fDone, tracesDone }) => ({
-            id: flight.id,
-            flightNumber: flight.flightNumber,
-            f2fDone,
-            tracesDone,
-          })),
+          flights: cat.flightAssignments.map(
+            ({ flight, f2fDone, tracesDone }) => ({
+              id: flight.id,
+              flightNumber: flight.flightNumber,
+              f2fDone,
+              tracesDone,
+            }),
+          ),
           requirements: {
             firstVaccine: coreVaccineCount >= 1,
             secondVaccine: coreVaccineCount >= 2,
