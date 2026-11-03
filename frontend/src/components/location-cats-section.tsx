@@ -356,7 +356,7 @@ export function LocationCatsSection({
               />
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-              Intake details
+              Comment
               <textarea
                 value={form.intakeDetails}
                 onChange={(event) =>

@@ -5,21 +5,32 @@ import Link from "next/link";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ApiErrorHandler, formatDateShort } from "@/lib/utils";
-import { FlightListItem, flightsApi } from "@/lib/api";
+import {
+  catsApi,
+  FlightCandidate,
+  FlightListItem,
+  flightsApi,
+} from "@/lib/api";
 import { FlightCandidatesClient } from "@/components/flight-candidates-client";
 
 export function FlightsListClient() {
   const [flights, setFlights] = useState<FlightListItem[]>([]);
+  const [candidates, setCandidates] = useState<FlightCandidate[]>([]);
   const [showDeleted, setShowDeleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    flightsApi
-      .list(showDeleted)
-      .then((items) => {
-        if (!cancelled) setFlights(items);
+    Promise.all([
+      flightsApi.list(showDeleted),
+      showDeleted ? Promise.resolve([]) : catsApi.listFlightCandidates(),
+    ])
+      .then(([flightItems, candidateItems]) => {
+        if (!cancelled) {
+          setFlights(flightItems);
+          setCandidates(candidateItems);
+        }
       })
       .catch((reason: unknown) => {
         if (!cancelled) setLoadingError(ApiErrorHandler.handle(reason));
@@ -116,11 +127,23 @@ export function FlightsListClient() {
                     Flight parent: {flight.flightParent}
                   </span>
                 </Link>
+                <FlightCandidatesClient
+                  embedded
+                  compact
+                  candidates={candidates}
+                  assignedToFlightId={flight.id}
+                />
               </li>
             ))}
           </ul>
         )}
-        {!showDeleted && <FlightCandidatesClient embedded />}
+        {!showDeleted && (
+          <FlightCandidatesClient
+            embedded
+            candidates={candidates}
+            unassignedOnly
+          />
+        )}
       </section>
     </main>
   );

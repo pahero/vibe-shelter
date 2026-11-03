@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { faArrowLeft, faPlane } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faCat, faPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -42,8 +42,16 @@ function RequirementStatus({
 
 export function FlightCandidatesClient({
   embedded = false,
+  candidates: suppliedCandidates,
+  assignedToFlightId,
+  unassignedOnly = false,
+  compact = false,
 }: {
   embedded?: boolean;
+  candidates?: FlightCandidate[];
+  assignedToFlightId?: string;
+  unassignedOnly?: boolean;
+  compact?: boolean;
 }) {
   const [candidates, setCandidates] = useState<FlightCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +66,11 @@ export function FlightCandidatesClient({
   };
 
   useEffect(() => {
+    if (suppliedCandidates) {
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     catsApi
@@ -75,12 +88,18 @@ export function FlightCandidatesClient({
     return () => {
       cancelled = true;
     };
-  }, [refreshKey]);
+  }, [refreshKey, suppliedCandidates]);
 
   const visibleCandidates = useMemo(() => {
+    const filteredCandidates = (suppliedCandidates ?? candidates).filter(
+      (candidate) =>
+        assignedToFlightId
+          ? candidate.flights.some((flight) => flight.id === assignedToFlightId)
+          : !unassignedOnly || candidate.flights.length === 0,
+    );
     const query = search.trim().toLocaleLowerCase();
-    if (!query) return candidates;
-    return candidates.filter((candidate) =>
+    if (!query) return filteredCandidates;
+    return filteredCandidates.filter((candidate) =>
       [
         candidate.name,
         candidate.currentLocationName ?? "",
@@ -90,7 +109,13 @@ export function FlightCandidatesClient({
         candidate.adopterAddress ?? "",
       ].some((value) => value.toLocaleLowerCase().includes(query)),
     );
-  }, [candidates, search]);
+  }, [
+    assignedToFlightId,
+    candidates,
+    search,
+    suppliedCandidates,
+    unassignedOnly,
+  ]);
   const Wrapper = embedded ? "section" : "main";
 
   return (
@@ -113,19 +138,23 @@ export function FlightCandidatesClient({
       <section
         className={embedded ? "w-full" : "mx-auto mt-5 w-full max-w-6xl"}
       >
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Flight candidates
-        </h1>
+        {!compact && (
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Flight candidates
+          </h1>
+        )}
 
-        <label className="mt-3 grid max-w-md gap-1 text-sm font-medium text-gray-800">
-          Search cats
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Name, location, sponsor, chip, or adopter"
-            className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-          />
-        </label>
+        {!compact && (
+          <label className="mt-3 grid max-w-md gap-1 text-sm font-medium text-gray-800">
+            Search cats
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Name, location, sponsor, chip, or adopter"
+              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+            />
+          </label>
+        )}
 
         {isLoading && (
           <p className="mt-4 text-sm text-[#6d6a66]" role="status">
@@ -147,7 +176,7 @@ export function FlightCandidatesClient({
             </button>
           </div>
         )}
-        {!isLoading && !error && visibleCandidates.length === 0 && (
+        {!compact && !isLoading && !error && visibleCandidates.length === 0 && (
           <p className="mt-5 rounded-xl border border-dashed border-[#d4c7b4] p-5 text-sm text-[#6d6a66]">
             {candidates.length === 0
               ? "No cats found."
@@ -156,7 +185,7 @@ export function FlightCandidatesClient({
         )}
 
         {!isLoading && !error && visibleCandidates.length > 0 && (
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {visibleCandidates.map((candidate) => (
               <li
                 key={candidate.id}
@@ -179,7 +208,7 @@ export function FlightCandidatesClient({
                         aria-label={`No photo for ${candidate.name}`}
                         className="text-2xl"
                       >
-                        рџђѕ
+                        <FontAwesomeIcon icon={faCat} aria-hidden="true" />
                       </span>
                     )}
                   </div>
@@ -225,6 +254,21 @@ export function FlightCandidatesClient({
                       label={label}
                     />
                   ))}
+                  {assignedToFlightId &&
+                    candidate.flights
+                      .filter((flight) => flight.id === assignedToFlightId)
+                      .flatMap((flight) => [
+                        <RequirementStatus
+                          key={`${flight.id}-f2f`}
+                          complete={flight.f2fDone}
+                          label="F2F"
+                        />,
+                        <RequirementStatus
+                          key={`${flight.id}-traces`}
+                          complete={flight.tracesDone}
+                          label="Traces"
+                        />,
+                      ])}
                 </div>
               </li>
             ))}

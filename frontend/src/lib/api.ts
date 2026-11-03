@@ -488,7 +488,12 @@ export type FlightCandidate = {
   adopterName: string | null;
   adopterAddress: string | null;
   adopterCountry?: AdopterCountry | null;
-  flights: Array<{ id: string; flightNumber: string | null }>;
+  flights: Array<{
+    id: string;
+    flightNumber: string | null;
+    f2fDone: boolean;
+    tracesDone: boolean;
+  }>;
   requirements: FlightCandidateRequirements;
 };
 

@@ -84,7 +84,12 @@ describe("ListFlightCandidatesHandler", () => {
       });
       await transaction.flightCatAssignment.createMany({
         data: [
-          { flightId: activeFlight.id, catId: readyCat.id },
+          {
+            flightId: activeFlight.id,
+            catId: readyCat.id,
+            f2fDone: true,
+            tracesDone: false,
+          },
           { flightId: removedFlight.id, catId: readyCat.id },
         ],
       });
@@ -109,7 +114,12 @@ describe("ListFlightCandidatesHandler", () => {
             primaryPhotoUrl: null,
             currentLocationName: location.name,
             flights: [
-              { id: activeFlight.id, flightNumber: activeFlight.flightNumber },
+              {
+                id: activeFlight.id,
+                flightNumber: activeFlight.flightNumber,
+                f2fDone: true,
+                tracesDone: false,
+              },
             ],
             requirements: {
               firstVaccine: true,

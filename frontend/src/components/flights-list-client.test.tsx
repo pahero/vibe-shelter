@@ -1,6 +1,17 @@
-﻿import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+﻿import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { catsApi, flightsApi, FlightListItem } from "@/lib/api";
+import {
+  catsApi,
+  FlightCandidate,
+  flightsApi,
+  FlightListItem,
+} from "@/lib/api";
 import { FlightsListClient } from "./flights-list-client";
 
 vi.mock("@/lib/api", async () => {
@@ -23,6 +34,36 @@ const flight: FlightListItem = {
   comment: null,
   deletedAt: null,
   catCount: 1,
+};
+
+const assignedCandidate: FlightCandidate = {
+  id: "cat-1",
+  name: "Mila",
+  primaryPhotoUrl: null,
+  currentLocationName: "North Shelter",
+  archivedAt: null,
+  microchipNumber: null,
+  passport: true,
+  sponsorName: null,
+  adopterName: null,
+  adopterAddress: null,
+  flights: [
+    {
+      id: "flight-1",
+      flightNumber: "CY123",
+      f2fDone: true,
+      tracesDone: false,
+    },
+  ],
+  requirements: {
+    firstVaccine: true,
+    secondVaccine: true,
+    rabies: true,
+    passport: true,
+    chipped: false,
+    adopter: false,
+    felvFivTestDone: false,
+  },
 };
 
 describe("FlightsListClient", () => {
@@ -63,6 +104,25 @@ describe("FlightsListClient", () => {
       "href",
       "/flights/flight-1",
     );
+  });
+
+  it("shows an assigned candidate inside its flight instead of the candidates list", async () => {
+    listCandidates.mockResolvedValue([assignedCandidate]);
+    render(<FlightsListClient />);
+
+    const flightLink = await screen.findByRole("link", {
+      name: /Oct 15, 2026/,
+    });
+    const flightCard = flightLink.closest("li");
+
+    expect(flightCard).not.toBeNull();
+    expect(
+      within(flightCard!).getByRole("link", { name: "Mila" }),
+    ).toBeVisible();
+    expect(within(flightCard!).getByLabelText("F2F: complete")).toBeVisible();
+    expect(within(flightCard!).getByLabelText("Traces: missing")).toBeVisible();
+    expect(screen.getAllByRole("link", { name: "Mila" })).toHaveLength(1);
+    expect(listCandidates).toHaveBeenCalledTimes(1);
   });
 
   it("uses the deleted flights query when the checkbox is selected", async () => {

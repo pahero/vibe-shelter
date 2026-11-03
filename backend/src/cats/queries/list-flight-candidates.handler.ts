@@ -17,6 +17,8 @@ export type FlightCandidate = {
   flights: {
     id: string;
     flightNumber: string | null;
+    f2fDone: boolean;
+    tracesDone: boolean;
   }[];
   requirements: {
     firstVaccine: boolean;
@@ -63,6 +65,8 @@ export class ListFlightCandidatesHandler {
         flightAssignments: {
           where: { deletedAt: null, flight: { deletedAt: null } },
           select: {
+            f2fDone: true,
+            tracesDone: true,
             flight: {
               select: { id: true, flightNumber: true, deletedAt: true },
             },
@@ -91,9 +95,11 @@ export class ListFlightCandidatesHandler {
           sponsorName: cat.sponsorName,
           adopterName: cat.adopterName,
           adopterAddress: cat.adopterAddress,
-          flights: cat.flightAssignments.map(({ flight }) => ({
+          flights: cat.flightAssignments.map(({ flight, f2fDone, tracesDone }) => ({
             id: flight.id,
             flightNumber: flight.flightNumber,
+            f2fDone,
+            tracesDone,
           })),
           requirements: {
             firstVaccine: coreVaccineCount >= 1,

@@ -6,6 +6,7 @@ import {
   FlightAuditEvent,
   FlightDetails,
   FlightListItem,
+  FlightPhoto,
 } from "@/lib/api";
 import { FlightsClient } from "./flights-client";
 
@@ -23,6 +24,7 @@ vi.mock("@/lib/api", async () => {
       list: vi.fn(),
       get: vi.fn(),
       history: vi.fn(),
+      listPhotos: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -38,6 +40,7 @@ vi.mock("@/lib/api", async () => {
 const listFlights = vi.mocked(flightsApi.list);
 const getFlight = vi.mocked(flightsApi.get);
 const getFlightHistory = vi.mocked(flightsApi.history);
+const listFlightPhotos = vi.mocked(flightsApi.listPhotos);
 const createFlight = vi.mocked(flightsApi.create);
 const updateFlight = vi.mocked(flightsApi.update);
 const deleteFlight = vi.mocked(flightsApi.delete);
@@ -106,12 +109,29 @@ const auditEvent: FlightAuditEvent = {
     isDeleted: false,
   },
 };
+const flightPhotos: FlightPhoto[] = [
+  {
+    id: "photo-1",
+    flightId: flight.id,
+    url: "https://example.test/preview-1.jpg",
+    fullUrl: "https://example.test/full-1.jpg",
+    createdAt: "2026-10-10T10:00:00.000Z",
+  },
+  {
+    id: "photo-2",
+    flightId: flight.id,
+    url: "https://example.test/preview-2.jpg",
+    fullUrl: "https://example.test/full-2.jpg",
+    createdAt: "2026-10-11T10:00:00.000Z",
+  },
+];
 
 describe("FlightsClient", () => {
   beforeEach(() => {
     listFlights.mockReset();
     getFlight.mockReset();
     getFlightHistory.mockReset();
+    listFlightPhotos.mockReset();
     createFlight.mockReset();
     updateFlight.mockReset();
     deleteFlight.mockReset();
@@ -124,6 +144,7 @@ describe("FlightsClient", () => {
     );
     getFlight.mockResolvedValue(detail);
     getFlightHistory.mockResolvedValue([auditEvent]);
+    listFlightPhotos.mockResolvedValue(flightPhotos);
     createFlight.mockResolvedValue({ id: "flight-new" });
     updateFlight.mockResolvedValue({ id: flight.id });
     deleteFlight.mockResolvedValue(undefined);
@@ -184,7 +205,9 @@ describe("FlightsClient", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Flight audit history/ }),
     );
-    expect(screen.getByText("Traces status changed В· Mila")).toBeVisible();
+    expect(
+      screen.getByText("Traces status changed \u00B7 Mila", { exact: false }),
+    ).toBeVisible();
   });
 
   it("loads deleted flight details from the deleted flights query when the active detail API returns 404", async () => {
@@ -259,16 +282,18 @@ describe("FlightsClient", () => {
     });
     expect(historyToggle).toHaveAttribute("aria-expanded", "false");
     expect(
-      screen.queryByText("flight_field_0 В· Mila"),
+      screen.queryByText("flight_field_0 \u00B7 Mila"),
     ).not.toBeInTheDocument();
 
     fireEvent.click(historyToggle);
-    expect(await screen.findByText("flight_field_0 В· Mila")).toBeVisible();
+    expect(await screen.findByText("flight_field_0 \u00B7 Mila")).toBeVisible();
     expect(
-      screen.queryByText("flight_field_10 В· Mila"),
+      screen.queryByText("flight_field_10 \u00B7 Mila"),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(await screen.findByText("flight_field_10 В· Mila")).toBeVisible();
+    expect(
+      await screen.findByText("flight_field_10 \u00B7 Mila"),
+    ).toBeVisible();
     expect(screen.getByText("Page 2 of 2")).toBeVisible();
   });
 
@@ -312,6 +337,26 @@ describe("FlightsClient", () => {
         expect.objectContaining({ airport: "Paphos" }),
       ),
     );
+  });
+
+  it("opens flight photo previews and navigates between them", async () => {
+    render(<FlightsClient standaloneFlightId={flight.id} />);
+    const photoButtons = await screen.findAllByRole("button", {
+      name: "Open flight photo",
+    });
+
+    expect(
+      screen.queryByRole("heading", { name: "Photos" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Add photos")).toHaveClass("h-16", "w-16");
+    fireEvent.click(photoButtons[0]);
+    expect(
+      screen.getByRole("dialog", { name: "Flight photo preview" }),
+    ).toBeVisible();
+    expect(screen.getByText("1 / 2")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next flight photo" }));
+    expect(screen.getByText("2 / 2")).toBeVisible();
   });
 
   it("keeps the standalone details visible after deleting the flight", async () => {

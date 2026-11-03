@@ -37,6 +37,8 @@ test.describe("cats UI", () => {
       .locator("form")
       .filter({ has: page.getByRole("button", { name: "Add cat" }) });
     await expect(form.getByLabel("Location")).toBeEnabled();
+    await expect(form.getByLabel("Comment")).toHaveCount(1);
+    await expect(form.getByLabel("Intake details")).toHaveCount(0);
 
     await form.getByLabel("Name *").fill(catName);
     await form.getByLabel("Color").fill("Grey-white");
@@ -107,6 +109,38 @@ test.describe("cats UI", () => {
     await expect(
       page.getByRole("button", { name: "Edit cat profile" }),
     ).toBeVisible();
+  });
+
+  test("cat profile places the full-width comment before the adoption fields", async ({
+    page,
+  }) => {
+    await authenticateAsStaff(page);
+    const location = await createLocationViaApi(
+      page,
+      uniqueName("Profile details location"),
+    );
+    const comment = uniqueName("Profile comment");
+    const cat = await createCatViaApi(page, {
+      name: uniqueName("Profile details cat"),
+      locationId: location.id,
+      intakeDetails: comment,
+      adopterName: "Jordan Adopter",
+      adopterAddress: "45 Travel Road",
+      adopterCountry: "CY",
+    });
+
+    await page.goto(`/cats/${cat.id}`);
+
+    const commentField = page
+      .locator("dt", { hasText: "Comment" })
+      .locator("..");
+    const adoptionSection = commentField.locator(
+      "xpath=following-sibling::*[1]",
+    );
+
+    await expect(commentField).toHaveClass(/sm:col-span-2/);
+    await expect(commentField).toContainText(comment);
+    await expect(adoptionSection).toHaveText("Adoption");
   });
 
   test("cat name numbers display, increment on rename, and can be edited uniquely", async ({

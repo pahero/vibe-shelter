@@ -585,7 +585,12 @@ describe("Cats endpoints", () => {
       },
     });
     await prisma.flightCatAssignment.create({
-      data: { flightId: linkedFlight.id, catId: cat.id },
+      data: {
+        flightId: linkedFlight.id,
+        catId: cat.id,
+        f2fDone: true,
+        tracesDone: false,
+      },
     });
     await authAgent
       .post(`/api/cats/${cat.id}/vaccinations`)
@@ -620,7 +625,12 @@ describe("Cats endpoints", () => {
       id: cat.id,
       primaryPhotoUrl: null,
       flights: [
-        { id: linkedFlight.id, flightNumber: linkedFlight.flightNumber },
+        {
+          id: linkedFlight.id,
+          flightNumber: linkedFlight.flightNumber,
+          f2fDone: true,
+          tracesDone: false,
+        },
       ],
       adopterName: "Jordan Adopter",
       adopterAddress: "45 Travel Road",
