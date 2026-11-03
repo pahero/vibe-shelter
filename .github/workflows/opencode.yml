@@ -9,10 +9,16 @@ on:
 
 jobs:
   opencode:
-    if: |
-      contains(github.event.comment.body, '/opencode') ||
-      contains(github.event.comment.body, '/oc')
-    runs-on: HighCpu
+    if: >-
+      contains(
+        fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+        github.event.comment.author_association
+      ) &&
+      (
+        startsWith(github.event.comment.body, '/oc ') ||
+        startsWith(github.event.comment.body, '/opencode ')
+      )
+    runs-on: ubuntu-latest
 
     permissions:
       id-token: write
@@ -25,9 +31,8 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Run OpenCode
-        uses: anomalyco/opencode/github@latest
+      - uses: anomalyco/opencode/github@latest
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         with:
-          model: anthropic/claude-sonnet-5-5
+          model: openrouter/openai/gpt-6-luna
