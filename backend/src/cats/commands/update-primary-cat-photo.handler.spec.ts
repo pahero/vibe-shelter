@@ -51,8 +51,10 @@ describe("UpdatePrimaryCatPhotoHandler", () => {
       );
       expect(result.primaryPhotoUrl).toContain(`cats/${cat.id}/photos/`);
       await expect(
-        tx.catPhoto.count({ where: { catId: cat.id, deletedAt: null } }),
-      ).resolves.toBe(1);
+        tx.catPhoto.findFirstOrThrow({
+          where: { catId: cat.id, deletedAt: null },
+        }),
+      ).resolves.toMatchObject({ fileName: "portrait.jpg" });
     });
   });
 

@@ -193,6 +193,7 @@ export default function CatProfilePage() {
   const [expandedDocumentId, setExpandedDocumentId] = useState<string | null>(
     null,
   );
+  const [isDocumentMenuOpen, setIsDocumentMenuOpen] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [removingDocumentId, setRemovingDocumentId] = useState<string | null>(
@@ -607,15 +608,18 @@ export default function CatProfilePage() {
   };
 
   const handleDocumentChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file || !cat) return;
-    const extension = file.name.toLowerCase().split(".").pop();
-    const isPdf = file.type === "application/pdf" || extension === "pdf";
-    const isImage =
-      ["image/jpeg", "image/png"].includes(file.type) ||
-      ["jpg", "jpeg", "png"].includes(extension ?? "");
-    if (!isPdf && !isImage) {
+    if (!files.length || !cat) return;
+    const hasUnsupportedFile = files.some((file) => {
+      const extension = file.name.toLowerCase().split(".").pop();
+      const isPdf = file.type === "application/pdf" || extension === "pdf";
+      const isImage =
+        ["image/jpeg", "image/png"].includes(file.type) ||
+        ["jpg", "jpeg", "png"].includes(extension ?? "");
+      return !isPdf && !isImage;
+    });
+    if (hasUnsupportedFile) {
       setDocumentError("Choose a PDF, JPEG, or PNG file.");
       return;
     }
@@ -623,12 +627,19 @@ export default function CatProfilePage() {
     setIsUploadingDocument(true);
     setDocumentError(null);
     try {
-      await catsApi.addDocument(cat.id, file);
+      const uploads = await Promise.allSettled(
+        files.map((file) => catsApi.addDocument(cat.id, file)),
+      );
       const [updatedDocuments] = await Promise.all([
         catsApi.listDocuments(cat.id),
         refreshHistory(),
       ]);
       setDocuments(updatedDocuments);
+      if (uploads.some((upload) => upload.status === "rejected")) {
+        setDocumentError(
+          "Some documents could not be uploaded. Please try again for those files.",
+        );
+      }
     } catch (err) {
       setDocumentError(ApiErrorHandler.handle(err));
     } finally {
@@ -648,6 +659,7 @@ export default function CatProfilePage() {
       ]);
       setDocuments(updatedDocuments);
       if (expandedDocumentId === documentId) setExpandedDocumentId(null);
+      setIsDocumentMenuOpen(false);
     } catch (err) {
       setDocumentError(ApiErrorHandler.handle(err));
     } finally {
@@ -1001,6 +1013,14 @@ export default function CatProfilePage() {
       )
     : -1;
   const hasMultipleDocuments = sortedDocuments.length > 1;
+  const expandedImageDocumentIndex = expandedDocumentId
+    ? imageDocuments.findIndex((document) => document.id === expandedDocumentId)
+    : -1;
+  const expandedImageDocument =
+    expandedImageDocumentIndex >= 0
+      ? imageDocuments[expandedImageDocumentIndex]
+      : null;
+  const hasMultipleImageDocuments = imageDocuments.length > 1;
   const expandedPhotoIndex = expandedPhotoId
     ? sortedPhotos.findIndex((photo) => photo.id === expandedPhotoId)
     : -1;
@@ -1075,6 +1095,24 @@ export default function CatProfilePage() {
     if (!hasMultipleDocuments || expandedDocumentIndex < 0) return;
     setExpandedDocumentId(
       sortedDocuments[(expandedDocumentIndex + 1) % sortedDocuments.length].id,
+    );
+  };
+  const showPreviousImageDocument = () => {
+    if (!hasMultipleImageDocuments || expandedImageDocumentIndex < 0) return;
+    setIsDocumentMenuOpen(false);
+    setExpandedDocumentId(
+      imageDocuments[
+        (expandedImageDocumentIndex - 1 + imageDocuments.length) %
+          imageDocuments.length
+      ].id,
+    );
+  };
+  const showNextImageDocument = () => {
+    if (!hasMultipleImageDocuments || expandedImageDocumentIndex < 0) return;
+    setIsDocumentMenuOpen(false);
+    setExpandedDocumentId(
+      imageDocuments[(expandedImageDocumentIndex + 1) % imageDocuments.length]
+        .id,
     );
   };
 
@@ -1325,7 +1363,8 @@ export default function CatProfilePage() {
                         )}
                         <input
                           type="file"
-                          accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"
+                          accept="application/pdf,.pdf,image/*"
+                          multiple
                           disabled={isUploadingDocument}
                           onChange={handleDocumentChange}
                           className="sr-only"
@@ -1351,7 +1390,10 @@ export default function CatProfilePage() {
                           >
                             <button
                               type="button"
-                              onClick={() => setExpandedDocumentId(document.id)}
+                              onClick={() => {
+                                setExpandedDocumentId(document.id);
+                                setIsDocumentMenuOpen(false);
+                              }}
                               disabled={!document.url}
                               className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
                               style={
@@ -1362,16 +1404,6 @@ export default function CatProfilePage() {
                               aria-label={`Open image document ${document.fileName}`}
                               title={document.fileName}
                             />
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDocument(document.id)}
-                              disabled={removingDocumentId === document.id}
-                              aria-label="Delete document"
-                              title="Delete document"
-                              className="absolute right-0 top-0 rounded-bl-lg bg-white/90 p-1.5 text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
                           </div>
                         ))}
                       </div>
@@ -2470,6 +2502,12 @@ export default function CatProfilePage() {
                 </button>
                 {isPhotoMenuOpen && (
                   <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
+                    <a
+                      href={expandedPhoto.downloadUrl ?? undefined}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                    >
+                      Download
+                    </a>
                     {expandedPhoto.isPrimary &&
                       expandedPhoto.mediaType !== "video" && (
                         <button
@@ -2688,7 +2726,102 @@ export default function CatProfilePage() {
           </div>
         )}
 
-        {cat && expandedDocument && (
+        {cat && expandedImageDocument && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Image document: ${expandedImageDocument.fileName}`}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setExpandedDocumentId(null);
+                setIsDocumentMenuOpen(false);
+              }}
+              className="absolute inset-0 z-0 cursor-zoom-out"
+              aria-label="Close image document"
+            />
+            <div className="absolute left-4 top-4 z-30 rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white">
+              {expandedImageDocumentIndex + 1} / {imageDocuments.length}
+            </div>
+            <div className="absolute right-4 top-4 z-30 flex items-start gap-2">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsDocumentMenuOpen((isOpen) => !isOpen)}
+                  className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                  aria-expanded={isDocumentMenuOpen}
+                >
+                  Actions
+                </button>
+                {isDocumentMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
+                    <a
+                      href={expandedImageDocument.downloadUrl ?? undefined}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                    >
+                      Download
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeleteDocument(expandedImageDocument.id)
+                      }
+                      disabled={removingDocumentId === expandedImageDocument.id}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {removingDocumentId === expandedImageDocument.id
+                        ? "Deleting..."
+                        : "Delete"}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setExpandedDocumentId(null);
+                  setIsDocumentMenuOpen(false);
+                }}
+                className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+              >
+                Close
+              </button>
+            </div>
+            {hasMultipleImageDocuments && (
+              <button
+                type="button"
+                onClick={showPreviousImageDocument}
+                className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
+                aria-label="Previous image document"
+              >
+                ‹
+              </button>
+            )}
+            <div className="relative z-10 flex h-[88dvh] w-[95vw] items-center justify-center overflow-hidden rounded-2xl bg-black/30 shadow-2xl">
+              {expandedImageDocument.url && (
+                <img
+                  src={expandedImageDocument.url}
+                  alt={expandedImageDocument.fileName}
+                  className="h-full w-full object-contain"
+                />
+              )}
+            </div>
+            {hasMultipleImageDocuments && (
+              <button
+                type="button"
+                onClick={showNextImageDocument}
+                className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
+                aria-label="Next image document"
+              >
+                ›
+              </button>
+            )}
+          </div>
+        )}
+
+        {cat && expandedDocument && !isImageDocument(expandedDocument) && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
             role="dialog"

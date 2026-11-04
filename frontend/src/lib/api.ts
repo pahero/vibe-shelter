@@ -245,6 +245,8 @@ export type CatPhoto = {
   catId: string;
   url: string | null;
   fullUrl: string | null;
+  downloadUrl: string | null;
+  fileName: string;
   isPrimary: boolean;
   mediaType: "image" | "video";
   createdAt: string;

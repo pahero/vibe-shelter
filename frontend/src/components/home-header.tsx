@@ -62,10 +62,10 @@ export function HomeHeader({ user }: HomeFooterProps) {
   }, [isMenuOpen, isUserMenuOpen]);
 
   const menuLinks = [
-    { href: "/flights", label: "Flights" },
     ...(user?.role === "admin" || user?.role === "owner"
       ? [{ href: "/shelter-management", label: "Shelter management" }]
       : []),
+    { href: "/flights", label: "Flights" },
   ];
   const iconButtonClass =
     "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#4d514b] transition hover:bg-[#efe7da] hover:text-[#b24a20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d05a2c]";
@@ -116,6 +116,7 @@ export function HomeHeader({ user }: HomeFooterProps) {
                   >
                     My treatments
                   </Link>
+                  <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />
                 </nav>
               )}
             </>
@@ -160,9 +161,6 @@ export function HomeHeader({ user }: HomeFooterProps) {
                   {label}
                 </Link>
               ))}
-              {user && (
-                <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />
-              )}
             </nav>
           )}
         </div>

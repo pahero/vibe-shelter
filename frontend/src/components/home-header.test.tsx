@@ -1,4 +1,4 @@
-﻿import { fireEvent, render, screen } from "@testing-library/react";
+﻿import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { HomeHeader } from "./home-header";
 
@@ -14,7 +14,11 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("./notification-center", () => ({ NotificationCenter: () => null }));
-vi.mock("./logout-button", () => ({ LogoutButton: () => null }));
+vi.mock("./logout-button", () => ({
+  LogoutButton: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>Log out</button>
+  ),
+}));
 
 describe("HomeHeader", () => {
   it("shows My treatments in the user menu for authenticated users", () => {
@@ -61,5 +65,30 @@ describe("HomeHeader", () => {
       "href",
       "/my-user",
     );
+    expect(screen.getByRole("button", { name: "Log out" })).toBeVisible();
+  });
+
+  it("places shelter management before flights in the main menu", () => {
+    render(
+      <HomeHeader
+        user={{
+          id: "admin-1",
+          email: "admin@example.com",
+          fullName: "Admin",
+          role: "admin",
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+
+    const mainMenu = screen.getByRole("menu", { name: "Main menu" });
+    expect(
+      within(mainMenu)
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Shelter management", "Flights"]);
+    expect(
+      within(mainMenu).queryByRole("button", { name: "Log out" }),
+    ).not.toBeInTheDocument();
   });
 });

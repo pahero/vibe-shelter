@@ -33,6 +33,7 @@ export class UpdatePrimaryCatPhotoHandler {
     if (!cat) throw new NotFoundException("Cat not found");
     if (!photo?.buffer?.length)
       throw new BadRequestException("Primary photo file is required");
+    const fileName = photo.originalname?.trim() || "cat-photo.jpg";
     const compressed = await CatPhotoCompressionService.compress(photo);
     const { key, previewKey } = await this.photoUrls.uploadPhotoVariants({
       catId,
@@ -43,7 +44,13 @@ export class UpdatePrimaryCatPhotoHandler {
     });
     const updated = await runInNewTransaction(this.prisma, async (tx) => {
       const created = await tx.catPhoto.create({
-        data: { catId, key, previewKey, createdByUserId: actorUserId ?? null },
+        data: {
+          catId,
+          key,
+          previewKey,
+          fileName,
+          createdByUserId: actorUserId ?? null,
+        },
       });
       const record = await tx.cat.update({
         where: { id: catId },

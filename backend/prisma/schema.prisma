@@ -251,6 +251,7 @@ model CatPhoto {
   cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   key             String   @unique
   previewKey      String?
+  fileName        String   @default("cat-photo.jpg")
   createdByUserId String?
   createdByUser   User?    @relation("createdPhotos", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedByUserId String?

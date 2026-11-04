@@ -60,6 +60,7 @@ export async function toCatPhoto(
     catId: string;
     key: string;
     previewKey: string | null;
+    fileName: string;
     createdAt: Date;
   },
   primaryPhotoKey: string | null,
@@ -70,6 +71,8 @@ export async function toCatPhoto(
     catId: photo.catId,
     url: await photoUrls.getPhotoUrl(photo.previewKey ?? photo.key),
     fullUrl: await photoUrls.getPhotoUrl(photo.key),
+    downloadUrl: await photoUrls.getPhotoDownloadUrl(photo.key, photo.fileName),
+    fileName: photo.fileName,
     isPrimary: photo.key === primaryPhotoKey,
     mediaType:
       photo.key.endsWith(".mp4") ||

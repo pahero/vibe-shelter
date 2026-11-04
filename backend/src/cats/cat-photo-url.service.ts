@@ -41,6 +41,13 @@ export class CatPhotoUrlService {
     return this.getPrimaryPhotoUrl(key);
   }
 
+  async getPhotoDownloadUrl(
+    key: string,
+    fileName: string,
+  ): Promise<string | null> {
+    return this.getDocumentDownloadUrl(key, fileName);
+  }
+
   async getDocumentUrl(key: string): Promise<string | null> {
     if (!this.bucketName) return null;
     return this.getCachedGetUrl(key, "inline", this.documentContentType(key));

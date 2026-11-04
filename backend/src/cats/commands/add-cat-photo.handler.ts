@@ -32,6 +32,7 @@ export class AddCatPhotoHandler {
     if (!cat) throw new NotFoundException("Cat not found");
     if (!photo?.buffer?.length)
       throw new BadRequestException("Photo file is required");
+    const fileName = photo.originalname?.trim() || "cat-photo.jpg";
     const isMp4 =
       photo.mimetype === "video/mp4" &&
       (!photo.originalname ||
@@ -86,7 +87,13 @@ export class AddCatPhotoHandler {
     }
     const created = await runInNewTransaction(this.prisma, async (tx) => {
       const result = await tx.catPhoto.create({
-        data: { catId, key, previewKey, createdByUserId: actorUserId ?? null },
+        data: {
+          catId,
+          key,
+          previewKey,
+          fileName,
+          createdByUserId: actorUserId ?? null,
+        },
       });
       if (!cat.primaryPhotoKey)
         await tx.cat.update({
