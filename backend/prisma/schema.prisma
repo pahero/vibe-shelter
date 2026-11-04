@@ -251,6 +251,7 @@ model CatPhoto {
   cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   key             String   @unique
   previewKey      String?
+  fileName        String   @default("cat-photo.jpg")
   createdByUserId String?
   createdByUser   User?    @relation("createdPhotos", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedByUserId String?
@@ -389,7 +390,7 @@ model Flight {
   date              DateTime @db.Date
   airport           String
   flightNumber      String?
-  flightParent      String
+  flightParent      String?
   comment           String?
   isTest            Boolean  @default(false)
   deletedAt         DateTime?

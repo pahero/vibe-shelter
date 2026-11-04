@@ -6,7 +6,7 @@ export function formatCatAuditValue(value: unknown): string | null {
     return value.toISOString();
   }
   const intakeSourceLabels: Record<string, string> = {
-    SHELTER_VOLUNTEER: "Shelter volunteer",
+    SHELTER_VOLUNTEER: "FOLC volunteer",
     OWNER_SURRENDER: "Owner Surrender",
     RESCUE_REQUEST: "Rescue request",
     VET_CLINIC: "Vet clinic",

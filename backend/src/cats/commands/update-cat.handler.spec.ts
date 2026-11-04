@@ -52,7 +52,7 @@ describe("UpdateCatHandler", () => {
           estimatedBirthDate: new Date("2020-01-02"),
           intakeDate: new Date("2024-03-04"),
           intakeDetails: "Clinic",
-          intakeSource: "RESCUE_ORGANISATION",
+          intakeSource: "SHELTER_VOLUNTEER",
           microchipNumber: `chip-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           passport: true,
           sponsorName: "Sponsor",
@@ -81,7 +81,7 @@ describe("UpdateCatHandler", () => {
         passport: true,
         sponsorName: "Sponsor",
         intakeDetails: "Clinic",
-        intakeSource: "RESCUE_ORGANISATION",
+        intakeSource: "SHELTER_VOLUNTEER",
         sterilizationStatus: "STERILIZED",
       });
       await expect(
@@ -121,7 +121,7 @@ describe("UpdateCatHandler", () => {
           expect.objectContaining({
             eventType: "intake_source_changed",
             oldValue: "Not set",
-            newValue: "Rescue organisation",
+            newValue: "FOLC volunteer",
           }),
           expect.objectContaining({
             eventType: "felv_fiv_test_done_changed",

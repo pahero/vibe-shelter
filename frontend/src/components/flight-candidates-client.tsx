@@ -121,7 +121,9 @@ export function FlightCandidatesClient({
   return (
     <Wrapper
       className={
-        embedded ? "mt-8 w-full" : "relative min-h-dvh w-full animate-rise"
+        embedded
+          ? `${compact ? "mt-1" : "mt-8"} w-full`
+          : "relative min-h-dvh w-full animate-rise"
       }
     >
       {!embedded && (
@@ -185,7 +187,9 @@ export function FlightCandidatesClient({
         )}
 
         {!isLoading && !error && visibleCandidates.length > 0 && (
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul
+            className={`${compact ? "mt-0" : "mt-3"} grid gap-3 sm:grid-cols-2 xl:grid-cols-3`}
+          >
             {visibleCandidates.map((candidate) => (
               <li
                 key={candidate.id}

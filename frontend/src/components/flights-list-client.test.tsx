@@ -31,7 +31,7 @@ const flight: FlightListItem = {
   airport: "Larnaca",
   flightNumber: "CY123",
   flightParent: "Morgan Parent",
-  comment: null,
+  comment: "Meet at the airport entrance.",
   deletedAt: null,
   catCount: 1,
 };
@@ -83,6 +83,10 @@ describe("FlightsListClient", () => {
     );
     expect(await screen.findByText("Oct 15, 2026")).toBeVisible();
     expect(
+      screen.getByText("CY123 \u00B7 Larnaca \u00B7 1 cats"),
+    ).toBeVisible();
+    expect(screen.getByText("Meet at the airport entrance.")).toBeVisible();
+    expect(
       screen.getByRole("heading", { name: "Flight candidates" }),
     ).toBeVisible();
     expect(
@@ -114,13 +118,16 @@ describe("FlightsListClient", () => {
       name: /Oct 15, 2026/,
     });
     const flightCard = flightLink.closest("li");
+    const candidateLink = await within(flightCard!).findByRole("link", {
+      name: "Mila",
+    });
 
     expect(flightCard).not.toBeNull();
-    expect(
-      within(flightCard!).getByRole("link", { name: "Mila" }),
-    ).toBeVisible();
+    expect(candidateLink).toBeVisible();
     expect(within(flightCard!).getByLabelText("F2F: complete")).toBeVisible();
     expect(within(flightCard!).getByLabelText("Traces: missing")).toBeVisible();
+    expect(candidateLink.closest("ul")).toHaveClass("mt-0");
+    expect(candidateLink.closest("section")?.parentElement).toHaveClass("mt-1");
     expect(screen.getAllByRole("link", { name: "Mila" })).toHaveLength(1);
     expect(listCandidates).toHaveBeenCalledTimes(1);
   });
@@ -130,7 +137,7 @@ describe("FlightsListClient", () => {
     await screen.findByText("Oct 15, 2026");
 
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Show deleted flights" }),
+      screen.getByRole("checkbox", { name: "Show archived flights" }),
     );
 
     await waitFor(() => expect(listFlights).toHaveBeenLastCalledWith(true));

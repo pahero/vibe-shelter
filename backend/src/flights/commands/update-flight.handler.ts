@@ -30,7 +30,7 @@ export class UpdateFlightHandler {
         date?: Date;
         airport?: string;
         flightNumber?: string | null;
-        flightParent?: string;
+        flightParent?: string | null;
         comment?: string | null;
         concurrencyToken?: string;
       } = {};
@@ -84,8 +84,8 @@ export class UpdateFlightHandler {
         data.flightParent = command.flightParent;
         changes.push({
           eventType: "flight_parent_changed",
-          oldValue: flight.flightParent,
-          newValue: command.flightParent,
+          oldValue: flight.flightParent ?? "No flight parent",
+          newValue: command.flightParent ?? "No flight parent",
         });
       }
 

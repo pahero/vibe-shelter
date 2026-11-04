@@ -36,7 +36,7 @@ export type IntakeSource =
   | "RESCUE_ORGANISATION"
   | "OTHER";
 export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
-  SHELTER_VOLUNTEER: "Shelter volunteer",
+  SHELTER_VOLUNTEER: "FOLC volunteer",
   OWNER_SURRENDER: "Owner Surrender",
   RESCUE_REQUEST: "Rescue request",
   VET_CLINIC: "Vet clinic",
@@ -245,6 +245,8 @@ export type CatPhoto = {
   catId: string;
   url: string | null;
   fullUrl: string | null;
+  downloadUrl: string | null;
+  fileName: string;
   isPrimary: boolean;
   mediaType: "image" | "video";
   createdAt: string;
@@ -391,7 +393,7 @@ export type FlightListItem = {
   date: string;
   airport: string;
   flightNumber: string | null;
-  flightParent: string;
+  flightParent: string | null;
   comment: string | null;
   deletedAt: string | null;
   catCount: number;
@@ -415,7 +417,7 @@ export type FlightDetails = {
   date: string;
   airport: string;
   flightNumber: string | null;
-  flightParent: string;
+  flightParent: string | null;
   comment: string | null;
   updatedAt: string;
   cats: FlightCatAssignment[];
@@ -457,7 +459,7 @@ export type FlightInput = {
   date: string;
   airport: string;
   flightNumber?: string | null;
-  flightParent: string;
+  flightParent?: string | null;
   comment?: string | null;
 };
 

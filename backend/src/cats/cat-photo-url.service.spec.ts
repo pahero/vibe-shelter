@@ -73,6 +73,26 @@ describe("CatPhotoUrlService GET URL caching", () => {
     ).toBe('attachment; filename="medical-record.pdf"');
   });
 
+  it("signs photo downloads as attachments", async () => {
+    const service = createService();
+
+    const imageUrl = await service.getPhotoDownloadUrl(
+      "cats/1/full.jpg",
+      "Misty's photo.png",
+    );
+    const videoUrl = await service.getPhotoDownloadUrl(
+      "cats/1/video.mp4",
+      "arrival video.mp4",
+    );
+
+    expect(
+      new URL(imageUrl!).searchParams.get("response-content-disposition"),
+    ).toBe('attachment; filename="Misty-s-photo.png"');
+    expect(
+      new URL(videoUrl!).searchParams.get("response-content-disposition"),
+    ).toBe('attachment; filename="arrival-video.mp4"');
+  });
+
   it("creates separate cached URLs for distinct bucket and object keys", async () => {
     const firstBucket = createService("first-bucket");
     const secondBucket = createService("second-bucket");

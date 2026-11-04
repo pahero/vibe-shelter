@@ -69,7 +69,7 @@ test.describe("frontend auth flow", () => {
     ).not.toBe(initialRefreshToken);
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.getByRole("button", { name: "User menu" }).click();
     const logoutRequest = page.waitForResponse(
       (response) =>
         response.url().includes("/auth/logout") &&

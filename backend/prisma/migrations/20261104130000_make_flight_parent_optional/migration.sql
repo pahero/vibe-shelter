@@ -1,0 +1,1 @@
+ALTER TABLE "Flight" ALTER COLUMN "flightParent" DROP NOT NULL;

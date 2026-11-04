@@ -55,7 +55,11 @@ describe("AddCatPhotoHandler", () => {
         actor.id,
         false,
       );
-      expect(result).toMatchObject({ catId: cat.id, isPrimary: true });
+      expect(result).toMatchObject({
+        catId: cat.id,
+        isPrimary: true,
+        fileName: "first.jpg",
+      });
       await expect(
         tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
       ).resolves.toMatchObject({

@@ -21,10 +21,7 @@ describe("Flight DTOs", () => {
     });
   });
 
-  it.each([
-    ["airport", "  "],
-    ["flightParent", "  "],
-  ])("rejects an empty create %s", (field, value) => {
+  it.each([["airport", "  "]])("rejects an empty create %s", (field, value) => {
     const dto = Object.assign(new CreateFlightDto(), {
       date: "2026-10-15",
       airport: "Larnaca",
@@ -88,35 +85,38 @@ describe("Flight DTOs", () => {
     );
   });
 
-  it.each([
-    ["airport", "  "],
-    ["flightParent", "  "],
-  ])("rejects an empty optional update %s", (field, value) => {
-    const dto = Object.assign(new UpdateFlightDto(), { [field]: value });
-    expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(
-      BadRequestException,
-    );
-  });
+  it.each([["airport", "  "]])(
+    "rejects an empty optional update %s",
+    (field, value) => {
+      const dto = Object.assign(new UpdateFlightDto(), { [field]: value });
+      expect(() => dto.toCommand("flight-1", "user-2", false)).toThrow(
+        BadRequestException,
+      );
+    },
+  );
 
-  it("normalizes blank optional flight number and comment values to null", () => {
+  it("normalizes blank optional flight fields to null", () => {
     const create = Object.assign(new CreateFlightDto(), {
       date: "2026-10-15",
       airport: "Larnaca",
       flightNumber: "  ",
-      flightParent: "Morgan Parent",
+      flightParent: "  ",
       comment: "  ",
     });
     expect(create.toCommand("user-1", false)).toMatchObject({
       flightNumber: null,
+      flightParent: null,
       comment: null,
     });
 
     const update = Object.assign(new UpdateFlightDto(), {
       flightNumber: null,
+      flightParent: "  ",
       comment: "  ",
     });
     expect(update.toCommand("flight-1", "user-2", false)).toMatchObject({
       flightNumber: null,
+      flightParent: null,
       comment: null,
     });
   });
