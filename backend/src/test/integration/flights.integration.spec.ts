@@ -67,7 +67,6 @@ describe("Flights endpoints", () => {
       .send({
         date: "2026-10-15",
         airport: "Larnaca",
-        flightParent: "Morgan Parent",
         comment: "Meet at the terminal",
       })
       .expect(201);
@@ -106,6 +105,7 @@ describe("Flights endpoints", () => {
           catCount: 0,
           deletedAt: null,
           flightNumber: null,
+          flightParent: null,
           comment: "Meet at the terminal",
         }),
       ]),
@@ -119,7 +119,7 @@ describe("Flights endpoints", () => {
       id: flightId,
       date: "2026-10-15",
       airport: "Larnaca",
-      flightParent: "Morgan Parent",
+      flightParent: null,
       flightNumber: null,
       comment: "Meet at the terminal",
       cats: [],
@@ -185,7 +185,7 @@ describe("Flights endpoints", () => {
         }),
         expect.objectContaining({
           eventType: "flight_parent_changed",
-          oldValue: "Morgan Parent",
+          oldValue: "No flight parent",
           newValue: "Taylor Parent",
         }),
         expect.objectContaining({
@@ -315,7 +315,7 @@ describe("Flights endpoints", () => {
   it("validates required fields and keeps flights separated by the user test partition", async () => {
     await authAgent
       .post("/api/flights")
-      .send({ date: "2026-10-15", airport: "Larnaca" })
+      .send({ date: "2026-10-15" })
       .expect(400);
     const testUser = await createAuthenticatedAgent(app, prisma, true);
     const testFlight = await testUser.agent

@@ -389,7 +389,7 @@ model Flight {
   date              DateTime @db.Date
   airport           String
   flightNumber      String?
-  flightParent      String
+  flightParent      String?
   comment           String?
   isTest            Boolean  @default(false)
   deletedAt         DateTime?

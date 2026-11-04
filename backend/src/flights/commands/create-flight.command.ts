@@ -3,7 +3,7 @@ export class CreateFlightCommand {
     readonly date: Date,
     readonly airport: string,
     readonly flightNumber: string | null,
-    readonly flightParent: string,
+    readonly flightParent: string | null,
     readonly actorUserId: string,
     readonly isTest: boolean,
     readonly comment: string | null = null,

@@ -88,7 +88,7 @@ export function FlightsListClient() {
             }}
             className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c]"
           />
-          Show deleted flights
+          Show archived flights
         </label>
         {loadingError && (
           <p
@@ -120,12 +120,24 @@ export function FlightsListClient() {
                     {formatDateShort(flight.date)}
                   </span>
                   <span className="mt-0.5 block text-xs text-[#6d6a66]">
-                    {flight.flightNumber ? `${flight.flightNumber} В· ` : ""}
-                    {flight.airport} В· {flight.catCount} cats
+                    {flight.flightNumber && (
+                      <>
+                        {flight.flightNumber}
+                        {" \u00B7 "}
+                      </>
+                    )}
+                    {flight.airport}
+                    {" \u00B7 "}
+                    {flight.catCount} cats
                   </span>
                   <span className="mt-1 block truncate text-xs text-[#6d6a66]">
-                    Flight parent: {flight.flightParent}
+                    Flight parent: {flight.flightParent ?? "Not set"}
                   </span>
+                  {flight.comment && (
+                    <span className="mt-1 block text-xs text-[#6d6a66]">
+                      {flight.comment}
+                    </span>
+                  )}
                 </Link>
                 <FlightCandidatesClient
                   embedded

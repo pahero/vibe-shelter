@@ -391,7 +391,7 @@ export type FlightListItem = {
   date: string;
   airport: string;
   flightNumber: string | null;
-  flightParent: string;
+  flightParent: string | null;
   comment: string | null;
   deletedAt: string | null;
   catCount: number;
@@ -415,7 +415,7 @@ export type FlightDetails = {
   date: string;
   airport: string;
   flightNumber: string | null;
-  flightParent: string;
+  flightParent: string | null;
   comment: string | null;
   updatedAt: string;
   cats: FlightCatAssignment[];
@@ -457,7 +457,7 @@ export type FlightInput = {
   date: string;
   airport: string;
   flightNumber?: string | null;
-  flightParent: string;
+  flightParent?: string | null;
   comment?: string | null;
 };
 

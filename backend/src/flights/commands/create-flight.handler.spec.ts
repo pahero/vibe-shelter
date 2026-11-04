@@ -46,4 +46,29 @@ describe("CreateFlightHandler", () => {
       });
     });
   });
+
+  it("persists a flight without a flight parent", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const actor = await createFlightTestActor(transaction);
+      const handler = new CreateFlightHandler(transaction as PrismaService);
+
+      const result = await handler.handle(
+        new CreateFlightCommand(
+          new Date("2026-10-15"),
+          "Larnaca",
+          null,
+          null,
+          actor.id,
+          true,
+        ),
+      );
+
+      expect(
+        await transaction.flight.findUniqueOrThrow({
+          where: { id: result.id },
+          select: { flightParent: true },
+        }),
+      ).toEqual({ flightParent: null });
+    });
+  });
 });

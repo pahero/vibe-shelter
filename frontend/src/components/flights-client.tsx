@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   faArrowLeft,
+  faBoxArchive,
   faMinus,
   faPen,
   faPlus,
@@ -84,6 +85,7 @@ export function FlightsClient({
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [photoActionId, setPhotoActionId] = useState<string | null>(null);
   const [expandedPhotoId, setExpandedPhotoId] = useState<string | null>(null);
+  const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,8 +262,8 @@ export function FlightsClient({
 
   const saveFlight = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.date || !form.airport.trim() || !form.flightParent.trim()) {
-      setActionError("Enter the date, airport, and flight parent.");
+    if (!form.date || !form.airport.trim()) {
+      setActionError("Enter the date and airport.");
       return;
     }
     setIsSaving(true);
@@ -271,7 +273,7 @@ export function FlightsClient({
         ...form,
         airport: form.airport.trim(),
         flightNumber: form.flightNumber?.trim() || null,
-        flightParent: form.flightParent.trim(),
+        flightParent: form.flightParent?.trim() || null,
         comment: form.comment?.trim() || null,
       };
       if (isEditing && selectedFlightId) {
@@ -355,6 +357,7 @@ export function FlightsClient({
       await flightsApi.deletePhoto(selectedFlightId, photoId);
       setPhotos((items) => items.filter((photo) => photo.id !== photoId));
       if (expandedPhotoId === photoId) setExpandedPhotoId(null);
+      setIsPhotoMenuOpen(false);
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
     } finally {
@@ -506,6 +509,7 @@ export function FlightsClient({
   const hasMultiplePhotos = sortedPhotos.length > 1;
   const showPreviousPhoto = () => {
     if (expandedPhotoIndex < 0 || !hasMultiplePhotos) return;
+    setIsPhotoMenuOpen(false);
     setExpandedPhotoId(
       sortedPhotos[
         (expandedPhotoIndex - 1 + sortedPhotos.length) % sortedPhotos.length
@@ -514,6 +518,7 @@ export function FlightsClient({
   };
   const showNextPhoto = () => {
     if (expandedPhotoIndex < 0 || !hasMultiplePhotos) return;
+    setIsPhotoMenuOpen(false);
     setExpandedPhotoId(
       sortedPhotos[(expandedPhotoIndex + 1) % sortedPhotos.length].id,
     );
@@ -628,7 +633,7 @@ export function FlightsClient({
               </span>
               <input
                 required
-                value={form.flightParent}
+                value={form.flightParent ?? ""}
                 onChange={(event) =>
                   setForm({ ...form, flightParent: event.target.value })
                 }
@@ -661,7 +666,7 @@ export function FlightsClient({
               disabled={isSaving}
               className="rounded-xl bg-[#d05a2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {isSaving ? "Saving..." : "Save flight"}
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
@@ -710,11 +715,14 @@ export function FlightsClient({
                         {flight.flightNumber}
                       </span>
                       <span className="mt-0.5 block text-xs text-[#6d6a66]">
-                        {formatDateShort(flight.date)} В· {flight.airport} В·{" "}
+                        {formatDateShort(flight.date)}
+                        {" \u00B7 "}
+                        {flight.airport}
+                        {" \u00B7 "}
                         {flight.catCount} cats
                       </span>
                       <span className="mt-1 block truncate text-xs text-[#6d6a66]">
-                        Flight parent: {flight.flightParent}
+                        Flight parent: {flight.flightParent ?? "Not set"}
                       </span>
                     </button>
                     {showDeleted && (
@@ -763,18 +771,22 @@ export function FlightsClient({
               <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#d05a2c]">
-                      {isDeletedSelection ? "Deleted flight" : "Flight details"}
-                    </p>
-                    <h2 className="mt-1 text-2xl font-semibold text-gray-900">
-                      {selectedFlight.flightNumber ?? "Unnumbered flight"}
+                    <h2 className="text-2xl font-semibold text-gray-900">
+                      {formatDateShort(selectedFlight.date)}
                     </h2>
                     <p className="mt-1 text-sm text-[#6d6a66]">
-                      {formatDateShort(selectedFlight.date)} В·{" "}
+                      {selectedFlight.flightNumber && (
+                        <>
+                          {selectedFlight.flightNumber}
+                          {" \u00B7 "}
+                        </>
+                      )}
                       {selectedFlight.airport}
+                      {" \u00B7 "}
+                      {selectedFlight.cats.length} cats
                     </p>
                     <p className="mt-1 text-sm text-[#6d6a66]">
-                      Flight parent: {selectedFlight.flightParent}
+                      Flight parent: {selectedFlight.flightParent ?? "Not set"}
                     </p>
                     {selectedFlight.comment && (
                       <p className="mt-1 whitespace-pre-wrap text-sm text-[#6d6a66]">
@@ -797,17 +809,40 @@ export function FlightsClient({
                         type="button"
                         onClick={() => void removeFlight()}
                         disabled={flightActionId === selectedFlight.id}
-                        aria-label="Delete flight"
-                        title="Delete flight"
+                        aria-label="Archive flight"
+                        title="Archive flight"
                         className="rounded-md p-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        <FontAwesomeIcon icon={faBoxArchive} />
                       </button>
                     </div>
                   )}
                 </div>
                 {!isDeletedSelection && (
                   <div className="mt-4 grid w-fit grid-cols-4 gap-2">
+                    {sortedPhotos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpandedPhotoId(photo.id);
+                            setIsPhotoMenuOpen(false);
+                          }}
+                          disabled={!photo.fullUrl && !photo.url}
+                          className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
+                          style={
+                            photo.url
+                              ? { backgroundImage: `url(${photo.url})` }
+                              : undefined
+                          }
+                          aria-label="Open flight photo"
+                          title="Open flight photo"
+                        />
+                      </div>
+                    ))}
                     <label
                       aria-label="Add photos"
                       title="Add photos"
@@ -830,36 +865,6 @@ export function FlightsClient({
                         className="sr-only"
                       />
                     </label>
-                    {sortedPhotos.map((photo) => (
-                      <div
-                        key={photo.id}
-                        className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setExpandedPhotoId(photo.id)}
-                          disabled={!photo.fullUrl && !photo.url}
-                          className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
-                          style={
-                            photo.url
-                              ? { backgroundImage: `url(${photo.url})` }
-                              : undefined
-                          }
-                          aria-label="Open flight photo"
-                          title="Open flight photo"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void removePhoto(photo.id)}
-                          disabled={photoActionId === photo.id}
-                          aria-label="Delete flight photo"
-                          title="Delete flight photo"
-                          className="absolute right-0 top-0 rounded-bl-lg bg-white/90 p-1.5 text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 )}
                 {isDeletedSelection && (
@@ -1235,52 +1240,76 @@ export function FlightsClient({
         >
           <button
             type="button"
-            onClick={() => setExpandedPhotoId(null)}
-            className="absolute inset-0 z-0"
+            onClick={() => {
+              setExpandedPhotoId(null);
+              setIsPhotoMenuOpen(false);
+            }}
+            className="absolute inset-0 z-0 cursor-zoom-out"
             aria-label="Close flight photo preview"
           />
+          <div className="absolute left-4 top-4 z-30 rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white">
+            {expandedPhotoIndex + 1} / {sortedPhotos.length}
+          </div>
+          <div className="absolute right-4 top-4 z-30 flex items-start gap-2">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsPhotoMenuOpen((isOpen) => !isOpen)}
+                aria-expanded={isPhotoMenuOpen}
+                aria-label="Flight photo actions"
+                title="Flight photo actions"
+                className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+              >
+                Actions
+              </button>
+              {isPhotoMenuOpen && (
+                <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
+                  <button
+                    type="button"
+                    onClick={() => void removePhoto(expandedPhoto.id)}
+                    disabled={photoActionId === expandedPhoto.id}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {photoActionId === expandedPhoto.id
+                      ? "Deleting..."
+                      : "Delete"}
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setExpandedPhotoId(null);
+                setIsPhotoMenuOpen(false);
+              }}
+              className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+            >
+              Close
+            </button>
+          </div>
           {hasMultiplePhotos && (
             <button
               type="button"
               onClick={showPreviousPhoto}
-              className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
+              className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
               aria-label="Previous flight photo"
             >
               ‹
             </button>
           )}
-          <div className="relative z-10 flex max-h-[92dvh] max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-[#d4c7b4] bg-[#fff8ee] px-4 py-3">
-              <p className="text-sm font-semibold text-gray-900">
-                Flight photo
-                {hasMultiplePhotos && (
-                  <span className="ml-2 text-xs font-medium text-[#6d6a66]">
-                    {expandedPhotoIndex + 1} / {sortedPhotos.length}
-                  </span>
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={() => setExpandedPhotoId(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d05a2c] text-2xl font-light leading-none text-white transition hover:bg-[#b24a20]"
-                aria-label="Close flight photo preview"
-              >
-                ×
-              </button>
-            </div>
-            <div className="flex min-h-0 flex-1 items-center justify-center bg-black p-4">
-              <img
-                src={expandedPhoto.fullUrl ?? expandedPhoto.url ?? undefined}
-                alt="Flight"
-                className="max-h-[78dvh] max-w-full object-contain"
-              />
-            </div>
+          <div className="relative z-10 flex h-[88dvh] w-[95vw] items-center justify-center overflow-hidden rounded-2xl bg-black/30 shadow-2xl">
+            <img
+              src={expandedPhoto.fullUrl ?? expandedPhoto.url ?? undefined}
+              alt="Flight"
+              className="h-full w-full object-contain"
+            />
           </div>
           {hasMultiplePhotos && (
             <button
               type="button"
               onClick={showNextPhoto}
-              className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
+              className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/10 text-3xl font-light text-white transition hover:bg-white/20"
               aria-label="Next flight photo"
             >
               ›

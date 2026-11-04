@@ -35,8 +35,9 @@ export class CreateFlightDto {
   @IsString()
   flightNumber?: string | null;
 
+  @IsOptional()
   @IsString()
-  flightParent!: string;
+  flightParent?: string | null;
 
   @IsOptional()
   @IsString()
@@ -47,7 +48,7 @@ export class CreateFlightDto {
       parseDate(this.date),
       parseRequiredString(this.airport, "airport"),
       parseOptionalString(this.flightNumber),
-      parseRequiredString(this.flightParent, "flightParent"),
+      parseOptionalString(this.flightParent),
       actorUserId,
       isTest,
       parseOptionalString(this.comment),
@@ -70,7 +71,7 @@ export class UpdateFlightDto {
 
   @IsString()
   @IsOptional()
-  flightParent?: string;
+  flightParent?: string | null;
 
   @IsString()
   @IsOptional()
@@ -92,7 +93,7 @@ export class UpdateFlightDto {
         : parseOptionalString(this.flightNumber),
       this.flightParent === undefined
         ? undefined
-        : parseRequiredString(this.flightParent, "flightParent"),
+        : parseOptionalString(this.flightParent),
       actorUserId,
       isTest,
       this.comment === undefined

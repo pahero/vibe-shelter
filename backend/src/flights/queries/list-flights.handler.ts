@@ -6,7 +6,7 @@ export type FlightListItem = {
   date: string;
   airport: string;
   flightNumber: string | null;
-  flightParent: string;
+  flightParent: string | null;
   comment: string | null;
   deletedAt: string | null;
   catCount: number;
