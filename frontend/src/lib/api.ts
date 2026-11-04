@@ -36,7 +36,7 @@ export type IntakeSource =
   | "RESCUE_ORGANISATION"
   | "OTHER";
 export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
-  SHELTER_VOLUNTEER: "Shelter volunteer",
+  SHELTER_VOLUNTEER: "FOLC volunteer",
   OWNER_SURRENDER: "Owner Surrender",
   RESCUE_REQUEST: "Rescue request",
   VET_CLINIC: "Vet clinic",

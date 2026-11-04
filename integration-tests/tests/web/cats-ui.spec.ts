@@ -39,6 +39,9 @@ test.describe("cats UI", () => {
     await expect(form.getByLabel("Location")).toBeEnabled();
     await expect(form.getByLabel("Comment")).toHaveCount(1);
     await expect(form.getByLabel("Intake details")).toHaveCount(0);
+    await expect(form.locator('option[value="SHELTER_VOLUNTEER"]')).toHaveText(
+      "FOLC volunteer",
+    );
 
     await form.getByLabel("Name *").fill(catName);
     await form.getByLabel("Color").fill("Grey-white");
@@ -84,6 +87,13 @@ test.describe("cats UI", () => {
     await expect(
       page.getByRole("button", { name: `Expand image of ${catName}` }),
     ).toBeVisible();
+    const photoActions = page.getByRole("button", {
+      name: `Photo actions for ${catName}`,
+    });
+    await photoActions.click();
+    await expect(page.getByRole("link", { name: "Download" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
+    await photoActions.click();
 
     const documentUploadStatuses: number[] = [];
     const collectDocumentUpload = (response: {
@@ -111,6 +121,25 @@ test.describe("cats UI", () => {
     await expect(
       page.getByRole("button", { name: "Open image document cat2.jpg" }),
     ).toBeVisible();
+    const documentActions = page.getByRole("button", {
+      name: "Document actions for cat1.jpg",
+    });
+    await documentActions.click();
+    await expect(page.getByRole("link", { name: "Download" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
+    await documentActions.click();
+    await page.getByLabel("Upload document or image").setInputFiles({
+      name: "record.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n%%EOF"),
+    });
+    await expect(page.getByText("record.pdf", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Download document" }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringContaining(`/api/cats/${catId}/documents/`),
+    );
     await page
       .getByRole("button", { name: "Open image document cat1.jpg" })
       .click();
@@ -119,13 +148,15 @@ test.describe("cats UI", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Delete document" }),
-    ).toHaveCount(0);
-    await page.getByRole("button", { name: "Actions" }).click();
-    await expect(page.getByRole("link", { name: "Download" })).toHaveAttribute(
+    ).toHaveCount(1);
+    await page.getByRole("button", { name: "Actions", exact: true }).click();
+    await expect(
+      page.getByRole("link", { name: "Download", exact: true }),
+    ).toHaveAttribute(
       "href",
       expect.stringContaining(`/api/cats/${catId}/documents/`),
     );
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "Open image document cat1.jpg" }),
     ).toHaveCount(0);

@@ -16,7 +16,9 @@ import {
   faBugs,
   faCat,
   faClockRotateLeft,
+  faDownload,
   faEllipsis,
+  faEllipsisVertical,
   faImages,
   faListCheck,
   faNotesMedical,
@@ -185,6 +187,9 @@ export default function CatProfilePage() {
   const [weightError, setWeightError] = useState<string | null>(null);
   const [expandedPhotoId, setExpandedPhotoId] = useState<string | null>(null);
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+  const [thumbnailPhotoMenuId, setThumbnailPhotoMenuId] = useState<
+    string | null
+  >(null);
   const [isPhotoPositionSelectorOpen, setIsPhotoPositionSelectorOpen] =
     useState(false);
   const [photos, setPhotos] = useState<CatPhoto[]>([]);
@@ -194,6 +199,9 @@ export default function CatProfilePage() {
     null,
   );
   const [isDocumentMenuOpen, setIsDocumentMenuOpen] = useState(false);
+  const [thumbnailDocumentMenuId, setThumbnailDocumentMenuId] = useState<
+    string | null
+  >(null);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [removingDocumentId, setRemovingDocumentId] = useState<string | null>(
@@ -660,6 +668,7 @@ export default function CatProfilePage() {
       setDocuments(updatedDocuments);
       if (expandedDocumentId === documentId) setExpandedDocumentId(null);
       setIsDocumentMenuOpen(false);
+      setThumbnailDocumentMenuId(null);
     } catch (err) {
       setDocumentError(ApiErrorHandler.handle(err));
     } finally {
@@ -721,6 +730,7 @@ export default function CatProfilePage() {
           : null,
       );
       setIsPhotoMenuOpen(false);
+      setThumbnailPhotoMenuId(null);
     } catch (err) {
       setPhotoError(ApiErrorHandler.handle(err));
     } finally {
@@ -1294,12 +1304,12 @@ export default function CatProfilePage() {
                         {visibleGalleryPhotos.map((photo) => (
                           <div
                             key={photo.id}
-                            className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                            className="relative rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
                           >
                             <button
                               type="button"
                               onClick={() => openPhoto(photo.id)}
-                              className={`block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 ${photo.mediaType === "video" ? "flex items-center justify-center bg-black text-2xl text-white" : ""}`}
+                              className={`block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 ${photo.mediaType === "video" ? "flex items-center justify-center bg-black text-2xl text-white" : ""}`}
                               style={
                                 photo.mediaType !== "video" && photo.url
                                   ? { backgroundImage: `url(${photo.url})` }
@@ -1311,6 +1321,45 @@ export default function CatProfilePage() {
                                 <span aria-hidden="true">▶</span>
                               )}
                             </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setThumbnailPhotoMenuId((current) =>
+                                  current === photo.id ? null : photo.id,
+                                )
+                              }
+                              aria-label={`Photo actions for ${cat.name}`}
+                              title="Photo actions"
+                              aria-expanded={thumbnailPhotoMenuId === photo.id}
+                              className="absolute bottom-0 right-0 rounded-tl-lg bg-white/60 px-2 py-1 text-sm text-[#4d514b] transition hover:bg-white/85"
+                            >
+                              <FontAwesomeIcon
+                                icon={faEllipsisVertical}
+                                aria-hidden="true"
+                              />
+                            </button>
+                            {thumbnailPhotoMenuId === photo.id && (
+                              <div className="absolute bottom-0 right-0 z-20 mb-8 w-36 overflow-hidden rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-1 shadow-xl">
+                                <a
+                                  href={photo.downloadUrl ?? undefined}
+                                  className="block rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                                >
+                                  Download
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleDeletePhoto(photo.id)
+                                  }
+                                  disabled={removingPhotoId === photo.id}
+                                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                                >
+                                  {removingPhotoId === photo.id
+                                    ? "Deleting..."
+                                    : "Delete"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                         <label
@@ -1386,7 +1435,7 @@ export default function CatProfilePage() {
                         {imageDocuments.map((document) => (
                           <div
                             key={document.id}
-                            className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                            className="relative rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
                           >
                             <button
                               type="button"
@@ -1395,7 +1444,7 @@ export default function CatProfilePage() {
                                 setIsDocumentMenuOpen(false);
                               }}
                               disabled={!document.url}
-                              className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
+                              className="block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
                               style={
                                 document.url
                                   ? { backgroundImage: `url(${document.url})` }
@@ -1404,6 +1453,47 @@ export default function CatProfilePage() {
                               aria-label={`Open image document ${document.fileName}`}
                               title={document.fileName}
                             />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setThumbnailDocumentMenuId((current) =>
+                                  current === document.id ? null : document.id,
+                                )
+                              }
+                              aria-label={`Document actions for ${document.fileName}`}
+                              title="Document actions"
+                              aria-expanded={
+                                thumbnailDocumentMenuId === document.id
+                              }
+                              className="absolute bottom-0 right-0 rounded-tl-lg bg-white/60 px-2 py-1 text-sm text-[#4d514b] transition hover:bg-white/85"
+                            >
+                              <FontAwesomeIcon
+                                icon={faEllipsisVertical}
+                                aria-hidden="true"
+                              />
+                            </button>
+                            {thumbnailDocumentMenuId === document.id && (
+                              <div className="absolute bottom-0 right-0 z-20 mb-8 w-36 overflow-hidden rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-1 shadow-xl">
+                                <a
+                                  href={document.downloadUrl ?? undefined}
+                                  className="block rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                                >
+                                  Download
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleDeleteDocument(document.id)
+                                  }
+                                  disabled={removingDocumentId === document.id}
+                                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                                >
+                                  {removingDocumentId === document.id
+                                    ? "Deleting..."
+                                    : "Delete"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1431,6 +1521,14 @@ export default function CatProfilePage() {
                                 Added {formatDate(document.createdAt)}
                               </p>
                             </div>
+                            <a
+                              href={document.downloadUrl ?? undefined}
+                              aria-label="Download document"
+                              title="Download document"
+                              className="shrink-0 rounded-lg p-2 text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                            >
+                              <FontAwesomeIcon icon={faDownload} />
+                            </a>
                             <button
                               type="button"
                               onClick={() => handleDeleteDocument(document.id)}
