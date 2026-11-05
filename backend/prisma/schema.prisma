@@ -1,50 +1,50 @@
 // prisma/schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
   extensions = [citext]
 }
 
 model User {
-  id             String     @id @default(cuid())
-  email          String     @unique @db.Citext
-  fullName       String
-  passwordHash   String?
-  passwordChangeRequired Boolean @default(false)
-  isTest         Boolean    @default(false)
-  status         UserStatus @default(ACTIVE)
-  role           UserRole   @default(STAFF)
-  lastLoginAt    DateTime?
-  deletedAt      DateTime?
-  version        Int        @default(0)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  ownedLocations Location[] @relation("ownedLocations")
-  createdCats    Cat[]      @relation("createdCats")
-  createdPhotos  CatPhoto[] @relation("createdPhotos")
-  deletedPhotos  CatPhoto[] @relation("deletedPhotos")
-  createdDocuments CatDocument[] @relation("createdDocuments")
-  deletedDocuments CatDocument[] @relation("deletedDocuments")
-  auditEvents AuditEvent[] @relation("auditActors")
-  relatedAuditEvents AuditEvent[] @relation("auditRelatedUsers")
-  taskReceivers      CatTaskReceiver[]    @relation("taskReceivers")
-  completedTasks     CatTask[]            @relation("completedTasks")
-  taskNotifications  TaskNotification[]
+  id                              String                       @id @default(cuid())
+  email                           String                       @unique @db.Citext
+  fullName                        String
+  passwordHash                    String?
+  passwordChangeRequired          Boolean                      @default(false)
+  isTest                          Boolean                      @default(false)
+  status                          UserStatus                   @default(ACTIVE)
+  role                            UserRole                     @default(STAFF)
+  lastLoginAt                     DateTime?
+  deletedAt                       DateTime?
+  version                         Int                          @default(0)
+  createdAt                       DateTime                     @default(now())
+  updatedAt                       DateTime                     @updatedAt
+  ownedLocations                  Location[]                   @relation("ownedLocations")
+  createdCats                     Cat[]                        @relation("createdCats")
+  createdPhotos                   CatPhoto[]                   @relation("createdPhotos")
+  deletedPhotos                   CatPhoto[]                   @relation("deletedPhotos")
+  createdDocuments                CatDocument[]                @relation("createdDocuments")
+  deletedDocuments                CatDocument[]                @relation("deletedDocuments")
+  auditEvents                     AuditEvent[]                 @relation("auditActors")
+  relatedAuditEvents              AuditEvent[]                 @relation("auditRelatedUsers")
+  taskReceivers                   CatTaskReceiver[]            @relation("taskReceivers")
+  completedTasks                  CatTask[]                    @relation("completedTasks")
+  taskNotifications               TaskNotification[]
   checkedTreatmentAdministrations CatTreatmentAdministration[] @relation("treatmentAdministrationCheckers")
-  createdMedicalNotes CatMedicalNote[] @relation("createdMedicalNotes")
-  createdVaccinations Vaccination[] @relation("createdVaccinations")
-  updatedVaccinations Vaccination[] @relation("updatedVaccinations")
-  createdParasiteTreatments ParasiteTreatment[] @relation("createdParasiteTreatments")
-  updatedParasiteTreatments ParasiteTreatment[] @relation("updatedParasiteTreatments")
-  createdCatTreatments CatTreatment[] @relation("createdCatTreatments")
-  updatedCatTreatments CatTreatment[] @relation("updatedCatTreatments")
-  refreshTokens RefreshToken[]
-  pushSubscriptions PushSubscription[]
-  favoriteCats CatFavorite[]
+  createdMedicalNotes             CatMedicalNote[]             @relation("createdMedicalNotes")
+  createdVaccinations             Vaccination[]                @relation("createdVaccinations")
+  updatedVaccinations             Vaccination[]                @relation("updatedVaccinations")
+  createdParasiteTreatments       ParasiteTreatment[]          @relation("createdParasiteTreatments")
+  updatedParasiteTreatments       ParasiteTreatment[]          @relation("updatedParasiteTreatments")
+  createdCatTreatments            CatTreatment[]               @relation("createdCatTreatments")
+  updatedCatTreatments            CatTreatment[]               @relation("updatedCatTreatments")
+  refreshTokens                   RefreshToken[]
+  pushSubscriptions               PushSubscription[]
+  favoriteCats                    CatFavorite[]
 
   @@index([status])
   @@index([role])
@@ -53,13 +53,13 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
-  expiresAt DateTime
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
   consumedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
@@ -156,56 +156,55 @@ model Location {
   @@index([deletedAt])
 }
 
-
 model Cat {
-  id                  String              @id @default(cuid())
-  name                String
-  nameNumber          Int                 @default(1)
-  sex                 CatSex              @default(UNKNOWN)
-  color               String?
-  estimatedBirthDate  DateTime?
-  intakeDate          DateTime?
-  intakeDetails        String?
-  intakeSource         CatIntakeSource?
-  microchipNumber     String?             @unique
-  passport            Boolean             @default(false)
-  sponsorName         String?
-  adopterName         String?
-  adopterAddress      String?
-  adopterCountry      CatAdopterCountry?
-  felvFivTestDone     Boolean             @default(false)
-  isFlightCandidate   Boolean             @default(false)
-  trelloUrl           String?
-  sterilizationStatus SterilizationStatus @default(UNKNOWN)
-  archivedAt          DateTime?
-  deletedAt           DateTime?
-  version             Int                 @default(0)
-  concurrencyToken    String              @default(cuid())
-  archivingReasonId String?
-  archivingReason   CatArchivingReason? @relation(fields: [archivingReasonId], references: [id], onDelete: Restrict)
-  isTest              Boolean             @default(false)
-  currentLocationId   String
-  currentLocation     Location            @relation(fields: [currentLocationId], references: [id], onDelete: Restrict)
-  createdByUserId     String?
-  createdByUser       User?               @relation("createdCats", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  primaryPhotoKey     String?
+  id                    String                @id @default(cuid())
+  name                  String
+  nameNumber            Int                   @default(1)
+  sex                   CatSex                @default(UNKNOWN)
+  color                 String?
+  estimatedBirthDate    DateTime?
+  intakeDate            DateTime?
+  intakeDetails         String?
+  intakeSource          CatIntakeSource?
+  microchipNumber       String?               @unique
+  passport              Boolean               @default(false)
+  sponsorName           String?
+  adopterName           String?
+  adopterAddress        String?
+  adopterCountry        CatAdopterCountry?
+  felvFivTestDone       Boolean               @default(false)
+  isFlightCandidate     Boolean               @default(false)
+  trelloUrl             String?               @unique
+  sterilizationStatus   SterilizationStatus   @default(UNKNOWN)
+  archivedAt            DateTime?
+  deletedAt             DateTime?
+  version               Int                   @default(0)
+  concurrencyToken      String                @default(cuid())
+  archivingReasonId     String?
+  archivingReason       CatArchivingReason?   @relation(fields: [archivingReasonId], references: [id], onDelete: Restrict)
+  isTest                Boolean               @default(false)
+  currentLocationId     String
+  currentLocation       Location              @relation(fields: [currentLocationId], references: [id], onDelete: Restrict)
+  createdByUserId       String?
+  createdByUser         User?                 @relation("createdCats", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  primaryPhotoKey       String?
   primaryPhotoPositionY Float?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  weights             CatWeight[]
-  tags                CatTagOnCat[]
-  photos              CatPhoto[]
-  documents           CatDocument[]
-  auditEvents         AuditEvent[] @relation("auditCats")
-  tasks               CatTask[]
-  treatments          CatTreatment[]
-  medicalNotes        CatMedicalNote[]
-  vaccinations        Vaccination[]
-  parasiteTreatments  ParasiteTreatment[]
-  flightAssignments  FlightCatAssignment[]
-  favorites CatFavorite[]
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  weights               CatWeight[]
+  tags                  CatTagOnCat[]
+  photos                CatPhoto[]
+  documents             CatDocument[]
+  auditEvents           AuditEvent[]          @relation("auditCats")
+  tasks                 CatTask[]
+  treatments            CatTreatment[]
+  medicalNotes          CatMedicalNote[]
+  vaccinations          Vaccination[]
+  parasiteTreatments    ParasiteTreatment[]
+  flightAssignments     FlightCatAssignment[]
+  favorites             CatFavorite[]
 
-
+  @@unique([name, nameNumber, isTest])
   @@index([createdByUserId])
   @@index([currentLocationId])
   @@index([isTest])
@@ -213,15 +212,14 @@ model Cat {
   @@index([deletedAt])
   @@index([archivingReasonId])
   @@index([name])
-  @@unique([name, nameNumber, isTest])
   @@index([intakeDate])
 }
 
 model CatFavorite {
-  userId String
-  catId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cat Cat @relation(fields: [catId], references: [id], onDelete: Cascade)
+  userId    String
+  catId     String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@id([userId, catId])
@@ -229,13 +227,13 @@ model CatFavorite {
 }
 
 model CatArchivingReason {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  isTest      Boolean  @default(false)
+  isTest      Boolean      @default(false)
   deletedAt   DateTime?
-  version     Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  version     Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   cats        Cat[]
   auditEvents AuditEvent[] @relation("auditArchivingReasons")
 
@@ -244,19 +242,19 @@ model CatArchivingReason {
 }
 
 model CatPhoto {
-  id              String   @id @default(cuid())
+  id              String       @id @default(cuid())
   catId           String
-  cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  key             String   @unique
+  cat             Cat          @relation(fields: [catId], references: [id], onDelete: Cascade)
+  key             String       @unique
   previewKey      String?
-  fileName        String   @default("cat-photo.jpg")
+  fileName        String       @default("cat-photo.jpg")
   createdByUserId String?
-  createdByUser   User?    @relation("createdPhotos", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser   User?        @relation("createdPhotos", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedByUserId String?
-  deletedByUser   User?    @relation("deletedPhotos", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  deletedByUser   User?        @relation("deletedPhotos", fields: [deletedByUserId], references: [id], onDelete: SetNull)
   deletedAt       DateTime?
-  version         Int      @default(0)
-  createdAt       DateTime @default(now())
+  version         Int          @default(0)
+  createdAt       DateTime     @default(now())
   auditEvents     AuditEvent[]
 
   @@index([catId])
@@ -267,19 +265,19 @@ model CatPhoto {
 }
 
 model CatDocument {
-  id              String   @id @default(cuid())
+  id              String       @id @default(cuid())
   catId           String
-  cat             Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  key             String   @unique
+  cat             Cat          @relation(fields: [catId], references: [id], onDelete: Cascade)
+  key             String       @unique
   fileName        String
   createdByUserId String?
-  createdByUser   User?    @relation("createdDocuments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser   User?        @relation("createdDocuments", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedByUserId String?
-  deletedByUser   User?    @relation("deletedDocuments", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  deletedByUser   User?        @relation("deletedDocuments", fields: [deletedByUserId], references: [id], onDelete: SetNull)
   deletedAt       DateTime?
-  version         Int      @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  version         Int          @default(1)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   auditEvents     AuditEvent[]
 
   @@index([catId])
@@ -289,23 +287,21 @@ model CatDocument {
   @@index([createdAt])
 }
 
-
 model CatTag {
-  id        String        @id @default(cuid())
-  name      String
-  color     String        @default("#ffb38a")
-  isTest    Boolean       @default(false)
-  deletedAt DateTime?
-  version   Int           @default(0)
-  createdAt DateTime      @default(now())
-  cats      CatTagOnCat[]
-  auditEvents AuditEvent[] @relation("auditTags")
+  id          String        @id @default(cuid())
+  name        String
+  color       String        @default("#ffb38a")
+  isTest      Boolean       @default(false)
+  deletedAt   DateTime?
+  version     Int           @default(0)
+  createdAt   DateTime      @default(now())
+  cats        CatTagOnCat[]
+  auditEvents AuditEvent[]  @relation("auditTags")
 
   @@index([name])
   @@index([isTest])
   @@index([deletedAt])
 }
-
 
 model CatTagOnCat {
   catId     String
@@ -321,14 +317,14 @@ model CatTagOnCat {
 }
 
 model CatWeight {
-  id         String   @id @default(cuid())
-  catId      String
-  cat        Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  weightKg   Float
-  measuredAt DateTime
-  deletedAt  DateTime?
-  version    Int      @default(0)
-  createdAt  DateTime @default(now())
+  id          String       @id @default(cuid())
+  catId       String
+  cat         Cat          @relation(fields: [catId], references: [id], onDelete: Cascade)
+  weightKg    Float
+  measuredAt  DateTime
+  deletedAt   DateTime?
+  version     Int          @default(0)
+  createdAt   DateTime     @default(now())
   auditEvents AuditEvent[] @relation("auditWeights")
 
   @@index([catId])
@@ -337,26 +333,26 @@ model CatWeight {
 }
 
 model CatTreatment {
-  id          String   @id @default(cuid())
-  catId       String
-  cat         Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  createdByUserId String?
-  createdByUser User? @relation("createdCatTreatments", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updatedByUserId String?
-  updatedByUser User? @relation("updatedCatTreatments", fields: [updatedByUserId], references: [id], onDelete: SetNull)
-  shortName   String
-  instructions String?
-  startDate   DateTime @db.Date
-  endDate     DateTime? @db.Date
-  dosesPerDay Int
-  notificationSent Boolean @default(false)
-  deletedAt   DateTime?
-  concurrencyToken String @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  administrations CatTreatmentAdministration[]
-  notifications   TaskNotification[]
-  auditEvents     AuditEvent[]
+  id               String                       @id @default(cuid())
+  catId            String
+  cat              Cat                          @relation(fields: [catId], references: [id], onDelete: Cascade)
+  createdByUserId  String?
+  createdByUser    User?                        @relation("createdCatTreatments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedByUserId  String?
+  updatedByUser    User?                        @relation("updatedCatTreatments", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  shortName        String
+  instructions     String?
+  startDate        DateTime                     @db.Date
+  endDate          DateTime?                    @db.Date
+  dosesPerDay      Int
+  notificationSent Boolean                      @default(false)
+  deletedAt        DateTime?
+  concurrencyToken String                       @default(cuid())
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
+  administrations  CatTreatmentAdministration[]
+  notifications    TaskNotification[]
+  auditEvents      AuditEvent[]
 
   @@index([catId, createdAt])
   @@index([catId, startDate, endDate])
@@ -369,13 +365,13 @@ model CatTreatment {
 model CatTreatmentAdministration {
   treatmentId     String
   treatment       CatTreatment @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
-  administeredOn  DateTime @db.Date
+  administeredOn  DateTime     @db.Date
   doseNumber      Int
   checkedByUserId String
-  checkedByUser   User @relation("treatmentAdministrationCheckers", fields: [checkedByUserId], references: [id], onDelete: Restrict)
+  checkedByUser   User         @relation("treatmentAdministrationCheckers", fields: [checkedByUserId], references: [id], onDelete: Restrict)
   deletedAt       DateTime?
-  version         Int      @default(0)
-  createdAt       DateTime @default(now())
+  version         Int          @default(0)
+  createdAt       DateTime     @default(now())
 
   @@id([treatmentId, administeredOn, doseNumber])
   @@index([checkedByUserId])
@@ -384,20 +380,20 @@ model CatTreatmentAdministration {
 }
 
 model Flight {
-  id                String   @id @default(cuid())
-  date              DateTime @db.Date
-  airport           String
-  flightNumber      String?
-  flightParent      String?
-  comment           String?
-  isTest            Boolean  @default(false)
-  deletedAt         DateTime?
-  concurrencyToken  String   @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  assignments       FlightCatAssignment[]
-  auditEvents       AuditEvent[] @relation("auditFlights")
-  photos            FlightPhoto[]
+  id               String                @id @default(cuid())
+  date             DateTime              @db.Date
+  airport          String
+  flightNumber     String?
+  flightParent     String?
+  comment          String?
+  isTest           Boolean               @default(false)
+  deletedAt        DateTime?
+  concurrencyToken String                @default(cuid())
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  assignments      FlightCatAssignment[]
+  auditEvents      AuditEvent[]          @relation("auditFlights")
+  photos           FlightPhoto[]
 
   @@index([date])
   @@index([deletedAt])
@@ -405,14 +401,14 @@ model Flight {
 }
 
 model FlightPhoto {
-  id               String   @id @default(cuid())
+  id               String       @id @default(cuid())
   flightId         String
-  flight           Flight   @relation(fields: [flightId], references: [id], onDelete: Restrict)
-  key              String   @unique
+  flight           Flight       @relation(fields: [flightId], references: [id], onDelete: Restrict)
+  key              String       @unique
   previewKey       String?
   deletedAt        DateTime?
-  concurrencyToken String   @default(cuid())
-  createdAt        DateTime @default(now())
+  concurrencyToken String       @default(cuid())
+  createdAt        DateTime     @default(now())
   auditEvents      AuditEvent[] @relation("auditFlightPhotos")
 
   @@index([flightId, deletedAt])
@@ -421,17 +417,17 @@ model FlightPhoto {
 }
 
 model FlightCatAssignment {
-  id               String   @id @default(cuid())
+  id               String       @id @default(cuid())
   flightId         String
-  flight           Flight   @relation(fields: [flightId], references: [id], onDelete: Restrict)
+  flight           Flight       @relation(fields: [flightId], references: [id], onDelete: Restrict)
   catId            String
-  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Restrict)
-  f2fDone          Boolean  @default(false)
-  tracesDone       Boolean  @default(false)
+  cat              Cat          @relation(fields: [catId], references: [id], onDelete: Restrict)
+  f2fDone          Boolean      @default(false)
+  tracesDone       Boolean      @default(false)
   deletedAt        DateTime?
-  concurrencyToken String   @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  concurrencyToken String       @default(cuid())
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
   auditEvents      AuditEvent[] @relation("auditAssignments")
 
   @@index([flightId, deletedAt])
@@ -439,51 +435,51 @@ model FlightCatAssignment {
   @@index([concurrencyToken])
 }
 
-
 model AuditEvent {
-  id String @id @default(cuid())
-  catId String?
-  cat Cat? @relation("auditCats", fields: [catId], references: [id], onDelete: Cascade)
-  flightId String?
-  flight Flight? @relation("auditFlights", fields: [flightId], references: [id], onDelete: SetNull)
-  assignmentId String?
-  assignment FlightCatAssignment? @relation("auditAssignments", fields: [assignmentId], references: [id], onDelete: SetNull)
-  locationId String?
-  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  tagId String?
-  tag CatTag? @relation("auditTags", fields: [tagId], references: [id], onDelete: SetNull)
-  archivingReasonId String?
-  archivingReason CatArchivingReason? @relation("auditArchivingReasons", fields: [archivingReasonId], references: [id], onDelete: SetNull)
-  treatmentId String?
-  treatment CatTreatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
-  photoId String?
-  photo CatPhoto? @relation(fields: [photoId], references: [id], onDelete: SetNull)
-  flightPhotoId String?
-  flightPhoto FlightPhoto? @relation("auditFlightPhotos", fields: [flightPhotoId], references: [id], onDelete: SetNull)
-  documentId String?
-  document CatDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
-  weightId String?
-  weight CatWeight? @relation("auditWeights", fields: [weightId], references: [id], onDelete: SetNull)
-  taskId String?
-  task CatTask? @relation("auditTasks", fields: [taskId], references: [id], onDelete: SetNull)
-  medicalNoteId String?
-  medicalNote CatMedicalNote? @relation("auditMedicalNotes", fields: [medicalNoteId], references: [id], onDelete: SetNull)
-  vaccinationId String?
-  vaccination Vaccination? @relation("auditVaccinations", fields: [vaccinationId], references: [id], onDelete: SetNull)
-  parasiteTreatmentId String?
-  parasiteTreatment ParasiteTreatment? @relation("auditParasiteTreatments", fields: [parasiteTreatmentId], references: [id], onDelete: SetNull)
-  actorUserId String
-  actorUser User @relation("auditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
-  relatedUserId String?
-  relatedUser User? @relation("auditRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
-  isTest Boolean @default(false)
-  eventType String
-  action String?
-  oldValue String?
-  newValue String?
-  occurredAt DateTime @default(now())
-  createdAt DateTime @default(now())
-  treatmentAdministrationDate DateTime? @db.Date
+  id                          String               @id @default(cuid())
+  catId                       String?
+  cat                         Cat?                 @relation("auditCats", fields: [catId], references: [id], onDelete: Cascade)
+  flightId                    String?
+  flight                      Flight?              @relation("auditFlights", fields: [flightId], references: [id], onDelete: SetNull)
+  assignmentId                String?
+  assignment                  FlightCatAssignment? @relation("auditAssignments", fields: [assignmentId], references: [id], onDelete: SetNull)
+  locationId                  String?
+  location                    Location?            @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  tagId                       String?
+  tag                         CatTag?              @relation("auditTags", fields: [tagId], references: [id], onDelete: SetNull)
+  archivingReasonId           String?
+  archivingReason             CatArchivingReason?  @relation("auditArchivingReasons", fields: [archivingReasonId], references: [id], onDelete: SetNull)
+  treatmentId                 String?
+  treatment                   CatTreatment?        @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+  photoId                     String?
+  photo                       CatPhoto?            @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  flightPhotoId               String?
+  flightPhoto                 FlightPhoto?         @relation("auditFlightPhotos", fields: [flightPhotoId], references: [id], onDelete: SetNull)
+  documentId                  String?
+  document                    CatDocument?         @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  weightId                    String?
+  weight                      CatWeight?           @relation("auditWeights", fields: [weightId], references: [id], onDelete: SetNull)
+  taskId                      String?
+  task                        CatTask?             @relation("auditTasks", fields: [taskId], references: [id], onDelete: SetNull)
+  medicalNoteId               String?
+  medicalNote                 CatMedicalNote?      @relation("auditMedicalNotes", fields: [medicalNoteId], references: [id], onDelete: SetNull)
+  vaccinationId               String?
+  vaccination                 Vaccination?         @relation("auditVaccinations", fields: [vaccinationId], references: [id], onDelete: SetNull)
+  parasiteTreatmentId         String?
+  parasiteTreatment           ParasiteTreatment?   @relation("auditParasiteTreatments", fields: [parasiteTreatmentId], references: [id], onDelete: SetNull)
+  actorUserId                 String
+  actorUser                   User                 @relation("auditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
+  relatedUserId               String?
+  relatedUser                 User?                @relation("auditRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
+  isTest                      Boolean              @default(false)
+  eventType                   String
+  action                      String?
+  oldValue                    String?
+  newValue                    String?
+  occurredAt                  DateTime             @default(now())
+  createdAt                   DateTime             @default(now())
+  treatmentAdministrationDate DateTime?            @db.Date
+
   @@index([catId, occurredAt])
   @@index([flightId, createdAt])
   @@index([locationId])
@@ -499,43 +495,44 @@ model AuditEvent {
   @@index([parasiteTreatmentId])
   @@index([flightPhotoId])
 }
+
 model CatMedicalNote {
-  id               String   @id @default(cuid())
+  id               String       @id @default(cuid())
   catId            String
-  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  date             DateTime @db.Date
+  cat              Cat          @relation(fields: [catId], references: [id], onDelete: Cascade)
+  date             DateTime     @db.Date
   comment          String
-  createdByUserId String?
-  createdByUser   User?    @relation("createdMedicalNotes", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUserId  String?
+  createdByUser    User?        @relation("createdMedicalNotes", fields: [createdByUserId], references: [id], onDelete: SetNull)
   deletedAt        DateTime?
-  concurrencyToken String   @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  concurrencyToken String       @default(cuid())
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
   auditEvents      AuditEvent[] @relation("auditMedicalNotes")
 
+  @@unique([catId, createdByUserId, date])
   @@index([catId, date])
   @@index([createdByUserId])
-  @@unique([catId, createdByUserId, date])
   @@index([deletedAt])
 }
 
 model Vaccination {
-  id               String   @id @default(cuid())
+  id               String          @id @default(cuid())
   catId            String
-  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  cat              Cat             @relation(fields: [catId], references: [id], onDelete: Cascade)
   createdByUserId  String?
-  createdByUser    User?    @relation("createdVaccinations", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser    User?           @relation("createdVaccinations", fields: [createdByUserId], references: [id], onDelete: SetNull)
   updatedByUserId  String?
-  updatedByUser    User?    @relation("updatedVaccinations", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByUser    User?           @relation("updatedVaccinations", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   type             VaccinationType
-  date             DateTime @db.Date
-  nextDueDate      DateTime? @db.Date
+  date             DateTime        @db.Date
+  nextDueDate      DateTime?       @db.Date
   vaccineName      String
   deletedAt        DateTime?
-  concurrencyToken String   @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  auditEvents      AuditEvent[] @relation("auditVaccinations")
+  concurrencyToken String          @default(cuid())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  auditEvents      AuditEvent[]    @relation("auditVaccinations")
 
   @@index([catId, date])
   @@index([deletedAt])
@@ -544,22 +541,22 @@ model Vaccination {
 }
 
 model ParasiteTreatment {
-  id               String   @id @default(cuid())
+  id               String                @id @default(cuid())
   catId            String
-  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  cat              Cat                   @relation(fields: [catId], references: [id], onDelete: Cascade)
   createdByUserId  String?
-  createdByUser    User?    @relation("createdParasiteTreatments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser    User?                 @relation("createdParasiteTreatments", fields: [createdByUserId], references: [id], onDelete: SetNull)
   updatedByUserId  String?
-  updatedByUser    User?    @relation("updatedParasiteTreatments", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByUser    User?                 @relation("updatedParasiteTreatments", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   type             ParasiteTreatmentType
-  date             DateTime @db.Date
-  nextDueDate      DateTime? @db.Date
+  date             DateTime              @db.Date
+  nextDueDate      DateTime?             @db.Date
   productName      String
   deletedAt        DateTime?
-  concurrencyToken String   @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  auditEvents      AuditEvent[] @relation("auditParasiteTreatments")
+  concurrencyToken String                @default(cuid())
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  auditEvents      AuditEvent[]          @relation("auditParasiteTreatments")
 
   @@index([catId, date])
   @@index([deletedAt])
@@ -568,22 +565,22 @@ model ParasiteTreatment {
 }
 
 model CatTask {
-  id                String            @id @default(cuid())
-  catId             String
-  cat               Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
-  comment           String
-  dueDate           DateTime
-  deletedAt         DateTime?
-  concurrencyToken  String            @default(cuid())
+  id                 String             @id @default(cuid())
+  catId              String
+  cat                Cat                @relation(fields: [catId], references: [id], onDelete: Cascade)
+  comment            String
+  dueDate            DateTime
+  deletedAt          DateTime?
+  concurrencyToken   String             @default(cuid())
   notificationSentAt DateTime?
-  completedAt       DateTime?
-  completedByUserId String?
-  completedByUser   User?             @relation("completedTasks", fields: [completedByUserId], references: [id], onDelete: SetNull)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  receivers         CatTaskReceiver[]
-  notifications     TaskNotification[]
-  auditEvents       AuditEvent[] @relation("auditTasks")
+  completedAt        DateTime?
+  completedByUserId  String?
+  completedByUser    User?              @relation("completedTasks", fields: [completedByUserId], references: [id], onDelete: SetNull)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  receivers          CatTaskReceiver[]
+  notifications      TaskNotification[]
+  auditEvents        AuditEvent[]       @relation("auditTasks")
 
   @@index([catId, dueDate])
   @@index([deletedAt, completedAt, dueDate])
@@ -606,20 +603,19 @@ model CatTaskReceiver {
 }
 
 model TaskNotification {
-  id        String    @id @default(cuid())
-  taskId    String?
+  id          String        @id @default(cuid())
+  taskId      String?
   treatmentId String?
-  userId    String
-  task      CatTask?  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  treatment CatTreatment? @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deletedAt DateTime?
-  version   Int       @default(0)
-  createdAt DateTime  @default(now())
+  userId      String
+  task        CatTask?      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  treatment   CatTreatment? @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deletedAt   DateTime?
+  version     Int           @default(0)
+  createdAt   DateTime      @default(now())
 
   @@unique([taskId, userId])
   @@unique([treatmentId, userId])
   @@index([userId, createdAt])
   @@index([deletedAt])
 }
-
