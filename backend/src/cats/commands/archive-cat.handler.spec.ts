@@ -9,6 +9,7 @@ describe("ArchiveCatHandler", () => {
       const handler = new ArchiveCatHandler(tx as PrismaService);
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random()}@example.com`,
           status: "ACTIVE",
         },
@@ -55,6 +56,7 @@ describe("ArchiveCatHandler", () => {
       const handler = new ArchiveCatHandler(tx as PrismaService);
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random()}@example.com`,
           status: "ACTIVE",
         },

@@ -33,15 +33,22 @@ describe("ListFlightCandidatesHandler", () => {
               {
                 date: new Date("2026-01-01"),
                 type: "CORE",
+                vaccineName: "Core 1",
               },
               {
                 date: new Date("2026-02-01"),
                 type: "CORE",
+                vaccineName: "Core 2",
               },
-              { date: new Date("2026-03-01"), type: "RABIES" },
+              {
+                date: new Date("2026-03-01"),
+                type: "RABIES",
+                vaccineName: "Rabies",
+              },
               {
                 date: new Date("2026-04-01"),
                 type: "RABIES",
+                vaccineName: "Deleted rabies",
                 deletedAt: new Date(),
               },
             ],

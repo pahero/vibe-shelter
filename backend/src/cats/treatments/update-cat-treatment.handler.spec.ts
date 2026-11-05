@@ -8,7 +8,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("rejects a missing treatment", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-missing-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-missing-update@example.com`,
+        },
       });
       await expect(
         new UpdateCatTreatmentHandler(tx as PrismaService).handle(
@@ -24,7 +27,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("rejects an end date before the resulting start date", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-date-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-date-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -56,7 +62,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("rejects changing the short name to an existing active name and start date tuple", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-duplicate-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-duplicate-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -99,7 +108,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("preserves the validity of recorded administrations when changing dates or doses", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-record-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-record-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -139,7 +151,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("rejects reducing configured doses when the removed dose has been recorded", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-dose-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-dose-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -179,7 +194,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("permits reducing doses and moving an open-ended period when no administration is excluded", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-valid-reduce-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-valid-reduce-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -211,7 +229,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("does not add audit events when supplied fields have their existing values", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-unchanged-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-unchanged-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -250,7 +271,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("allows clearing an end date and audits that field", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-clear-end-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-clear-end-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -285,7 +309,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("allows clearing instructions and records none as the new value", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-clear-instructions@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-clear-instructions@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -320,7 +347,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("records none as the previous value when adding instructions", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-add-instructions@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-add-instructions@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -355,7 +385,10 @@ describe("UpdateCatTreatmentHandler", () => {
   it("updates every field and writes a field-specific audit event", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-success-update@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-success-update@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {

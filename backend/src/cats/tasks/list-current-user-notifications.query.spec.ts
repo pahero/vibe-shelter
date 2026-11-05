@@ -6,7 +6,10 @@ describe("ListCurrentUserNotificationsQuery", () => {
   it("returns paginated notifications for the current user with cat ids", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-user@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-user@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -42,7 +45,10 @@ describe("ListCurrentUserNotificationsQuery", () => {
   it("excludes notifications from another user partition", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-user@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-user@example.com`,
+        },
       });
       const testCat = await transaction.cat.create({
         data: {
@@ -75,7 +81,10 @@ describe("ListCurrentUserNotificationsQuery", () => {
   it("returns treatment notifications in the same feed", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-treatment-user@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-treatment-user@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

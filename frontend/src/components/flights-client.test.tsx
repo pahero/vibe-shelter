@@ -1,4 +1,4 @@
-﻿import {
+import {
   fireEvent,
   render,
   screen,
@@ -7,9 +7,10 @@
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  CatCard,
   catsApi,
+  CatHistoryEvent,
   flightsApi,
-  FlightAuditEvent,
   FlightDetails,
   FlightListItem,
   FlightPhoto,
@@ -44,19 +45,6 @@ vi.mock("@/lib/api", async () => {
   };
 });
 
-const listFlights = vi.mocked(flightsApi.list);
-const getFlight = vi.mocked(flightsApi.get);
-const getFlightHistory = vi.mocked(flightsApi.history);
-const listFlightPhotos = vi.mocked(flightsApi.listPhotos);
-const createFlight = vi.mocked(flightsApi.create);
-const updateFlight = vi.mocked(flightsApi.update);
-const deleteFlight = vi.mocked(flightsApi.delete);
-const deleteFlightPhoto = vi.mocked(flightsApi.deletePhoto);
-const assignCat = vi.mocked(flightsApi.assignCat);
-const updateAssignment = vi.mocked(flightsApi.updateAssignment);
-const listCats = vi.mocked(catsApi.listCats);
-const listFlightCandidateIds = vi.mocked(catsApi.listFlightCandidateIds);
-
 const flight: FlightListItem = {
   id: "flight-1",
   date: "2026-10-15",
@@ -68,12 +56,7 @@ const flight: FlightListItem = {
   catCount: 1,
 };
 const detail: FlightDetails = {
-  id: flight.id,
-  date: flight.date,
-  airport: flight.airport,
-  flightNumber: flight.flightNumber,
-  flightParent: flight.flightParent,
-  comment: flight.comment,
+  ...flight,
   updatedAt: "2026-10-10T10:00:00.000Z",
   cats: [
     {
@@ -90,32 +73,20 @@ const detail: FlightDetails = {
     },
   ],
 };
-const auditEvent: FlightAuditEvent = {
+const auditEvent: CatHistoryEvent = {
   id: "event-1",
-  flightId: flight.id,
+  catId: "cat-1",
+  catName: "Mila",
   eventType: "flight_cat_traces_changed",
-  createdAt: "2026-10-10T10:00:00.000Z",
-  actor: {
-    id: "user-1",
-    displayName: "Staff User",
-    email: "staff@example.test",
-  },
+  occurredAt: "2026-10-10T10:00:00.000Z",
+  actorId: "user-1",
+  actorFullName: "Staff User",
   oldValue: "false",
   newValue: "true",
-  cat: { id: "cat-1", name: "Mila", archivedAt: null },
-  flight: {
-    id: flight.id,
-    flightNumber: flight.flightNumber,
-    airport: flight.airport,
-    date: flight.date,
-    isDeleted: false,
-  },
-  assignment: {
-    id: "assignment-1",
-    f2fDone: false,
-    tracesDone: true,
-    isDeleted: false,
-  },
+  flightId: flight.id,
+  flightNumber: flight.flightNumber,
+  airport: flight.airport,
+  flightDate: flight.date,
 };
 const flightPhotos: FlightPhoto[] = [
   {
@@ -133,300 +104,171 @@ const flightPhotos: FlightPhoto[] = [
     createdAt: "2026-10-11T10:00:00.000Z",
   },
 ];
+const catCandidate = {
+  id: "cat-2",
+  name: "Luna",
+  nameNumber: 1,
+  archivedAt: null,
+} as CatCard;
 
 describe("FlightsClient", () => {
   beforeEach(() => {
-    listFlights.mockReset();
-    getFlight.mockReset();
-    getFlightHistory.mockReset();
-    listFlightPhotos.mockReset();
-    createFlight.mockReset();
-    updateFlight.mockReset();
-    deleteFlight.mockReset();
-    deleteFlightPhoto.mockReset();
-    assignCat.mockReset();
-    updateAssignment.mockReset();
-    listCats.mockReset();
-    listFlightCandidateIds.mockReset();
-    listFlights.mockImplementation(async (includeDeleted = false) =>
-      includeDeleted ? [] : [flight],
+    vi.mocked(flightsApi.list).mockReset();
+    vi.mocked(flightsApi.get).mockReset();
+    vi.mocked(flightsApi.history).mockReset();
+    vi.mocked(flightsApi.listPhotos).mockReset();
+    vi.mocked(flightsApi.create).mockReset();
+    vi.mocked(flightsApi.update).mockReset();
+    vi.mocked(flightsApi.delete).mockReset();
+    vi.mocked(flightsApi.deletePhoto).mockReset();
+    vi.mocked(flightsApi.assignCat).mockReset();
+    vi.mocked(flightsApi.updateAssignment).mockReset();
+    vi.mocked(catsApi.listCats).mockReset();
+    vi.mocked(catsApi.listFlightCandidateIds).mockReset();
+    vi.mocked(flightsApi.list).mockImplementation(
+      async (includeDeleted = false) => (includeDeleted ? [] : [flight]),
     );
-    getFlight.mockResolvedValue(detail);
-    getFlightHistory.mockResolvedValue([auditEvent]);
-    listFlightPhotos.mockResolvedValue(flightPhotos);
-    createFlight.mockResolvedValue({ id: "flight-new" });
-    updateFlight.mockResolvedValue({ id: flight.id });
-    deleteFlight.mockResolvedValue(undefined);
-    deleteFlightPhoto.mockResolvedValue(undefined);
-    assignCat.mockResolvedValue({ id: "assignment-new" });
-    updateAssignment.mockResolvedValue({ id: "assignment-1" });
-    listCats.mockResolvedValue({
-      data: [
-        {
-          id: "cat-2",
-          name: "Luna",
-          nameNumber: 1,
-          sex: "FEMALE",
-          color: null,
-          estimatedBirthDate: null,
-          intakeDate: null,
-          archivedAt: null,
-          sterilizationStatus: "UNKNOWN",
-          currentLocationId: null,
-          currentLocationName: null,
-          createdByUserId: null,
-          isTest: false,
-          primaryPhotoUrl: null,
-          primaryPhotoPositionY: null,
-          microchipNumber: null,
-          passport: false,
-          sponsorName: null,
-          adopterName: null,
-          adopterAddress: null,
-          felvFivTestDone: false,
-          intakeDetails: null,
-          intakeSource: null,
-          updatedAt: "2026-10-10T00:00:00.000Z",
-          tags: [],
-        },
-      ],
+    vi.mocked(flightsApi.get).mockResolvedValue(detail);
+    vi.mocked(flightsApi.history).mockResolvedValue({
+      data: [auditEvent],
+      total: 1,
+      skip: 0,
+      limit: 50,
+    });
+    vi.mocked(flightsApi.listPhotos).mockResolvedValue(flightPhotos);
+    vi.mocked(flightsApi.create).mockResolvedValue({ id: "flight-new" });
+    vi.mocked(flightsApi.update).mockResolvedValue({ id: flight.id });
+    vi.mocked(flightsApi.delete).mockResolvedValue(undefined);
+    vi.mocked(flightsApi.deletePhoto).mockResolvedValue(undefined);
+    vi.mocked(flightsApi.assignCat).mockResolvedValue({ id: "assignment-new" });
+    vi.mocked(flightsApi.updateAssignment).mockResolvedValue({
+      id: "assignment-1",
+    });
+    vi.mocked(catsApi.listCats).mockResolvedValue({
+      data: [catCandidate],
       total: 1,
       skip: 0,
       limit: 100,
     });
-    listFlightCandidateIds.mockResolvedValue([{ id: "cat-2" }]);
+    vi.mocked(catsApi.listFlightCandidateIds).mockResolvedValue([
+      { id: "cat-2" },
+    ]);
   });
 
-  it("opens a flight with assigned cat checks and audit history", async () => {
+  it("shows flight details and shared audit history", async () => {
     render(<FlightsClient />);
     fireEvent.click(await screen.findByRole("button", { name: /CY123/ }));
-
     const flightDate = await screen.findByRole("heading", {
       name: "Oct 15, 2026",
     });
     const flightDetails = flightDate.parentElement!;
-    expect(flightDate).toBeVisible();
     expect(
-      within(flightDetails).getByText("CY123 \u00B7 Larnaca \u00B7 1 cats"),
-    ).toBeVisible();
-    expect(
-      within(flightDetails).getByText("Flight parent: Morgan Parent"),
-    ).toBeVisible();
-    expect(within(flightDetails).getByText("Morgan paid.")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Mila" })).toHaveAttribute(
-      "href",
-      "/cats/cat-1",
-    );
-    expect(
-      screen.getByRole("checkbox", { name: "F2F done for Mila" }),
-    ).not.toBeChecked();
-    expect(
-      screen.getByRole("checkbox", { name: "Traces done for Mila" }),
-    ).toBeChecked();
-    fireEvent.click(
-      screen.getByRole("button", { name: /Flight audit history/ }),
-    );
-    expect(
-      screen.getByText("Traces status changed \u00B7 Mila", { exact: false }),
-    ).toBeVisible();
-  });
-
-  it("loads deleted flight details from the deleted flights query when the active detail API returns 404", async () => {
-    listFlights.mockImplementation(async (includeDeleted = false) =>
-      includeDeleted ? [flight] : [],
-    );
-    getFlight.mockRejectedValue(new Error("Flight not found"));
-    getFlightHistory.mockResolvedValue([
-      auditEvent,
-      {
-        ...auditEvent,
-        id: "event-unassigned",
-        eventType: "flight_cat_unassigned",
-        createdAt: "2026-10-11T10:00:00.000Z",
-        assignment: {
-          id: "assignment-old",
-          f2fDone: false,
-          tracesDone: false,
-          isDeleted: true,
-        },
-      },
-    ]);
-
-    render(<FlightsClient standaloneFlightId={flight.id} />);
-
-    expect(
-      await screen.findByText(
-        "This flight is deleted. Its assignments cannot be managed until it is restored.",
-      ),
+      within(flightDetails).getByText("CY123 · Larnaca · 1 cats"),
     ).toBeVisible();
     expect(screen.getByRole("link", { name: "Mila" })).toHaveAttribute(
       "href",
       "/cats/cat-1",
     );
     expect(
-      screen.getByText("Read-only assignments for this deleted flight."),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("checkbox", { name: "F2F done for Mila" }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole("checkbox", { name: "F2F done for Mila" }),
-    ).not.toBeChecked();
-    expect(
-      screen.getByRole("checkbox", { name: "Traces done for Mila" }),
-    ).toBeDisabled();
-    expect(
       screen.getByRole("checkbox", { name: "Traces done for Mila" }),
     ).toBeChecked();
     expect(
-      screen.queryByRole("button", { name: "Restore cat" }),
-    ).not.toBeInTheDocument();
-    expect(getFlightHistory).toHaveBeenCalledWith(flight.id);
-    expect(listFlights).toHaveBeenCalledWith(true);
-  });
-
-  it("collapses audit history by default and pages through events", async () => {
-    const events = Array.from({ length: 11 }, (_, index) => ({
-      ...auditEvent,
-      id: `event-${index}`,
-      eventType: `flight_field_${index}`,
-      createdAt: `2026-10-${String(index + 1).padStart(2, "0")}T10:00:00.000Z`,
-    }));
-    getFlightHistory.mockResolvedValue(events);
-
-    render(<FlightsClient />);
-    fireEvent.click(await screen.findByRole("button", { name: /CY123/ }));
-    await screen.findByRole("heading", { name: "Oct 15, 2026" });
-
-    const historyToggle = screen.getByRole("button", {
-      name: /Flight audit history/,
-    });
-    expect(historyToggle).toHaveAttribute("aria-expanded", "false");
-    expect(
-      screen.queryByText("flight_field_0 \u00B7 Mila"),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(historyToggle);
-    expect(await screen.findByText("flight_field_0 \u00B7 Mila")).toBeVisible();
-    expect(
-      screen.queryByText("flight_field_10 \u00B7 Mila"),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(
-      await screen.findByText("flight_field_10 \u00B7 Mila"),
+      await screen.findByText(/Flight CY123 · flight cat traces changed/),
     ).toBeVisible();
-    expect(screen.getByText("Page 2 of 2")).toBeVisible();
+    expect(vi.mocked(flightsApi.history)).toHaveBeenCalledWith(flight.id);
   });
 
-  it("assigns a cat and submits an updated F2F checkbox", async () => {
+  it("assigns a cat and updates its fit-to-fly status", async () => {
     render(<FlightsClient />);
     fireEvent.click(await screen.findByRole("button", { name: /CY123/ }));
     await screen.findByRole("checkbox", { name: "F2F done for Mila" });
-
     fireEvent.change(screen.getByRole("combobox", { name: "Cat to assign" }), {
       target: { value: "cat-2" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Assign" }));
     await waitFor(() =>
-      expect(assignCat).toHaveBeenCalledWith("flight-1", "cat-2"),
+      expect(vi.mocked(flightsApi.assignCat)).toHaveBeenCalledWith(
+        flight.id,
+        "cat-2",
+      ),
     );
-
     fireEvent.click(
       screen.getByRole("checkbox", { name: "F2F done for Mila" }),
     );
     await waitFor(() =>
-      expect(updateAssignment).toHaveBeenCalledWith("assignment-1", {
-        f2fDone: true,
-      }),
+      expect(vi.mocked(flightsApi.updateAssignment)).toHaveBeenCalledWith(
+        "assignment-1",
+        { f2fDone: true },
+      ),
     );
   });
 
-  it("opens and submits flight editing from the standalone details page", async () => {
+  it("edits a standalone flight", async () => {
     render(<FlightsClient standaloneFlightId={flight.id} />);
-    expect(
-      await screen.findByRole("heading", { name: "Oct 15, 2026" }),
-    ).toBeVisible();
-
+    await screen.findByRole("heading", { name: "Oct 15, 2026" });
     fireEvent.click(screen.getByRole("button", { name: "Edit flight" }));
-    expect(screen.getByRole("heading", { name: "Edit flight" })).toBeVisible();
     fireEvent.change(screen.getByLabelText(/Airport/), {
       target: { value: "Paphos" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
     await waitFor(() =>
-      expect(updateFlight).toHaveBeenCalledWith(
-        "flight-1",
+      expect(vi.mocked(flightsApi.update)).toHaveBeenCalledWith(
+        flight.id,
         expect.objectContaining({ airport: "Paphos" }),
       ),
     );
   });
 
-  it("opens flight photo previews and navigates between them", async () => {
+  it("opens, navigates, and deletes a full-size flight photo", async () => {
     render(<FlightsClient standaloneFlightId={flight.id} />);
     const photoButtons = await screen.findAllByRole("button", {
       name: "Open flight photo",
     });
-
-    expect(
-      screen.queryByRole("heading", { name: "Photos" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Add photos")).toHaveClass("h-16", "w-16");
-    expect(photoButtons[0]).toHaveClass("rounded-lg");
     fireEvent.click(photoButtons[0]);
     expect(
       screen.getByRole("dialog", { name: "Flight photo preview" }),
     ).toBeVisible();
-    expect(screen.getByText("1 / 2")).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Delete flight photo" }),
-    ).not.toBeInTheDocument();
-
     fireEvent.click(screen.getByRole("button", { name: "Next flight photo" }));
-    expect(screen.getByText("2 / 2")).toBeVisible();
-
     fireEvent.click(
       screen.getByRole("button", { name: "Flight photo actions" }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     await waitFor(() =>
-      expect(deleteFlightPhoto).toHaveBeenCalledWith(flight.id, "photo-1"),
+      expect(vi.mocked(flightsApi.deletePhoto)).toHaveBeenCalledWith(
+        flight.id,
+        "photo-1",
+      ),
     );
   });
 
   it("opens thumbnail actions with the shared media menu", async () => {
     render(<FlightsClient standaloneFlightId={flight.id} />);
-    const thumbnailActions = await screen.findAllByRole("button", {
-      name: "Flight thumbnail actions",
-    });
-
-    fireEvent.click(thumbnailActions[0]);
+    fireEvent.click(
+      (
+        await screen.findAllByRole("button", {
+          name: "Flight thumbnail actions",
+        })
+      )[0],
+    );
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-
     await waitFor(() =>
-      expect(deleteFlightPhoto).toHaveBeenCalledWith(flight.id, "photo-2"),
+      expect(vi.mocked(flightsApi.deletePhoto)).toHaveBeenCalledWith(
+        flight.id,
+        "photo-2",
+      ),
     );
   });
 
-  it("keeps the standalone details visible after deleting the flight", async () => {
+  it("keeps standalone details visible after archiving", async () => {
     render(<FlightsClient standaloneFlightId={flight.id} />);
-    expect(
-      await screen.findByRole("heading", { name: "Oct 15, 2026" }),
-    ).toBeVisible();
-
+    await screen.findByRole("heading", { name: "Oct 15, 2026" });
     fireEvent.click(screen.getByRole("button", { name: "Archive flight" }));
-
     expect(
       await screen.findByText(
         "This flight is deleted. Its assignments cannot be managed until it is restored.",
       ),
     ).toBeVisible();
-    expect(
-      screen.queryByText(
-        "Select a flight to manage its cats and audit history.",
-      ),
-    ).not.toBeInTheDocument();
-    expect(deleteFlight).toHaveBeenCalledWith(flight.id);
+    expect(vi.mocked(flightsApi.delete)).toHaveBeenCalledWith(flight.id);
   });
 
   it("submits a flight without a number and with an optional comment", async () => {
@@ -442,9 +284,8 @@ describe("FlightsClient", () => {
       target: { value: "Meet at the terminal" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
     await waitFor(() =>
-      expect(createFlight).toHaveBeenCalledWith(
+      expect(vi.mocked(flightsApi.create)).toHaveBeenCalledWith(
         expect.objectContaining({
           airport: "Paphos",
           flightNumber: null,

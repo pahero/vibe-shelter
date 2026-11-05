@@ -29,16 +29,6 @@ export class SendDueTaskNotificationsHandler {
     const recipients = new Set<string>();
     await runInNewTransaction(this.prisma, async (transaction) => {
       for (const task of tasks) {
-        for (const receiver of task.receivers) {
-          recipients.add(receiver.userId);
-          await transaction.taskNotification.upsert({
-            where: {
-              taskId_userId: { taskId: task.id, userId: receiver.userId },
-            },
-            create: { taskId: task.id, userId: receiver.userId },
-            update: { deletedAt: null, version: { increment: 1 } },
-          });
-        }
         const updated = await transaction.catTask.updateMany({
           where: {
             id: task.id,
@@ -51,8 +41,19 @@ export class SendDueTaskNotificationsHandler {
             concurrencyToken: crypto.randomUUID(),
           },
         });
-        if (updated.count !== 1)
-          throw new Error("Task was removed while sending notifications");
+        // Another request or scheduler may have changed this task since the
+        // initial read. It is no longer eligible for this notification pass.
+        if (updated.count !== 1) continue;
+        for (const receiver of task.receivers) {
+          recipients.add(receiver.userId);
+          await transaction.taskNotification.upsert({
+            where: {
+              taskId_userId: { taskId: task.id, userId: receiver.userId },
+            },
+            create: { taskId: task.id, userId: receiver.userId },
+            update: { deletedAt: null, version: { increment: 1 } },
+          });
+        }
       }
     });
     await Promise.all(

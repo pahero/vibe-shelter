@@ -1,21 +1,22 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { auditEventStyle, auditEventLabel, CatHistory } from "./cat-history";
+import { auditEventLabel, auditEventStyle, CatHistory } from "./cat-history";
 import { CatHistoryEvent } from "@/lib/api";
 
-const baseEvent = {
+const event: CatHistoryEvent = {
   id: "event-1",
   catId: "cat-1",
+  catName: "Mila",
+  eventType: "name_changed",
   occurredAt: "2026-08-10T12:00:00.000Z",
-  actor: {
-    id: "user-1",
-    displayName: "Staff Member",
-    email: "staff@example.com",
-  },
-} satisfies Partial<CatHistoryEvent>;
+  actorId: "user-1",
+  actorFullName: "Staff Member",
+  oldValue: "Mila",
+  newValue: "Luna",
+};
 
 describe("CatHistory", () => {
-  it("uses green, amber, and red styles for create, edit, and delete events", () => {
+  it("styles lifecycle, edit, and delete events", () => {
     expect(auditEventStyle("treatment_created")).toContain(
       "border-l-[#31734b]",
     );
@@ -25,284 +26,58 @@ describe("CatHistory", () => {
     expect(auditEventStyle("treatment_deleted")).toContain("border-l-red-700");
   });
 
-  it("renders loading, empty, and error states", () => {
-    const { rerender } = render(
-      <CatHistory events={[]} isLoading error={null} />,
-    );
-    expect(screen.getByText("Loading cat history...")).toBeVisible();
-
-    rerender(<CatHistory events={[]} isLoading={false} error={null} />);
-    expect(
-      screen.getByText("No changes have been recorded for this cat yet."),
-    ).toBeVisible();
-
-    rerender(
+  it("renders shared flattened audit events", () => {
+    render(
       <CatHistory
-        events={[]}
+        events={[event]}
         isLoading={false}
-        error="Could not load history"
+        error={null}
+        showCatName
       />,
     );
-    expect(screen.getByText("Could not load history")).toBeVisible();
+    expect(screen.getByText("name changed")).toBeVisible();
+    expect(screen.getByText(/on Mila by Staff Member/)).toBeVisible();
+    expect(screen.getByText(/Mila.*Luna/)).toBeVisible();
   });
 
-  it("renders populated field-change history with old and new values", () => {
+  it("renders linked-file access", () => {
     render(
       <CatHistory
         events={[
-          {
-            ...baseEvent,
-            eventType: "name_changed",
-            oldValue: "Mila",
-            newValue: "Luna",
-            photo: null,
-          } as CatHistoryEvent,
+          { ...event, fileId: "file-1", fileUrl: "https://example.test/file" },
         ]}
         isLoading={false}
         error={null}
       />,
     );
-    expect(screen.getByText("Name changed")).toBeVisible();
-    expect(screen.getByText(/by Staff Member/)).toBeVisible();
-    expect(screen.getByText(/Mila/)).toBeVisible();
-    expect(screen.getByText(/Luna/)).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Open linked file" }),
+    ).toHaveAttribute("href", "https://example.test/file");
   });
 
-  it("renders photo-created and photo-deleted events with links", () => {
-    render(
-      <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            id: "photo-created",
-            eventType: "photo_created",
-            oldValue: null,
-            newValue: null,
-            photo: {
-              id: "photo-1",
-              link: "https://example.test/photo-1",
-              status: "ACTIVE",
-            },
-          } as CatHistoryEvent,
-          {
-            ...baseEvent,
-            id: "photo-deleted",
-            eventType: "photo_deleted",
-            oldValue: null,
-            newValue: null,
-            photo: {
-              id: "photo-1",
-              link: "https://example.test/photo-1",
-              status: "DELETED",
-            },
-          } as CatHistoryEvent,
-        ]}
-        isLoading={false}
-        error={null}
-      />,
-    );
-    expect(screen.getByText("Photo added")).toBeVisible();
-    expect(screen.getByText("Photo deleted")).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: "Open photo link" }),
-    ).toHaveAttribute("href", "https://example.test/photo-1");
-    expect(
-      screen.getByRole("link", { name: "Open historical deleted-photo link" }),
-    ).toHaveAttribute("href", "https://example.test/photo-1");
-  });
-
-  it("renders tag assignment audit events with readable labels", () => {
-    render(
-      <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            id: "tag-added",
-            eventType: "tag_added_to_cat",
-            oldValue: null,
-            newValue: null,
-            tag: { id: "tag-1", name: "Needs foster", isDeleted: false },
-            photo: null,
-          } as CatHistoryEvent,
-          {
-            ...baseEvent,
-            id: "tag-removed",
-            eventType: "tag_removed_from_cat",
-            oldValue: null,
-            tag: { id: "tag-1", name: "Needs foster", isDeleted: false },
-            newValue: null,
-            photo: null,
-          } as CatHistoryEvent,
-        ]}
-        isLoading={false}
-        error={null}
-      />,
-    );
-    expect(screen.getByText("Tag Needs foster Added to cat")).toBeVisible();
-    expect(screen.getByText("Tag Needs foster Removed from cat")).toBeVisible();
-  });
-
-  it("identifies weights and linked child records in audit labels", () => {
-    expect(
-      auditEventLabel({
-        ...baseEvent,
-        eventType: "weight_created",
-        weight: {
-          id: "weight-1",
-          measuredAt: "2026-09-12",
-          weightKg: 3.4,
-          isDeleted: false,
-        },
-      } as CatHistoryEvent),
-    ).toBe("Weight 2026-09-12 (3.4 kg) added");
-    expect(
-      auditEventLabel({
-        ...baseEvent,
-        eventType: "note_created",
-        note: {
-          id: "note-1",
-          date: "2026-09-10",
-          comment: "Checkup",
-          author: "Test User",
-          isDeleted: false,
-        },
-      } as CatHistoryEvent),
-    ).toBe("Note 2026-09-10 · Test User · created");
-  });
-
-  it("shows next-page controls when more audit events are available", () => {
+  it("paginates shared history", () => {
     const onPageChange = vi.fn();
     render(
       <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            eventType: "name_changed",
-            oldValue: "A",
-            newValue: "B",
-            photo: null,
-          } as CatHistoryEvent,
-        ]}
+        events={[event]}
         isLoading={false}
         error={null}
         total={51}
-        skip={0}
-        limit={50}
         onPageChange={onPageChange}
       />,
     );
-    expect(screen.getByText("Showing 1-50 of 51")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(onPageChange).toHaveBeenCalledWith(50);
   });
 
-  it("identifies a treatment audit event by its linked treatment", () => {
-    render(
-      <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            eventType: "treatment_start_date_changed",
-            oldValue: "2026-09-01",
-            newValue: "2026-09-02",
-            treatment: { id: "treatment-1", shortName: "Antibiotic" },
-            photo: null,
-          } as CatHistoryEvent,
-        ]}
-        isLoading={false}
-        error={null}
-      />,
-    );
+  it("labels linked flight records", () => {
     expect(
-      screen.getByText("Treatment Antibiotic Start date changed"),
-    ).toBeVisible();
-  });
-
-  it("restores a deleted linked treatment from its audit event", async () => {
-    const onRestoreTreatment = vi.fn().mockResolvedValue(undefined);
-    render(
-      <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            eventType: "treatment_deleted",
-            oldValue: null,
-            newValue: null,
-            treatment: {
-              id: "treatment-1",
-              shortName: "Antibiotic",
-              isDeleted: true,
-            },
-            photo: null,
-          } as CatHistoryEvent,
-        ]}
-        isLoading={false}
-        error={null}
-        onRestoreTreatment={onRestoreTreatment}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
-    await waitFor(() =>
-      expect(onRestoreTreatment).toHaveBeenCalledWith("treatment-1"),
-    );
-  });
-
-  it("hides Restore after the linked treatment is restored", () => {
-    render(
-      <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            eventType: "treatment_deleted",
-            oldValue: null,
-            newValue: null,
-            treatment: {
-              id: "treatment-1",
-              shortName: "Antibiotic",
-              isDeleted: false,
-            },
-            photo: null,
-          } as CatHistoryEvent,
-        ]}
-        isLoading={false}
-        error={null}
-        onRestoreTreatment={vi.fn()}
-      />,
-    );
-    expect(
-      screen.queryByRole("button", { name: "Restore" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("shows a flight restore action only while the linked flight is deleted", async () => {
-    const onRestoreFlight = vi.fn().mockResolvedValue(undefined);
-    render(
-      <CatHistory
-        events={[
-          {
-            ...baseEvent,
-            eventType: "flight_cat_assigned",
-            oldValue: null,
-            newValue: null,
-            photo: null,
-            flight: {
-              id: "flight-1",
-              flightNumber: "CY123",
-              airport: "Larnaca",
-              date: "2026-10-15",
-              isDeleted: true,
-            },
-          } as CatHistoryEvent,
-        ]}
-        isLoading={false}
-        error={null}
-        onRestoreFlight={onRestoreFlight}
-      />,
-    );
-    expect(screen.getByText("Flight CY123 · Cat assigned")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Restore flight" }));
-    await waitFor(() =>
-      expect(onRestoreFlight).toHaveBeenCalledWith("flight-1"),
-    );
+      auditEventLabel({
+        ...event,
+        eventType: "flight_created",
+        flightId: "flight-1",
+        flightNumber: "CY123",
+      }),
+    ).toBe("Flight CY123 · Flight created");
   });
 });

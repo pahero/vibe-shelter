@@ -10,6 +10,7 @@ describe("ValidatePasswordCredentialsHandler", () => {
       const passwordHash = await bcrypt.hash("Password123!", 10);
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           passwordHash,
         },
@@ -39,6 +40,7 @@ describe("ValidatePasswordCredentialsHandler", () => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`;
       await tx.user.create({
         data: {
+          fullName: "Test User",
           email,
           status: "INACTIVE",
           passwordHash: await bcrypt.hash("Password123!", 10),
@@ -56,7 +58,12 @@ describe("ValidatePasswordCredentialsHandler", () => {
   it("rejects accounts without password login", async () => {
     await runInTestTransaction(async (tx) => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`;
-      await tx.user.create({ data: { email } });
+      await tx.user.create({
+        data: {
+          fullName: "Test User",
+          email,
+        },
+      });
       await expect(
         new ValidatePasswordCredentialsHandler(tx as PrismaService).handle(
           email,
@@ -71,6 +78,7 @@ describe("ValidatePasswordCredentialsHandler", () => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`;
       await tx.user.create({
         data: {
+          fullName: "Test User",
           email,
           passwordHash: await bcrypt.hash("CorrectPassword!", 10),
         },

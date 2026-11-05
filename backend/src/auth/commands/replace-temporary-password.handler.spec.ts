@@ -8,6 +8,7 @@ describe("ReplaceTemporaryPasswordHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           passwordChangeRequired: true,
         },
@@ -30,6 +31,7 @@ describe("ReplaceTemporaryPasswordHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           passwordChangeRequired: false,
         },

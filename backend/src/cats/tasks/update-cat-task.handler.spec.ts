@@ -6,7 +6,10 @@ describe("UpdateCatTaskHandler", () => {
   it("rejects a missing task", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const handler = new UpdateCatTaskHandler(transaction as PrismaService);
       await expect(
@@ -18,7 +21,10 @@ describe("UpdateCatTaskHandler", () => {
   it("rejects missing replacement receivers", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -39,7 +45,10 @@ describe("UpdateCatTaskHandler", () => {
   it("removes notifications and resets sent status when the due date changes", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -88,10 +97,16 @@ describe("UpdateCatTaskHandler", () => {
   it("replaces receivers and invalidates notifications", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const receiver = await transaction.user.create({
-        data: { email: `${Date.now()}-receiver@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-receiver@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -143,10 +158,16 @@ describe("UpdateCatTaskHandler", () => {
   it("does not create a receiver-change audit event when the receiver set is unchanged", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-same-receivers-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-same-receivers-actor@example.com`,
+        },
       });
       const receiver = await transaction.user.create({
-        data: { email: `${Date.now()}-same-receivers@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-same-receivers@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -182,7 +203,10 @@ describe("UpdateCatTaskHandler", () => {
   it("updates a task and audits the action", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
+import { CatsModule } from "../cats/cats.module";
 import { JwtAuthGuard } from "../auth";
 import { DatabaseModule } from "../database/database.module";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
@@ -15,12 +16,11 @@ import { UpdateFlightCatAssignmentHandler } from "./commands/update-flight-cat-a
 import { UpdateFlightHandler } from "./commands/update-flight.handler";
 import { FlightsController } from "./flights.controller";
 import { GetFlightHandler } from "./queries/get-flight.handler";
-import { ListFlightHistoryHandler } from "./queries/list-flight-history.handler";
 import { ListFlightsHandler } from "./queries/list-flights.handler";
 import { ListFlightPhotosHandler } from "./queries/list-flight-photos.handler";
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
+  imports: [DatabaseModule, AuthModule, CatsModule],
   controllers: [FlightsController],
   providers: [
     AssignCatToFlightHandler,
@@ -30,7 +30,6 @@ import { ListFlightPhotosHandler } from "./queries/list-flight-photos.handler";
     DeleteFlightHandler,
     DeleteFlightPhotoHandler,
     GetFlightHandler,
-    ListFlightHistoryHandler,
     ListFlightsHandler,
     ListFlightPhotosHandler,
     RestoreFlightCatAssignmentHandler,

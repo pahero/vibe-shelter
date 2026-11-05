@@ -161,7 +161,7 @@ describe("Flights endpoints", () => {
     const flightHistory = await authAgent
       .get(`/api/flights/${flightId}/history`)
       .expect(200);
-    expect(flightHistory.body).toEqual(
+    expect(flightHistory.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "flight_created",
@@ -200,7 +200,8 @@ describe("Flights endpoints", () => {
         }),
         expect.objectContaining({
           eventType: "flight_cat_assigned",
-          cat: expect.objectContaining({ id: cat.id, name: cat.name }),
+          catId: cat.id,
+          catName: cat.name,
         }),
         expect.objectContaining({
           eventType: "flight_cat_f2f_changed",
@@ -228,10 +229,8 @@ describe("Flights endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "flight_cat_assigned",
-          flight: expect.objectContaining({
-            id: flightId,
-            flightNumber: "CY456",
-          }),
+          flightId,
+          flightNumber: "CY456",
         }),
         expect.objectContaining({
           eventType: "flight_cat_f2f_changed",
@@ -265,7 +264,7 @@ describe("Flights endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "flight_created",
-          flight: expect.objectContaining({ id: flightId }),
+          flightId,
         }),
       ]),
     );
@@ -296,13 +295,12 @@ describe("Flights endpoints", () => {
       ]),
     );
     expect(
-      (await authAgent.get(`/api/flights/${flightId}/history`).expect(200))
-        .body,
+      (await authAgent.get(`/api/flights/${flightId}/history`).expect(200)).body
+        .data,
     ).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "flight_deleted",
-          flight: expect.objectContaining({ isDeleted: true }),
         }),
       ]),
     );

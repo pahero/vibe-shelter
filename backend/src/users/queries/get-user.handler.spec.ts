@@ -8,6 +8,7 @@ describe("GetUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           passwordHash: "secret",
         },
@@ -37,6 +38,7 @@ describe("GetUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const deleted = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           deletedAt: new Date(),
         },

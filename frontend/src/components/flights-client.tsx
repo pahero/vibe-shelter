@@ -1,11 +1,10 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   faArrowLeft,
   faBoxArchive,
-  faMinus,
   faPen,
   faPlus,
   faTrash,
@@ -14,33 +13,18 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ContextMenu } from "@/components/context-menu";
 import { MediaThumbnail } from "@/components/media-thumbnail";
 import { MediaThumbnailGrid } from "@/components/media-thumbnail-grid";
-import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
+import { ApiErrorHandler, formatDateShort } from "@/lib/utils";
 import {
   catsApi,
   CatCard,
-  FlightAuditEvent,
+  CatHistoryEvent,
   FlightDetails,
   FlightInput,
   FlightListItem,
   FlightPhoto,
   flightsApi,
 } from "@/lib/api";
-
-const auditLabels: Record<string, string> = {
-  flight_created: "Flight created",
-  flight_deleted: "Flight deleted",
-  flight_restored: "Flight restored",
-  flight_date_changed: "Flight date changed",
-  flight_airport_changed: "Airport changed",
-  flight_number_changed: "Flight number changed",
-  flight_parent_changed: "Flight parent changed",
-  flight_comment_changed: "Comment changed",
-  flight_cat_assigned: "Cat assigned",
-  flight_cat_unassigned: "Cat removed from flight",
-  flight_cat_restored: "Cat assignment restored",
-  flight_cat_f2f_changed: "Fit-to-fly status changed",
-  flight_cat_traces_changed: "Traces status changed",
-};
+import { CatHistory } from "@/components/cat-history";
 
 function emptyFlightForm(): FlightInput {
   return {
@@ -70,9 +54,8 @@ export function FlightsClient({
   const [selectedFlight, setSelectedFlight] = useState<FlightDetails | null>(
     null,
   );
-  const [flightHistory, setFlightHistory] = useState<FlightAuditEvent[]>([]);
-  const [isFlightHistoryOpen, setIsFlightHistoryOpen] = useState(false);
-  const [flightHistoryPage, setFlightHistoryPage] = useState(1);
+  const [flightHistory, setFlightHistory] = useState<CatHistoryEvent[]>([]);
+  const [flightHistoryTotal, setFlightHistoryTotal] = useState(0);
   const [isLoadingFlight, setIsLoadingFlight] = useState(false);
   const [isDeletedSelection, setIsDeletedSelection] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -132,8 +115,8 @@ export function FlightsClient({
         if (cancelled) return;
         setSelectedFlightId(standaloneFlightId);
         setSelectedFlight(detail);
-        setFlightHistory(history);
-        setFlightHistoryPage(1);
+        setFlightHistory(history.data);
+        setFlightHistoryTotal(history.total);
         setIsDeletedSelection(false);
       } catch (activeReason) {
         try {
@@ -155,8 +138,8 @@ export function FlightsClient({
             updatedAt: "",
             cats: [],
           });
-          setFlightHistory(history);
-          setFlightHistoryPage(1);
+          setFlightHistory(history.data);
+          setFlightHistoryTotal(history.total);
           setIsDeletedSelection(true);
         } catch (reason) {
           if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
@@ -214,16 +197,17 @@ export function FlightsClient({
           updatedAt: "",
           cats: [],
         });
-        setFlightHistory(await flightsApi.history(flight.id));
-        setFlightHistoryPage(1);
+        const history = await flightsApi.history(flight.id);
+        setFlightHistory(history.data);
+        setFlightHistoryTotal(history.total);
       } else {
         const [detail, history] = await Promise.all([
           flightsApi.get(flight.id),
           flightsApi.history(flight.id),
         ]);
         setSelectedFlight(detail);
-        setFlightHistory(history);
-        setFlightHistoryPage(1);
+        setFlightHistory(history.data);
+        setFlightHistoryTotal(history.total);
       }
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
@@ -245,7 +229,7 @@ export function FlightsClient({
     setSelectedFlightId(null);
     setSelectedFlight(null);
     setFlightHistory([]);
-    setFlightHistoryPage(1);
+    setFlightHistoryTotal(0);
     setIsEditing(false);
     setForm(emptyFlightForm());
     setIsFormOpen(true);
@@ -327,7 +311,7 @@ export function FlightsClient({
         setSelectedFlightId(null);
         setSelectedFlight(null);
         setFlightHistory([]);
-        setFlightHistoryPage(1);
+        setFlightHistoryTotal(0);
       }
       refreshLists();
     } catch (reason) {
@@ -381,26 +365,13 @@ export function FlightsClient({
         setSelectedFlightId(null);
         setSelectedFlight(null);
         setFlightHistory([]);
-        setFlightHistoryPage(1);
+        setFlightHistoryTotal(0);
       }
       refreshLists();
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
     } finally {
       setFlightActionId(null);
-    }
-  };
-
-  const restoreAssignment = async (assignmentId: string) => {
-    setAssignmentActionId(assignmentId);
-    setActionError(null);
-    try {
-      await flightsApi.restoreAssignment(assignmentId);
-      await refreshSelectedFlight();
-    } catch (reason) {
-      setActionError(ApiErrorHandler.handle(reason));
-    } finally {
-      setAssignmentActionId(null);
     }
   };
 
@@ -458,53 +429,6 @@ export function FlightsClient({
       !cat.archivedAt &&
       !assignedCatIds.has(cat.id),
   );
-  const restoredAssignmentEventIds = new Set<string>();
-  const assignmentRestoreEventIds = new Set<string>();
-  for (const event of flightHistory) {
-    if (
-      event.eventType === "flight_cat_unassigned" &&
-      event.assignment?.isDeleted &&
-      !restoredAssignmentEventIds.has(event.assignment.id)
-    ) {
-      restoredAssignmentEventIds.add(event.assignment.id);
-      assignmentRestoreEventIds.add(event.id);
-    }
-  }
-  const deletedFlightAssignments = new Map<
-    string,
-    FlightDetails["cats"][number]
-  >();
-  for (const event of [...flightHistory].sort((left, right) =>
-    left.createdAt.localeCompare(right.createdAt),
-  )) {
-    if (!event.assignment) continue;
-    const previous = deletedFlightAssignments.get(event.assignment.id);
-    if (!event.cat && !previous) continue;
-    deletedFlightAssignments.set(event.assignment.id, {
-      assignmentId: event.assignment.id,
-      cat: {
-        id: event.cat?.id ?? previous!.cat.id,
-        name: event.cat?.name ?? previous!.cat.name,
-        archivedAt: event.cat?.archivedAt ?? previous?.cat.archivedAt ?? null,
-        microchipNumber: previous?.cat.microchipNumber ?? null,
-        passport: previous?.cat.passport ?? false,
-      },
-      f2fDone: event.assignment.f2fDone,
-      tracesDone: event.assignment.tracesDone,
-    });
-    if (event.eventType === "flight_cat_unassigned")
-      deletedFlightAssignments.delete(event.assignment.id);
-  }
-  const deletedFlightCats = [...deletedFlightAssignments.values()];
-  const flightHistoryPageSize = 10;
-  const flightHistoryPageCount = Math.max(
-    1,
-    Math.ceil(flightHistory.length / flightHistoryPageSize),
-  );
-  const visibleHistory = flightHistory.slice(
-    (flightHistoryPage - 1) * flightHistoryPageSize,
-    flightHistoryPage * flightHistoryPageSize,
-  );
   const sortedPhotos = [...photos].sort((left, right) =>
     right.createdAt.localeCompare(left.createdAt),
   );
@@ -530,6 +454,7 @@ export function FlightsClient({
       sortedPhotos[(expandedPhotoIndex + 1) % sortedPhotos.length].id,
     );
   };
+  const deletedFlightCats: FlightDetails["cats"] = [];
 
   return (
     <section
@@ -1130,127 +1055,15 @@ export function FlightsClient({
                 </section>
               )}
 
-              <section className="rounded-2xl border border-[#d4c7b4] bg-white/60 p-5">
-                <button
-                  type="button"
-                  aria-expanded={isFlightHistoryOpen}
-                  onClick={() => setIsFlightHistoryOpen((open) => !open)}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                >
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Flight audit history
-                  </h2>
-                  <span aria-hidden="true" className="text-[#6d6a66]">
-                    <FontAwesomeIcon
-                      icon={isFlightHistoryOpen ? faMinus : faPlus}
-                    />
-                  </span>
-                </button>
-                {isFlightHistoryOpen &&
-                  (flightHistory.length === 0 ? (
-                    <p className="mt-3 text-sm text-[#6d6a66]">
-                      No history yet.
-                    </p>
-                  ) : (
-                    <>
-                      <ol className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
-                        {visibleHistory.map((event) => (
-                          <li
-                            key={event.id}
-                            className={`px-3 py-2 ${event.eventType.endsWith("_created") || event.eventType.endsWith("_restored") ? "border-l-4 border-l-[#31734b] bg-[#31734b]/10" : event.eventType.endsWith("_deleted") || event.eventType.endsWith("_unassigned") ? "border-l-4 border-l-red-700 bg-red-50/70" : "border-l-4 border-l-amber-600 bg-amber-50/70"}`}
-                          >
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">
-                                {auditLabels[event.eventType] ??
-                                  event.eventType}
-                                {event.cat && (
-                                  <>
-                                    {" \u00B7 "}
-                                    {event.cat.name}
-                                  </>
-                                )}
-                                <span className="font-normal text-[#6d6a66]">
-                                  {" "}
-                                  by {event.actor.displayName}
-                                </span>
-                              </p>
-                              <div className="mt-1 flex flex-wrap items-center gap-2">
-                                <time
-                                  className="text-xs text-[#6d6a66]"
-                                  dateTime={event.createdAt}
-                                >
-                                  {formatDate(event.createdAt)}
-                                </time>
-                                {!isDeletedSelection &&
-                                  event.assignment?.isDeleted &&
-                                  assignmentRestoreEventIds.has(event.id) && (
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        assignmentActionId ===
-                                        event.assignment.id
-                                      }
-                                      onClick={() =>
-                                        void restoreAssignment(
-                                          event.assignment!.id,
-                                        )
-                                      }
-                                      className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:opacity-50"
-                                    >
-                                      {assignmentActionId ===
-                                      event.assignment.id
-                                        ? "Restoring..."
-                                        : "Restore cat"}
-                                    </button>
-                                  )}
-                              </div>
-                            </div>
-                            {(event.oldValue !== null ||
-                              event.newValue !== null) && (
-                              <p className="mt-1 text-xs text-[#6d6a66]">
-                                {event.oldValue ?? "Not set"} -&gt;{" "}
-                                {event.newValue ?? "Not set"}
-                              </p>
-                            )}
-                          </li>
-                        ))}
-                      </ol>
-                      {flightHistoryPageCount > 1 && (
-                        <div className="mt-3 flex items-center justify-between gap-3 text-sm">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFlightHistoryPage((page) =>
-                                Math.max(1, page - 1),
-                              )
-                            }
-                            disabled={flightHistoryPage === 1}
-                            className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
-                          >
-                            Previous
-                          </button>
-                          <span className="text-[#6d6a66]">
-                            Page {flightHistoryPage} of {flightHistoryPageCount}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFlightHistoryPage((page) =>
-                                Math.min(flightHistoryPageCount, page + 1),
-                              )
-                            }
-                            disabled={
-                              flightHistoryPage === flightHistoryPageCount
-                            }
-                            className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ))}
-              </section>
+              <CatHistory
+                mode="flight"
+                title="Flight audit history"
+                events={flightHistory}
+                isLoading={isLoadingFlight}
+                error={actionError}
+                total={flightHistoryTotal}
+                showCatName
+              />
             </>
           )}
         </div>

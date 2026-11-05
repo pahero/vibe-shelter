@@ -8,7 +8,10 @@ describe("CreateRefreshTokenHandler", () => {
   it("stores only a hash and updates last login", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${randomUUID()}@example.com`,
+        },
       });
       const token = await new CreateRefreshTokenHandler(
         tx as PrismaService,
@@ -37,7 +40,11 @@ describe("CreateRefreshTokenHandler", () => {
   it("rejects an inactive account", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${randomUUID()}@example.com`, status: "INACTIVE" },
+        data: {
+          fullName: "Test User",
+          email: `${randomUUID()}@example.com`,
+          status: "INACTIVE",
+        },
       });
       const handler = new CreateRefreshTokenHandler(tx as PrismaService);
       await expect(handler.handle(user.id)).rejects.toThrow(

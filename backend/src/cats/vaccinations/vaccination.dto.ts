@@ -6,7 +6,7 @@ export type VaccinationPayload = {
   type: VaccinationType;
   date: Date;
   nextDueDate?: Date | null;
-  vaccineName?: string | null;
+  vaccineName: string;
 };
 
 const TYPES = Object.values(VaccinationType);
@@ -37,6 +37,12 @@ function optionalText(
   return value.trim() || null;
 }
 
+function requiredText(value: string): string {
+  const text = value.trim();
+  if (!text) throw new BadRequestException("vaccineName is required");
+  return text;
+}
+
 function parseType(value: string): VaccinationType {
   if (TYPES.includes(value as VaccinationType)) return value as VaccinationType;
   throw new BadRequestException(`type must be one of: ${TYPES.join(", ")}`);
@@ -54,15 +60,14 @@ export class CreateVaccinationDto {
   nextDueDate?: string | null;
 
   @IsString()
-  @IsOptional()
-  vaccineName?: string | null;
+  vaccineName!: string;
 
   toCommand(): VaccinationPayload {
     return {
       type: parseType(this.type),
       date: parseDate(this.date),
       nextDueDate: parseOptionalDate(this.nextDueDate),
-      vaccineName: optionalText(this.vaccineName),
+      vaccineName: requiredText(this.vaccineName),
     };
   }
 }
@@ -82,7 +87,7 @@ export class UpdateVaccinationDto {
 
   @IsString()
   @IsOptional()
-  vaccineName?: string | null;
+  vaccineName?: string;
 
   toCommand(): Partial<VaccinationPayload> {
     return {
@@ -92,7 +97,7 @@ export class UpdateVaccinationDto {
         ? { nextDueDate: parseOptionalDate(this.nextDueDate) }
         : {}),
       ...(this.vaccineName !== undefined
-        ? { vaccineName: optionalText(this.vaccineName) }
+        ? { vaccineName: requiredText(this.vaccineName) }
         : {}),
     };
   }

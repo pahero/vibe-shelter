@@ -18,6 +18,7 @@ describe("ListVaccinationsHandler", () => {
             catId: cat.id,
             type: "CORE",
             date: new Date("2026-01-01"),
+            vaccineName: "Core vaccine",
             concurrencyToken: crypto.randomUUID(),
           },
           {
@@ -31,6 +32,7 @@ describe("ListVaccinationsHandler", () => {
             catId: cat.id,
             type: "OTHER",
             date: new Date("2026-03-01"),
+            vaccineName: "Other vaccine",
             deletedAt: new Date(),
             concurrencyToken: crypto.randomUUID(),
           },
@@ -50,7 +52,7 @@ describe("ListVaccinationsHandler", () => {
         type: "CORE",
         date: "2026-01-01",
         nextDueDate: null,
-        vaccineName: null,
+        vaccineName: "Core vaccine",
       });
     });
   });

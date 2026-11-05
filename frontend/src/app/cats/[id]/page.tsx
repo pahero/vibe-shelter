@@ -403,17 +403,6 @@ export default function CatProfilePage() {
     setHistoryTotal(response.total);
   };
 
-  const restoreTreatment = async (treatmentId: string) => {
-    await catsApi.restoreTreatment(treatmentId);
-    setTreatmentRefreshVersion((version) => version + 1);
-    await refreshHistory();
-  };
-
-  const restoreFlight = async (flightId: string) => {
-    await flightsApi.restore(flightId);
-    await refreshHistory();
-  };
-
   useEffect(() => {
     if (!catId) return;
     let cancelled = false;
@@ -2465,8 +2454,6 @@ export default function CatProfilePage() {
                   skip={historySkip}
                   limit={historyLimit}
                   onPageChange={setHistorySkip}
-                  onRestoreTreatment={restoreTreatment}
-                  onRestoreFlight={restoreFlight}
                 />
               </div>
             )}

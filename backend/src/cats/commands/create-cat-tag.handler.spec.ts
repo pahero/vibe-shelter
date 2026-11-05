@@ -8,6 +8,7 @@ describe("CreateCatTagHandler", () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
         },
       });
@@ -72,7 +73,10 @@ describe("CreateCatTagHandler", () => {
         data: { name: "Reusable", deletedAt: new Date() },
       });
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-restore-tag@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-restore-tag@example.com`,
+        },
       });
       const result = await new CreateCatTagHandler(tx as PrismaService).handle(
         { name: tag.name, color: "#8ecaff" },

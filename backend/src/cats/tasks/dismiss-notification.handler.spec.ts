@@ -6,7 +6,10 @@ describe("DismissNotificationHandler", () => {
   it("soft deletes a notification belonging to the user and increments its version", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-dismiss@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-dismiss@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -43,10 +46,16 @@ describe("DismissNotificationHandler", () => {
   it("does not dismiss task notifications, notifications belonging to another user, or missing notifications", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-not-owner@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-not-owner@example.com`,
+        },
       });
       const owner = await transaction.user.create({
-        data: { email: `${Date.now()}-owner@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-owner@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

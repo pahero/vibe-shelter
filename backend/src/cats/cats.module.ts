@@ -10,7 +10,6 @@ import { CreateCatHandler } from "./commands/create-cat.handler";
 import { ArchiveCatHandler } from "./commands/archive-cat.handler";
 import { DearchiveCatHandler } from "./commands/dearchive-cat.handler";
 import { WriteCatAuditEventCommand } from "./commands/write-cat-audit-event.command";
-import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
 import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
 import { ArchivingReasonsController } from "./archiving-reasons/archiving-reasons.controller";
@@ -52,11 +51,6 @@ import { CreateParasiteTreatmentHandler } from "./parasite-treatments/create-par
 import { DeleteParasiteTreatmentHandler } from "./parasite-treatments/delete-parasite-treatment.handler";
 import { ListParasiteTreatmentsHandler } from "./parasite-treatments/list-parasite-treatments.handler";
 import { UpdateParasiteTreatmentHandler } from "./parasite-treatments/update-parasite-treatment.handler";
-import { CatNotesController } from "./notes/cat-notes.controller";
-import { CreateCatNoteHandler } from "./notes/create-cat-note.handler";
-import { DeleteCatNoteHandler } from "./notes/delete-cat-note.handler";
-import { ListCatNotesHandler } from "./notes/list-cat-notes.handler";
-import { UpdateCatNoteHandler } from "./notes/update-cat-note.handler";
 import { ListCatsHandler } from "./queries/list-cats.handler";
 import { ListCatTagsHandler } from "./queries/list-cat-tags.handler";
 import { GetCatCardHandler } from "./queries/get-cat-card.handler";
@@ -99,7 +93,6 @@ import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler"
     CatMedicalNotesController,
     VaccinationsController,
     ParasiteTreatmentsController,
-    CatNotesController,
   ],
   providers: [
     CatPhotoUrlService,
@@ -112,7 +105,6 @@ import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler"
     ArchiveCatHandler,
     DearchiveCatHandler,
     WriteCatAuditEventCommand,
-    ListCatHistoryQuery,
     ListAllCatHistoryQuery,
     ListFlightCandidatesHandler,
     ListArchivingReasonsQuery,
@@ -148,10 +140,6 @@ import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler"
     CreateParasiteTreatmentHandler,
     UpdateParasiteTreatmentHandler,
     DeleteParasiteTreatmentHandler,
-    ListCatNotesHandler,
-    CreateCatNoteHandler,
-    UpdateCatNoteHandler,
-    DeleteCatNoteHandler,
     ListCatsHandler,
     ListCatTagsHandler,
     GetCatCardHandler,
@@ -178,5 +166,6 @@ import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler"
     AdminRoleGuard,
     OwnerRoleGuard,
   ],
+  exports: [ListAllCatHistoryQuery],
 })
 export class CatsModule {}

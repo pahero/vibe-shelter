@@ -117,6 +117,7 @@ describe("Authentication endpoints", () => {
     const password = "TemporaryPassword123!";
     const user = await prisma.user.create({
       data: {
+        fullName: "Test User",
         email,
         status: "ACTIVE",
         passwordHash: await bcrypt.hash(password, 10),
@@ -146,6 +147,7 @@ describe("Authentication endpoints", () => {
     const email = `${unique()}@example.com`;
     const user = await prisma.user.create({
       data: {
+        fullName: "Test User",
         email,
         status: "ACTIVE",
         passwordHash: await bcrypt.hash("Password123!", 10),

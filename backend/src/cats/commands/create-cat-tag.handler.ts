@@ -28,7 +28,12 @@ export class CreateCatTagHandler {
         });
         if (actorUserId)
           await tx.auditEvent.create({
-            data: { tagId: tag.id, actorUserId, action: "restore" },
+            data: {
+              tagId: tag.id,
+              actorUserId,
+              action: "restore",
+              eventType: "tag_action",
+            },
           });
         return toCatTag(tag);
       }
@@ -36,7 +41,12 @@ export class CreateCatTagHandler {
       const tag = await tx.catTag.create({ data: { name, color, isTest } });
       if (actorUserId)
         await tx.auditEvent.create({
-          data: { tagId: tag.id, actorUserId, action: "create" },
+          data: {
+            tagId: tag.id,
+            actorUserId,
+            action: "create",
+            eventType: "tag_action",
+          },
         });
       return toCatTag(tag);
     });

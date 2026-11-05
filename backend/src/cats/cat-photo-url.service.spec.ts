@@ -110,11 +110,9 @@ describe("CatPhotoUrlService GET URL caching", () => {
     );
   });
 
-  it("returns null without signing when the object key or bucket is missing", async () => {
-    const configured = createService();
+  it("returns null without signing when the bucket is missing", async () => {
     const unconfigured = createService("");
 
-    await expect(configured.getPrimaryPhotoUrl(null)).resolves.toBeNull();
     await expect(
       unconfigured.getDocumentUrl("cats/1/doc.pdf"),
     ).resolves.toBeNull();

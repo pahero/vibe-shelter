@@ -95,6 +95,22 @@ export default async function globalSetup(_config: FullConfig) {
       `Admin login failed (${adminLogin.status()}). Ensure the backend is running and seeded: ${ADMIN_ACCOUNT.email}. Body: ${await adminLogin.text()}`,
     );
   }
+  const admin = (await adminLogin.json()) as {
+    passwordChangeRequired: boolean;
+  };
+  if (admin.passwordChangeRequired) {
+    const replacePassword = await api.post("/auth/replace-temporary-password", {
+      data: {
+        newPassword: ADMIN_ACCOUNT.password,
+        newPasswordConfirmation: ADMIN_ACCOUNT.password,
+      },
+    });
+    if (replacePassword.status() !== 201) {
+      throw new Error(
+        `Could not activate admin account (${replacePassword.status()}): ${await replacePassword.text()}`,
+      );
+    }
+  }
   for (const account of [STAFF_TEST_ACCOUNT, ADMIN_TEST_ACCOUNT]) {
     await ensureUser(api, account);
   }

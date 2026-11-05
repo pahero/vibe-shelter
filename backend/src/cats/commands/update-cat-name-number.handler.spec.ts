@@ -123,7 +123,10 @@ function uniqueName(): string {
 
 async function createActor(tx: Prisma.TransactionClient): Promise<string> {
   const user = await tx.user.create({
-    data: { email: `${uniqueName()}@example.com` },
+    data: {
+      fullName: "Test User",
+      email: `${uniqueName()}@example.com`,
+    },
   });
   return user.id;
 }

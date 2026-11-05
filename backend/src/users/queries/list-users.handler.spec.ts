@@ -9,6 +9,7 @@ describe("ListUsersHandler", () => {
       const marker = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random()}`;
       const matching = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${marker}@example.com`,
           role: "ADMIN",
           status: "ACTIVE",
@@ -17,6 +18,7 @@ describe("ListUsersHandler", () => {
       });
       await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${marker}-other@example.com`,
           role: "STAFF",
           status: "ACTIVE",
@@ -25,6 +27,7 @@ describe("ListUsersHandler", () => {
       });
       await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${marker}-deleted@example.com`,
           role: "ADMIN",
           status: "ACTIVE",

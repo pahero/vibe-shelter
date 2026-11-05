@@ -10,6 +10,7 @@ describe("UpdateUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           passwordHash: await bcrypt.hash("old-password", 10),
         },
@@ -55,6 +56,7 @@ describe("UpdateUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const deleted = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
           deletedAt: new Date(),
         },
@@ -73,6 +75,7 @@ describe("UpdateUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
         },
       });
@@ -91,6 +94,7 @@ describe("UpdateUserHandler", () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
         },
       });
@@ -108,7 +112,10 @@ describe("UpdateUserHandler", () => {
   it("prevents an Admin from promoting a user to Owner", async () => {
     await runInTestTransaction(async (tx) => {
       const target = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       await expect(
         new UpdateUserHandler(tx as PrismaService).handle(
@@ -123,7 +130,11 @@ describe("UpdateUserHandler", () => {
   it("prevents an Admin from changing an Owner's role", async () => {
     await runInTestTransaction(async (tx) => {
       const target = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+          role: "OWNER",
+        },
       });
       await expect(
         new UpdateUserHandler(tx as PrismaService).handle(
@@ -138,7 +149,11 @@ describe("UpdateUserHandler", () => {
   it("prevents users from changing their own role", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com`, role: "OWNER" },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+          role: "OWNER",
+        },
       });
       await expect(
         new UpdateUserHandler(tx as PrismaService).handle(

@@ -7,7 +7,10 @@ describe("ToggleCatFavoriteHandler", () => {
   it("adds a favorite for the specified user", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -32,10 +35,16 @@ describe("ToggleCatFavoriteHandler", () => {
   it("removes only the current user's existing favorite", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const otherUser = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -71,7 +80,10 @@ describe("ToggleCatFavoriteHandler", () => {
   it("rejects a missing cat", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const handler = new ToggleCatFavoriteHandler(tx as PrismaService);
       await expect(
@@ -83,7 +95,10 @@ describe("ToggleCatFavoriteHandler", () => {
   it("rejects a deleted cat", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {

@@ -1,20 +1,65 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { CatPhotoUrlService } from "../cat-photo-url.service";
 import {
-  CatHistoryEventDto,
+  ArchivingReasonEventDto,
+  CatEventDto,
+  CatFileEventDto,
   CatHistoryResponseDto,
+  CatMedicalNoteEventDto,
+  CatParasiteTreatmentEventDto,
+  CatTagEventDto,
+  CatTaskEventDto,
+  CatTreatmentEventDto,
+  CatWeightEventDto,
+  CatVaccinationEventDto,
+  FlightAuditEventDto,
+  FlightCatAuditEventDto,
+  FlightPhotoAuditEventDto,
+  LocationAuditEventDto,
+  TagAuditEventDto,
 } from "../dto/cat-history.dto";
 
 type ListAllCatHistoryInput = {
-  user?: string;
+  userId?: string;
   catId?: string;
+  flightId?: string;
   from?: string;
   to?: string;
   skip?: number;
   limit?: number;
   currentUserIsTest?: boolean;
 };
+
+const auditEventInclude = {
+  actorUser: { select: { id: true, fullName: true, email: true } },
+  photo: {
+    select: { id: true, key: true },
+  },
+  document: { select: { id: true, key: true } },
+  treatment: { select: { id: true, shortName: true, deletedAt: true } },
+  tag: { select: { id: true, name: true, deletedAt: true } },
+  weight: { select: { id: true, measuredAt: true } },
+  task: { select: { id: true, comment: true, dueDate: true, deletedAt: true } },
+  medicalNote: { select: { id: true, date: true } },
+  vaccination: {
+    select: { id: true, date: true, vaccineName: true },
+  },
+  parasiteTreatment: {
+    select: { id: true, date: true, productName: true },
+  },
+  location: { select: { id: true, name: true } },
+  flight: {
+    select: { id: true, flightNumber: true, airport: true, date: true },
+  },
+  flightPhoto: { select: { id: true, key: true } },
+  archivingReason: { select: { id: true, name: true } },
+  cat: { select: { id: true, name: true, nameNumber: true } },
+} satisfies Prisma.AuditEventInclude;
+
+type AuditEvent = Prisma.AuditEventGetPayload<{
+  include: typeof auditEventInclude;
+}>;
 
 @Injectable()
 export class ListAllCatHistoryQuery {
@@ -25,552 +70,180 @@ export class ListAllCatHistoryQuery {
 
   async execute(input: ListAllCatHistoryInput): Promise<CatHistoryResponseDto> {
     const { skip, limit } = this.validatePagination(input.skip, input.limit);
-    const where: any = {
+    const eventScope: Prisma.AuditEventWhereInput = {
       isTest: input.currentUserIsTest ?? false,
-      cat: { isTest: input.currentUserIsTest ?? false },
     };
 
-    const user = input.user?.trim();
-    if (user) {
-      where.actorUser = {
-        OR: [
-          { fullName: { contains: user, mode: "insensitive" } },
-          { email: { contains: user, mode: "insensitive" } },
-        ],
-      };
+    const userId = input.userId?.trim();
+    if (userId) {
+      eventScope.actorUserId = userId;
+    }
+
+    if (input.from || input.to) {
+      eventScope.occurredAt = {};
+      if (input.from)
+        eventScope.occurredAt.gte = this.parseDate(input.from, "from");
+      if (input.to)
+        eventScope.occurredAt.lte = this.parseDate(input.to, "to", true);
     }
 
     if (input.catId?.trim()) {
-      where.catId = input.catId;
+      eventScope.catId = input.catId.trim();
     }
 
-    const occurredAt: any = {};
-    if (input.from) occurredAt.gte = this.parseDate(input.from, "from");
-    if (input.to) occurredAt.lte = this.parseDate(input.to, "to", true);
-    if (Object.keys(occurredAt).length > 0) where.occurredAt = occurredAt;
-
-    const tagWhere: any = {
-      isTest: input.currentUserIsTest ?? false,
-      actorUser: { isTest: input.currentUserIsTest ?? false },
-    };
-
-    if (user) {
-      tagWhere.actorUser = {
-        AND: [
-          { isTest: input.currentUserIsTest ?? false },
-          {
-            OR: [
-              { fullName: { contains: user, mode: "insensitive" } },
-              { email: { contains: user, mode: "insensitive" } },
-            ],
-          },
-        ],
-      };
+    if (input.flightId?.trim()) {
+      eventScope.flightId = input.flightId.trim();
     }
 
-    const tagCreatedAt: any = {};
-    if (input.from) tagCreatedAt.gte = this.parseDate(input.from, "from");
-    if (input.to) tagCreatedAt.lte = this.parseDate(input.to, "to", true);
-    if (Object.keys(tagCreatedAt).length > 0) tagWhere.createdAt = tagCreatedAt;
+    const total = await this.prisma.auditEvent.count({
+      where: eventScope,
+    });
+    const auditEvents = await this.prisma.auditEvent.findMany({
+      where: eventScope,
+      skip,
+      take: limit,
+      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+      include: auditEventInclude,
+    });
 
-    const reasonWhere: any = {
-      ...tagWhere,
-      archivingReasonId: { not: null },
-    };
-    if (reasonWhere.createdAt) {
-      reasonWhere.occurredAt = reasonWhere.createdAt;
-      delete reasonWhere.createdAt;
-    }
-
-    const flightWhere: any = {
-      isTest: input.currentUserIsTest ?? false,
-      flight: { isTest: input.currentUserIsTest ?? false },
-    };
-    if (input.catId?.trim()) flightWhere.catId = input.catId;
-    if (user) {
-      flightWhere.actorUser = {
-        OR: [
-          { fullName: { contains: user, mode: "insensitive" } },
-          { email: { contains: user, mode: "insensitive" } },
-        ],
-      };
-    }
-    if (Object.keys(occurredAt).length > 0) flightWhere.createdAt = occurredAt;
-
-    const [
-      catEvents,
-      tagEvents,
-      locationEvents,
-      archivingReasonEvents,
-      flightEvents,
-    ] = await Promise.all([
-      (this.prisma as any).auditEvent.findMany({
-        where,
-        include: {
-          actorUser: { select: { id: true, fullName: true, email: true } },
-          photo: {
-            select: { id: true, key: true, deletedAt: true, createdAt: true },
-          },
-          document: {
-            select: { id: true, key: true, fileName: true, deletedAt: true },
-          },
-          treatment: { select: { id: true, shortName: true, deletedAt: true } },
-          tag: { select: { id: true, name: true, deletedAt: true } },
-          weight: {
-            select: {
-              id: true,
-              measuredAt: true,
-              weightKg: true,
-              deletedAt: true,
-            },
-          },
-          task: {
-            select: { id: true, comment: true, dueDate: true, deletedAt: true },
-          },
-          medicalNote: {
-            select: {
-              id: true,
-              date: true,
-              comment: true,
-              deletedAt: true,
-              createdByUser: { select: { fullName: true, email: true } },
-            },
-          },
-          vaccination: {
-            select: {
-              id: true,
-              date: true,
-              nextDueDate: true,
-              vaccineName: true,
-              type: true,
-              deletedAt: true,
-            },
-          },
-          parasiteTreatment: {
-            select: {
-              id: true,
-              date: true,
-              nextDueDate: true,
-              productName: true,
-              type: true,
-              deletedAt: true,
-            },
-          },
-          note: {
-            select: {
-              id: true,
-              date: true,
-              comment: true,
-              deletedAt: true,
-              createdByUser: { select: { fullName: true, email: true } },
-            },
-          },
-          archivingReason: {
-            select: { id: true, name: true, deletedAt: true },
-          },
-          location: { select: { id: true, name: true, deletedAt: true } },
-          cat: { select: { name: true } },
-        },
-        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+    const events: (
+      | CatEventDto
+      | CatFileEventDto
+      | CatWeightEventDto
+      | CatTagEventDto
+      | CatTaskEventDto
+      | CatTreatmentEventDto
+      | CatMedicalNoteEventDto
+      | CatVaccinationEventDto
+      | CatParasiteTreatmentEventDto
+      | ArchivingReasonEventDto
+      | TagAuditEventDto
+      | LocationAuditEventDto
+      | FlightAuditEventDto
+      | FlightCatAuditEventDto
+      | FlightPhotoAuditEventDto
+    )[] = await Promise.all(
+      auditEvents.map(async (event) => {
+        const eventType = this.resolveEventType(event);
+        switch (eventType) {
+          case "cat_created":
+          case "cat_archived":
+          case "cat_dearchived":
+          case "name_changed":
+          case "name_number_changed":
+          case "sex_changed":
+          case "color_changed":
+          case "estimated_birth_date_changed":
+          case "intake_date_changed":
+          case "intake_details_changed":
+          case "intake_source_changed":
+          case "microchip_number_changed":
+          case "passport_changed":
+          case "sponsor_name_changed":
+          case "adopter_name_changed":
+          case "adopter_address_changed":
+          case "adopter_country_changed":
+          case "felv_fiv_test_done_changed":
+          case "flight_candidate_changed":
+          case "sterilization_status_changed":
+          case "current_location_changed":
+            return this.toCatEventDto(event);
+          case "weight_created":
+          case "weight_deleted":
+            return this.toCatWeightEventDto(event);
+          case "tag_added_to_cat":
+          case "tag_removed_from_cat":
+            return this.toCatTagEventDto(event);
+          case "tag_create":
+          case "tag_restore":
+          case "tag_name_changed":
+          case "tag_color_changed":
+          case "tag_delete":
+            return this.toTagAuditEventDto(event, eventType);
+          case "task_created":
+          case "task_comment_changed":
+          case "task_due_date_changed":
+          case "task_receivers_changed":
+          case "task_deleted":
+          case "task_completed":
+            return this.toCatTaskEventDto(event);
+          case "treatment_created":
+          case "treatment_deleted":
+          case "treatment_restored":
+          case "treatment_short_name_changed":
+          case "treatment_start_date_changed":
+          case "treatment_end_date_changed":
+          case "treatment_doses_per_day_changed":
+          case "treatment_instructions_changed":
+          case "treatment_administration_checked":
+          case "treatment_administration_unchecked":
+            return this.toCatTreatmentEventDto(event);
+          case "medical_note_created":
+          case "medical_note_deleted":
+          case "medical_note_restored":
+          case "medical_note_date_changed":
+          case "medical_note_comment_changed":
+            return this.toCatMedicalNoteEventDto(event);
+          case "vaccination_created":
+          case "vaccination_deleted":
+          case "vaccination_type_changed":
+          case "vaccination_date_changed":
+          case "vaccination_next_due_date_changed":
+          case "vaccine_name_changed":
+            return this.toCatVaccinationEventDto(event);
+          case "parasite_treatment_created":
+          case "parasite_treatment_deleted":
+          case "parasite_treatment_type_changed":
+          case "parasite_treatment_date_changed":
+          case "parasite_treatment_next_due_date_changed":
+          case "product_name_changed":
+            return this.toCatParasiteTreatmentEventDto(event);
+          case "photo_created":
+          case "photo_deleted":
+          case "primary_photo_changed":
+          case "document_created":
+          case "document_deleted":
+            return this.toCatFileEventDto(event);
+          case "archiving_reason_create":
+          case "archiving_reason_update":
+          case "archiving_reason_delete":
+            return this.toArchivingReasonEventDto(event);
+          case "location_create":
+          case "location_name_changed":
+          case "location_description_changed":
+          case "location_owner_changed":
+          case "location_status_changed":
+          case "location_delete":
+            return this.toLocationAuditEventDto(event, eventType);
+          case "flight_created":
+          case "flight_date_changed":
+          case "flight_airport_changed":
+          case "flight_number_changed":
+          case "flight_parent_changed":
+          case "flight_comment_changed":
+          case "flight_deleted":
+          case "flight_restored":
+            return this.toFlightAuditEventDto(event, eventType);
+          case "flight_photo_created":
+          case "flight_photo_deleted":
+            return this.toFlightPhotoAuditEventDto(event, eventType);
+          case "flight_cat_assigned":
+          case "flight_cat_unassigned":
+          case "flight_cat_restored":
+          case "flight_cat_f2f_changed":
+          case "flight_cat_traces_changed":
+            return this.toFlightCatAuditEventDto(event, eventType);
+          default:
+            throw new Error(`Unhandled event type: ${eventType}`);
+        }
       }),
-      input.catId?.trim()
-        ? []
-        : (this.prisma as any).auditEvent.findMany({
-            where: tagWhere,
-            include: {
-              actorUser: { select: { id: true, fullName: true, email: true } },
-              tag: { select: { id: true, name: true, deletedAt: true } },
-            },
-          }),
-      input.catId?.trim()
-        ? []
-        : (this.prisma as any).auditEvent.findMany({
-            where: tagWhere,
-            include: {
-              actorUser: { select: { id: true, fullName: true, email: true } },
-              location: { select: { id: true, name: true, deletedAt: true } },
-              relatedUser: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  email: true,
-                  deletedAt: true,
-                },
-              },
-            },
-          }),
-      input.catId?.trim()
-        ? []
-        : this.prisma.auditEvent.findMany({
-            where: reasonWhere,
-            include: {
-              actorUser: { select: { id: true, fullName: true, email: true } },
-              archivingReason: {
-                select: { id: true, name: true, deletedAt: true },
-              },
-            },
-          }),
-      this.prisma.auditEvent.findMany({
-        where: flightWhere,
-        include: {
-          actorUser: { select: { id: true, fullName: true, email: true } },
-          cat: { select: { id: true, name: true } },
-          flight: {
-            select: {
-              id: true,
-              flightNumber: true,
-              airport: true,
-              date: true,
-              deletedAt: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    const events = [
-      ...catEvents.map((event: any) => ({
-        source: "cat" as const,
-        event,
-        occurredAt: event.occurredAt,
-      })),
-      ...tagEvents.map((event: any) => ({
-        source: "tag" as const,
-        event,
-        occurredAt: event.createdAt,
-      })),
-      ...locationEvents.map((event: any) => ({
-        source: "location" as const,
-        event,
-        occurredAt: event.createdAt,
-      })),
-      ...archivingReasonEvents.map((event: any) => ({
-        source: "archivingReason" as const,
-        event,
-        occurredAt: event.occurredAt,
-      })),
-      ...flightEvents.map((event) => ({
-        source: "flight" as const,
-        event,
-        occurredAt: event.createdAt,
-      })),
-    ].sort(
-      (left, right) =>
-        right.occurredAt.getTime() - left.occurredAt.getTime() ||
-        right.event.id.localeCompare(left.event.id),
     );
 
     return {
-      data: await Promise.all(
-        events.slice(skip, skip + limit).map(({ source, event }) => {
-          if (source === "cat") return this.toDto(event);
-          if (source === "tag") return this.toTagDto(event);
-          if (source === "location") return this.toLocationDto(event);
-          if (source === "flight") return this.toFlightDto(event);
-          return this.toArchivingReasonDto(event);
-        }),
-      ),
-      total: events.length,
+      data: events,
+      total,
       skip,
       limit,
-    };
-  }
-
-  private async toDto(event: any): Promise<CatHistoryEventDto> {
-    return {
-      id: event.id,
-      catId: event.catId,
-      catName: event.cat?.name ?? null,
-      eventType: event.eventType,
-      occurredAt: event.occurredAt.toISOString(),
-      actor: {
-        id: event.actorUser.id,
-        displayName: event.actorUser.fullName || event.actorUser.email,
-        email: event.actorUser.email,
-      },
-      oldValue: event.oldValue,
-      newValue: event.newValue,
-      treatmentAdministrationDate:
-        event.treatmentAdministrationDate?.toISOString().slice(0, 10) ?? null,
-      treatment: event.treatment
-        ? {
-            id: event.treatment.id,
-            shortName: event.treatment.shortName,
-            isDeleted: Boolean(event.treatment.deletedAt),
-          }
-        : null,
-      tag: event.tag
-        ? {
-            id: event.tag.id,
-            name: event.tag.name,
-            isDeleted: Boolean(event.tag.deletedAt),
-          }
-        : null,
-      weight: event.weight
-        ? {
-            id: event.weight.id,
-            measuredAt: event.weight.measuredAt.toISOString().slice(0, 10),
-            weightKg: event.weight.weightKg,
-            isDeleted: Boolean(event.weight.deletedAt),
-          }
-        : null,
-      task: event.task
-        ? {
-            id: event.task.id,
-            comment: event.task.comment,
-            dueDate: event.task.dueDate.toISOString(),
-            isDeleted: Boolean(event.task.deletedAt),
-          }
-        : null,
-      medicalNote: event.medicalNote
-        ? {
-            id: event.medicalNote.id,
-            date: event.medicalNote.date.toISOString().slice(0, 10),
-            comment: event.medicalNote.comment,
-            author: event.medicalNote.createdByUser
-              ? event.medicalNote.createdByUser.fullName ||
-                event.medicalNote.createdByUser.email
-              : null,
-            isDeleted: Boolean(event.medicalNote.deletedAt),
-          }
-        : null,
-      vaccination: event.vaccination
-        ? {
-            id: event.vaccination.id,
-            date: event.vaccination.date.toISOString().slice(0, 10),
-            nextDueDate:
-              event.vaccination.nextDueDate?.toISOString().slice(0, 10) ?? null,
-            vaccineName: event.vaccination.vaccineName,
-            type: event.vaccination.type,
-            isDeleted: Boolean(event.vaccination.deletedAt),
-          }
-        : null,
-      parasiteTreatment: event.parasiteTreatment
-        ? {
-            id: event.parasiteTreatment.id,
-            date: event.parasiteTreatment.date.toISOString().slice(0, 10),
-            nextDueDate:
-              event.parasiteTreatment.nextDueDate?.toISOString().slice(0, 10) ??
-              null,
-            productName: event.parasiteTreatment.productName,
-            type: event.parasiteTreatment.type,
-            isDeleted: Boolean(event.parasiteTreatment.deletedAt),
-          }
-        : null,
-      note: event.note
-        ? {
-            id: event.note.id,
-            date: event.note.date.toISOString().slice(0, 10),
-            comment: event.note.comment,
-            author: event.note.createdByUser
-              ? event.note.createdByUser.fullName ||
-                event.note.createdByUser.email
-              : null,
-            isDeleted: Boolean(event.note.deletedAt),
-          }
-        : null,
-      archivingReason: event.archivingReason
-        ? {
-            id: event.archivingReason.id,
-            name: event.archivingReason.name,
-            isDeleted: Boolean(event.archivingReason.deletedAt),
-          }
-        : null,
-      location: event.location
-        ? {
-            id: event.location.id,
-            name: event.location.name,
-            isDeleted: Boolean(event.location.deletedAt),
-          }
-        : null,
-      relatedUser: null,
-      photo: event.photo
-        ? {
-            id: event.photo.id,
-            createdAt: event.photo.createdAt.toISOString().slice(0, 10),
-            link: await this.photoUrls.getPhotoUrl(event.photo.key),
-            status: event.photo.deletedAt ? "DELETED" : "ACTIVE",
-          }
-        : null,
-      document: event.document
-        ? {
-            id: event.document.id,
-            link: await this.photoUrls.getDocumentUrl(event.document.key),
-            fileName: event.document.fileName,
-            status: event.document.deletedAt ? "DELETED" : "ACTIVE",
-          }
-        : null,
-    };
-  }
-
-  private toFlightDto(event: {
-    id: string;
-    catId: string | null;
-    cat: { id: string; name: string } | null;
-    eventType: string;
-    createdAt: Date;
-    actorUser: { id: string; fullName: string | null; email: string };
-    oldValue: string | null;
-    newValue: string | null;
-    flight: {
-      id: string;
-      flightNumber: string | null;
-      airport: string;
-      date: Date;
-      deletedAt: Date | null;
-    };
-  }): CatHistoryEventDto {
-    return {
-      id: `flight-${event.id}`,
-      catId: event.catId,
-      catName: event.cat?.name ?? null,
-      eventType: event.eventType,
-      occurredAt: event.createdAt.toISOString(),
-      actor: {
-        id: event.actorUser.id,
-        displayName: event.actorUser.fullName || event.actorUser.email,
-        email: event.actorUser.email,
-      },
-      oldValue: event.oldValue,
-      newValue: event.newValue,
-      treatmentAdministrationDate: null,
-      treatment: null,
-      tag: null,
-      weight: null,
-      task: null,
-      medicalNote: null,
-      vaccination: null,
-      parasiteTreatment: null,
-      note: null,
-      archivingReason: null,
-      location: null,
-      relatedUser: null,
-      photo: null,
-      document: null,
-      flight: {
-        id: event.flight.id,
-        flightNumber: event.flight.flightNumber,
-        airport: event.flight.airport,
-        date: event.flight.date.toISOString().slice(0, 10),
-        isDeleted: event.flight.deletedAt !== null,
-      },
-    };
-  }
-
-  private toTagDto(event: any): CatHistoryEventDto {
-    return {
-      id: `tag-${event.id}`,
-      catId: null,
-      catName: null,
-      eventType: `tag_${event.action}`,
-      occurredAt: event.createdAt.toISOString(),
-      actor: {
-        id: event.actorUser.id,
-        displayName: event.actorUser.fullName || event.actorUser.email,
-        email: event.actorUser.email,
-      },
-      oldValue: event.oldValue,
-      newValue: event.newValue,
-      treatmentAdministrationDate: null,
-      treatment: null,
-      tag: event.tag
-        ? {
-            id: event.tag.id,
-            name: event.tag.name,
-            isDeleted: Boolean(event.tag.deletedAt),
-          }
-        : null,
-      weight: null,
-      task: null,
-      medicalNote: null,
-      vaccination: null,
-      parasiteTreatment: null,
-      note: null,
-      archivingReason: null,
-      location: null,
-      relatedUser: null,
-      photo: null,
-      document: null,
-    };
-  }
-
-  private toLocationDto(event: any): CatHistoryEventDto {
-    return {
-      id: `location-${event.id}`,
-      catId: null,
-      catName: null,
-      eventType: `location_${event.action}`,
-      occurredAt: event.createdAt.toISOString(),
-      actor: {
-        id: event.actorUser.id,
-        displayName: event.actorUser.fullName || event.actorUser.email,
-        email: event.actorUser.email,
-      },
-      oldValue: event.oldValue,
-      newValue: event.newValue,
-      treatmentAdministrationDate: null,
-      treatment: null,
-      tag: null,
-      weight: null,
-      task: null,
-      medicalNote: null,
-      vaccination: null,
-      parasiteTreatment: null,
-      note: null,
-      archivingReason: null,
-      location: event.location
-        ? {
-            id: event.location.id,
-            name: event.location.name,
-            isDeleted: Boolean(event.location.deletedAt),
-          }
-        : null,
-      relatedUser: event.relatedUser
-        ? {
-            id: event.relatedUser.id,
-            displayName: event.relatedUser.fullName || event.relatedUser.email,
-            isDeleted: Boolean(event.relatedUser.deletedAt),
-          }
-        : null,
-      photo: null,
-      document: null,
-    };
-  }
-
-  private toArchivingReasonDto(event: any): CatHistoryEventDto {
-    return {
-      id: `archiving-reason-${event.id}`,
-      catId: null,
-      catName: null,
-      eventType: event.eventType,
-      occurredAt: event.occurredAt.toISOString(),
-      actor: {
-        id: event.actorUser.id,
-        displayName: event.actorUser.fullName || event.actorUser.email,
-        email: event.actorUser.email,
-      },
-      oldValue: event.oldValue,
-      newValue: event.newValue,
-      treatmentAdministrationDate: null,
-      treatment: null,
-      tag: null,
-      weight: null,
-      task: null,
-      medicalNote: null,
-      vaccination: null,
-      parasiteTreatment: null,
-      note: null,
-      archivingReason: event.archivingReason
-        ? {
-            id: event.archivingReason.id,
-            name: event.archivingReason.name,
-            isDeleted: Boolean(event.archivingReason.deletedAt),
-          }
-        : null,
-      location: null,
-      relatedUser: null,
-      photo: null,
-      document: null,
     };
   }
 
@@ -591,6 +264,12 @@ export class ListAllCatHistoryQuery {
     return { skip, limit };
   }
 
+  private resolveEventType(event: AuditEvent): string {
+    if (event.tagId && event.action) return `tag_${event.action}`;
+    if (event.locationId && event.action) return `location_${event.action}`;
+    return event.eventType;
+  }
+
   private parseDate(value: string, field: string, endOfDay = false): Date {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
@@ -599,5 +278,228 @@ export class ListAllCatHistoryQuery {
     if (endOfDay && /^\d{4}-\d{2}-\d{2}$/.test(value))
       date.setUTCHours(23, 59, 59, 999);
     return date;
+  }
+
+  private toCatEventDto(event: AuditEvent): CatEventDto {
+    if (!event.catId || !event.cat)
+      throw new Error("Cat event must have a catId and cat object");
+
+    return {
+      id: event.id,
+      catId: event.catId,
+      catName: event.cat.name,
+      catNameNumber: event.cat.nameNumber,
+      occurredAt: event.occurredAt.toISOString(),
+      eventType: event.eventType,
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      actorId: event.actorUser.id,
+      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+    };
+  }
+
+  private async toCatFileEventDto(event: AuditEvent): Promise<CatFileEventDto> {
+    const catEvent = this.toCatEventDto(event);
+    if (!event.photo && !event.document)
+      throw new Error("Cat file event must have either a photo or document");
+    if (event.photo)
+      return {
+        ...catEvent,
+        fileId: event.photo.id,
+        fileUrl: await this.photoUrls.getPhotoUrl(event.photo.key),
+      };
+    return {
+      ...catEvent,
+      fileId: event.document!.id,
+      fileUrl: await this.photoUrls.getDocumentUrl(event.document!.key),
+    };
+  }
+
+  private toCatWeightEventDto(event: AuditEvent): CatWeightEventDto {
+    if (!event.weight)
+      throw new Error("Cat weight event must have a weight object");
+
+    return {
+      ...this.toCatEventDto(event),
+      weightId: event.weight.id,
+      measuredAt: event.weight.measuredAt.toISOString(),
+    };
+  }
+
+  private toCatTagEventDto(event: AuditEvent): CatTagEventDto {
+    if (!event.tag) throw new Error("Cat tag event must have a tag object");
+
+    return {
+      ...this.toCatEventDto(event),
+      tagId: event.tag.id,
+      tagName: event.tag.name,
+    };
+  }
+
+  private toCatTaskEventDto(event: AuditEvent): CatTaskEventDto {
+    if (!event.task) throw new Error("Cat task event must have a task object");
+
+    return {
+      ...this.toCatEventDto(event),
+      taskId: event.task.id,
+      taskComment: event.task.comment,
+      taskDueDate: event.task.dueDate.toISOString(),
+    };
+  }
+
+  private toCatTreatmentEventDto(event: AuditEvent): CatTreatmentEventDto {
+    if (!event.treatment)
+      throw new Error("Cat treatment event must have a treatment object");
+
+    return {
+      ...this.toCatEventDto(event),
+      treatmentId: event.treatment.id,
+      treatmentShortName: event.treatment.shortName,
+    };
+  }
+
+  private toCatMedicalNoteEventDto(event: AuditEvent): CatMedicalNoteEventDto {
+    if (!event.medicalNote)
+      throw new Error("Cat medical note event must have a medical note object");
+
+    return {
+      ...this.toCatEventDto(event),
+      medicalNoteId: event.medicalNote.id,
+      medicalNoteDate: event.medicalNote.date.toISOString(),
+    };
+  }
+
+  private toCatVaccinationEventDto(event: AuditEvent): CatVaccinationEventDto {
+    if (!event.vaccination)
+      throw new Error("Cat vaccination event must have a vaccination object");
+
+    return {
+      ...this.toCatEventDto(event),
+      vaccinationId: event.vaccination.id,
+      vaccinationDate: event.vaccination.date.toISOString(),
+      vaccineName: event.vaccination.vaccineName,
+    };
+  }
+
+  private toCatParasiteTreatmentEventDto(
+    event: AuditEvent,
+  ): CatParasiteTreatmentEventDto {
+    if (!event.parasiteTreatment)
+      throw new Error(
+        "Cat parasite treatment event must have a parasite treatment object",
+      );
+
+    return {
+      ...this.toCatEventDto(event),
+      parasiteTreatmentId: event.parasiteTreatment.id,
+      parasiteTreatmentDate: event.parasiteTreatment.date.toISOString(),
+      productName: event.parasiteTreatment.productName,
+    };
+  }
+
+  private toTagAuditEventDto(
+    event: AuditEvent,
+    eventType: string,
+  ): TagAuditEventDto {
+    if (!event.tag) throw new Error("Tag audit event must have a tag object");
+    return {
+      id: event.id,
+      tagId: event.tag.id,
+      tagName: event.tag.name,
+      occurredAt: event.occurredAt.toISOString(),
+      eventType,
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      actorId: event.actorUser.id,
+      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+    };
+  }
+
+  private toLocationAuditEventDto(
+    event: AuditEvent,
+    eventType: string,
+  ): LocationAuditEventDto {
+    if (!event.location)
+      throw new Error("Location audit event must have a location object");
+    return {
+      id: event.id,
+      locationId: event.location.id,
+      locationName: event.location.name,
+      occurredAt: event.occurredAt.toISOString(),
+      eventType,
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      actorId: event.actorUser.id,
+      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+    };
+  }
+
+  private async toFlightAuditEventDto(
+    event: AuditEvent,
+    eventType: string,
+  ): Promise<FlightAuditEventDto> {
+    if (!event.flight)
+      throw new Error("Flight audit event must have a flight object");
+    return {
+      id: event.id,
+      flightId: event.flight.id,
+      flightNumber: event.flight.flightNumber,
+      airport: event.flight.airport,
+      flightDate: event.flight.date.toISOString().slice(0, 10),
+      occurredAt: event.occurredAt.toISOString(),
+      eventType,
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      actorId: event.actorUser.id,
+      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+    };
+  }
+
+  private async toFlightCatAuditEventDto(
+    event: AuditEvent,
+    eventType: string,
+  ): Promise<FlightCatAuditEventDto> {
+    if (!event.cat)
+      throw new Error("Flight cat audit event must have a cat object");
+    return {
+      ...(await this.toFlightAuditEventDto(event, eventType)),
+      catId: event.cat.id,
+      catName: event.cat.name,
+      catNameNumber: event.cat.nameNumber,
+    };
+  }
+
+  private async toFlightPhotoAuditEventDto(
+    event: AuditEvent,
+    eventType: string,
+  ): Promise<FlightPhotoAuditEventDto> {
+    if (!event.flightPhoto)
+      throw new Error("Flight photo audit event must have a photo object");
+    return {
+      ...(await this.toFlightAuditEventDto(event, eventType)),
+      flightPhotoId: event.flightPhoto.id,
+      flightPhotoUrl: await this.photoUrls.getPhotoUrl(event.flightPhoto.key),
+    };
+  }
+
+  private toArchivingReasonEventDto(
+    event: AuditEvent,
+  ): ArchivingReasonEventDto {
+    if (!event.archivingReason)
+      throw new Error(
+        "Archiving reason event must have an archivingReason object",
+      );
+
+    return {
+      id: event.id,
+      archivingReasonId: event.archivingReason.id,
+      archivingReasonName: event.archivingReason.name,
+      occurredAt: event.occurredAt.toISOString(),
+      eventType: event.eventType,
+      oldValue: event.oldValue,
+      newValue: event.newValue,
+      actorId: event.actorUser.id,
+      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+    };
   }
 }

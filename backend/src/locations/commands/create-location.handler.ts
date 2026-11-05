@@ -57,7 +57,12 @@ export class CreateLocationHandler {
         });
       if (actorUserId) {
         await tx.auditEvent.create({
-          data: { locationId: location.id, actorUserId, action: "create" },
+          data: {
+            locationId: location.id,
+            actorUserId,
+            action: "create",
+            eventType: "location_action",
+          },
         });
       }
       return { id: location.id };

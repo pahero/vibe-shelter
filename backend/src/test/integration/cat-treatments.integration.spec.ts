@@ -153,29 +153,29 @@ describe("Cat treatment endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "treatment_created",
-          actor: expect.objectContaining({ id: userId }),
+          actorId: userId,
           oldValue: null,
           newValue: null,
         }),
         expect.objectContaining({
           eventType: "treatment_short_name_changed",
-          actor: expect.objectContaining({ id: userId }),
+          actorId: userId,
         }),
         expect.objectContaining({
           eventType: "treatment_instructions_changed",
-          actor: expect.objectContaining({ id: userId }),
+          actorId: userId,
         }),
         expect.objectContaining({
           eventType: "treatment_administration_checked",
-          actor: expect.objectContaining({ id: userId }),
+          actorId: userId,
         }),
         expect.objectContaining({
           eventType: "treatment_administration_unchecked",
-          actor: expect.objectContaining({ id: userId }),
+          actorId: userId,
         }),
         expect.objectContaining({
           eventType: "treatment_deleted",
-          actor: expect.objectContaining({ id: userId }),
+          actorId: userId,
           oldValue: null,
           newValue: null,
         }),

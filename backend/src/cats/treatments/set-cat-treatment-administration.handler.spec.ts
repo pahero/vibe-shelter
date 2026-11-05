@@ -8,7 +8,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("rejects missing treatments", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-missing-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-missing-admin@example.com`,
+        },
       });
       await expect(
         new SetCatTreatmentAdministrationHandler(tx as PrismaService).handle(
@@ -24,7 +27,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("rejects doses not configured for the treatment", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-dose-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-dose-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -56,7 +62,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("rejects dates before a treatment period", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-period-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-period-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -88,7 +97,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("rejects dates after a finite treatment period", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-after-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-after-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -120,7 +132,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("creates an administration with its checker and audit event", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-create-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-create-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -177,7 +192,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("soft-deletes an administration and audits the unchecked state", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-remove-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-remove-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -241,7 +259,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("restores a soft-deleted administration when checked again", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-restore-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-restore-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -302,7 +323,10 @@ describe("SetCatTreatmentAdministrationHandler", () => {
   it("is idempotent and does not audit an already matching state", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-same-admin@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-same-admin@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {

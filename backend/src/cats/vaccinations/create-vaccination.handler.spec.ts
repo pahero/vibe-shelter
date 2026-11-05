@@ -16,7 +16,10 @@ describe("CreateVaccinationHandler", () => {
         },
       });
       const actor = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const result = await new CreateVaccinationHandler(
         tx as PrismaService,
@@ -65,7 +68,11 @@ describe("CreateVaccinationHandler", () => {
       await expect(
         handler.handle(
           "missing",
-          { type: "OTHER", date: new Date("2026-01-01") },
+          {
+            type: "OTHER",
+            date: new Date("2026-01-01"),
+            vaccineName: "Other",
+          },
           "actor",
           false,
         ),
@@ -86,7 +93,11 @@ describe("CreateVaccinationHandler", () => {
       await expect(
         handler.handle(
           cat.id,
-          { type: "OTHER", date: new Date("2026-01-01") },
+          {
+            type: "OTHER",
+            date: new Date("2026-01-01"),
+            vaccineName: "Other",
+          },
           "actor",
           false,
         ),

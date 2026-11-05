@@ -73,7 +73,12 @@ export class UpdateCatTagHandler {
         ];
         if (events.length)
           await tx.auditEvent.createMany({
-            data: events.map((event) => ({ tagId: id, actorUserId, ...event })),
+            data: events.map((event) => ({
+              tagId: id,
+              actorUserId,
+              eventType: "tag_action",
+              ...event,
+            })),
           });
       }
       return toCatTag(updated);

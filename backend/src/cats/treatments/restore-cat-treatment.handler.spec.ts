@@ -6,7 +6,10 @@ describe("RestoreCatTreatmentHandler", () => {
   it("restores a deleted treatment and records a value-free audit event", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-restore-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-restore-treatment@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -52,7 +55,10 @@ describe("RestoreCatTreatmentHandler", () => {
   it("reports that an active treatment cannot be restored", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-active-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-active-treatment@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -82,7 +88,10 @@ describe("RestoreCatTreatmentHandler", () => {
   it("rejects missing treatments", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-missing-restore-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-missing-restore-treatment@example.com`,
+        },
       });
       await expect(
         new RestoreCatTreatmentHandler(transaction as PrismaService).handle(

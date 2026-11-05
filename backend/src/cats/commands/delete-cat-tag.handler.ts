@@ -21,7 +21,12 @@ export class DeleteCatTagHandler {
       if (!tag) throw new NotFoundException("Tag not found");
       if (actorUserId)
         await tx.auditEvent.create({
-          data: { tagId: id, actorUserId, action: "delete" },
+          data: {
+            tagId: id,
+            actorUserId,
+            action: "delete",
+            eventType: "tag_action",
+          },
         });
       await tx.catTag.update({
         where: { id },

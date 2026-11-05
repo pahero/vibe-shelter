@@ -12,7 +12,7 @@ datasource db {
 model User {
   id             String     @id @default(cuid())
   email          String     @unique @db.Citext
-  fullName       String?
+  fullName       String
   passwordHash   String?
   passwordChangeRequired Boolean @default(false)
   isTest         Boolean    @default(false)
@@ -35,7 +35,6 @@ model User {
   completedTasks     CatTask[]            @relation("completedTasks")
   taskNotifications  TaskNotification[]
   checkedTreatmentAdministrations CatTreatmentAdministration[] @relation("treatmentAdministrationCheckers")
-  createdNotes CatNote[] @relation("createdNotes")
   createdMedicalNotes CatMedicalNote[] @relation("createdMedicalNotes")
   createdVaccinations Vaccination[] @relation("createdVaccinations")
   updatedVaccinations Vaccination[] @relation("updatedVaccinations")
@@ -203,7 +202,6 @@ model Cat {
   medicalNotes        CatMedicalNote[]
   vaccinations        Vaccination[]
   parasiteTreatments  ParasiteTreatment[]
-  notes               CatNote[]
   flightAssignments  FlightCatAssignment[]
   favorites CatFavorite[]
 
@@ -474,14 +472,12 @@ model AuditEvent {
   vaccination Vaccination? @relation("auditVaccinations", fields: [vaccinationId], references: [id], onDelete: SetNull)
   parasiteTreatmentId String?
   parasiteTreatment ParasiteTreatment? @relation("auditParasiteTreatments", fields: [parasiteTreatmentId], references: [id], onDelete: SetNull)
-  noteId String?
-  note CatNote? @relation("auditNotes", fields: [noteId], references: [id], onDelete: SetNull)
   actorUserId String
   actorUser User @relation("auditActors", fields: [actorUserId], references: [id], onDelete: Restrict)
   relatedUserId String?
   relatedUser User? @relation("auditRelatedUsers", fields: [relatedUserId], references: [id], onDelete: SetNull)
   isTest Boolean @default(false)
-  eventType String?
+  eventType String
   action String?
   oldValue String?
   newValue String?
@@ -501,7 +497,6 @@ model AuditEvent {
   @@index([medicalNoteId])
   @@index([vaccinationId])
   @@index([parasiteTreatmentId])
-  @@index([noteId])
   @@index([flightPhotoId])
 }
 model CatMedicalNote {
@@ -535,7 +530,7 @@ model Vaccination {
   type             VaccinationType
   date             DateTime @db.Date
   nextDueDate      DateTime? @db.Date
-  vaccineName      String?
+  vaccineName      String
   deletedAt        DateTime?
   concurrencyToken String   @default(cuid())
   createdAt        DateTime @default(now())
@@ -570,26 +565,6 @@ model ParasiteTreatment {
   @@index([deletedAt])
   @@index([createdByUserId])
   @@index([updatedByUserId])
-}
-
-model CatNote {
-  id               String   @id @default(cuid())
-  catId            String
-  cat              Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  date             DateTime @db.Date
-  comment          String
-  createdByUserId String?
-  createdByUser   User?    @relation("createdNotes", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  deletedAt        DateTime?
-  concurrencyToken String   @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  auditEvents      AuditEvent[] @relation("auditNotes")
-
-  @@index([catId, date])
-  @@index([createdByUserId])
-  @@unique([catId, createdByUserId, date])
-  @@index([deletedAt])
 }
 
 model CatTask {

@@ -14,6 +14,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { CurrentUser, JwtAuthGuard } from "../auth";
+import { ListAllCatHistoryQuery } from "../cats/queries/list-all-cat-history.query";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
 import { CreateFlightHandler } from "./commands/create-flight.handler";
 import { DeleteFlightCatAssignmentHandler } from "./commands/delete-flight-cat-assignment.handler";
@@ -31,7 +32,6 @@ import {
 } from "./dto/flight-assignment.dto";
 import { CreateFlightDto, UpdateFlightDto } from "./dto/flight.dto";
 import { GetFlightHandler } from "./queries/get-flight.handler";
-import { ListFlightHistoryHandler } from "./queries/list-flight-history.handler";
 import { ListFlightsHandler } from "./queries/list-flights.handler";
 import { ListFlightPhotosHandler } from "./queries/list-flight-photos.handler";
 
@@ -54,7 +54,7 @@ export class FlightsController {
     private readonly listFlights: ListFlightsHandler,
     private readonly listFlightPhotos: ListFlightPhotosHandler,
     private readonly getFlight: GetFlightHandler,
-    private readonly listHistory: ListFlightHistoryHandler,
+    private readonly listAllCatHistoryQuery: ListAllCatHistoryQuery,
   ) {}
 
   @Get("deleted")
@@ -67,7 +67,10 @@ export class FlightsController {
     @Param("id") flightId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.listHistory.handle(flightId, user.isTest);
+    return this.listAllCatHistoryQuery.execute({
+      flightId,
+      currentUserIsTest: user.isTest,
+    });
   }
 
   @Get(":id/photos")

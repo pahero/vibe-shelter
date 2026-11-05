@@ -149,7 +149,7 @@ describe("Cats endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "cat_created",
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
@@ -498,23 +498,15 @@ describe("Cats endpoints", () => {
           eventType: "document_created",
           oldValue: null,
           newValue: null,
-          document: expect.objectContaining({
-            id: created.body.id,
-            fileName: "medical record.pdf",
-            link: expect.any(String),
-            status: "DELETED",
-          }),
+          fileId: created.body.id,
+          fileUrl: expect.any(String),
         }),
         expect.objectContaining({
           eventType: "document_deleted",
           oldValue: null,
           newValue: null,
-          document: expect.objectContaining({
-            id: created.body.id,
-            fileName: "medical record.pdf",
-            link: expect.any(String),
-            status: "DELETED",
-          }),
+          fileId: created.body.id,
+          fileUrl: expect.any(String),
         }),
       ]),
     );
@@ -602,7 +594,7 @@ describe("Cats endpoints", () => {
       .expect(201);
     await authAgent
       .post(`/api/cats/${cat.id}/vaccinations`)
-      .send({ date: "2026-03-01", type: "RABIES" })
+      .send({ date: "2026-03-01", type: "RABIES", vaccineName: "Rabies" })
       .expect(201);
 
     const vaccinations = await authAgent
@@ -824,10 +816,8 @@ describe("Cats endpoints", () => {
         }),
       ]),
     );
-    expect(history.body.data[0].actor).toMatchObject({
-      id: authUser.id,
-      email: authUser.email,
-    });
+    expect(history.body.data[0].actorId).toBe(authUser.id);
+    expect(history.body.data[0].actorFullName).toEqual(expect.any(String));
   });
 
   it("PATCH /api/cats/:id rejects a non-boolean FeLV/FIV test status", async () => {
@@ -890,7 +880,7 @@ describe("Cats endpoints", () => {
       secondName,
       firstName,
     ]);
-    expect(history.body.data[0].actor.id).toBe(otherAuth.user.id);
+    expect(history.body.data[0].actorId).toBe(otherAuth.user.id);
   });
 
   it("lists all cat audit history and filters by user, cat, and date", async () => {
@@ -915,12 +905,12 @@ describe("Cats endpoints", () => {
       (event: {
         catId: string | null;
         catName: string | null;
-        actor: { id: string };
+        actorId: string;
       }) => event.catId === cat.id,
     );
     expect(latestCatEvent).toMatchObject({
       catId: cat.id,
-      actor: expect.objectContaining({ id: otherAuth.user.id }),
+      actorId: otherAuth.user.id,
     });
     expect(latestCatEvent.catName).toBe("Updated by other user");
     expect(
@@ -938,12 +928,12 @@ describe("Cats endpoints", () => {
 
     const byUser = await authAgent
       .get("/api/cats/history")
-      .query({ user: otherAuth.user.email, limit: 50 })
+      .query({ userId: otherAuth.user.id, limit: 50 })
       .expect(200);
     expect(byUser.body.data.length).toBeGreaterThanOrEqual(1);
     expect(
       byUser.body.data.every(
-        (event: any) => event.actor.id === otherAuth.user.id,
+        (event: any) => event.actorId === otherAuth.user.id,
       ),
     ).toBe(true);
 
@@ -984,19 +974,13 @@ describe("Cats endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "photo_created",
-          photo: expect.objectContaining({
-            id: created.body.id,
-            status: "DELETED",
-            link: expect.stringContaining("history.jpg"),
-          }),
+          fileId: created.body.id,
+          fileUrl: expect.stringContaining("history.jpg"),
         }),
         expect.objectContaining({
           eventType: "photo_deleted",
-          photo: expect.objectContaining({
-            id: created.body.id,
-            status: "DELETED",
-            link: expect.stringContaining("history.jpg"),
-          }),
+          fileId: created.body.id,
+          fileUrl: expect.stringContaining("history.jpg"),
         }),
       ]),
     );
@@ -1036,19 +1020,15 @@ describe("Cats endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "weight_created",
-          weight: expect.objectContaining({
-            id: created.body.id,
-            measuredAt: "2026-07-30",
-            weightKg: 3.8,
-            isDeleted: true,
-          }),
-          actor: expect.objectContaining({ id: authUser.id }),
+          weightId: created.body.id,
+          measuredAt: expect.stringContaining("2026-07-30"),
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
         expect.objectContaining({
           eventType: "weight_deleted",
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
@@ -1088,37 +1068,53 @@ describe("Cats endpoints", () => {
 
     const audit = await authAgent
       .get("/api/cats/history")
-      .query({ user: authUser.email, limit: 50 })
+      .query({ userId: authUser.id, limit: 50 })
       .expect(200);
     expect(audit.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "tag_added_to_cat",
           catId: cat.id,
-          tag: expect.objectContaining({
-            id: createdTag.body.id,
-            name: createdTag.body.name,
-          }),
-          actor: expect.objectContaining({ id: authUser.id }),
+          tagId: createdTag.body.id,
+          tagName: createdTag.body.name,
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
         expect.objectContaining({
           eventType: "tag_create",
-          catId: null,
-          actor: expect.objectContaining({ id: authUser.id }),
+          tagId: createdTag.body.id,
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
         expect.objectContaining({
           eventType: "tag_color_changed",
-          catId: null,
-          actor: expect.objectContaining({ id: authUser.id }),
+          tagId: createdTag.body.id,
+          actorId: authUser.id,
           oldValue: "#8ecaff",
           newValue: "#ffd166",
         }),
       ]),
     );
+    expect(
+      audit.body.data.filter((event: { eventType: string }) =>
+        event.eventType.startsWith("tag_"),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "tag_create",
+          tagId: createdTag.body.id,
+          tagName: createdTag.body.name,
+        }),
+      ]),
+    );
+    expect(
+      audit.body.data.some((event: { eventType: string }) =>
+        ["tag_null", "location_null"].includes(event.eventType),
+      ),
+    ).toBe(false);
     const tagAuditEvents = await (prisma as any).auditEvent.findMany({
       where: { tagId: createdTag.body.id },
       orderBy: { createdAt: "asc" },
@@ -1168,14 +1164,14 @@ describe("Cats endpoints", () => {
 
     const auditAfterDeletion = await authAgent
       .get("/api/cats/history")
-      .query({ user: authUser.email, limit: 50 })
+      .query({ userId: authUser.id, limit: 50 })
       .expect(200);
     expect(auditAfterDeletion.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "tag_delete",
-          catId: null,
-          actor: expect.objectContaining({ id: authUser.id }),
+          tagId: createdTag.body.id,
+          actorId: authUser.id,
         }),
       ]),
     );
@@ -1290,35 +1286,29 @@ describe("Cats endpoints", () => {
 
     const audit = await authAgent
       .get("/api/cats/history")
-      .query({ user: authUser.email, limit: 100 })
+      .query({ userId: authUser.id, limit: 100 })
       .expect(200);
     expect(audit.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "location_create",
-          catId: null,
-          actor: expect.objectContaining({ id: authUser.id }),
+          locationId: created.body.id,
+          actorId: authUser.id,
         }),
         expect.objectContaining({
           eventType: "location_description_changed",
-          catId: null,
-          actor: expect.objectContaining({ id: authUser.id }),
+          locationId: created.body.id,
+          actorId: authUser.id,
         }),
         expect.objectContaining({
           eventType: "location_owner_changed",
-          location: expect.objectContaining({
-            id: created.body.id,
-            name: expect.any(String),
-          }),
-          relatedUser: expect.objectContaining({
-            id: authUser.id,
-            isDeleted: false,
-          }),
+          locationId: created.body.id,
+          locationName: expect.any(String),
         }),
         expect.objectContaining({
           eventType: "location_delete",
-          catId: null,
-          actor: expect.objectContaining({ id: authUser.id }),
+          locationId: created.body.id,
+          actorId: authUser.id,
         }),
       ]),
     );
@@ -1485,21 +1475,13 @@ describe("Cats endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "cat_archived",
-          archivingReason: expect.objectContaining({
-            id: updatedReason.body.id,
-            name: updatedReasonName,
-          }),
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
         expect.objectContaining({
           eventType: "cat_dearchived",
-          archivingReason: expect.objectContaining({
-            id: updatedReason.body.id,
-            name: updatedReasonName,
-          }),
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
           oldValue: null,
           newValue: null,
         }),
@@ -1525,21 +1507,21 @@ describe("Cats endpoints", () => {
 
     const globalAudit = await authAgent
       .get("/api/cats/history")
-      .query({ user: authUser.email, limit: 100 })
+      .query({ userId: authUser.id, limit: 100 })
       .expect(200);
     expect(globalAudit.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "archiving_reason_create",
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
         }),
         expect.objectContaining({
           eventType: "archiving_reason_update",
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
         }),
         expect.objectContaining({
           eventType: "archiving_reason_delete",
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
         }),
       ]),
     );
@@ -1664,23 +1646,21 @@ describe("Cats endpoints", () => {
       expect.arrayContaining([
         expect.objectContaining({
           eventType: "task_created",
-          task: expect.objectContaining({
-            id: created.body.id,
-            comment: "Give evening medicine",
-          }),
-          actor: expect.objectContaining({ id: authUser.id }),
+          taskId: created.body.id,
+          taskComment: "Give evening medicine",
+          actorId: authUser.id,
         }),
         expect.objectContaining({
           eventType: "task_comment_changed",
-          actor: expect.objectContaining({ id: receiver.user.id }),
+          actorId: receiver.user.id,
         }),
         expect.objectContaining({
           eventType: "task_completed",
-          actor: expect.objectContaining({ id: receiver.user.id }),
+          actorId: receiver.user.id,
         }),
         expect.objectContaining({
           eventType: "task_deleted",
-          actor: expect.objectContaining({ id: authUser.id }),
+          actorId: authUser.id,
         }),
       ]),
     );
