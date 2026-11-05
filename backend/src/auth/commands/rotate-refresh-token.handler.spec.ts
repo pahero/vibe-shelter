@@ -10,7 +10,10 @@ describe("RotateRefreshTokenHandler", () => {
   it("consumes a refresh token once and stores a replacement hash", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${randomUUID()}@example.com`,
+        },
       });
       const create = new CreateRefreshTokenHandler(tx as PrismaService);
       const original = await create.handle(user.id);
@@ -38,7 +41,10 @@ describe("RotateRefreshTokenHandler", () => {
   it("rejects expired tokens", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${randomUUID()}@example.com`,
+        },
       });
       const expired = "expired-token-value-that-is-long-enough-for-test";
       await tx.refreshToken.create({
@@ -57,7 +63,10 @@ describe("RotateRefreshTokenHandler", () => {
   it("rejects a reused token after rotation", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${randomUUID()}@example.com`,
+        },
       });
       const original = "already-consumed-refresh-token-value";
       await tx.refreshToken.create({

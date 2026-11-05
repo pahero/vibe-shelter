@@ -6,7 +6,10 @@ describe("DeleteCatTaskHandler", () => {
   it("rejects a missing task", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const handler = new DeleteCatTaskHandler(transaction as PrismaService);
       await expect(handler.handle("missing", actor.id, false)).rejects.toThrow(
@@ -18,7 +21,10 @@ describe("DeleteCatTaskHandler", () => {
   it("soft deletes a task, changes its token, and audits the action", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

@@ -138,6 +138,7 @@ export class UpdateLocationHandler {
             data: fields.map((field) => ({
               locationId: id,
               actorUserId,
+              eventType: "location_action",
               ...field,
             })),
           });

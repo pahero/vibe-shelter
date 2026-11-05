@@ -151,7 +151,12 @@ describe("CreateUserHandler", () => {
   it("rejects duplicate email addresses case-insensitively", async () => {
     await runInTestTransaction(async (tx) => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`;
-      await tx.user.create({ data: { email } });
+      await tx.user.create({
+        data: {
+          fullName: "Test User",
+          email,
+        },
+      });
       await expect(
         new CreateUserHandler(tx as PrismaService).handle(
           {

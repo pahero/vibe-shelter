@@ -24,7 +24,7 @@ import {
   catsApi,
   locationsApi,
 } from "@/lib/api";
-import { auditEventLabel, historyValueText } from "@/components/cat-history";
+import { CatHistory } from "@/components/cat-history";
 import { UserRegistrationClient } from "@/components/user-registration-client";
 import { AddNewButton } from "@/components/add-new-button";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -78,13 +78,6 @@ type CatCardOptions = {
 };
 
 const emptyLocation: LocationDraft = { name: "", description: "" };
-
-function auditDateLabel(value: string): string {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 export function EditShelterClient({
   currentUser,
@@ -259,7 +252,7 @@ export function EditShelterClient({
     setAuditError(null);
     try {
       const response = await catsApi.listAllHistory({
-        user: auditUser.trim() || undefined,
+        userId: auditUser || undefined,
         catId: auditCatId || undefined,
         from: auditFrom || undefined,
         to: auditTo || undefined,
@@ -1262,9 +1255,6 @@ export function EditShelterClient({
 
             {activeSection === "audit" && (
               <section>
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  Audit history
-                </h1>
                 <form
                   onSubmit={filterAudit}
                   className="mt-4 flex flex-wrap gap-2"
@@ -1277,7 +1267,7 @@ export function EditShelterClient({
                   >
                     <option value="">All users</option>
                     {auditUsers.map((user) => (
-                      <option key={user.id} value={user.email}>
+                      <option key={user.id} value={user.id}>
                         {user.fullName
                           ? `${user.fullName} (${user.email})`
                           : user.email}
@@ -1336,79 +1326,20 @@ export function EditShelterClient({
                   </button>
                 </form>
 
-                {auditError && (
-                  <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">
-                    {auditError}
-                  </p>
-                )}
-                {isLoadingAudit && (
-                  <p className="py-8 text-center text-sm text-[#6d6a66]">
-                    Loading audit history...
-                  </p>
-                )}
-
-                {!isLoadingAudit && !auditError && auditEvents.length === 0 && (
-                  <div className="mt-4 rounded-lg border border-dashed border-[#d4c7b4] bg-[#fff8ee]/50 p-6 text-center">
-                    <p className="text-sm text-[#6d6a66]">
-                      No audit records found.
-                    </p>
-                  </div>
-                )}
-
-                {!isLoadingAudit && !auditError && auditEvents.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-xs font-medium text-[#6d6a66]">
-                      Showing {(sectionPages.audit - 1) * pageSize + 1}–
-                      {(sectionPages.audit - 1) * pageSize + auditEvents.length}{" "}
-                      of {auditTotal}
-                    </p>
-                    <ol className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
-                      {auditEvents.map((event) => (
-                        <li key={event.id} className="py-2.5">
-                          <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
-                            <p className="min-w-0 text-gray-800">
-                              <span className="font-semibold text-gray-900">
-                                {auditEventLabel(event)}
-                              </span>
-                              <span className="text-[#6d6a66]">
-                                {event.catName ? ` on ${event.catName}` : ""} by{" "}
-                                {event.actor.displayName || event.actor.email}
-                              </span>
-                            </p>
-                            <time className="shrink-0 text-xs font-medium text-[#6d6a66]">
-                              {auditDateLabel(event.occurredAt)}
-                            </time>
-                          </div>
-                          {event.photo ? (
-                            <p className="mt-1 text-xs">
-                              <a
-                                className="font-semibold text-[#b24a20] underline-offset-2 hover:underline"
-                                href={event.photo.link ?? "#"}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {event.photo.status === "DELETED"
-                                  ? "Open historical deleted-photo link"
-                                  : "Open photo link"}
-                              </a>
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-xs text-[#6d6a66]">
-                              {historyValueText(event.oldValue)} -&gt;{" "}
-                              {historyValueText(event.newValue)}
-                            </p>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                    <PaginationControls
-                      page={sectionPages.audit}
-                      pageSize={pageSize}
-                      totalItems={auditTotal}
-                      onPageChange={changeAuditPage}
-                    />
-                  </div>
-                )}
+                <CatHistory
+                  mode="management"
+                  title="Audit history"
+                  events={auditEvents}
+                  isLoading={isLoadingAudit}
+                  error={auditError}
+                  total={auditTotal}
+                  skip={(sectionPages.audit - 1) * pageSize}
+                  limit={pageSize}
+                  onPageChange={(skip) =>
+                    changeAuditPage(Math.floor(skip / pageSize) + 1)
+                  }
+                  showCatName
+                />
               </section>
             )}
             {activeSection === "permanent-delete" &&

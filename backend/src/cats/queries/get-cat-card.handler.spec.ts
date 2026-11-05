@@ -35,7 +35,10 @@ describe("GetCatCardHandler", () => {
   it("includes favorite status for the requesting user", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -57,10 +60,16 @@ describe("GetCatCardHandler", () => {
   it("does not expose another user's favorite state", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const otherUser = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {

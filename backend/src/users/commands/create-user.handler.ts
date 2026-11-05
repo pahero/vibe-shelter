@@ -38,7 +38,7 @@ export class CreateUserHandler {
       const user = await tx.user.create({
         data: {
           email,
-          fullName: data.fullName?.trim() || null,
+          fullName: data.fullName?.trim() || "",
           role: data.role.toUpperCase() as "OWNER" | "ADMIN" | "STAFF",
           status: data.status.toUpperCase() as "ACTIVE" | "INACTIVE",
           passwordHash,

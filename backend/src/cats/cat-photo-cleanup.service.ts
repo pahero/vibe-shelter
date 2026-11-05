@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnApplicationShutdown,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../database/prisma.service";
 import { CatPhotoUrlService } from "./cat-photo-url.service";
 
@@ -16,11 +12,7 @@ export type CatPhotoCleanupResult = {
 };
 
 @Injectable()
-export class CatPhotoCleanupService
-  implements OnApplicationBootstrap, OnApplicationShutdown
-{
-  private readonly logger = new Logger(CatPhotoCleanupService.name);
-  private interval: NodeJS.Timeout | null = null;
+export class CatPhotoCleanupService {
   private isRunning = false;
 
   constructor(
@@ -29,26 +21,7 @@ export class CatPhotoCleanupService
     private readonly config: ConfigService,
   ) {}
 
-  onApplicationBootstrap(): void {
-    const intervalMs = this.getNumber(
-      "S3_DANGLING_PHOTO_CLEANUP_INTERVAL_MS",
-      60 * 60 * 1000,
-    );
-    this.interval = setInterval(() => {
-      void this.cleanupDanglingPhotos().catch((error) => {
-        this.logger.error(
-          "Failed to clean dangling S3 cat photos",
-          error instanceof Error ? error.stack : String(error),
-        );
-      });
-    }, intervalMs);
-    this.interval.unref?.();
-  }
-
-  onApplicationShutdown(): void {
-    if (this.interval) clearInterval(this.interval);
-  }
-
+  @Cron(CronExpression.EVERY_HOUR)
   async cleanupDanglingPhotos(): Promise<CatPhotoCleanupResult> {
     if (this.isRunning)
       return { scanned: 0, deleted: 0, skippedReferenced: 0, skippedRecent: 0 };

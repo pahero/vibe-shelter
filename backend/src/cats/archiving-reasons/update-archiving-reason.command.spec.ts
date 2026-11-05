@@ -9,6 +9,7 @@ describe("UpdateArchivingReasonCommand", () => {
       const command = new UpdateArchivingReasonCommand(tx as PrismaService);
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random()}@example.com`,
           status: "ACTIVE",
         },
@@ -38,6 +39,7 @@ describe("UpdateArchivingReasonCommand", () => {
       const command = new UpdateArchivingReasonCommand(tx as PrismaService);
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random()}@example.com`,
           status: "ACTIVE",
         },
@@ -59,6 +61,7 @@ describe("UpdateArchivingReasonCommand", () => {
       const command = new UpdateArchivingReasonCommand(tx as PrismaService);
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random()}@example.com`,
           status: "ACTIVE",
         },

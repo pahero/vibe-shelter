@@ -55,7 +55,6 @@ import {
   UpdateCatTagDto,
   SetCatTrelloLinkDto,
 } from "./dto";
-import { ListCatHistoryQuery } from "./queries/list-cat-history.query";
 import { ListAllCatHistoryQuery } from "./queries/list-all-cat-history.query";
 import { ListFlightCandidatesHandler } from "./queries/list-flight-candidates.handler";
 import { ListCatsQueryDto } from "./dto/list-cats-query.dto";
@@ -94,7 +93,6 @@ export class CatsController {
     private readonly createCatHandler: CreateCatHandler,
     private readonly archiveCatHandler: ArchiveCatHandler,
     private readonly dearchiveCatHandler: DearchiveCatHandler,
-    private readonly listCatHistoryQuery: ListCatHistoryQuery,
     private readonly listAllCatHistoryQuery: ListAllCatHistoryQuery,
     private readonly listFlightCandidatesHandler: ListFlightCandidatesHandler,
     private readonly setCatFlightCandidateHandler: SetCatFlightCandidateHandler,
@@ -174,7 +172,7 @@ export class CatsController {
 
   @Get("history")
   async listAllHistory(
-    @Query("user") user?: string,
+    @Query("userId") userId?: string,
     @Query("catId") catId?: string,
     @Query("from") from?: string,
     @Query("to") to?: string,
@@ -183,7 +181,7 @@ export class CatsController {
     @CurrentUser() currentUser?: AuthenticatedUser,
   ) {
     return this.listAllCatHistoryQuery.execute({
-      user,
+      userId,
       catId,
       from,
       to,
@@ -246,7 +244,7 @@ export class CatsController {
     @Query("limit") limit?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
-    return this.listCatHistoryQuery.execute({
+    return this.listAllCatHistoryQuery.execute({
       catId: id,
       skip: skip === undefined ? undefined : Number(skip),
       limit: limit === undefined ? undefined : Number(limit),

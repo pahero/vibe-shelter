@@ -284,7 +284,10 @@ function createHandler(prisma: PrismaService): CreateCatHandler {
 
 async function createActor(tx: Prisma.TransactionClient): Promise<string> {
   const actor = await tx.user.create({
-    data: { email: `${unique("creator")}@example.com` },
+    data: {
+      fullName: "Test User",
+      email: `${unique("creator")}@example.com`,
+    },
   });
   return actor.id;
 }

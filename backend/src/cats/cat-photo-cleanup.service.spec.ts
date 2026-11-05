@@ -62,7 +62,7 @@ describe("CatPhotoCleanupService", () => {
         body: Buffer.from("dangling"),
       });
       await tx.catPhoto.create({ data: { catId, key: referencedKey } });
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
 
       const result = await service.cleanupDanglingPhotos();
 
@@ -119,7 +119,7 @@ describe("CatPhotoCleanupService", () => {
           },
         ],
       });
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
 
       const result = await service.cleanupDanglingPhotos();
 

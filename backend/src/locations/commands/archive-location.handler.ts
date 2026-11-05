@@ -78,7 +78,12 @@ export class ArchiveLocationHandler {
       });
       if (actorUserId)
         await tx.auditEvent.create({
-          data: { locationId: id, actorUserId, action: "delete" },
+          data: {
+            locationId: id,
+            actorUserId,
+            action: "delete",
+            eventType: "location_action",
+          },
         });
     });
   }

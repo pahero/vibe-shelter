@@ -6,7 +6,10 @@ describe("DeleteCatTreatmentHandler", () => {
   it("rejects a missing treatment", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-missing-delete-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-missing-delete-treatment@example.com`,
+        },
       });
       await expect(
         new DeleteCatTreatmentHandler(transaction as PrismaService).handle(
@@ -21,7 +24,10 @@ describe("DeleteCatTreatmentHandler", () => {
   it("soft deletes a treatment, advances its token, and writes an audit event", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-delete-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-delete-treatment@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

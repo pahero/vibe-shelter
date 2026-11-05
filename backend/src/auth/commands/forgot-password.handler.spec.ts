@@ -47,7 +47,11 @@ describe("ForgotPasswordHandler", () => {
     await runInTestTransaction(async (tx) => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
       const user = await tx.user.create({
-        data: { email, passwordHash: "old-hash" },
+        data: {
+          fullName: "Test User",
+          email,
+          passwordHash: "old-hash",
+        },
       });
       const config = {
         get: (key: string) =>
@@ -106,7 +110,11 @@ describe("ForgotPasswordHandler", () => {
     await runInTestTransaction(async (tx) => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
       const user = await tx.user.create({
-        data: { email, passwordHash: "old-hash" },
+        data: {
+          fullName: "Test User",
+          email,
+          passwordHash: "old-hash",
+        },
       });
       sendMail.mockRejectedValueOnce(new Error("SMTP unavailable"));
       const config = {

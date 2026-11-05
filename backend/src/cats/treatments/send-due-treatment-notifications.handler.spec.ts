@@ -7,7 +7,10 @@ describe("SendDueTreatmentNotificationsHandler", () => {
   it("notifies the creator when a treatment has started", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-creator@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-creator@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -52,7 +55,10 @@ describe("SendDueTreatmentNotificationsHandler", () => {
   it("does not notify for a future treatment", async () => {
     await runInTestTransaction(async (transaction) => {
       const user = await transaction.user.create({
-        data: { email: `${Date.now()}-future-creator@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-future-creator@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

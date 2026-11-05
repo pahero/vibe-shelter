@@ -6,7 +6,10 @@ describe("CreateCatTreatmentHandler", () => {
   it("rejects a missing or differently partitioned cat", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-missing-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-missing-treatment@example.com`,
+        },
       });
       const handler = new CreateCatTreatmentHandler(
         transaction as PrismaService,
@@ -31,7 +34,10 @@ describe("CreateCatTreatmentHandler", () => {
   it("creates the treatment and a value-free creation audit event", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-treatment@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-treatment@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

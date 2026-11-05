@@ -26,14 +26,7 @@ export class CatPhotoUrlService {
     this.bucketName = this.configService.get<string>("s3.bucketName") ?? "";
   }
 
-  async getPrimaryPhotoUrl(key: string | null): Promise<string | null> {
-    if (!key) {
-      return null;
-    }
-    if (!this.bucketName) {
-      return null;
-    }
-
+  async getPrimaryPhotoUrl(key: string): Promise<string | null> {
     return this.getCachedGetUrl(key, "inline", undefined);
   }
 
@@ -49,7 +42,6 @@ export class CatPhotoUrlService {
   }
 
   async getDocumentUrl(key: string): Promise<string | null> {
-    if (!this.bucketName) return null;
     return this.getCachedGetUrl(key, "inline", this.documentContentType(key));
   }
 
@@ -57,7 +49,6 @@ export class CatPhotoUrlService {
     key: string,
     fileName: string,
   ): Promise<string | null> {
-    if (!this.bucketName) return null;
     return this.getCachedGetUrl(
       key,
       `attachment; filename="${this.safeFileName(fileName)}"`,
@@ -69,7 +60,8 @@ export class CatPhotoUrlService {
     key: string,
     disposition: string,
     contentType: string | undefined,
-  ): Promise<string> {
+  ): Promise<string | null> {
+    if (!this.bucketName) return null;
     const cacheKey = JSON.stringify([
       this.bucketName,
       key,

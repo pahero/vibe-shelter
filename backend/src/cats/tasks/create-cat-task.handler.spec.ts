@@ -6,7 +6,10 @@ describe("CreateCatTaskHandler", () => {
   it("rejects a missing cat", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const handler = new CreateCatTaskHandler(transaction as PrismaService);
       await expect(
@@ -27,7 +30,10 @@ describe("CreateCatTaskHandler", () => {
   it("rejects missing notification receivers", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -54,7 +60,10 @@ describe("CreateCatTaskHandler", () => {
   it("creates receivers, advances the task token, and audits the action", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await transaction.user.create({
-        data: { email: `${Date.now()}-actor@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-actor@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

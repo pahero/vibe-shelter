@@ -6,7 +6,10 @@ describe("ListFavoriteCatsWithActiveTreatmentsHandler", () => {
   it("returns only the user's favorite cats with active treatments in updated order", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const now = new Date();
       const currentDate = new Date(
@@ -67,10 +70,16 @@ describe("ListFavoriteCatsWithActiveTreatmentsHandler", () => {
   it("partitions by current user and omits deleted cats", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const otherUser = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const currentDate = new Date();
       const cats = await Promise.all([
@@ -134,7 +143,10 @@ describe("ListFavoriteCatsWithActiveTreatmentsHandler", () => {
   it("partitions test cats by the user's test environment", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${crypto.randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${crypto.randomUUID()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {

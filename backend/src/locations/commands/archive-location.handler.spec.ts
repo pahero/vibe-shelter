@@ -8,6 +8,7 @@ describe("ArchiveLocationHandler", () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
         data: {
+          fullName: "Test User",
           email: `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`,
         },
       });
@@ -92,7 +93,10 @@ describe("ArchiveLocationHandler", () => {
   it("moves every assigned cat and audits each move before archiving", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-${Math.random()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-${Math.random()}@example.com`,
+        },
       });
       const source = await tx.location.create({
         data: { name: "Old location" },

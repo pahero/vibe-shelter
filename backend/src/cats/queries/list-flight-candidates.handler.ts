@@ -85,9 +85,9 @@ export class ListFlightCandidatesHandler {
         return {
           id: cat.id,
           name: cat.name,
-          primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(
-            cat.primaryPhotoKey,
-          ),
+          primaryPhotoUrl: cat.primaryPhotoKey
+            ? await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey)
+            : null,
           currentLocationName: cat.currentLocation?.name ?? null,
           archivedAt: cat.archivedAt?.toISOString() ?? null,
           microchipNumber: cat.microchipNumber,

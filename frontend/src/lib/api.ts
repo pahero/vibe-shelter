@@ -192,14 +192,6 @@ export type ParasiteTreatmentInput = {
   nextDueDate?: string | null;
   productName: string;
 };
-export type CatNote = {
-  id: string;
-  date: string;
-  comment: string;
-  createdAt: string;
-  updatedAt: string;
-};
-export type NoteInput = { date: string; comment: string };
 
 export type TaskNotification = {
   id: string;
@@ -265,82 +257,42 @@ export type CatHistoryEvent = {
   id: string;
   catId: string | null;
   catName: string | null;
+  catNameNumber?: number;
   eventType: string;
   occurredAt: string;
-  actor: {
-    id: string;
-    displayName: string;
-    email: string;
-  };
+  actorId: string;
+  actorFullName: string;
   oldValue: string | null;
   newValue: string | null;
-  treatmentAdministrationDate: string | null;
-  treatment: { id: string; shortName: string; isDeleted: boolean } | null;
-  tag?: { id: string; name: string; isDeleted: boolean } | null;
-  weight?: {
-    id: string;
-    measuredAt: string;
-    weightKg: number;
-    isDeleted: boolean;
-  } | null;
-  task?: {
-    id: string;
-    comment: string;
-    dueDate: string;
-    isDeleted: boolean;
-  } | null;
-  medicalNote?: {
-    id: string;
-    date: string;
-    comment: string;
-    author: string | null;
-    isDeleted: boolean;
-  } | null;
-  vaccination?: {
-    id: string;
-    date: string;
-    nextDueDate: string | null;
-    vaccineName: string | null;
-    type: string;
-    isDeleted: boolean;
-  } | null;
-  parasiteTreatment?: {
-    id: string;
-    date: string;
-    nextDueDate: string | null;
-    productName: string;
-    type: string;
-    isDeleted: boolean;
-  } | null;
-  note?: {
-    id: string;
-    date: string;
-    comment: string;
-    author: string | null;
-    isDeleted: boolean;
-  } | null;
-  archivingReason?: { id: string; name: string; isDeleted: boolean } | null;
-  location?: { id: string; name: string; isDeleted: boolean } | null;
-  relatedUser?: { id: string; displayName: string; isDeleted: boolean } | null;
-  photo: {
-    id: string;
-    createdAt?: string;
-    link: string | null;
-    status: "ACTIVE" | "DELETED";
-  } | null;
-  document: {
-    id: string;
-    link: string | null;
-    fileName: string;
-    status: "ACTIVE" | "DELETED";
-  } | null;
-  flight?: {
-    id: string;
-    flightNumber: string | null;
-    airport: string;
-    date: string;
-    isDeleted: boolean;
-  } | null;
+  fileId?: string;
+  fileUrl?: string | null;
+  weightId?: string;
+  measuredAt?: string;
+  tagId?: string;
+  tagName?: string;
+  taskId?: string;
+  taskComment?: string;
+  taskDueDate?: string;
+  treatmentId?: string;
+  treatmentShortName?: string;
+  medicalNoteId?: string;
+  medicalNoteDate?: string;
+  vaccinationId?: string;
+  vaccinationDate?: string;
+  vaccineName?: string;
+  parasiteTreatmentId?: string;
+  parasiteTreatmentDate?: string;
+  productName?: string;
+  archivingReasonId?: string;
+  archivingReasonName?: string;
+  locationId?: string;
+  locationName?: string;
+  flightId?: string;
+  flightNumber?: string | null;
+  airport?: string;
+  flightDate?: string;
+  flightPhotoId?: string;
+  flightPhotoUrl?: string | null;
 };
 
 export type CatHistoryResponse = {
@@ -712,45 +664,6 @@ export const catsApi = {
     );
     return handleResponse<FlightCandidate[]>(response);
   },
-  async listNotes(catId: string): Promise<CatNote[]> {
-    const response = await authenticatedFetch(
-      `${BACKEND_URL}/api/cats/${catId}/notes`,
-      { method: "GET" },
-    );
-    return handleResponse<CatNote[]>(response);
-  },
-  async createNote(catId: string, data: NoteInput): Promise<MutationResult> {
-    const response = await authenticatedFetch(
-      `${BACKEND_URL}/api/cats/${catId}/notes`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      },
-    );
-    return handleResponse<MutationResult>(response);
-  },
-  async updateNote(
-    id: string,
-    data: Partial<NoteInput>,
-  ): Promise<MutationResult> {
-    const response = await authenticatedFetch(
-      `${BACKEND_URL}/api/cats/notes/${id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      },
-    );
-    return handleResponse<MutationResult>(response);
-  },
-  async deleteNote(id: string): Promise<void> {
-    const response = await authenticatedFetch(
-      `${BACKEND_URL}/api/cats/notes/${id}`,
-      { method: "DELETE" },
-    );
-    return handleResponse<void>(response);
-  },
   async listVaccinations(catId: string): Promise<CatVaccination[]> {
     const response = await authenticatedFetch(
       `${BACKEND_URL}/api/cats/${catId}/vaccinations`,
@@ -1076,16 +989,18 @@ export const catsApi = {
   },
 
   async listAllHistory(params?: {
-    user?: string;
+    userId?: string;
     catId?: string;
+    flightId?: string;
     from?: string;
     to?: string;
     skip?: number;
     limit?: number;
   }): Promise<CatHistoryResponse> {
     const query = new URLSearchParams();
-    if (params?.user) query.append("user", params.user);
+    if (params?.userId) query.append("userId", params.userId);
     if (params?.catId) query.append("catId", params.catId);
+    if (params?.flightId) query.append("flightId", params.flightId);
     if (params?.from) query.append("from", params.from);
     if (params?.to) query.append("to", params.to);
     if (params?.skip !== undefined)
@@ -1466,12 +1381,20 @@ export const flightsApi = {
     return handleResponse<FlightDetails>(response);
   },
 
-  async history(flightId: string): Promise<FlightAuditEvent[]> {
+  async history(
+    flightId: string,
+    params?: { skip?: number; limit?: number },
+  ): Promise<CatHistoryResponse> {
+    const query = new URLSearchParams();
+    if (params?.skip !== undefined) query.set("skip", params.skip.toString());
+    if (params?.limit !== undefined)
+      query.set("limit", params.limit.toString());
+    const suffix = query.size ? `?${query.toString()}` : "";
     const response = await authenticatedFetch(
-      `${BACKEND_URL}/api/flights/${flightId}/history`,
+      `${BACKEND_URL}/api/flights/${flightId}/history${suffix}`,
       { method: "GET" },
     );
-    return handleResponse<FlightAuditEvent[]>(response);
+    return handleResponse<CatHistoryResponse>(response);
   },
 
   async listPhotos(flightId: string): Promise<FlightPhoto[]> {

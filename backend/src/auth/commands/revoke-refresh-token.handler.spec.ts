@@ -8,7 +8,10 @@ describe("RevokeRefreshTokenHandler", () => {
   it("consumes a stored refresh token", async () => {
     await runInTestTransaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email: `${randomUUID()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${randomUUID()}@example.com`,
+        },
       });
       const token = "refresh-token-to-revoke-which-is-long-enough";
       const stored = await tx.refreshToken.create({

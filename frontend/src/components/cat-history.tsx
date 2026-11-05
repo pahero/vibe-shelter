@@ -1,90 +1,18 @@
 import { CatHistoryEvent } from "@/lib/api";
-import { ApiErrorHandler, formatDate } from "@/lib/utils";
-import { useState } from "react";
+import { formatDate } from "@/lib/utils";
+import { ReactNode, useState } from "react";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 
-export const eventLabels: Record<string, string> = {
+const eventLabels: Record<string, string> = {
   cat_created: "Cat created",
   cat_archived: "Cat archived",
   cat_dearchived: "Cat restored",
-  name_changed: "Name changed",
-  sex_changed: "Sex changed",
-  color_changed: "Color changed",
-  estimated_birth_date_changed: "Estimated birth date changed",
-  intake_date_changed: "Intake date changed",
-  intake_details_changed: "Intake details changed",
-  intake_source_changed: "Intake source changed",
-  microchip_number_changed: "Microchip number changed",
-  passport_changed: "Passport changed",
-  sponsor_name_changed: "Sponsor name changed",
-  adopter_name_changed: "Adopter name changed",
-  adopter_address_changed: "Adopter address changed",
-  adopter_country_changed: "Adopter country changed",
-  felv_fiv_test_done_changed: "FeLV/FIV test status changed",
-  traces_changed: "Traces changed",
-  fit_to_fly_changed: "Fit-to-fly changed",
   flight_created: "Flight created",
   flight_deleted: "Flight deleted",
   flight_restored: "Flight restored",
-  flight_date_changed: "Flight date changed",
-  flight_airport_changed: "Airport changed",
-  flight_number_changed: "Flight number changed",
-  flight_parent_changed: "Flight parent changed",
   flight_cat_assigned: "Cat assigned",
   flight_cat_unassigned: "Cat removed",
   flight_cat_restored: "Cat assignment restored",
-  flight_cat_f2f_changed: "Fit-to-fly status changed",
-  flight_cat_traces_changed: "Traces status changed",
-  sterilization_status_changed: "Neutering changed",
-  status_changed: "Status changed",
-  current_location_changed: "Current location changed",
-  photo_created: "Photo added",
-  photo_deleted: "Photo deleted",
-  primary_photo_changed: "Primary photo changed",
-  document_created: "Document uploaded",
-  document_deleted: "Document removed",
-  weight_created: "Weight added",
-  weight_deleted: "Weight deleted",
-  tag_added_to_cat: "Tag added",
-  tag_removed_from_cat: "Tag removed",
-  tag_create: "Tag created",
-  tag_update: "Tag updated",
-  tag_name_changed: "Tag name changed",
-  tag_color_changed: "Tag color changed",
-  tag_delete: "Tag deleted",
-  location_create: "Location created",
-  location_update: "Location updated",
-  location_delete: "Location deleted",
-  archiving_reason_create: "Archiving reason created",
-  archiving_reason_update: "Archiving reason updated",
-  archiving_reason_delete: "Archiving reason deleted",
-  task_created: "Task created",
-  task_comment_changed: "Task comment changed",
-  task_due_date_changed: "Task due date changed",
-  task_receivers_changed: "Task receivers changed",
-  task_completed: "Task completed",
-  task_deleted: "Task deleted",
-  medical_note_created: "Medical note created",
-  medical_note_deleted: "Medical note deleted",
-  medical_note_date_changed: "Medical note date changed",
-  medical_note_comment_changed: "Medical note comment changed",
-  vaccination_created: "Vaccination created",
-  vaccination_deleted: "Vaccination deleted",
-  vaccination_type_changed: "Vaccination type changed",
-  vaccination_date_changed: "Vaccination date changed",
-  vaccination_next_due_date_changed: "Vaccination next due date changed",
-  vaccine_name_changed: "Vaccine name changed",
-  parasite_treatment_created: "Parasite treatment created",
-  parasite_treatment_deleted: "Parasite treatment deleted",
-  parasite_treatment_type_changed: "Parasite treatment type changed",
-  parasite_treatment_date_changed: "Parasite treatment date changed",
-  parasite_treatment_next_due_date_changed:
-    "Parasite treatment next due date changed",
-  product_name_changed: "Product name changed",
-  note_created: "Note created",
-  note_deleted: "Note deleted",
-  note_date_changed: "Note date changed",
-  note_comment_changed: "Note comment changed",
 };
 
 type CatHistoryProps = {
@@ -95,13 +23,11 @@ type CatHistoryProps = {
   skip?: number;
   limit?: number;
   onPageChange?: (skip: number) => void;
-  onRestoreTreatment?: (treatmentId: string) => Promise<void>;
-  onRestoreFlight?: (flightId: string) => Promise<void>;
+  mode?: "cat" | "flight" | "management";
+  title?: string;
+  filters?: ReactNode;
+  showCatName?: boolean;
 };
-
-export function historyValueText(value: string | null): string {
-  return value ?? "Not set";
-}
 
 export function auditEventStyle(eventType: string): string {
   if (
@@ -121,106 +47,18 @@ export function auditEventStyle(eventType: string): string {
 }
 
 export function auditEventLabel(event: CatHistoryEvent): string {
-  if (event.flight) {
-    const label = eventLabels[event.eventType] ?? event.eventType;
-    return `Flight ${event.flight.flightNumber ?? "Unnumbered"} · ${label}`;
-  }
-  const administrationDate = event.treatmentAdministrationDate;
-  if (
-    event.treatment &&
-    administrationDate &&
-    event.eventType === "treatment_administration_checked"
-  )
-    return `Treatment ${event.treatment.shortName} ${administrationDate} Checked`;
-  if (
-    event.treatment &&
-    administrationDate &&
-    event.eventType === "treatment_administration_unchecked"
-  )
-    return `Treatment ${event.treatment.shortName} ${administrationDate} Unchecked`;
-  if (event.treatment) {
-    const treatmentActions: Record<string, string> = {
-      treatment_created: "Created",
-      treatment_deleted: "Deleted",
-      treatment_restored: "Restored",
-      treatment_short_name_changed: "Short name changed",
-      treatment_start_date_changed: "Start date changed",
-      treatment_end_date_changed: "End date changed",
-      treatment_doses_per_day_changed: "Doses per day changed",
-      treatment_instructions_changed: "Instructions changed",
-    };
-    const action = treatmentActions[event.eventType];
-    if (action) return `Treatment ${event.treatment.shortName} ${action}`;
-  }
-  if (event.tag) {
-    const action =
-      (
-        {
-          tag_added_to_cat: "Added to cat",
-          tag_removed_from_cat: "Removed from cat",
-          tag_create: "Created",
-          tag_update: "Updated",
-          tag_name_changed: "Name changed",
-          tag_color_changed: "Color changed",
-          tag_delete: "Deleted",
-        } as Record<string, string>
-      )[event.eventType] ??
-      eventLabels[event.eventType] ??
-      event.eventType;
-    return `Tag ${event.tag.name} ${action}`;
-  }
-  if (event.weight) {
-    const action =
-      event.eventType === "weight_created"
-        ? "added"
-        : event.eventType === "weight_deleted"
-          ? "deleted"
-          : "changed";
-    return `Weight ${event.weight.measuredAt} (${event.weight.weightKg} kg) ${action}`;
-  }
-  if (event.vaccination) {
-    const action = event.eventType
-      .replace("vaccination_", "")
-      .replaceAll("_", " ");
-    return `Vaccination ${event.vaccination.vaccineName || event.vaccination.type} ${event.vaccination.date} · ${action}`;
-  }
-  if (event.parasiteTreatment) {
-    const action = event.eventType
-      .replace("parasite_treatment_", "")
-      .replaceAll("_", " ");
-    return `Parasite treatment ${event.parasiteTreatment.productName} ${event.parasiteTreatment.date} · ${action}`;
-  }
-  if (event.medicalNote) {
-    const action = event.eventType
-      .replace("medical_note_", "")
-      .replaceAll("_", " ");
-    return `Medical note ${event.medicalNote.date}${event.medicalNote.author ? ` · ${event.medicalNote.author}` : ""} · ${action}`;
-  }
-  if (event.note) {
-    const action = event.eventType.replace("note_", "").replaceAll("_", " ");
-    return `Note ${event.note.date}${event.note.author ? ` · ${event.note.author}` : ""} · ${action}`;
-  }
-  if (event.task) {
-    const action = event.eventType.replace("task_", "").replaceAll("_", " ");
-    return `Task “${event.task.comment}” · ${action}`;
-  }
-  if (event.archivingReason) {
-    const action = event.eventType.replace("archiving_reason_", "");
-    return `Archiving reason ${event.archivingReason.name} · ${action}`;
-  }
-  if (event.location) {
-    const action = event.eventType
-      .replace("location_", "")
-      .replaceAll("_", " ");
-    return `Location ${event.location.name} · ${action}`;
-  }
-  if (event.relatedUser)
-    return `User ${event.relatedUser.displayName} · ${eventLabels[event.eventType] ?? event.eventType}`;
-  if (event.photo && event.photo.createdAt)
-    return `Photo ${event.photo.createdAt} · ${eventLabels[event.eventType] ?? event.eventType}`;
-  if (event.document)
-    return `Document ${event.document.fileName} · ${eventLabels[event.eventType] ?? event.eventType}`;
-  return eventLabels[event.eventType] ?? event.eventType;
+  const label =
+    eventLabels[event.eventType] ?? event.eventType.replaceAll("_", " ");
+  if (event.treatmentShortName)
+    return `Treatment ${event.treatmentShortName} · ${label}`;
+  if (event.tagName) return `Tag ${event.tagName} · ${label}`;
+  if (event.taskComment) return `Task “${event.taskComment}” · ${label}`;
+  if (event.vaccineName) return `Vaccination ${event.vaccineName} · ${label}`;
+  if (event.productName)
+    return `Parasite treatment ${event.productName} · ${label}`;
+  if (event.flightNumber || event.airport)
+    return `Flight ${event.flightNumber ?? event.airport} · ${label}`;
+  return label;
 }
 
 export function CatHistory({
@@ -231,66 +69,30 @@ export function CatHistory({
   skip = 0,
   limit = 50,
   onPageChange,
-  onRestoreTreatment,
-  onRestoreFlight,
+  mode = "cat",
+  title = "Audit",
+  filters,
+  showCatName = false,
 }: CatHistoryProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const [restoringTreatmentId, setRestoringTreatmentId] = useState<
-    string | null
-  >(null);
-  const [restoringFlightId, setRestoringFlightId] = useState<string | null>(
-    null,
-  );
-  const [restoreError, setRestoreError] = useState<string | null>(null);
-  const restoreTreatment = async (treatmentId: string) => {
-    if (!onRestoreTreatment) return;
-    setRestoringTreatmentId(treatmentId);
-    setRestoreError(null);
-    try {
-      await onRestoreTreatment(treatmentId);
-    } catch (reason) {
-      setRestoreError(ApiErrorHandler.handle(reason));
-    } finally {
-      setRestoringTreatmentId(null);
-    }
-  };
-  const restoreFlight = async (flightId: string) => {
-    if (!onRestoreFlight) return;
-    setRestoringFlightId(flightId);
-    setRestoreError(null);
-    try {
-      await onRestoreFlight(flightId);
-    } catch (reason) {
-      setRestoreError(ApiErrorHandler.handle(reason));
-    } finally {
-      setRestoringFlightId(null);
-    }
-  };
-  const restoredFlightActionIds = new Set<string>();
-  const flightRestoreEventIds = new Set<string>();
-  for (const event of events) {
-    if (
-      event.flight?.isDeleted &&
-      !restoredFlightActionIds.has(event.flight.id)
-    ) {
-      restoredFlightActionIds.add(event.flight.id);
-      flightRestoreEventIds.add(event.id);
-    }
-  }
-
+  const scoped = mode !== "management";
   return (
-    <section className="md:col-span-2">
-      <CatProfileSectionHeader
-        title="Audit"
-        isExpanded={isOpen}
-        onToggle={() => setIsOpen((open) => !open)}
-      />
-
+    <section className={mode === "cat" ? "md:col-span-2" : ""}>
+      {scoped ? (
+        <CatProfileSectionHeader
+          title={title}
+          isExpanded={isOpen}
+          onToggle={() => setIsOpen((open) => !open)}
+        />
+      ) : (
+        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+      )}
       {isOpen && (
         <>
+          {filters}
           {isLoading && (
             <p className="mt-5 text-sm text-[#6d6a66]">
-              Loading cat history...
+              Loading audit history...
             </p>
           )}
           {error && (
@@ -298,20 +100,11 @@ export function CatHistory({
               {error}
             </p>
           )}
-          {restoreError && (
-            <p className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-800">
-              {restoreError}
-            </p>
-          )}
-
           {!isLoading && !error && events.length === 0 && (
             <div className="mt-5 rounded-2xl border border-dashed border-[#d4c7b4] bg-white/45 p-6 text-center">
-              <p className="text-sm text-[#6d6a66]">
-                No changes have been recorded for this cat yet.
-              </p>
+              <p className="text-sm text-[#6d6a66]">No audit records found.</p>
             </div>
           )}
-
           {!isLoading && !error && events.length > 0 && (
             <ol className="mt-4 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
               {events.map((event) => (
@@ -325,82 +118,32 @@ export function CatHistory({
                         {auditEventLabel(event)}
                       </span>
                       <span className="text-[#6d6a66]">
-                        {" "}
-                        by {event.actor.displayName || event.actor.email}
+                        {showCatName && event.catName
+                          ? ` on ${event.catName}`
+                          : ""}{" "}
+                        by {event.actorFullName}
                       </span>
                     </p>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <time
-                        className="text-xs font-medium text-[#6d6a66]"
-                        dateTime={event.occurredAt}
-                      >
-                        {formatDate(event.occurredAt)}
-                      </time>
-                      {event.eventType === "treatment_deleted" &&
-                        event.treatment?.isDeleted &&
-                        onRestoreTreatment && (
-                          <button
-                            type="button"
-                            disabled={
-                              restoringTreatmentId === event.treatment.id
-                            }
-                            onClick={() =>
-                              void restoreTreatment(event.treatment!.id)
-                            }
-                            className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {restoringTreatmentId === event.treatment.id
-                              ? "Restoring..."
-                              : "Restore"}
-                          </button>
-                        )}
-                      {event.flight?.isDeleted &&
-                        flightRestoreEventIds.has(event.id) &&
-                        onRestoreFlight && (
-                          <button
-                            type="button"
-                            disabled={restoringFlightId === event.flight.id}
-                            onClick={() => void restoreFlight(event.flight!.id)}
-                            className="rounded-lg border border-[#31734b] px-2 py-1 text-xs font-semibold text-[#31734b] hover:bg-[#31734b]/10 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {restoringFlightId === event.flight.id
-                              ? "Restoring..."
-                              : "Restore flight"}
-                          </button>
-                        )}
-                    </div>
+                    <time
+                      className="shrink-0 text-xs font-medium text-[#6d6a66]"
+                      dateTime={event.occurredAt}
+                    >
+                      {formatDate(event.occurredAt)}
+                    </time>
                   </div>
-
-                  {event.photo ? (
-                    <p className="mt-1 text-xs">
-                      <a
-                        className="font-semibold text-[#b24a20] underline-offset-2 hover:underline"
-                        href={event.photo.link ?? "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {event.photo.status === "DELETED"
-                          ? "Open historical deleted-photo link"
-                          : "Open photo link"}
-                      </a>
-                    </p>
-                  ) : event.document ? (
-                    <p className="mt-1 text-xs">
-                      <a
-                        className="font-semibold text-[#b24a20] underline-offset-2 hover:underline"
-                        href={event.document.link ?? "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Open{" "}
-                        {event.document.status === "DELETED" ? "removed " : ""}
-                        PDF: {event.document.fileName}
-                      </a>
-                    </p>
+                  {event.fileUrl ? (
+                    <a
+                      className="mt-1 block text-xs font-semibold text-[#b24a20] underline-offset-2 hover:underline"
+                      href={event.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open linked file
+                    </a>
                   ) : event.oldValue !== null || event.newValue !== null ? (
                     <p className="mt-1 text-xs text-[#6d6a66]">
-                      {historyValueText(event.oldValue)} -&gt;{" "}
-                      {historyValueText(event.newValue)}
+                      {event.oldValue ?? "Not set"} -&gt;{" "}
+                      {event.newValue ?? "Not set"}
                     </p>
                   ) : null}
                 </li>

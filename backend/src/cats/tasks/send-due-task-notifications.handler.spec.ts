@@ -7,7 +7,10 @@ describe("SendDueTaskNotificationsHandler", () => {
   it("does not send notifications before a task is due", async () => {
     await runInTestTransaction(async (transaction) => {
       const receiver = await transaction.user.create({
-        data: { email: `${Date.now()}-receiver@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-receiver@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {
@@ -46,7 +49,10 @@ describe("SendDueTaskNotificationsHandler", () => {
   it("sends overdue task notifications and records the task sent time", async () => {
     await runInTestTransaction(async (transaction) => {
       const receiver = await transaction.user.create({
-        data: { email: `${Date.now()}-receiver@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-receiver@example.com`,
+        },
       });
       const cat = await transaction.cat.create({
         data: {

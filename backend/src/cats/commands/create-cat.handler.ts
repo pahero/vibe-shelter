@@ -113,9 +113,9 @@ export class CreateCatHandler {
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
       createdByUserId: cat.createdByUserId,
-      primaryPhotoUrl: await this.photoUrls.getPrimaryPhotoUrl(
-        cat.primaryPhotoKey,
-      ),
+      primaryPhotoUrl: cat.primaryPhotoKey
+        ? await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey)
+        : null,
       primaryPhotoPositionY: cat.primaryPhotoPositionY,
       microchipNumber: cat.microchipNumber,
       passport: cat.passport,

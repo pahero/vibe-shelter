@@ -60,7 +60,7 @@ export class UpdateUserHandler {
         where: { id },
         data: {
           ...(data.fullName !== undefined
-            ? { fullName: data.fullName.trim() || null }
+            ? { fullName: data.fullName.trim() }
             : {}),
           ...(data.role !== undefined
             ? { role: data.role.toUpperCase() as "OWNER" | "ADMIN" | "STAFF" }

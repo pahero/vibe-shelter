@@ -7,7 +7,10 @@ describe("SetCatFlightCandidateHandler", () => {
   it("marks and unmarks a cat, auditing each state change", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-${Math.random()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-${Math.random()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {
@@ -50,7 +53,10 @@ describe("SetCatFlightCandidateHandler", () => {
   it("does not create duplicate audit events when state is unchanged", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
-        data: { email: `${Date.now()}-${Math.random()}@example.com` },
+        data: {
+          fullName: "Test User",
+          email: `${Date.now()}-${Math.random()}@example.com`,
+        },
       });
       const cat = await tx.cat.create({
         data: {

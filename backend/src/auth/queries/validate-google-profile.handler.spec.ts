@@ -9,7 +9,12 @@ describe("ValidateGoogleProfileHandler", () => {
   it("validates domain and returns an active user", async () => {
     await runInTestTransaction(async (tx) => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`;
-      const user = await tx.user.create({ data: { email } });
+      const user = await tx.user.create({
+        data: {
+          fullName: "Test User",
+          email,
+        },
+      });
       const config = new ConfigService();
       config.set("allowedGoogleDomain", "example.com");
       const [localPart, domain] = email.split("@");
@@ -52,7 +57,13 @@ describe("ValidateGoogleProfileHandler", () => {
     await runInTestTransaction(async (tx) => {
       const email = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}@example.com`;
       const config = new ConfigService();
-      await tx.user.create({ data: { email, status: "INACTIVE" } });
+      await tx.user.create({
+        data: {
+          fullName: "Test User",
+          email,
+          status: "INACTIVE",
+        },
+      });
       await expect(
         new ValidateGoogleProfileHandler(tx as PrismaService, config).handle({
           emails: [{ value: email }],
