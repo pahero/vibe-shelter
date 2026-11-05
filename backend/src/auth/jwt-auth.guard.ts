@@ -7,12 +7,16 @@ import {
 } from "@nestjs/common";
 import { Request } from "express";
 import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../database/prisma.service";
 import { verifyJwt } from "./jwt-token";
 import { accessCookieName, assertSameOrigin, readCookie } from "./auth-cookie";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -26,10 +30,26 @@ export class JwtAuthGuard implements CanActivate {
     if (!token)
       throw new UnauthorizedException("Authentication cookie required");
     try {
-      const user = verifyJwt(
+      const tokenUser = verifyJwt(
         token,
         this.configService.get<string>("jwtSecret") ?? "",
       );
+      const user = await this.prisma.user.findFirst({
+        where: {
+          id: tokenUser.id,
+          deletedAt: null,
+          status: "ACTIVE",
+        },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          isTest: true,
+          passwordChangeRequired: true,
+        },
+      });
+      if (!user) throw new UnauthorizedException("User account is not active");
       const permittedPaths = [
         "/auth/me",
         "/auth/change-password",

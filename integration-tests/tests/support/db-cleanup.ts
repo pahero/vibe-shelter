@@ -19,7 +19,7 @@ export async function cleanupTestData(): Promise<void> {
     // registered ad hoc by UI specs and leftovers of old runs) so lists stay
     // small and first-page assertions stay deterministic.
     await pool.query(
-      'DELETE FROM "User" WHERE "isTest" = true AND email NOT IN ($1, $2);',
+      'UPDATE "User" SET "deletedAt" = NOW(), status = \'INACTIVE\', version = version + 1 WHERE "isTest" = true AND "deletedAt" IS NULL AND email NOT IN ($1, $2);',
       [STAFF_TEST_ACCOUNT.email, ADMIN_TEST_ACCOUNT.email],
     );
     console.log(
