@@ -372,6 +372,7 @@ describe("FlightsClient", () => {
       screen.queryByRole("heading", { name: "Photos" }),
     ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Add photos")).toHaveClass("h-16", "w-16");
+    expect(photoButtons[0]).toHaveClass("rounded-lg");
     fireEvent.click(photoButtons[0]);
     expect(
       screen.getByRole("dialog", { name: "Flight photo preview" }),
@@ -390,6 +391,20 @@ describe("FlightsClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     await waitFor(() =>
       expect(deleteFlightPhoto).toHaveBeenCalledWith(flight.id, "photo-1"),
+    );
+  });
+
+  it("opens thumbnail actions with the shared media menu", async () => {
+    render(<FlightsClient standaloneFlightId={flight.id} />);
+    const thumbnailActions = await screen.findAllByRole("button", {
+      name: "Flight thumbnail actions",
+    });
+
+    fireEvent.click(thumbnailActions[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() =>
+      expect(deleteFlightPhoto).toHaveBeenCalledWith(flight.id, "photo-2"),
     );
   });
 

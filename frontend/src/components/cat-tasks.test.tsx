@@ -53,4 +53,17 @@ describe("CatTasks", () => {
     );
     expect(select.querySelector('option[value="user-1"]')).not.toBeDisabled();
   });
+
+  it("keeps reminder form fields within a narrow form column", async () => {
+    render(<CatTasks catId="cat-1" />);
+    await screen.findByText("No reminders yet.");
+    fireEvent.click(screen.getByRole("button", { name: "Add reminder" }));
+
+    expect(screen.getByLabelText("Comment")).toHaveClass("w-full", "min-w-0");
+    expect(screen.getByLabelText("Due date")).toHaveClass("w-full", "min-w-0");
+    expect(screen.getByLabelText("Notification receivers")).toHaveClass(
+      "w-full",
+      "min-w-0",
+    );
+  });
 });

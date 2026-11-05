@@ -5,6 +5,7 @@ import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
+import { ContextMenu } from "@/components/context-menu";
 import { ApiErrorHandler } from "@/lib/utils";
 import {
   CatCard as CatCardType,
@@ -575,159 +576,145 @@ export function HomeCatsList() {
           id="home-cat-filters"
           className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end"
         >
-          <div className="relative grid gap-1 text-sm font-medium text-gray-800">
+          <div className="grid gap-1 text-sm font-medium text-gray-800">
             <span id="home-location-filter-label">Location</span>
-            <button
-              type="button"
-              aria-labelledby="home-location-filter-label"
-              aria-haspopup="listbox"
-              aria-expanded={isLocationFilterOpen}
-              disabled={isLoadingLocations || locations.length === 0}
-              onClick={() => setIsLocationFilterOpen((isOpen) => !isOpen)}
-              onBlur={(event) => {
-                if (
-                  !event.currentTarget.parentElement?.contains(
-                    event.relatedTarget,
-                  )
-                ) {
-                  setIsLocationFilterOpen(false);
-                }
-              }}
-              className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span>
-                {isLoadingLocations
-                  ? "Loading locations..."
-                  : locationFilterLabel}
-              </span>
-              <FontAwesomeIcon
-                icon={faChevronDown}
-                className="text-[#6d6a66]"
-                aria-hidden="true"
-              />
-            </button>
-            {isLocationFilterOpen && (
-              <div
-                role="listbox"
-                aria-labelledby="home-location-filter-label"
-                className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
-              >
+            <ContextMenu
+              open={isLocationFilterOpen}
+              onOpenChange={setIsLocationFilterOpen}
+              menuLabel="Location"
+              role="listbox"
+              className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
+              trigger={
                 <button
                   type="button"
+                  aria-labelledby="home-location-filter-label"
+                  aria-haspopup="listbox"
+                  aria-expanded={isLocationFilterOpen}
+                  disabled={isLoadingLocations || locations.length === 0}
+                  onClick={() => setIsLocationFilterOpen((isOpen) => !isOpen)}
+                  className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span>
+                    {isLoadingLocations
+                      ? "Loading locations..."
+                      : locationFilterLabel}
+                  </span>
+                  <FontAwesomeIcon
+                    icon={faChevronDown}
+                    className="text-[#6d6a66]"
+                    aria-hidden="true"
+                  />
+                </button>
+              }
+            >
+              <button
+                type="button"
+                role="option"
+                aria-selected={locationFilter === ""}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setLocationFilter("");
+                  setCurrentPage(1);
+                  setIsLocationFilterOpen(false);
+                }}
+                className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
+                  locationFilter === ""
+                    ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
+                    : "text-gray-900"
+                }`}
+              >
+                All locations
+              </button>
+              {locations.map((location) => (
+                <button
+                  key={location.id}
+                  type="button"
                   role="option"
-                  aria-selected={locationFilter === ""}
+                  aria-selected={locationFilter === location.id}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
-                    setLocationFilter("");
+                    setLocationFilter(location.id);
                     setCurrentPage(1);
                     setIsLocationFilterOpen(false);
                   }}
                   className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                    locationFilter === ""
+                    locationFilter === location.id
                       ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
                       : "text-gray-900"
                   }`}
                 >
-                  All locations
+                  {location.name}
                 </button>
-                {locations.map((location) => (
-                  <button
-                    key={location.id}
-                    type="button"
-                    role="option"
-                    aria-selected={locationFilter === location.id}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      setLocationFilter(location.id);
-                      setCurrentPage(1);
-                      setIsLocationFilterOpen(false);
-                    }}
-                    className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                      locationFilter === location.id
-                        ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    {location.name}
-                  </button>
-                ))}
-              </div>
-            )}
+              ))}
+            </ContextMenu>
           </div>
 
-          <div className="relative grid gap-1 text-sm font-medium text-gray-800">
+          <div className="grid gap-1 text-sm font-medium text-gray-800">
             <span id="home-tag-filter-label">Tag</span>
-            <button
-              type="button"
-              aria-labelledby="home-tag-filter-label"
-              aria-haspopup="listbox"
-              aria-expanded={isTagFilterOpen}
-              onClick={() => setIsTagFilterOpen((isOpen) => !isOpen)}
-              onBlur={(event) => {
-                if (
-                  !event.currentTarget.parentElement?.contains(
-                    event.relatedTarget,
-                  )
-                ) {
-                  setIsTagFilterOpen(false);
-                }
-              }}
-              className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-            >
-              <span>{tagFilterLabel}</span>
-              <FontAwesomeIcon
-                icon={faChevronDown}
-                className="text-[#6d6a66]"
-                aria-hidden="true"
-              />
-            </button>
-            {isTagFilterOpen && (
-              <div
-                role="listbox"
-                aria-labelledby="home-tag-filter-label"
-                className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
-              >
+            <ContextMenu
+              open={isTagFilterOpen}
+              onOpenChange={setIsTagFilterOpen}
+              menuLabel="Tag"
+              role="listbox"
+              className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
+              trigger={
                 <button
                   type="button"
+                  aria-labelledby="home-tag-filter-label"
+                  aria-haspopup="listbox"
+                  aria-expanded={isTagFilterOpen}
+                  onClick={() => setIsTagFilterOpen((isOpen) => !isOpen)}
+                  className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                >
+                  <span>{tagFilterLabel}</span>
+                  <FontAwesomeIcon
+                    icon={faChevronDown}
+                    className="text-[#6d6a66]"
+                    aria-hidden="true"
+                  />
+                </button>
+              }
+            >
+              <button
+                type="button"
+                role="option"
+                aria-selected={tagFilter === ""}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setTagFilter("");
+                  setCurrentPage(1);
+                  setIsTagFilterOpen(false);
+                }}
+                className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
+                  tagFilter === ""
+                    ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
+                    : "text-gray-900"
+                }`}
+              >
+                All tags
+              </button>
+              {tags.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
                   role="option"
-                  aria-selected={tagFilter === ""}
+                  aria-selected={tagFilter === tag.id}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
-                    setTagFilter("");
+                    setTagFilter(tag.id);
                     setCurrentPage(1);
                     setIsTagFilterOpen(false);
                   }}
                   className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                    tagFilter === ""
+                    tagFilter === tag.id
                       ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
                       : "text-gray-900"
                   }`}
                 >
-                  All tags
+                  {tag.name}
                 </button>
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    role="option"
-                    aria-selected={tagFilter === tag.id}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      setTagFilter(tag.id);
-                      setCurrentPage(1);
-                      setIsTagFilterOpen(false);
-                    }}
-                    className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                      tagFilter === tag.id
-                        ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
-              </div>
-            )}
+              ))}
+            </ContextMenu>
           </div>
 
           <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-gray-800">
