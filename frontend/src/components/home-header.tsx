@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { ContextMenu } from "@/components/context-menu";
 import { NotificationCenter } from "@/components/notification-center";
 import { LogoutButton } from "@/components/logout-button";
 import type { AuthUser } from "@/lib/backend";
@@ -42,25 +43,6 @@ function MenuIcon() {
 export function HomeHeader({ user }: HomeFooterProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isMenuOpen && !isUserMenuOpen) return;
-    const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node))
-        setIsMenuOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOnOutsideClick);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsideClick);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [isMenuOpen, isUserMenuOpen]);
-
   const menuLinks = [
     ...(user?.role === "admin" || user?.role === "owner"
       ? [{ href: "/shelter-management", label: "Shelter management" }]
@@ -77,49 +59,48 @@ export function HomeHeader({ user }: HomeFooterProps) {
       </span>
       <div className="flex items-center gap-1">
         {user && <NotificationCenter iconOnly />}
-        <div className="relative" ref={menuRef}>
+        <div className="flex items-center gap-1">
           {user ? (
-            <>
-              <button
-                type="button"
-                className={iconButtonClass}
-                aria-label="User menu"
-                title="User menu"
-                aria-haspopup="menu"
-                aria-expanded={isUserMenuOpen}
-                onClick={() => {
-                  setIsUserMenuOpen((open) => !open);
-                  setIsMenuOpen(false);
-                }}
-              >
-                <UserIcon />
-              </button>
-              {isUserMenuOpen && (
-                <nav
-                  role="menu"
+            <ContextMenu
+              open={isUserMenuOpen}
+              onOpenChange={setIsUserMenuOpen}
+              menuLabel="User menu"
+              className="absolute right-0 top-full mt-3 w-48 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl"
+              trigger={
+                <button
+                  type="button"
+                  className={iconButtonClass}
                   aria-label="User menu"
-                  className="absolute right-0 top-full mt-3 w-48 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl"
+                  title="User menu"
+                  aria-haspopup="menu"
+                  aria-expanded={isUserMenuOpen}
+                  onClick={() => {
+                    setIsUserMenuOpen((open) => !open);
+                    setIsMenuOpen(false);
+                  }}
                 >
-                  <Link
-                    role="menuitem"
-                    href="/my-user"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    role="menuitem"
-                    href="/my-treatments"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
-                  >
-                    My treatments
-                  </Link>
-                  <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />
-                </nav>
-              )}
-            </>
+                  <UserIcon />
+                </button>
+              }
+            >
+              <Link
+                role="menuitem"
+                href="/my-user"
+                onClick={() => setIsUserMenuOpen(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+              >
+                Profile
+              </Link>
+              <Link
+                role="menuitem"
+                href="/my-treatments"
+                onClick={() => setIsUserMenuOpen(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+              >
+                My treatments
+              </Link>
+              <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />
+            </ContextMenu>
           ) : (
             <Link
               href="/login"
@@ -130,39 +111,40 @@ export function HomeHeader({ user }: HomeFooterProps) {
               <UserIcon />
             </Link>
           )}
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label="Open menu"
-            title="Open menu"
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => {
-              setIsMenuOpen((open) => !open);
-              setIsUserMenuOpen(false);
-            }}
+          <ContextMenu
+            open={isMenuOpen}
+            onOpenChange={setIsMenuOpen}
+            menuLabel="Main menu"
+            className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl"
+            trigger={
+              <button
+                type="button"
+                className={iconButtonClass}
+                aria-label="Open menu"
+                title="Open menu"
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen}
+                onClick={() => {
+                  setIsMenuOpen((open) => !open);
+                  setIsUserMenuOpen(false);
+                }}
+              >
+                <MenuIcon />
+              </button>
+            }
           >
-            <MenuIcon />
-          </button>
-          {isMenuOpen && (
-            <nav
-              role="menu"
-              aria-label="Main menu"
-              className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-2xl border border-[#d4c7b4] bg-[#fff8ee] p-1.5 shadow-xl"
-            >
-              {menuLinks.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  role="menuitem"
-                  href={href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          )}
+            {menuLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                role="menuitem"
+                href={href}
+                onClick={() => setIsMenuOpen(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+              >
+                {label}
+              </Link>
+            ))}
+          </ContextMenu>
         </div>
       </div>
     </header>

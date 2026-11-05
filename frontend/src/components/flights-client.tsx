@@ -11,6 +11,9 @@ import {
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { ContextMenu } from "@/components/context-menu";
+import { MediaThumbnail } from "@/components/media-thumbnail";
+import { MediaThumbnailGrid } from "@/components/media-thumbnail-grid";
 import { ApiErrorHandler, formatDate, formatDateShort } from "@/lib/utils";
 import {
   catsApi,
@@ -86,6 +89,9 @@ export function FlightsClient({
   const [photoActionId, setPhotoActionId] = useState<string | null>(null);
   const [expandedPhotoId, setExpandedPhotoId] = useState<string | null>(null);
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+  const [thumbnailPhotoMenuId, setThumbnailPhotoMenuId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -358,6 +364,7 @@ export function FlightsClient({
       setPhotos((items) => items.filter((photo) => photo.id !== photoId));
       if (expandedPhotoId === photoId) setExpandedPhotoId(null);
       setIsPhotoMenuOpen(false);
+      setThumbnailPhotoMenuId(null);
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
     } finally {
@@ -819,29 +826,46 @@ export function FlightsClient({
                   )}
                 </div>
                 {!isDeletedSelection && (
-                  <div className="mt-4 grid w-fit grid-cols-4 gap-2">
+                  <MediaThumbnailGrid>
                     {sortedPhotos.map((photo) => (
-                      <div
+                      <MediaThumbnail
                         key={photo.id}
-                        className="relative overflow-hidden rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                        menuOpen={thumbnailPhotoMenuId === photo.id}
+                        onMenuOpenChange={(open) =>
+                          setThumbnailPhotoMenuId(open ? photo.id : null)
+                        }
+                        menuLabel="Flight thumbnail actions"
+                        preview={
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpandedPhotoId(photo.id);
+                              setIsPhotoMenuOpen(false);
+                              setThumbnailPhotoMenuId(null);
+                            }}
+                            disabled={!photo.fullUrl && !photo.url}
+                            className="block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
+                            style={
+                              photo.url
+                                ? { backgroundImage: `url(${photo.url})` }
+                                : undefined
+                            }
+                            aria-label="Open flight photo"
+                            title="Open flight photo"
+                          />
+                        }
                       >
                         <button
                           type="button"
-                          onClick={() => {
-                            setExpandedPhotoId(photo.id);
-                            setIsPhotoMenuOpen(false);
-                          }}
-                          disabled={!photo.fullUrl && !photo.url}
-                          className="block h-16 w-16 bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
-                          style={
-                            photo.url
-                              ? { backgroundImage: `url(${photo.url})` }
-                              : undefined
-                          }
-                          aria-label="Open flight photo"
-                          title="Open flight photo"
-                        />
-                      </div>
+                          onClick={() => void removePhoto(photo.id)}
+                          disabled={photoActionId === photo.id}
+                          className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {photoActionId === photo.id
+                            ? "Deleting..."
+                            : "Delete"}
+                        </button>
+                      </MediaThumbnail>
                     ))}
                     <label
                       aria-label="Add photos"
@@ -865,7 +889,7 @@ export function FlightsClient({
                         className="sr-only"
                       />
                     </label>
-                  </div>
+                  </MediaThumbnailGrid>
                 )}
                 {isDeletedSelection && (
                   <p className="mt-3 text-sm text-red-800">
@@ -1251,32 +1275,33 @@ export function FlightsClient({
             {expandedPhotoIndex + 1} / {sortedPhotos.length}
           </div>
           <div className="absolute right-4 top-4 z-30 flex items-start gap-2">
-            <div className="relative">
+            <ContextMenu
+              open={isPhotoMenuOpen}
+              onOpenChange={setIsPhotoMenuOpen}
+              menuLabel="Flight photo actions"
+              className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl"
+              trigger={
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoMenuOpen((isOpen) => !isOpen)}
+                  aria-expanded={isPhotoMenuOpen}
+                  aria-label="Flight photo actions"
+                  title="Flight photo actions"
+                  className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                >
+                  Actions
+                </button>
+              }
+            >
               <button
                 type="button"
-                onClick={() => setIsPhotoMenuOpen((isOpen) => !isOpen)}
-                aria-expanded={isPhotoMenuOpen}
-                aria-label="Flight photo actions"
-                title="Flight photo actions"
-                className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                onClick={() => void removePhoto(expandedPhoto.id)}
+                disabled={photoActionId === expandedPhoto.id}
+                className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
               >
-                Actions
+                {photoActionId === expandedPhoto.id ? "Deleting..." : "Delete"}
               </button>
-              {isPhotoMenuOpen && (
-                <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
-                  <button
-                    type="button"
-                    onClick={() => void removePhoto(expandedPhoto.id)}
-                    disabled={photoActionId === expandedPhoto.id}
-                    className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {photoActionId === expandedPhoto.id
-                      ? "Deleting..."
-                      : "Delete"}
-                  </button>
-                </div>
-              )}
-            </div>
+            </ContextMenu>
             <button
               type="button"
               onClick={() => {

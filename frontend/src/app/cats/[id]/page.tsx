@@ -18,7 +18,6 @@ import {
   faClockRotateLeft,
   faDownload,
   faEllipsis,
-  faEllipsisVertical,
   faImages,
   faListCheck,
   faNotesMedical,
@@ -43,6 +42,9 @@ import { CatTreatments } from "@/components/cat-treatments";
 import { CatMedicalNotes } from "@/components/cat-medical-notes";
 import { CatVaccinations } from "@/components/cat-vaccinations";
 import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
+import { ContextMenu } from "@/components/context-menu";
+import { MediaThumbnail } from "@/components/media-thumbnail";
+import { MediaThumbnailGrid } from "@/components/media-thumbnail-grid";
 import {
   AdopterCountry,
   CatArchivingReason,
@@ -1300,67 +1302,52 @@ export default function CatProfilePage() {
                     )}
 
                     {!isLoadingPhotos && (
-                      <div className="mt-3 grid w-fit grid-cols-4 gap-2">
+                      <MediaThumbnailGrid>
                         {visibleGalleryPhotos.map((photo) => (
-                          <div
+                          <MediaThumbnail
                             key={photo.id}
-                            className="relative rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                            menuOpen={thumbnailPhotoMenuId === photo.id}
+                            onMenuOpenChange={(open) =>
+                              setThumbnailPhotoMenuId(open ? photo.id : null)
+                            }
+                            menuLabel={`Photo actions for ${cat.name}`}
+                            preview={
+                              <button
+                                type="button"
+                                onClick={() => openPhoto(photo.id)}
+                                className={`block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 ${photo.mediaType === "video" ? "flex items-center justify-center bg-black text-2xl text-white" : ""}`}
+                                style={
+                                  photo.mediaType !== "video" && photo.url
+                                    ? {
+                                        backgroundImage: `url(${photo.url})`,
+                                      }
+                                    : undefined
+                                }
+                                aria-label={`Open ${photo.mediaType} of ${cat.name}`}
+                              >
+                                {photo.mediaType === "video" && (
+                                  <span aria-hidden="true">▶</span>
+                                )}
+                              </button>
+                            }
                           >
+                            <a
+                              href={photo.downloadUrl ?? undefined}
+                              className="block rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                            >
+                              Download
+                            </a>
                             <button
                               type="button"
-                              onClick={() => openPhoto(photo.id)}
-                              className={`block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 ${photo.mediaType === "video" ? "flex items-center justify-center bg-black text-2xl text-white" : ""}`}
-                              style={
-                                photo.mediaType !== "video" && photo.url
-                                  ? { backgroundImage: `url(${photo.url})` }
-                                  : undefined
-                              }
-                              aria-label={`Open ${photo.mediaType} of ${cat.name}`}
+                              onClick={() => void handleDeletePhoto(photo.id)}
+                              disabled={removingPhotoId === photo.id}
+                              className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                             >
-                              {photo.mediaType === "video" && (
-                                <span aria-hidden="true">▶</span>
-                              )}
+                              {removingPhotoId === photo.id
+                                ? "Deleting..."
+                                : "Delete"}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setThumbnailPhotoMenuId((current) =>
-                                  current === photo.id ? null : photo.id,
-                                )
-                              }
-                              aria-label={`Photo actions for ${cat.name}`}
-                              title="Photo actions"
-                              aria-expanded={thumbnailPhotoMenuId === photo.id}
-                              className="absolute bottom-0 right-0 rounded-tl-lg bg-white/60 px-2 py-1 text-sm text-[#4d514b] transition hover:bg-white/85"
-                            >
-                              <FontAwesomeIcon
-                                icon={faEllipsisVertical}
-                                aria-hidden="true"
-                              />
-                            </button>
-                            {thumbnailPhotoMenuId === photo.id && (
-                              <div className="absolute bottom-0 right-0 z-20 mb-8 w-36 overflow-hidden rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-1 shadow-xl">
-                                <a
-                                  href={photo.downloadUrl ?? undefined}
-                                  className="block rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
-                                >
-                                  Download
-                                </a>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleDeletePhoto(photo.id)
-                                  }
-                                  disabled={removingPhotoId === photo.id}
-                                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                                >
-                                  {removingPhotoId === photo.id
-                                    ? "Deleting..."
-                                    : "Delete"}
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          </MediaThumbnail>
                         ))}
                         <label
                           className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#d05a2c]/45 bg-[#d05a2c]/10 text-2xl font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/20 has-disabled:cursor-not-allowed has-disabled:opacity-60"
@@ -1377,7 +1364,7 @@ export default function CatProfilePage() {
                             className="sr-only"
                           />
                         </label>
-                      </div>
+                      </MediaThumbnailGrid>
                     )}
 
                     {photoError && (
@@ -1431,72 +1418,59 @@ export default function CatProfilePage() {
                       </p>
                     )}
                     {!isLoadingDocuments && imageDocuments.length > 0 && (
-                      <div className="mt-3 grid w-fit grid-cols-4 gap-2">
+                      <MediaThumbnailGrid>
                         {imageDocuments.map((document) => (
-                          <div
+                          <MediaThumbnail
                             key={document.id}
-                            className="relative rounded-lg border border-[#d4c7b4] bg-[#fff8ee]"
+                            menuOpen={thumbnailDocumentMenuId === document.id}
+                            onMenuOpenChange={(open) =>
+                              setThumbnailDocumentMenuId(
+                                open ? document.id : null,
+                              )
+                            }
+                            menuLabel={`Document actions for ${document.fileName}`}
+                            preview={
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedDocumentId(document.id);
+                                  setIsDocumentMenuOpen(false);
+                                }}
+                                disabled={!document.url}
+                                className="block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
+                                style={
+                                  document.url
+                                    ? {
+                                        backgroundImage: `url(${document.url})`,
+                                      }
+                                    : undefined
+                                }
+                                aria-label={`Open image document ${document.fileName}`}
+                                title={document.fileName}
+                              />
+                            }
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setExpandedDocumentId(document.id);
-                                setIsDocumentMenuOpen(false);
-                              }}
-                              disabled={!document.url}
-                              className="block h-16 w-16 rounded-lg bg-[#eadfce] bg-cover bg-center transition brightness-95 hover:brightness-105 disabled:cursor-not-allowed"
-                              style={
-                                document.url
-                                  ? { backgroundImage: `url(${document.url})` }
-                                  : undefined
-                              }
-                              aria-label={`Open image document ${document.fileName}`}
-                              title={document.fileName}
-                            />
+                            <a
+                              href={document.downloadUrl ?? undefined}
+                              className="block rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                            >
+                              Download
+                            </a>
                             <button
                               type="button"
                               onClick={() =>
-                                setThumbnailDocumentMenuId((current) =>
-                                  current === document.id ? null : document.id,
-                                )
+                                void handleDeleteDocument(document.id)
                               }
-                              aria-label={`Document actions for ${document.fileName}`}
-                              title="Document actions"
-                              aria-expanded={
-                                thumbnailDocumentMenuId === document.id
-                              }
-                              className="absolute bottom-0 right-0 rounded-tl-lg bg-white/60 px-2 py-1 text-sm text-[#4d514b] transition hover:bg-white/85"
+                              disabled={removingDocumentId === document.id}
+                              className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                             >
-                              <FontAwesomeIcon
-                                icon={faEllipsisVertical}
-                                aria-hidden="true"
-                              />
+                              {removingDocumentId === document.id
+                                ? "Deleting..."
+                                : "Delete"}
                             </button>
-                            {thumbnailDocumentMenuId === document.id && (
-                              <div className="absolute bottom-0 right-0 z-20 mb-8 w-36 overflow-hidden rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-1 shadow-xl">
-                                <a
-                                  href={document.downloadUrl ?? undefined}
-                                  className="block rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
-                                >
-                                  Download
-                                </a>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void handleDeleteDocument(document.id)
-                                  }
-                                  disabled={removingDocumentId === document.id}
-                                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                                >
-                                  {removingDocumentId === document.id
-                                    ? "Deleting..."
-                                    : "Delete"}
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          </MediaThumbnail>
                         ))}
-                      </div>
+                      </MediaThumbnailGrid>
                     )}
                     {!isLoadingDocuments && fileDocuments.length > 0 && (
                       <ul className="mt-3 divide-y divide-[#d4c7b4] border-y border-[#d4c7b4]">
@@ -2504,42 +2478,55 @@ export default function CatProfilePage() {
             aria-label="Cat page sections"
             className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-2xl border border-[#d4c7b4] bg-[#fff8ee]/95 p-2 shadow-xl backdrop-blur-md md:p-2.5"
           >
-            {isSectionMenuOpen && (
-              <div className="absolute bottom-full right-0 mb-2 grid min-w-48 gap-1 rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-2 shadow-xl md:min-w-56 md:p-2">
-                {[
-                  ["vaccinations", "Vaccinations", faSyringe],
-                  ["parasite-treatments", "Parasite treatment", faBugs],
-                  ["medical-notes", "Medical notes", faNotesMedical],
-                  ["tasks", "Reminders", faListCheck],
-                  ["history", "Audit", faClockRotateLeft],
-                ].map(([id, label, icon]) => (
+            <ContextMenu
+              open={isSectionMenuOpen}
+              onOpenChange={setIsSectionMenuOpen}
+              menuLabel="More sections"
+              className="absolute bottom-full right-0 mb-2 grid min-w-48 gap-1 rounded-xl border border-[#d4c7b4] bg-[#fff8ee] p-2 shadow-xl md:min-w-56 md:p-2"
+              trigger={
+                <div className="flex items-center gap-1 md:gap-2">
+                  {[
+                    ["profile", "Profile", faCat],
+                    ["media", "Gallery", faImages],
+                    ["treatments", "Treatments", faPills],
+                    ["weight-history", "Weight history", faWeightScale],
+                  ].map(([id, label, icon]) => (
+                    <button
+                      key={id as string}
+                      type="button"
+                      onClick={() => goToSection(id as string)}
+                      aria-label={label as string}
+                      title={label as string}
+                      aria-current={
+                        selectedSection === id ? "location" : undefined
+                      }
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl transition md:h-11 md:w-11 ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}
+                    >
+                      <FontAwesomeIcon
+                        icon={icon as typeof faCat}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
                   <button
-                    key={id as string}
                     type="button"
-                    onClick={() => goToSection(id as string)}
-                    aria-label={label as string}
-                    title={label as string}
-                    aria-current={
-                      selectedSection === id ? "location" : undefined
-                    }
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition md:gap-3 md:px-3 md:py-2.5 ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}
+                    onClick={() => setIsSectionMenuOpen((open) => !open)}
+                    aria-expanded={isSectionMenuOpen}
+                    aria-label="More sections"
+                    title="More sections"
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition md:h-11 md:w-11 ${["vaccinations", "medical-notes", "parasite-treatments", "tasks", "history"].includes(selectedSection) ? "bg-[#b24a20] ring-2 ring-[#d05a2c]/30" : "bg-[#d05a2c] hover:bg-[#b24a20]"}`}
                   >
-                    <FontAwesomeIcon
-                      icon={icon as typeof faListCheck}
-                      className="w-4"
-                      aria-hidden="true"
-                    />
-                    <span>{label as string}</span>
+                    <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
                   </button>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center gap-1 md:gap-2">
+                </div>
+              }
+            >
               {[
-                ["profile", "Profile", faCat],
-                ["media", "Gallery", faImages],
-                ["treatments", "Treatments", faPills],
-                ["weight-history", "Weight history", faWeightScale],
+                ["vaccinations", "Vaccinations", faSyringe],
+                ["parasite-treatments", "Parasite treatment", faBugs],
+                ["medical-notes", "Medical notes", faNotesMedical],
+                ["tasks", "Reminders", faListCheck],
+                ["history", "Audit", faClockRotateLeft],
               ].map(([id, label, icon]) => (
                 <button
                   key={id as string}
@@ -2548,25 +2535,17 @@ export default function CatProfilePage() {
                   aria-label={label as string}
                   title={label as string}
                   aria-current={selectedSection === id ? "location" : undefined}
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl transition md:h-11 md:w-11 ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition md:gap-3 md:px-3 md:py-2.5 ${selectedSection === id ? "bg-[#d05a2c]/15 text-[#b24a20]" : "text-gray-800 hover:bg-[#d05a2c]/10 hover:text-[#b24a20]"}`}
                 >
                   <FontAwesomeIcon
-                    icon={icon as typeof faCat}
+                    icon={icon as typeof faListCheck}
+                    className="w-4"
                     aria-hidden="true"
                   />
+                  <span>{label as string}</span>
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => setIsSectionMenuOpen((open) => !open)}
-                aria-expanded={isSectionMenuOpen}
-                aria-label="More sections"
-                title="More sections"
-                className={`flex h-10 w-10 items-center justify-center rounded-xl text-white transition md:h-11 md:w-11 ${["vaccinations", "medical-notes", "parasite-treatments", "tasks", "history"].includes(selectedSection) ? "bg-[#b24a20] ring-2 ring-[#d05a2c]/30" : "bg-[#d05a2c] hover:bg-[#b24a20]"}`}
-              >
-                <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
-              </button>
-            </div>
+            </ContextMenu>
           </nav>
         )}
 
@@ -2589,63 +2568,66 @@ export default function CatProfilePage() {
             </div>
 
             <div className="absolute right-4 top-4 z-30 flex items-start gap-2">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsPhotoMenuOpen((isOpen) => !isOpen)}
-                  className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
-                  aria-expanded={isPhotoMenuOpen}
+              <ContextMenu
+                open={isPhotoMenuOpen}
+                onOpenChange={setIsPhotoMenuOpen}
+                menuLabel="Photo actions"
+                className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl"
+                trigger={
+                  <button
+                    type="button"
+                    onClick={() => setIsPhotoMenuOpen((isOpen) => !isOpen)}
+                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                    aria-expanded={isPhotoMenuOpen}
+                  >
+                    Actions
+                  </button>
+                }
+              >
+                <a
+                  href={expandedPhoto.downloadUrl ?? undefined}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
                 >
-                  Actions
-                </button>
-                {isPhotoMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
-                    <a
-                      href={expandedPhoto.downloadUrl ?? undefined}
-                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
-                    >
-                      Download
-                    </a>
-                    {expandedPhoto.isPrimary &&
-                      expandedPhoto.mediaType !== "video" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsPhotoPositionSelectorOpen((open) => !open);
-                            setIsPhotoMenuOpen(false);
-                          }}
-                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
-                        >
-                          {isPhotoPositionSelectorOpen
-                            ? "Hide frame selector"
-                            : "Adjust photo frame"}
-                        </button>
-                      )}
-                    {!expandedPhoto.isPrimary && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetPrimaryPhoto(expandedPhoto.id)}
-                        disabled={settingPrimaryPhotoId === expandedPhoto.id}
-                        className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10 disabled:opacity-50"
-                      >
-                        {settingPrimaryPhotoId === expandedPhoto.id
-                          ? "Setting..."
-                          : "Make primary"}
-                      </button>
-                    )}
+                  Download
+                </a>
+                {expandedPhoto.isPrimary &&
+                  expandedPhoto.mediaType !== "video" && (
                     <button
                       type="button"
-                      onClick={() => handleDeletePhoto(expandedPhoto.id)}
-                      disabled={removingPhotoId === expandedPhoto.id}
-                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                      onClick={() => {
+                        setIsPhotoPositionSelectorOpen((open) => !open);
+                        setIsPhotoMenuOpen(false);
+                      }}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
                     >
-                      {removingPhotoId === expandedPhoto.id
-                        ? "Deleting..."
-                        : "Delete"}
+                      {isPhotoPositionSelectorOpen
+                        ? "Hide frame selector"
+                        : "Adjust photo frame"}
                     </button>
-                  </div>
+                  )}
+                {!expandedPhoto.isPrimary && (
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrimaryPhoto(expandedPhoto.id)}
+                    disabled={settingPrimaryPhotoId === expandedPhoto.id}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10 disabled:opacity-50"
+                  >
+                    {settingPrimaryPhotoId === expandedPhoto.id
+                      ? "Setting..."
+                      : "Make primary"}
+                  </button>
                 )}
-              </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePhoto(expandedPhoto.id)}
+                  disabled={removingPhotoId === expandedPhoto.id}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                >
+                  {removingPhotoId === expandedPhoto.id
+                    ? "Deleting..."
+                    : "Delete"}
+                </button>
+              </ContextMenu>
               <button
                 type="button"
                 onClick={closePhoto}
@@ -2844,38 +2826,39 @@ export default function CatProfilePage() {
               {expandedImageDocumentIndex + 1} / {imageDocuments.length}
             </div>
             <div className="absolute right-4 top-4 z-30 flex items-start gap-2">
-              <div className="relative">
+              <ContextMenu
+                open={isDocumentMenuOpen}
+                onOpenChange={setIsDocumentMenuOpen}
+                menuLabel="Document actions"
+                className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl"
+                trigger={
+                  <button
+                    type="button"
+                    onClick={() => setIsDocumentMenuOpen((isOpen) => !isOpen)}
+                    className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                    aria-expanded={isDocumentMenuOpen}
+                  >
+                    Actions
+                  </button>
+                }
+              >
+                <a
+                  href={expandedImageDocument.downloadUrl ?? undefined}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
+                >
+                  Download
+                </a>
                 <button
                   type="button"
-                  onClick={() => setIsDocumentMenuOpen((isOpen) => !isOpen)}
-                  className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
-                  aria-expanded={isDocumentMenuOpen}
+                  onClick={() => handleDeleteDocument(expandedImageDocument.id)}
+                  disabled={removingDocumentId === expandedImageDocument.id}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                 >
-                  Actions
+                  {removingDocumentId === expandedImageDocument.id
+                    ? "Deleting..."
+                    : "Delete"}
                 </button>
-                {isDocumentMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-white/20 bg-[#fff8ee] p-2 shadow-2xl">
-                    <a
-                      href={expandedImageDocument.downloadUrl ?? undefined}
-                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#b24a20] transition hover:bg-[#d05a2c]/10"
-                    >
-                      Download
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleDeleteDocument(expandedImageDocument.id)
-                      }
-                      disabled={removingDocumentId === expandedImageDocument.id}
-                      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                    >
-                      {removingDocumentId === expandedImageDocument.id
-                        ? "Deleting..."
-                        : "Delete"}
-                    </button>
-                  </div>
-                )}
-              </div>
+              </ContextMenu>
               <button
                 type="button"
                 onClick={() => {

@@ -175,9 +175,9 @@ export function CatTasks({
           {isFormOpen && (
             <form
               onSubmit={submit}
-              className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/50 p-4 md:grid-cols-2"
+              className="mt-3 grid min-w-0 gap-3 rounded-xl border border-[#d4c7b4] bg-white/50 p-4 md:grid-cols-2"
             >
-              <label className="grid gap-1 text-sm font-medium text-gray-800">
+              <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-800">
                 <span>
                   Comment <span className="text-red-700">*</span>
                 </span>
@@ -187,10 +187,10 @@ export function CatTasks({
                   onChange={(event) =>
                     setForm({ ...form, comment: event.target.value })
                   }
-                  className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+                  className="w-full min-w-0 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
                 />
               </label>
-              <label className="grid gap-1 text-sm font-medium text-gray-800">
+              <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-800">
                 <span>
                   Due date <span className="text-red-700">*</span>
                 </span>
@@ -201,10 +201,10 @@ export function CatTasks({
                   onChange={(event) =>
                     setForm({ ...form, dueDate: event.target.value })
                   }
-                  className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+                  className="w-full min-w-0 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
                 />
               </label>
-              <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+              <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-800 md:col-span-2">
                 <span>
                   Notification receivers <span className="text-red-700">*</span>
                 </span>
@@ -216,7 +216,7 @@ export function CatTasks({
                     if (userId) toggleReceiver(userId);
                     setReceiverChoice("");
                   }}
-                  className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+                  className="w-full min-w-0 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
                 >
                   <option value="">Choose a receiver...</option>
                   {users.map((user) => (
