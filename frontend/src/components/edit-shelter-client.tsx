@@ -7,6 +7,7 @@ import {
   faArrowLeft,
   faBoxArchive,
   faClockRotateLeft,
+  faFileImport,
   faLocationDot,
   faPen,
   faPlus,
@@ -36,6 +37,7 @@ import {
   tagChipStyle,
 } from "@/lib/tag-colors";
 import { PermanentCatDeletionClient } from "@/components/permanent-cat-deletion-client";
+import { TrelloCatImportClient } from "@/components/trello-cat-import-client";
 
 const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60";
@@ -69,7 +71,8 @@ type ShelterSection =
   | "users"
   | "archiving"
   | "audit"
-  | "permanent-delete";
+  | "permanent-delete"
+  | "trello-import";
 
 type CatCardOptions = {
   id: string;
@@ -153,6 +156,7 @@ export function EditShelterClient({
       return;
     }
     if (section === "permanent-delete") return;
+    if (section === "trello-import") return;
     if (section === "archiving") {
       await loadArchivingReasons();
       return;
@@ -1344,6 +1348,8 @@ export function EditShelterClient({
             )}
             {activeSection === "permanent-delete" &&
               currentUser.role === "owner" && <PermanentCatDeletionClient />}
+            {activeSection === "trello-import" &&
+              currentUser.role === "owner" && <TrelloCatImportClient />}
           </div>
         )}
       </main>
@@ -1366,6 +1372,11 @@ export function EditShelterClient({
                     "permanent-delete",
                     "Permanently delete cats",
                     faTrash,
+                  ] as const,
+                  [
+                    "trello-import",
+                    "Import cat from Trello",
+                    faFileImport,
                   ] as const,
                 ]
               : []),

@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { ConflictException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { runInTestTransaction } from "../../test-utils/test-db";
 import { SetCatTrelloLinkHandler } from "./set-cat-trello-link.handler";
@@ -45,6 +45,68 @@ describe("SetCatTrelloLinkHandler", () => {
           false,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  it("rejects a Trello link already assigned to another cat with its identity", async () => {
+    await runInTestTransaction(async (tx) => {
+      const existing = await tx.cat.create({
+        data: {
+          name: "Existing Trello cat",
+          currentLocation: { create: { name: "Existing link location" } },
+          trelloUrl: "https://trello.com/c/wqNVNDIs/existing-slug",
+        },
+      });
+      const target = await tx.cat.create({
+        data: {
+          name: "Target Trello cat",
+          currentLocation: { create: { name: "Target link location" } },
+        },
+      });
+
+      await expect(
+        new SetCatTrelloLinkHandler(tx as PrismaService).handle(
+          target.id,
+          "https://trello.com/c/wqNVNDIs",
+          false,
+        ),
+      ).rejects.toMatchObject({
+        constructor: ConflictException,
+        response: {
+          duplicateCat: {
+            id: existing.id,
+            name: "Existing Trello cat",
+          },
+        },
+      });
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: target.id } }),
+      ).resolves.toMatchObject({ trelloUrl: null });
+    });
+  });
+
+  it("enforces Trello link uniqueness in PostgreSQL", async () => {
+    await runInTestTransaction(async (tx) => {
+      const trelloUrl = "https://trello.com/c/uniqueTrelloCard";
+      await tx.cat.create({
+        data: {
+          name: "First unique-link cat",
+          trelloUrl,
+          currentLocation: { create: { name: "First unique-link location" } },
+        },
+      });
+
+      await expect(
+        tx.cat.create({
+          data: {
+            name: "Second unique-link cat",
+            trelloUrl,
+            currentLocation: {
+              create: { name: "Second unique-link location" },
+            },
+          },
+        }),
+      ).rejects.toMatchObject({ code: "P2002" });
     });
   });
 });

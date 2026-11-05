@@ -468,6 +468,13 @@ export type ApiError = {
   message: string;
   statusCode: number;
   error?: string;
+  duplicateCat?: DuplicateCatReference;
+};
+
+export type DuplicateCatReference = {
+  id: string;
+  name: string;
+  nameNumber: number;
 };
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -485,6 +492,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
       message: error.message || "An error occurred",
       statusCode: response.status,
       error: error.error,
+      duplicateCat: error.duplicateCat,
     } as ApiError;
   }
   if (response.status === 204) {
@@ -955,6 +963,18 @@ export const catsApi = {
       `${BACKEND_URL}/api/cats/${id}/trello-link`,
       {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trelloUrl }),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+
+  async importTrelloCard(trelloUrl: string): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/import/trello`,
+      {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trelloUrl }),
       },

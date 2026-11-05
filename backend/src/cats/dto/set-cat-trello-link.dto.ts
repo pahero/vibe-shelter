@@ -1,5 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 import { Allow } from "class-validator";
+import { canonicalTrelloCardUrl } from "../trello-card-link";
 
 export class SetCatTrelloLinkDto {
   @Allow()
@@ -15,6 +16,6 @@ export class SetCatTrelloLinkDto {
         "trelloUrl must be a Trello card URL in the format https://trello.com/c/<id>",
       );
     }
-    return { trelloUrl: this.trelloUrl };
+    return { trelloUrl: canonicalTrelloCardUrl(this.trelloUrl) };
   }
 }

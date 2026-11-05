@@ -6,7 +6,7 @@ import {
   loginViaApi,
   uploadCatPhotoViaApi,
 } from "../support/backend-helpers";
-import { getTestEnv, uniqueName } from "../support/env";
+import { BACKEND_URL, getTestEnv, uniqueName } from "../support/env";
 
 async function authenticateAsStaff(page: Page) {
   const { staffTestUser } = getTestEnv();
@@ -14,6 +14,16 @@ async function authenticateAsStaff(page: Page) {
 }
 
 test.describe("cats UI", () => {
+  test("Trello card import is restricted to owners", async ({ page }) => {
+    await authenticateAsStaff(page);
+    const response = await page.request.post(
+      `${BACKEND_URL}/api/cats/import/trello`,
+      { data: { trelloUrl: "https://trello.com/c/card123" } },
+    );
+
+    expect(response.status()).toBe(403);
+  });
+
   test("user can create a cat with a unique prefix, upload a photo and find it via search", async ({
     page,
   }) => {

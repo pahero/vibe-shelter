@@ -18,6 +18,8 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { AdminRoleGuard, CurrentUser, JwtAuthGuard } from "../auth";
 import { OwnerRoleGuard } from "../auth/owner-role.guard";
+import { ImportTrelloHandler } from "./import/import-trello.handler";
+import { ImportTrelloDto } from "./import/import-trello.dto";
 import { PermanentlyDeleteCatsHandler } from "./commands/permanently-delete-cats.handler";
 import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler";
 import { PrimaryPhotoUpload } from "./cats.types";
@@ -100,6 +102,7 @@ export class CatsController {
     private readonly listFavoriteCatsWithActiveTreatmentsHandler: ListFavoriteCatsWithActiveTreatmentsHandler,
     private readonly permanentlyDeleteCatsHandler: PermanentlyDeleteCatsHandler,
     private readonly setCatTrelloLinkHandler: SetCatTrelloLinkHandler,
+    private readonly importTrelloHandler: ImportTrelloHandler,
   ) {}
 
   @Delete("permanent")
@@ -209,6 +212,19 @@ export class CatsController {
     return this.setCatTrelloLinkHandler.handle(
       id,
       dto.toCommand().trelloUrl,
+      user.isTest,
+    );
+  }
+
+  @Post("import/trello")
+  @UseGuards(OwnerRoleGuard)
+  async importTrello(
+    @Body() dto: ImportTrelloDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.importTrelloHandler.handle(
+      dto.toCommand(),
+      user.id,
       user.isTest,
     );
   }

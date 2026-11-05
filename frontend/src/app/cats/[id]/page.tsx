@@ -55,6 +55,7 @@ import {
   CatSex,
   CatTag,
   CatWeight,
+  DuplicateCatReference,
   IntakeSource,
   INTAKE_SOURCE_LABELS,
   Location,
@@ -255,6 +256,8 @@ export default function CatProfilePage() {
   const [trelloUrlDraft, setTrelloUrlDraft] = useState("");
   const [isSavingTrelloUrl, setIsSavingTrelloUrl] = useState(false);
   const [trelloUrlError, setTrelloUrlError] = useState<string | null>(null);
+  const [trelloDuplicateCat, setTrelloDuplicateCat] =
+    useState<DuplicateCatReference | null>(null);
 
   useEffect(() => {
     authenticatedFetch(`${BACKEND_URL}/auth/me`)
@@ -275,12 +278,14 @@ export default function CatProfilePage() {
     if (!cat) return;
     setIsSavingTrelloUrl(true);
     setTrelloUrlError(null);
+    setTrelloDuplicateCat(null);
     try {
       const url = trelloUrlDraft.trim();
       await catsApi.setTrelloLink(cat.id, url || null);
       setCat({ ...cat, trelloUrl: url || null });
     } catch (err) {
       setTrelloUrlError(ApiErrorHandler.handle(err));
+      setTrelloDuplicateCat(ApiErrorHandler.getDuplicateCat(err));
     } finally {
       setIsSavingTrelloUrl(false);
     }
@@ -1623,6 +1628,20 @@ export default function CatProfilePage() {
                       {trelloUrlError && (
                         <p className="mt-2 text-sm text-red-700">
                           {trelloUrlError}
+                          {trelloDuplicateCat && (
+                            <>
+                              {" "}
+                              <Link
+                                className="font-semibold underline"
+                                href={`/cats/${trelloDuplicateCat.id}`}
+                              >
+                                View {trelloDuplicateCat.name}
+                                {trelloDuplicateCat.nameNumber > 1
+                                  ? ` #${trelloDuplicateCat.nameNumber}`
+                                  : ""}
+                              </Link>
+                            </>
+                          )}
                         </p>
                       )}
                     </div>
