@@ -1,4 +1,8 @@
-import { NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Prisma } from "@prisma/client";
@@ -282,7 +286,7 @@ describe("ImportTrelloAttachmentsHandler", () => {
           trello,
           new CatPhotoUrlService(new ConfigService(), s3Client),
         ).handle(`https://trello.com/c/${shortId}`, actorId, false),
-      ).resolves.toEqual({ id: cat.id });
+      ).rejects.toThrow(BadRequestException);
 
       await expect(
         tx.catPhoto.findUniqueOrThrow({ where: { id: existing.id } }),
@@ -347,6 +351,116 @@ describe("ImportTrelloAttachmentsHandler", () => {
     } finally {
       if (bucketName) await deleteBucket(bucketName, s3Client);
     }
+  });
+
+  it("rejects a concurrent cat change and removes objects uploaded before the conflict", async () => {
+    let bucketName: string | undefined;
+    try {
+      bucketName = await createBucket("trello-attachment-conflict", s3Client);
+      await runInTestTransaction(async (tx) => {
+        const actorId = await createActor(tx);
+        const shortId = crypto.randomUUID().replaceAll("-", "");
+        const trelloUrl = `https://trello.com/c/${shortId}`;
+        const cat = await tx.cat.create({
+          data: {
+            name: `Trello conflict ${shortId}`,
+            currentLocation: { create: { name: `Trello location ${shortId}` } },
+            trelloUrl,
+          },
+        });
+        const jpeg = await sharp({
+          create: { width: 1, height: 1, channels: 3, background: "white" },
+        })
+          .jpeg()
+          .toBuffer();
+        const trello = new TestTrelloClient(
+          makeCard(shortId, [
+            {
+              name: "concurrent.jpg",
+              url: `https://trello.com/attachment/${shortId}/concurrent.jpg`,
+              mimeType: "image/jpeg",
+            },
+          ]),
+          async () => {
+            await tx.cat.update({
+              where: { id: cat.id },
+              data: { concurrencyToken: crypto.randomUUID() },
+            });
+            return { bytes: jpeg, contentType: "image/jpeg" };
+          },
+        );
+        const photoUrls = new CatPhotoUrlService(
+          new ConfigService({ s3: { bucketName } }),
+          s3Client,
+        );
+        const errorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        await expect(
+          new ImportTrelloAttachmentsHandler(
+            tx as PrismaService,
+            trello,
+            photoUrls,
+          ).handle(trelloUrl, actorId, false),
+        ).rejects.toThrow(ConflictException);
+
+        await expect(
+          photoUrls.listPhotoObjects(`cats/${cat.id}/photos/`),
+        ).resolves.toEqual([]);
+        errorSpy.mockRestore();
+      });
+    } finally {
+      if (bucketName) await deleteBucket(bucketName, s3Client);
+    }
+  });
+
+  it("reports upload failures without replacing existing files", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const shortId = crypto.randomUUID().replaceAll("-", "");
+      const cat = await tx.cat.create({
+        data: {
+          name: `Trello upload failure ${shortId}`,
+          currentLocation: { create: { name: `Trello location ${shortId}` } },
+          trelloUrl: `https://trello.com/c/${shortId}`,
+        },
+      });
+      const existing = await tx.catPhoto.create({
+        data: {
+          catId: cat.id,
+          key: `cats/${cat.id}/photos/existing.jpg`,
+          fileName: "existing.jpg",
+        },
+      });
+      const jpeg = await sharp({
+        create: { width: 1, height: 1, channels: 3, background: "white" },
+      })
+        .jpeg()
+        .toBuffer();
+      const trello = new TestTrelloClient(
+        makeCard(shortId, [
+          {
+            name: "new.jpg",
+            url: `https://trello.com/attachment/${shortId}/new.jpg`,
+            mimeType: "image/jpeg",
+          },
+        ]),
+        async () => ({ bytes: jpeg, contentType: "image/jpeg" }),
+      );
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      await expect(
+        new ImportTrelloAttachmentsHandler(
+          tx as PrismaService,
+          trello,
+          new CatPhotoUrlService(new ConfigService(), s3Client),
+        ).handle(`https://trello.com/c/${shortId}`, actorId, false),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        tx.catPhoto.findUniqueOrThrow({ where: { id: existing.id } }),
+      ).resolves.toMatchObject({ deletedAt: null });
+      errorSpy.mockRestore();
+    });
   });
 });
 

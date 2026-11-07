@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -39,6 +40,7 @@ export class ImportTrelloAttachmentsHandler {
       select: {
         id: true,
         trelloUrl: true,
+        concurrencyToken: true,
       },
     });
     const cat = possibleCats.find(
@@ -107,7 +109,9 @@ export class ImportTrelloAttachmentsHandler {
     // An empty card intentionally clears imported files. A non-empty card whose
     // attachments all failed or were unsupported must leave the current files alone.
     if ((card.attachments?.length ?? 0) > 0 && stored.length === 0) {
-      return { id: cat.id };
+      throw new BadRequestException(
+        "No Trello attachments could be imported; existing files were left unchanged",
+      );
     }
 
     try {
@@ -122,6 +126,10 @@ export class ImportTrelloAttachmentsHandler {
         });
         if (!currentCat)
           throw new NotFoundException("No cat is linked to this Trello card");
+        if (currentCat.concurrencyToken !== cat.concurrencyToken)
+          throw new ConflictException(
+            "The cat changed while Trello attachments were being prepared",
+          );
 
         const now = new Date();
         const [oldPhotos, oldDocuments] = await Promise.all([
