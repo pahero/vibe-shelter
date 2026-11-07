@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { BACKEND_URL, type AuthUser } from "@/lib/backend";
 import Script from "next/script";
+import * as Sentry from "@sentry/nextjs";
 
 declare global {
   interface Window {
@@ -71,6 +72,12 @@ export function PasswordLoginForm({ nextPath = "/" }: PasswordLoginFormProps) {
       }
 
       const user = (await response.json()) as AuthUser;
+      Sentry.setUser({
+        id: user.id,
+        email: user.email,
+        username: user.fullName ?? undefined,
+      });
+      Sentry.setTag("user_role", user.role);
       router.push(
         user.passwordChangeRequired ? "/replace-temporary-password" : nextPath,
       );
