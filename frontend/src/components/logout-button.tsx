@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/lib/backend";
+import * as Sentry from "@sentry/nextjs";
 
 export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
@@ -12,6 +13,8 @@ export function LogoutButton({ className }: { className?: string }) {
       credentials: "include",
     });
 
+    Sentry.setUser(null);
+    Sentry.setTag("user_role", undefined);
     router.push("/login");
     router.refresh();
   }
