@@ -1,3 +1,6 @@
+// Initialize tracing and error reporting before importing Nest or application modules.
+import "./instrument";
+
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ConfigService } from "@nestjs/config";

@@ -10,6 +10,9 @@ import { LocationsModule } from "./locations/locations.module";
 import { CatsModule } from "./cats/cats.module";
 import { FlightsModule } from "./flights/flights.module";
 import { ScheduleModule } from "@nestjs/schedule";
+import { SentryModule } from "@sentry/nestjs/setup";
+import { APP_FILTER } from "@nestjs/core";
+import { SentryGlobalFilter } from "@sentry/nestjs/setup";
 
 @Module({
   imports: [
@@ -18,6 +21,7 @@ import { ScheduleModule } from "@nestjs/schedule";
       isGlobal: true,
       envFilePath: ".env",
     }),
+    SentryModule.forRoot(),
     ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
@@ -28,6 +32,11 @@ import { ScheduleModule } from "@nestjs/schedule";
     FlightsModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
+  ],
 })
 export class AppModule {}

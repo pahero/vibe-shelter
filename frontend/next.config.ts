@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   silent: !process.env.CI,
   sourcemaps: {
-    disable: true,
+    // Upload only when CI supplies Better Stack's source-map credentials.
+    disable: !process.env.SENTRY_AUTH_TOKEN,
   },
 });

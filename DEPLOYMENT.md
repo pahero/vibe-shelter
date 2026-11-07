@@ -180,6 +180,9 @@ Variables:
 - `GOOGLE_CALLBACK_URL` (optional; derived from `APP_DOMAIN`)
 - `ALLOWED_GOOGLE_DOMAIN` (optional)
 - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` (required; reCAPTCHA v3 site key for `APP_DOMAIN`)
+- `SENTRY_ORG` (Better Stack team ID used for source-map uploads)
+- `SENTRY_PROJECT` (Better Stack application ID used for source-map uploads)
+- `SENTRY_URL` (Better Stack source-map upload endpoint)
 - `SMTP_USER` (Gmail sender account)
 - `SMTP_FROM` (sender address; usually the same Gmail address)
 - `SMTP_HOST` (optional; defaults to `smtp.gmail.com`)
@@ -197,6 +200,7 @@ Configure these Environment Secrets:
 - `RECAPTCHA_SECRET_KEY` (reCAPTCHA v3 secret paired with `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`)
 - `SMTP_PASSWORD` (Gmail App Password; never use your regular Google account password)
 - `SEED_ADMIN_PASSWORD` (required only when `seed_admin` is enabled)
+- `BETTER_STACK_API_TOKEN` (Better Stack Telemetry API token for source-map uploads; never commit it)
 
 The workflow writes values to temporary runner files without logging them and
 deletes them when each step exits. Migration, deployment, and optional seeding

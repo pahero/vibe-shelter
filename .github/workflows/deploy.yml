@@ -80,6 +80,11 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=
             NEXT_PUBLIC_RECAPTCHA_SITE_KEY=${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+            SENTRY_ORG=${{ vars.SENTRY_ORG }}
+            SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}
+            SENTRY_URL=${{ vars.SENTRY_URL }}
+          secrets: |
+            better_stack_api_token=${{ secrets.BETTER_STACK_API_TOKEN }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
@@ -90,6 +95,12 @@ jobs:
           target: runner
           push: true
           tags: ${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }}
+          build-args: |
+            SENTRY_ORG=${{ vars.SENTRY_ORG }}
+            SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}
+            SENTRY_URL=${{ vars.SENTRY_URL }}
+          secrets: |
+            better_stack_api_token=${{ secrets.BETTER_STACK_API_TOKEN }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
