@@ -1,0 +1,47 @@
+name: OpenCode Review Fixes
+
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  fix-review:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event_name == 'pull_request_review' &&
+      github.event.review.state != 'approved' &&
+      (contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association) ||
+      github.event.review.user.login == 'opencode-agent[bot]')) ||
+      (github.event_name == 'pull_request_review_comment' &&
+      (contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) ||
+      github.event.comment.user.login == 'opencode-agent[bot]')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Check out the reviewed pull request
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+      - name: Fix requested review changes with OpenCode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        with:
+          model: openrouter/openai/gpt-6-luna
+          prompt: |
+            Review feedback requested changes on pull request ${{ github.event.pull_request.html_url }}.
+            Read the complete review body and its inline review comments, then implement the requested
+            changes on the checked-out pull request branch. Follow repository instructions and add
+            or update tests for behavior changes. Do not address unrelated suggestions or weaken tests.
+            Run the relevant checks, then commit and push the fixes to this pull request branch.
+            If checks fail, still commit the best safe fix so the next review iteration can address it.

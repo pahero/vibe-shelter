@@ -138,7 +138,7 @@ export class CatPhotoUrlService {
     const baseKey = this.buildPhotoBaseKey(input.catId, input.originalName);
     const key = `${baseKey}/full.jpg`;
     const previewKey = `${baseKey}/preview.jpg`;
-    await Promise.all([
+    const uploads = await Promise.allSettled([
       this.client.send(
         new PutObjectCommand({
           Bucket: this.bucketName,
@@ -156,6 +156,18 @@ export class CatPhotoUrlService {
         }),
       ),
     ]);
+    const failedUpload = uploads.find(
+      (upload): upload is PromiseRejectedResult => upload.status === "rejected",
+    );
+    if (failedUpload) {
+      const keys = [key, previewKey];
+      await Promise.allSettled(
+        uploads.flatMap((upload, index) =>
+          upload.status === "fulfilled" ? [this.deletePhoto(keys[index])] : [],
+        ),
+      );
+      throw failedUpload.reason;
+    }
     return { key, previewKey };
   }
 

@@ -7,7 +7,7 @@ import {
   faArrowLeft,
   faBoxArchive,
   faClockRotateLeft,
-  faFileImport,
+  faGear,
   faLocationDot,
   faPen,
   faPlus,
@@ -36,8 +36,7 @@ import {
   VISIBLE_TAG_COLOR_COUNT,
   tagChipStyle,
 } from "@/lib/tag-colors";
-import { PermanentCatDeletionClient } from "@/components/permanent-cat-deletion-client";
-import { TrelloCatImportClient } from "@/components/trello-cat-import-client";
+import { OwnerToolsClient } from "@/components/owner-tools-client";
 
 const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60";
@@ -71,8 +70,7 @@ type ShelterSection =
   | "users"
   | "archiving"
   | "audit"
-  | "permanent-delete"
-  | "trello-import";
+  | "owner-tools";
 
 type CatCardOptions = {
   id: string;
@@ -155,8 +153,7 @@ export function EditShelterClient({
     if (section === "users") {
       return;
     }
-    if (section === "permanent-delete") return;
-    if (section === "trello-import") return;
+    if (section === "owner-tools") return;
     if (section === "archiving") {
       await loadArchivingReasons();
       return;
@@ -1346,10 +1343,8 @@ export function EditShelterClient({
                 />
               </section>
             )}
-            {activeSection === "permanent-delete" &&
-              currentUser.role === "owner" && <PermanentCatDeletionClient />}
-            {activeSection === "trello-import" &&
-              currentUser.role === "owner" && <TrelloCatImportClient />}
+            {activeSection === "owner-tools" &&
+              currentUser.role === "owner" && <OwnerToolsClient />}
           </div>
         )}
       </main>
@@ -1367,18 +1362,7 @@ export function EditShelterClient({
               ["audit", "Audit history", faClockRotateLeft],
             ] as const),
             ...(currentUser.role === "owner"
-              ? [
-                  [
-                    "permanent-delete",
-                    "Permanently delete cats",
-                    faTrash,
-                  ] as const,
-                  [
-                    "trello-import",
-                    "Import cat from Trello",
-                    faFileImport,
-                  ] as const,
-                ]
+              ? [["owner-tools", "Owner tools", faGear] as const]
               : []),
           ].map(([id, label, icon]) => (
             <button

@@ -23,6 +23,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: write
 
     steps:
       - name: Checkout repository

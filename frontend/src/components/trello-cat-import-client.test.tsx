@@ -65,4 +65,55 @@ describe("TrelloCatImportClient", () => {
       screen.getByRole("link", { name: "View existing cat" }),
     ).toHaveAttribute("href", "/cats/existing-cat");
   });
+
+  it("shows the not-found error when importing attachments for an unlinked card", async () => {
+    const importAttachments = vi
+      .spyOn(catsApi, "importTrelloAttachments")
+      .mockRejectedValue({
+        message: "No cat is linked to this Trello card",
+        statusCode: 404,
+      });
+    render(<TrelloCatImportClient />);
+    fireEvent.change(
+      screen.getByLabelText("Existing cat’s Trello card URL *"),
+      { target: { value: "https://trello.com/c/unlinked123" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Replace files with Trello attachments",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(importAttachments).toHaveBeenCalledWith(
+        "https://trello.com/c/unlinked123",
+      ),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No cat is linked to this Trello card",
+    );
+  });
+
+  it("shows the import failure instead of reporting that files were replaced", async () => {
+    vi.spyOn(catsApi, "importTrelloAttachments").mockRejectedValue({
+      message:
+        "No Trello attachments could be imported; existing files were left unchanged",
+      statusCode: 400,
+    });
+    render(<TrelloCatImportClient />);
+    fireEvent.change(
+      screen.getByLabelText("Existing cat’s Trello card URL *"),
+      { target: { value: "https://trello.com/c/card123" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Replace files with Trello attachments",
+      }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No Trello attachments could be imported; existing files were left unchanged",
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
 });

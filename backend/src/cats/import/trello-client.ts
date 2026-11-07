@@ -113,6 +113,7 @@ export class TrelloClient {
 
   async downloadAttachment(
     url: string,
+    maxBytes = 25 * 1024 * 1024,
   ): Promise<{ bytes: Buffer; contentType: string }> {
     const attachmentUrl = new URL(url);
     if (attachmentUrl.protocol !== "https:") {
@@ -160,8 +161,34 @@ export class TrelloClient {
         `Trello attachment download failed (${response.status})`,
       );
     }
+    const declaredLength = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+      throw new ServiceUnavailableException(
+        "Trello attachment exceeds the size limit",
+      );
+    }
+    if (!response.body) {
+      throw new ServiceUnavailableException(
+        "Trello attachment response was empty",
+      );
+    }
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new ServiceUnavailableException(
+          "Trello attachment exceeds the size limit",
+        );
+      }
+      chunks.push(value);
+    }
     return {
-      bytes: Buffer.from(await response.arrayBuffer()),
+      bytes: Buffer.concat(chunks),
       contentType:
         response.headers.get("content-type") ?? "application/octet-stream",
     };
