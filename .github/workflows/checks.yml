@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   static-and-component:
@@ -93,3 +95,31 @@ jobs:
           name: playwright-report
           path: integration-tests/playwright-report/
           if-no-files-found: ignore
+
+  opencode-review:
+    name: OpenCode review
+    needs: [static-and-component, backend, playwright]
+    if: ${{ success() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: anomalyco/opencode/github@latest
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: openrouter/openai/gpt-6-luna
+          use_github_token: true
+          prompt: |
+            Perform a thorough code review of this pull request's changes. Check for correctness,
+            regressions, security issues, and violations of the repository's AGENTS.md instructions.
+
+            If you find any actionable issue, post a review requesting changes and explain each
+            finding with file and line references. Do not approve the pull request.
+
+            If, and only if, you find no actionable issues, submit an approving pull request review.
+            Do not approve based merely on the checks passing. If you cannot complete the review
+            or cannot determine the result confidently, leave a comment explaining that and do not approve.
