@@ -81,6 +81,7 @@ import { PermanentlyDeleteCatsHandler } from "./commands/permanently-delete-cats
 import { OwnerRoleGuard } from "../auth/owner-role.guard";
 import { SetCatTrelloLinkHandler } from "./commands/set-cat-trello-link.handler";
 import { ImportTrelloHandler } from "./import/import-trello.handler";
+import { ImportTrelloAttachmentsHandler } from "./import/import-trello-attachments.handler";
 import { TrelloClient } from "./import/trello-client";
 
 @Module({
@@ -104,6 +105,7 @@ import { TrelloClient } from "./import/trello-client";
     PermanentlyDeleteCatsHandler,
     SetCatTrelloLinkHandler,
     ImportTrelloHandler,
+    ImportTrelloAttachmentsHandler,
     TrelloClient,
     CreateCatHandler,
     ArchiveCatHandler,

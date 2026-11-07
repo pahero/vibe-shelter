@@ -15,6 +15,10 @@ export function TrelloCatImportClient() {
     id: string;
     name: string;
   } | null>(null);
+  const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [isImportingAttachments, setIsImportingAttachments] = useState(false);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [attachmentCatId, setAttachmentCatId] = useState<string | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,77 +39,163 @@ export function TrelloCatImportClient() {
     }
   }
 
+  async function submitAttachments(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAttachmentError(null);
+    setAttachmentCatId(null);
+    setIsImportingAttachments(true);
+    try {
+      const result = await catsApi.importTrelloAttachments(
+        attachmentUrl.trim(),
+      );
+      setAttachmentCatId(result.id);
+      setAttachmentUrl("");
+    } catch (caught) {
+      setAttachmentError(ApiErrorHandler.handle(caught));
+    } finally {
+      setIsImportingAttachments(false);
+    }
+  }
+
   return (
-    <section className="w-full max-w-3xl rounded-2xl border border-[#d4c7b4] bg-white/80 p-6 shadow-panel">
-      <h1 className="text-2xl font-bold text-[#1f2320]">
-        Import cat from Trello
-      </h1>
-      <p className="mt-3 text-sm text-gray-700">
-        Import a cat and its details, vaccinations, photos, and documents from a
-        Trello card.
-      </p>
-      <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-4">
-        <label
-          className="grid gap-1 text-sm font-semibold text-gray-800"
-          htmlFor="trello-card-url"
-        >
-          <span>
-            Trello card URL <span className="text-red-600">*</span>
-          </span>
-        </label>
-        <input
-          id="trello-card-url"
-          type="url"
-          required
-          value={trelloUrl}
-          onChange={(event) => setTrelloUrl(event.target.value)}
-          placeholder="https://trello.com/c/wqNVNDIs"
-          className="w-full rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-        />
-        <button
-          type="submit"
-          disabled={isImporting || !trelloUrl.trim()}
-          className="min-h-11 rounded-xl bg-[#d05a2c] px-5 font-semibold text-white hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isImporting ? "Importing…" : "Import cat"}
-        </button>
-      </form>
-      {error && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-800"
-        >
-          {error}
-          {duplicateCat && (
-            <>
-              {" "}
-              <Link
-                className="font-semibold underline"
-                href={`/cats/${duplicateCat.id}`}
-              >
-                View {duplicateCat.name}
-                {duplicateCat.nameNumber > 1
-                  ? ` #${duplicateCat.nameNumber}`
-                  : ""}
-              </Link>
-            </>
-          )}
+    <>
+      <section className="w-full max-w-3xl rounded-2xl border border-[#d4c7b4] bg-white/80 p-6 shadow-panel">
+        <h1 className="text-2xl font-bold text-[#1f2320]">
+          Import cat from Trello
+        </h1>
+        <p className="mt-3 text-sm text-gray-700">
+          Import a cat and its details, vaccinations, photos, and documents from
+          a Trello card.
         </p>
-      )}
-      {importedCat && (
-        <p
-          role="status"
-          className="mt-4 rounded-lg bg-green-100 p-3 text-sm text-green-900"
+        <form
+          onSubmit={(event) => void submit(event)}
+          className="mt-6 space-y-4"
         >
-          {importedCat.name} was imported from Trello.{" "}
-          <Link
-            className="font-semibold underline"
-            href={`/cats/${importedCat.id}`}
+          <label
+            className="grid gap-1 text-sm font-semibold text-gray-800"
+            htmlFor="trello-card-url"
           >
-            View cat
-          </Link>
+            <span>
+              Trello card URL <span className="text-red-600">*</span>
+            </span>
+          </label>
+          <input
+            id="trello-card-url"
+            type="url"
+            required
+            value={trelloUrl}
+            onChange={(event) => setTrelloUrl(event.target.value)}
+            placeholder="https://trello.com/c/wqNVNDIs"
+            className="w-full rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+          />
+          <button
+            type="submit"
+            disabled={isImporting || !trelloUrl.trim()}
+            className="min-h-11 rounded-xl bg-[#d05a2c] px-5 font-semibold text-white hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isImporting ? "Importing…" : "Import cat"}
+          </button>
+        </form>
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-800"
+          >
+            {error}
+            {duplicateCat && (
+              <>
+                {" "}
+                <Link
+                  className="font-semibold underline"
+                  href={`/cats/${duplicateCat.id}`}
+                >
+                  View {duplicateCat.name}
+                  {duplicateCat.nameNumber > 1
+                    ? ` #${duplicateCat.nameNumber}`
+                    : ""}
+                </Link>
+              </>
+            )}
+          </p>
+        )}
+        {importedCat && (
+          <p
+            role="status"
+            className="mt-4 rounded-lg bg-green-100 p-3 text-sm text-green-900"
+          >
+            {importedCat.name} was imported from Trello.{" "}
+            <Link
+              className="font-semibold underline"
+              href={`/cats/${importedCat.id}`}
+            >
+              View cat
+            </Link>
+          </p>
+        )}
+      </section>
+      <section className="w-full max-w-3xl rounded-2xl border border-[#d4c7b4] bg-white/80 p-6 shadow-panel">
+        <h2 className="text-xl font-bold text-[#1f2320]">
+          Replace existing photos and documents
+        </h2>
+        <p className="mt-3 text-sm text-gray-700">
+          Replace all current photos and documents on the cat linked to this
+          Trello card with its successfully imported attachments.
         </p>
-      )}
-    </section>
+        <form
+          onSubmit={(event) => void submitAttachments(event)}
+          className="mt-6 space-y-4"
+        >
+          <label
+            className="grid gap-1 text-sm font-semibold text-gray-800"
+            htmlFor="existing-cat-trello-card-url"
+          >
+            <span>
+              Existing cat’s Trello card URL{" "}
+              <span className="text-red-600">*</span>
+            </span>
+          </label>
+          <input
+            id="existing-cat-trello-card-url"
+            type="url"
+            required
+            value={attachmentUrl}
+            onChange={(event) => setAttachmentUrl(event.target.value)}
+            placeholder="https://trello.com/c/wqNVNDIs"
+            className="w-full rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+          />
+          <button
+            type="submit"
+            disabled={isImportingAttachments || !attachmentUrl.trim()}
+            className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-5 font-semibold text-[#333832] hover:bg-[#fff8ee] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isImportingAttachments
+              ? "Importing attachments…"
+              : "Replace files with Trello attachments"}
+          </button>
+        </form>
+        {attachmentError && (
+          <p
+            role="alert"
+            className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-800"
+          >
+            {attachmentError}
+          </p>
+        )}
+        {attachmentCatId && (
+          <p
+            role="status"
+            className="mt-4 rounded-lg bg-green-100 p-3 text-sm text-green-900"
+          >
+            Photos and documents were replaced with Trello attachments.{" "}
+            <Link
+              className="font-semibold underline"
+              href={`/cats/${attachmentCatId}`}
+            >
+              View cat
+            </Link>
+          </p>
+        )}
+      </section>
+    </>
   );
 }

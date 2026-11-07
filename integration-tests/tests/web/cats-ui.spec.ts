@@ -22,6 +22,12 @@ test.describe("cats UI", () => {
     );
 
     expect(response.status()).toBe(403);
+
+    const attachmentsResponse = await page.request.post(
+      `${BACKEND_URL}/api/cats/import/trello-attachments`,
+      { data: { trelloUrl: "https://trello.com/c/card123" } },
+    );
+    expect(attachmentsResponse.status()).toBe(403);
   });
 
   test("user can create a cat with a unique prefix, upload a photo and find it via search", async ({

@@ -982,6 +982,18 @@ export const catsApi = {
     return handleResponse<MutationResult>(response);
   },
 
+  async importTrelloAttachments(trelloUrl: string): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/import/trello-attachments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trelloUrl }),
+      },
+    );
+    return handleResponse<MutationResult>(response);
+  },
+
   async toggleCatFavorite(id: string): Promise<{ favorite: boolean }> {
     const response = await authenticatedFetch(
       `${BACKEND_URL}/api/cats/${id}/favorite`,
