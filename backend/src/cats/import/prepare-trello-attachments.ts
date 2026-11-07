@@ -18,19 +18,43 @@ export type PreparedTrelloAttachment =
       >;
     };
 
+const MAX_ATTACHMENT_COUNT = 100;
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
+
 export async function prepareTrelloAttachments(
   trello: TrelloClient,
   attachments: TrelloAttachment[],
 ): Promise<Array<PreparedTrelloAttachment | null>> {
+  if (attachments.length > MAX_ATTACHMENT_COUNT) {
+    throw new Error(
+      `Trello card exceeds the ${MAX_ATTACHMENT_COUNT} attachment limit`,
+    );
+  }
   const results = Array.from({
     length: attachments.length,
   }) as Array<PreparedTrelloAttachment | null>;
   let nextIndex = 0;
+  let retainedBytes = 0;
   await Promise.all(
     Array.from({ length: Math.min(5, attachments.length) }, async () => {
       while (nextIndex < attachments.length) {
         const index = nextIndex++;
-        results[index] = await prepare(attachments[index], trello);
+        const result = await prepare(attachments[index], trello);
+        if (result) {
+          const size =
+            result.kind === "photo"
+              ? result.compressed.full.buffer.length +
+                result.compressed.preview.buffer.length
+              : result.bytes.length;
+          retainedBytes += size;
+          if (retainedBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
+            retainedBytes -= size;
+            results[index] = null;
+            continue;
+          }
+        }
+        results[index] = result;
       }
     }),
   );
@@ -65,7 +89,10 @@ async function prepare(
               : null;
     if (declaredType.startsWith("video/") && !videoType) return null;
 
-    const download = await trello.downloadAttachment(attachment.url);
+    const download = await trello.downloadAttachment(
+      attachment.url,
+      MAX_ATTACHMENT_BYTES,
+    );
     const mimeType = videoType ?? (declaredType || download.contentType);
     if (mimeType === "application/pdf" || extension === "pdf") {
       return { kind: "document", name, bytes: download.bytes };
@@ -100,7 +127,8 @@ async function prepare(
       ? mimeType
       : download.contentType.startsWith("image/")
         ? download.contentType
-        : (extensionImageType ?? "image/jpeg");
+        : extensionImageType;
+    if (!photoMimeType) return null;
     const compressed = await CatPhotoCompressionService.compress({
       buffer: download.bytes,
       originalname: name,

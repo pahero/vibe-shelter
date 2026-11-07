@@ -241,6 +241,113 @@ describe("ImportTrelloAttachmentsHandler", () => {
       );
     });
   });
+
+  it("preserves existing files when every attachment download fails", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const shortId = crypto.randomUUID().replaceAll("-", "");
+      const cat = await tx.cat.create({
+        data: {
+          name: `Trello failed imports ${shortId}`,
+          currentLocation: { create: { name: `Trello location ${shortId}` } },
+          trelloUrl: `https://trello.com/c/${shortId}`,
+          primaryPhotoKey: `cats/${shortId}/old.jpg`,
+        },
+      });
+      const existing = await tx.catPhoto.create({
+        data: {
+          catId: cat.id,
+          key: `cats/${cat.id}/photos/old.jpg`,
+          fileName: "old.jpg",
+        },
+      });
+      const trello = new TestTrelloClient(
+        makeCard(shortId, [
+          {
+            name: "failed.jpg",
+            url: `https://trello.com/attachment/${shortId}/failed.jpg`,
+            mimeType: "image/jpeg",
+          },
+        ]),
+        async () => {
+          throw new Error("Download failed");
+        },
+      );
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const before = await tx.cat.findUniqueOrThrow({ where: { id: cat.id } });
+
+      await expect(
+        new ImportTrelloAttachmentsHandler(
+          tx as PrismaService,
+          trello,
+          new CatPhotoUrlService(new ConfigService(), s3Client),
+        ).handle(`https://trello.com/c/${shortId}`, actorId, false),
+      ).resolves.toEqual({ id: cat.id });
+
+      await expect(
+        tx.catPhoto.findUniqueOrThrow({ where: { id: existing.id } }),
+      ).resolves.toMatchObject({ deletedAt: null });
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
+      ).resolves.toMatchObject({
+        primaryPhotoKey: before.primaryPhotoKey,
+        concurrencyToken: before.concurrencyToken,
+        version: before.version,
+      });
+      errorSpy.mockRestore();
+    });
+  });
+
+  it("uses an imported video as the primary media key", async () => {
+    let bucketName: string | undefined;
+    try {
+      bucketName = await createBucket("trello-video-primary", s3Client);
+      await runInTestTransaction(async (tx) => {
+        const actorId = await createActor(tx);
+        const shortId = crypto.randomUUID().replaceAll("-", "");
+        const trelloUrl = `https://trello.com/c/${shortId}`;
+        const cat = await tx.cat.create({
+          data: {
+            name: `Trello video ${shortId}`,
+            currentLocation: { create: { name: `Trello location ${shortId}` } },
+            trelloUrl,
+          },
+        });
+        const trello = new TestTrelloClient(
+          makeCard(shortId, [
+            {
+              name: "clip.mp4",
+              url: `https://trello.com/attachment/${shortId}/clip.mp4`,
+              mimeType: "video/mp4",
+            },
+          ]),
+          async () => ({
+            bytes: Buffer.from("video"),
+            contentType: "video/mp4",
+          }),
+        );
+        const photoUrls = new CatPhotoUrlService(
+          new ConfigService({ s3: { bucketName } }),
+          s3Client,
+        );
+        await new ImportTrelloAttachmentsHandler(
+          tx as PrismaService,
+          trello,
+          photoUrls,
+        ).handle(trelloUrl, actorId, false);
+        const [media, updatedCat] = await Promise.all([
+          tx.catPhoto.findFirstOrThrow({
+            where: { catId: cat.id, deletedAt: null },
+          }),
+          tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
+        ]);
+        expect(media.key).toContain(".mp4");
+        expect(updatedCat.primaryPhotoKey).toBe(media.key);
+      });
+    } finally {
+      if (bucketName) await deleteBucket(bucketName, s3Client);
+    }
+  });
 });
 
 class TestTrelloClient extends TrelloClient {

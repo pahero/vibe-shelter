@@ -57,6 +57,31 @@ describe("prepareTrelloAttachments", () => {
     ).resolves.toEqual([null, null, null]);
     expect(errorSpy).toHaveBeenCalledOnce();
   });
+
+  it("skips arbitrary non-image file types and rejects excessive attachment counts", async () => {
+    const trello = new AttachmentTrelloClient(async () => ({
+      bytes: Buffer.from("not an image"),
+      contentType: "application/octet-stream",
+    }));
+    await expect(
+      prepareTrelloAttachments(trello, [
+        {
+          name: "archive.zip",
+          url: "https://trello.com/attachments/archive.zip",
+          mimeType: "application/zip",
+        },
+      ]),
+    ).resolves.toEqual([null]);
+    await expect(
+      prepareTrelloAttachments(
+        trello,
+        Array.from({ length: 101 }, (_, index) => ({
+          name: `${index}.pdf`,
+          url: `https://trello.com/attachments/${index}.pdf`,
+        })),
+      ),
+    ).rejects.toThrow("attachment limit");
+  });
 });
 
 class AttachmentTrelloClient extends TrelloClient {

@@ -104,6 +104,12 @@ export class ImportTrelloAttachmentsHandler {
       }
     }
 
+    // An empty card intentionally clears imported files. A non-empty card whose
+    // attachments all failed or were unsupported must leave the current files alone.
+    if ((card.attachments?.length ?? 0) > 0 && stored.length === 0) {
+      return { id: cat.id };
+    }
+
     try {
       return await runInNewTransaction(this.prisma, async (tx) => {
         const currentCat = await tx.cat.findFirst({
@@ -210,7 +216,7 @@ export class ImportTrelloAttachmentsHandler {
                 eventType: CAT_AUDIT_EVENT_TYPES.photoCreated,
               },
             });
-            if (attachment.kind === "photo") firstPhotoKey ??= attachment.key;
+            firstPhotoKey ??= attachment.key;
           }
         }
 

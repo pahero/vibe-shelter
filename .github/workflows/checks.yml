@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 jobs:
   static-and-component:
@@ -101,6 +99,10 @@ jobs:
     needs: [static-and-component, backend, playwright]
     if: ${{ success() && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v6
         with:
