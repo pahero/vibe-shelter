@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "nest build",
-    "upload:sourcemaps": "sentry-cli sourcemaps upload dist",
+    "upload:sourcemaps": "sentry-cli sourcemaps inject dist && sentry-cli sourcemaps upload dist",
     "format": "oxfmt --write src test prisma",
     "format:check": "oxfmt --check src test prisma",
     "lint": "oxlint -D correctness -A no-unused-vars -A no-useless-escape src test prisma",
