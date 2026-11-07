@@ -188,6 +188,27 @@ describe("Authentication endpoints", () => {
       .expect(302);
     expect(response.headers.location).toContain("accounts.google.com");
   });
+
+  it("allows only owners to invoke the Better Stack test error endpoint", async () => {
+    const email = `${unique()}@example.com`;
+    const password = "OwnerPassword123!";
+    await prisma.user.create({
+      data: {
+        email,
+        fullName: "Owner Test User",
+        status: "ACTIVE",
+        role: "OWNER",
+        passwordHash: await bcrypt.hash(password, 10),
+      },
+    });
+
+    const ownerAgent = request.agent(app.getHttpServer());
+    await ownerAgent.post("/auth/login").send({ email, password }).expect(200);
+    await ownerAgent.get("/api/sentry-test-error").expect(500);
+    await request(app.getHttpServer())
+      .get("/api/sentry-test-error")
+      .expect(401);
+  });
 });
 
 function unique(): string {
