@@ -34,5 +34,6 @@ import { UpdateCurrentUserNameHandler } from "./commands/update-current-user-nam
     ForgotPasswordHandler,
     UpdateCurrentUserNameHandler,
   ],
+  exports: [JwtAuthGuard, OwnerRoleGuard],
 })
 export class AuthModule {}
