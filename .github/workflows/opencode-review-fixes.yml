@@ -3,6 +3,8 @@ name: OpenCode Review Fixes
 on:
   pull_request_review:
     types: [submitted]
+  pull_request_review_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -10,13 +12,19 @@ permissions:
 jobs:
   fix-review:
     if: >-
-      github.event.review.state == 'changes_requested' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event_name == 'pull_request_review' &&
+      github.event.review.state != 'approved' &&
       (contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association) ||
-      github.event.review.user.login == 'opencode-agent[bot]')
+      github.event.review.user.login == 'opencode-agent[bot]')) ||
+      (github.event_name == 'pull_request_review_comment' &&
+      (contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) ||
+      github.event.comment.user.login == 'opencode-agent[bot]')))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
+      issues: write
       id-token: write
     steps:
       - name: Check out the reviewed pull request
@@ -24,10 +32,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
-      - name: Configure commit identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Fix requested review changes with OpenCode
         uses: anomalyco/opencode/github@latest
         env:
@@ -39,6 +43,5 @@ jobs:
             Read the complete review body and its inline review comments, then implement the requested
             changes on the checked-out pull request branch. Follow repository instructions and add
             or update tests for behavior changes. Do not address unrelated suggestions or weaken tests.
-            Run relevant checks. If all requested changes are addressed and checks pass, commit and
-            push the changes to this pull request branch. If anything is unclear, cannot be safely
-            fixed, or checks fail, do not push; explain the blocker in a pull request comment.
+            Run the relevant checks, then commit and push the fixes to this pull request branch.
+            If checks fail, still commit the best safe fix so the next review iteration can address it.
