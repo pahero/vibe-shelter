@@ -18,6 +18,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "inlineSources": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
