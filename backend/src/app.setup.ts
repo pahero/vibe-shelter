@@ -18,7 +18,7 @@ export function setupApp(app: INestApplication) {
     origin: [frontendUrl],
     credentials: true,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
+    allowedHeaders: "Content-Type,Authorization,sentry-trace,baggage",
   });
 
   // Global validation pipe

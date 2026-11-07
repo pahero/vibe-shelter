@@ -5,6 +5,7 @@ import { GoogleStrategy } from "./strategies/google.strategy";
 import { DatabaseModule } from "@/database/database.module";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { AdminRoleGuard } from "./admin-role.guard";
+import { OwnerRoleGuard } from "./owner-role.guard";
 import { ValidateGoogleProfileHandler } from "./queries/validate-google-profile.handler";
 import { ValidatePasswordCredentialsHandler } from "./queries/validate-password-credentials.handler";
 import { ChangePasswordHandler } from "./commands/change-password.handler";
@@ -22,6 +23,7 @@ import { UpdateCurrentUserNameHandler } from "./commands/update-current-user-nam
     GoogleStrategy,
     JwtAuthGuard,
     AdminRoleGuard,
+    OwnerRoleGuard,
     ValidateGoogleProfileHandler,
     ValidatePasswordCredentialsHandler,
     ChangePasswordHandler,
@@ -32,5 +34,6 @@ import { UpdateCurrentUserNameHandler } from "./commands/update-current-user-nam
     ForgotPasswordHandler,
     UpdateCurrentUserNameHandler,
   ],
+  exports: [JwtAuthGuard, OwnerRoleGuard],
 })
 export class AuthModule {}

@@ -1,14 +1,20 @@
-import { Controller, Get } from "@nestjs/common";
-import { Public } from "./auth";
+import { Controller, Get, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard, OwnerRoleGuard, Public } from "./auth";
 
-@Controller("health")
+@Controller()
 export class AppController {
-  @Get()
+  @Get("health")
   @Public()
   healthCheck() {
     return {
       status: "ok",
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get("api/sentry-test-error")
+  @UseGuards(JwtAuthGuard, OwnerRoleGuard)
+  sentryTestError(): never {
+    throw new Error("Better Stack backend Sentry test error");
   }
 }
