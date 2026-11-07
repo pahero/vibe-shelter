@@ -5,6 +5,8 @@ on:
     types: [submitted]
   pull_request_review_comment:
     types: [created]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -12,14 +14,14 @@ permissions:
 jobs:
   fix-review:
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
       ((github.event_name == 'pull_request_review' &&
-      github.event.review.state != 'approved' &&
-      (contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association) ||
-      github.event.review.user.login == 'opencode-agent[bot]')) ||
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.review.state != 'approved') ||
       (github.event_name == 'pull_request_review_comment' &&
-      (contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) ||
-      github.event.comment.user.login == 'opencode-agent[bot]')))
+      github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.type == 'Bot'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,7 +32,7 @@ jobs:
       - name: Check out the reviewed pull request
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.ref || format('refs/pull/{0}/head', github.event.issue.number) }}
           persist-credentials: false
       - name: Fix requested review changes with OpenCode
         uses: anomalyco/opencode/github@latest
@@ -39,7 +41,7 @@ jobs:
         with:
           model: openrouter/openai/gpt-6-luna
           prompt: |
-            Review feedback requested changes on pull request ${{ github.event.pull_request.html_url }}.
+            Review feedback requested changes on pull request ${{ github.event.pull_request.html_url || github.event.issue.html_url }}.
             Read the complete review body and its inline review comments, then implement the requested
             changes on the checked-out pull request branch. Follow repository instructions and add
             or update tests for behavior changes. Do not address unrelated suggestions or weaken tests.
