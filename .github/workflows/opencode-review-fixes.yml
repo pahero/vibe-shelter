@@ -3,10 +3,6 @@ name: OpenCode Review Fixes
 on:
   pull_request_review:
     types: [submitted]
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
 
 permissions:
   contents: read
@@ -14,15 +10,9 @@ permissions:
 jobs:
   fix-review:
     if: >-
-      ((github.event_name == 'pull_request_review' &&
+      github.event_name == 'pull_request_review' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.review.state != 'approved') ||
-      (github.event_name == 'pull_request_review_comment' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.comment.user.type != 'Bot') ||
-      (github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request &&
-      github.event.comment.user.type != 'Bot'))
+      github.event.review.state == 'changes_requested'
     runs-on: ubuntu-latest
     permissions:
       contents: write
