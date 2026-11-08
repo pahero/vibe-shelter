@@ -18,10 +18,11 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.review.state != 'approved') ||
       (github.event_name == 'pull_request_review_comment' &&
-      github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.comment.user.type != 'Bot') ||
       (github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      github.event.comment.user.type == 'Bot'))
+      github.event.comment.user.type != 'Bot'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -33,13 +34,14 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref || format('refs/pull/{0}/head', github.event.issue.number) }}
-          persist-credentials: false
       - name: Fix requested review changes with OpenCode
         uses: anomalyco/opencode/github@latest
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: openrouter/openai/gpt-6-luna
+          use_github_token: true
           prompt: |
             Review feedback requested changes on pull request ${{ github.event.pull_request.html_url || github.event.issue.html_url }}.
             Read the complete review body and its inline review comments, then implement the requested
