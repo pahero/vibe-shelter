@@ -101,8 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -111,10 +110,8 @@ jobs:
       - uses: anomalyco/opencode/github@latest
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: openrouter/openai/gpt-6-luna
-          use_github_token: true
           prompt: |
             Perform a thorough code review of this pull request's changes. Check for correctness,
             regressions, security issues, and violations of the repository's AGENTS.md instructions.
