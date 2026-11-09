@@ -19,7 +19,6 @@ export function LocationForm({
   const [formData, setFormData] = useState({
     name: initialData?.name ?? "",
     description: initialData?.description ?? "",
-    ownerId: initialData?.ownerId ?? "",
     status: (initialData?.status ?? "ACTIVE") as
       | "ACTIVE"
       | "INACTIVE"
@@ -39,10 +38,6 @@ export function LocationForm({
       errors.name = "Location name must be at least 2 characters";
     } else if (formData.name.length > 255) {
       errors.name = "Location name must be at most 255 characters";
-    }
-
-    if (formData.ownerId && formData.ownerId.length < 1) {
-      errors.ownerId = "Invalid owner ID";
     }
 
     setValidationErrors(errors);
@@ -74,13 +69,11 @@ export function LocationForm({
       ? {
           name: formData.name,
           description: formData.description || null,
-          ownerId: formData.ownerId || null,
           status: formData.status,
         }
       : {
           name: formData.name,
           description: formData.description || undefined,
-          ownerId: formData.ownerId || undefined,
         };
 
     try {
@@ -140,34 +133,6 @@ export function LocationForm({
           className="mt-2 w-full rounded-lg border border-[#d4c7b4] bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
         />
       </div>
-
-      {!initialData && (
-        <div>
-          <label
-            htmlFor="ownerId"
-            className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]"
-          >
-            Owner ID
-          </label>
-          <input
-            id="ownerId"
-            type="text"
-            placeholder="Optional owner ID"
-            value={formData.ownerId}
-            onChange={(e) => handleChange("ownerId", e.target.value)}
-            className={`mt-2 w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 ${
-              validationErrors.ownerId
-                ? "border-red-300 bg-red-50 focus:ring-red-500"
-                : "border-[#d4c7b4] bg-white focus:ring-[#d05a2c]"
-            }`}
-          />
-          {validationErrors.ownerId && (
-            <p className="mt-1 text-xs text-red-600">
-              {validationErrors.ownerId}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Status (Edit only) */}
       {initialData && (

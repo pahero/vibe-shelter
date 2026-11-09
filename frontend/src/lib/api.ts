@@ -4,7 +4,13 @@ export type Location = {
   id: string;
   name: string;
   description: string | null;
-  ownerId: string | null;
+  owners: Array<{
+    id: string;
+    fullName: string;
+    email: string;
+    deletedAt: string | null;
+    status: "ACTIVE" | "INACTIVE";
+  }>;
   isTest: boolean;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   createdAt: string;
@@ -454,13 +460,13 @@ export type FlightCandidate = {
 export type CreateLocationDto = {
   name: string;
   description?: string;
-  ownerId?: string;
+  ownerIds?: string[];
 };
 
 export type UpdateLocationDto = {
   name?: string;
   description?: string | null;
-  ownerId?: string | null;
+  ownerIds?: string[];
   status?: "ACTIVE" | "INACTIVE" | "ARCHIVED";
 };
 
@@ -577,7 +583,7 @@ export const locationsApi = {
     return handleResponse<Location>(response);
   },
 
-  async createLocation(data: CreateLocationDto): Promise<Location> {
+  async createLocation(data: CreateLocationDto): Promise<{ id: string }> {
     const response = await authenticatedFetch(`${BACKEND_URL}/api/locations`, {
       method: "POST",
 
@@ -586,10 +592,13 @@ export const locationsApi = {
       },
       body: JSON.stringify(data),
     });
-    return handleResponse<Location>(response);
+    return handleResponse<{ id: string }>(response);
   },
 
-  async updateLocation(id: string, data: UpdateLocationDto): Promise<Location> {
+  async updateLocation(
+    id: string,
+    data: UpdateLocationDto,
+  ): Promise<{ id: string }> {
     const response = await authenticatedFetch(
       `${BACKEND_URL}/api/locations/${id}`,
       {
@@ -601,7 +610,7 @@ export const locationsApi = {
         body: JSON.stringify(data),
       },
     );
-    return handleResponse<Location>(response);
+    return handleResponse<{ id: string }>(response);
   },
 
   async archiveLocation(

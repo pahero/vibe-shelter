@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -49,6 +49,7 @@ const pageSize = 20;
 type LocationDraft = {
   name: string;
   description: string;
+  ownerIds: string[];
 };
 
 type EditingLocation = {
@@ -56,6 +57,7 @@ type EditingLocation = {
   name: string;
   description: string;
   status: Location["status"];
+  ownerIds: string[];
 };
 
 type EditingTag = {
@@ -78,7 +80,62 @@ type CatCardOptions = {
   nameNumber: number;
 };
 
-const emptyLocation: LocationDraft = { name: "", description: "" };
+const emptyLocation: LocationDraft = {
+  name: "",
+  description: "",
+  ownerIds: [],
+};
+
+function OwnerSelector({
+  users,
+  selected,
+  onChange,
+}: {
+  users: AdminUser[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  return (
+    <fieldset className="rounded-lg border border-[#d4c7b4] p-3 text-left">
+      <legend className="px-1 text-sm font-medium">Responsible users</legend>
+      {users
+        .filter(
+          (user) => user.status === "active" || selected.includes(user.id),
+        )
+        .map((user) => (
+          <label key={user.id} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={selected.includes(user.id)}
+              onChange={(event) =>
+                onChange(
+                  event.target.checked
+                    ? [...selected, user.id]
+                    : selected.filter((id) => id !== user.id),
+                )
+              }
+            />
+            {user.fullName || user.email}
+            {user.status !== "active" ? " (inactive)" : ""}
+          </label>
+        ))}
+      {selected
+        .filter((id) => !users.some((user) => user.id === id))
+        .map((id) => (
+          <label key={id} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked
+              onChange={() =>
+                onChange(selected.filter((value) => value !== id))
+              }
+            />
+            Unavailable user
+          </label>
+        ))}
+    </fieldset>
+  );
+}
 
 export function EditShelterClient({
   currentUser,
@@ -86,6 +143,7 @@ export function EditShelterClient({
   currentUser: { id: string; role: "owner" | "admin" };
 }) {
   const [locations, setLocations] = useState<Location[]>([]);
+  const [locationUsers, setLocationUsers] = useState<AdminUser[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [archivingReasons, setArchivingReasons] = useState<
     CatArchivingReason[]
@@ -133,10 +191,6 @@ export function EditShelterClient({
     Record<"locations" | "tags" | "archiving" | "audit", number>
   >({ locations: 1, tags: 1, archiving: 1, audit: 1 });
 
-  useEffect(() => {
-    void loadLocations();
-  }, []);
-
   async function loadEditors() {
     await loadSection(activeSection);
   }
@@ -161,7 +215,7 @@ export function EditShelterClient({
     await Promise.all([loadAuditCats(), loadAudit()]);
   }
 
-  async function loadLocations() {
+  const loadLocations = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -170,6 +224,11 @@ export function EditShelterClient({
         skip: 0,
         limit: pageLimit,
       });
+      const users = await fetchAdminUsers();
+      const partition = users.find(
+        (user) => user.id === currentUser.id,
+      )?.isTest;
+      setLocationUsers(users.filter((user) => user.isTest === partition));
       const allLocations = [...firstPage.data];
       for (
         let skip = firstPage.data.length;
@@ -191,7 +250,11 @@ export function EditShelterClient({
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [currentUser.id]);
+
+  useEffect(() => {
+    void loadLocations();
+  }, [loadLocations]);
 
   async function loadTags() {
     setIsLoading(true);
@@ -318,11 +381,12 @@ export function EditShelterClient({
       await locationsApi.createLocation({
         name,
         description: locationDraft.description.trim() || undefined,
+        ownerIds: locationDraft.ownerIds,
       });
       setLocationDraft(emptyLocation);
       setIsAddingLocation(false);
-      setMessage("Location added.");
       await loadEditors();
+      setMessage("Location added.");
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -345,10 +409,11 @@ export function EditShelterClient({
         name,
         description: location.description.trim() || null,
         status: location.status,
+        ownerIds: location.ownerIds,
       });
       setEditingLocation(null);
-      setMessage("Location updated.");
       await loadEditors();
+      setMessage("Location updated.");
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -565,6 +630,16 @@ export function EditShelterClient({
                       className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       placeholder="Description"
                     />
+                    <OwnerSelector
+                      users={locationUsers}
+                      selected={locationDraft.ownerIds}
+                      onChange={(ownerIds) =>
+                        setLocationDraft((previous) => ({
+                          ...previous,
+                          ownerIds,
+                        }))
+                      }
+                    />
                     <div className="flex gap-2">
                       <button
                         disabled={isSaving}
@@ -643,6 +718,16 @@ export function EditShelterClient({
                                 <option value="INACTIVE">Inactive</option>
                                 <option value="ARCHIVED">Archived</option>
                               </select>
+                              <OwnerSelector
+                                users={locationUsers}
+                                selected={editingLocation.ownerIds}
+                                onChange={(ownerIds) =>
+                                  setEditingLocation({
+                                    ...editingLocation,
+                                    ownerIds,
+                                  })
+                                }
+                              />
                               <div className="flex gap-2">
                                 <button
                                   type="button"
@@ -672,10 +757,15 @@ export function EditShelterClient({
                                     {location.description}
                                   </p>
                                 )}
-                                {location.ownerId && (
+                                {location.owners.length > 0 && (
                                   <p className="mt-2 text-xs text-gray-600">
-                                    <strong>Owner:</strong>{" "}
-                                    {location.ownerId.slice(0, 8)}...
+                                    <strong>Responsible users:</strong>{" "}
+                                    {location.owners
+                                      .map(
+                                        (owner) =>
+                                          owner.fullName || owner.email,
+                                      )
+                                      .join(", ")}
                                   </p>
                                 )}
                               </div>
@@ -688,6 +778,9 @@ export function EditShelterClient({
                                       name: location.name,
                                       description: location.description ?? "",
                                       status: location.status,
+                                      ownerIds: location.owners.map(
+                                        (owner) => owner.id,
+                                      ),
                                     })
                                   }
                                   aria-label={`Edit ${location.name}`}

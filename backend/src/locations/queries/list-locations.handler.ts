@@ -36,13 +36,25 @@ export class ListLocationsHandler {
       throw new BadRequestException("Invalid pagination");
     }
     const where: Prisma.LocationWhereInput = { isTest, deletedAt: null };
-    if (ownerId) where.ownerId = ownerId;
+    if (ownerId) where.owners = { some: { userId: ownerId } };
     if (status) where.status = status as LocationStatus;
     const [data, total] = await Promise.all([
       this.prisma.location.findMany({
         where,
         include: {
-          owner: { select: { id: true, email: true, fullName: true } },
+          owners: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  fullName: true,
+                  deletedAt: true,
+                  status: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { name: "asc" },
         skip,
@@ -50,6 +62,14 @@ export class ListLocationsHandler {
       }),
       this.prisma.location.count({ where }),
     ]);
-    return { data, total, skip, limit };
+    return {
+      data: data.map((location) => ({
+        ...location,
+        owners: location.owners.map(({ user }) => user),
+      })),
+      total,
+      skip,
+      limit,
+    };
   }
 }

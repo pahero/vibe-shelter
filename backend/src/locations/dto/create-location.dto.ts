@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional } from "class-validator";
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  ArrayUnique,
+  ValidateIf,
+} from "class-validator";
 
 export class CreateLocationDto {
   @IsString()
@@ -9,17 +16,21 @@ export class CreateLocationDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
-  @IsOptional()
-  ownerId?: string;
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  @ValidateIf((_object, value: unknown) => value !== undefined)
+  ownerIds?: string[];
 
-  toCommand(): { name: string; description?: string; ownerId?: string } {
+  toCommand(): { name: string; description?: string; ownerIds?: string[] } {
     return {
       name: this.name.trim(),
       ...(this.description !== undefined
         ? { description: this.description.trim() }
         : {}),
-      ...(this.ownerId !== undefined ? { ownerId: this.ownerId.trim() } : {}),
+      ...(this.ownerIds !== undefined
+        ? { ownerIds: this.ownerIds.map((id) => id.trim()) }
+        : {}),
     };
   }
 }
