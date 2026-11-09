@@ -496,6 +496,67 @@ test.describe("cats UI", () => {
     );
   });
 
+  test("new reminders preselect the current location's responsible users", async ({
+    page,
+  }) => {
+    const { adminTestUser, staffTestUser } = getTestEnv();
+    await loginViaApi(page, adminTestUser.email, adminTestUser.password);
+    const usersResponse = await page.request.get(`${BACKEND_URL}/users`);
+    expect(usersResponse.status()).toBe(200);
+    const users = (await usersResponse.json()) as Array<{
+      id: string;
+      email: string;
+    }>;
+    const owners = users.filter((user) =>
+      [adminTestUser.email, staffTestUser.email].includes(user.email),
+    );
+    expect(owners).toHaveLength(2);
+    const locationResponse = await page.request.post(
+      `${BACKEND_URL}/api/locations`,
+      {
+        data: {
+          name: uniqueName("Reminder Location"),
+          ownerIds: owners.map((owner) => owner.id),
+        },
+      },
+    );
+    expect(locationResponse.status()).toBe(201);
+    const location = (await locationResponse.json()) as { id: string };
+    const catName = uniqueName("Reminder defaults cat");
+    const cat = await createCatViaApi(page, {
+      name: catName,
+      locationId: location.id,
+    });
+    await page.goto(`/cats/${cat.id}`);
+    await page.getByRole("button", { name: "More sections" }).click();
+    await page.getByRole("button", { name: "Reminders" }).click();
+    await page.getByRole("button", { name: "Add reminder" }).click();
+    await expect(
+      page.getByRole("button", { name: `Remove ${adminTestUser.fullName}` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Remove ${staffTestUser.fullName}` }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: `Remove ${staffTestUser.fullName}` })
+      .click();
+    await page.getByLabel("Comment").fill("Check food");
+    await page.getByLabel("Due date").fill("2030-01-02T10:00");
+    const createTask = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/cats/${cat.id}/tasks`) &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    expect((await createTask).status()).toBe(201);
+    await expect(
+      page.locator("li").filter({ hasText: "Check food" }),
+    ).toContainText(adminTestUser.fullName);
+    await expect(
+      page.locator("li").filter({ hasText: "Check food" }),
+    ).not.toContainText(staffTestUser.fullName);
+  });
+
   test("creating an overdue reminder creates a notification for its receiver", async ({
     page,
   }) => {

@@ -46,7 +46,7 @@ export class LocationsController {
     return this.createLocationHandler.handle(
       command.name,
       command.description,
-      command.ownerId,
+      command.ownerIds,
       user.isTest,
       user.id,
     );

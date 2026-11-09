@@ -4,6 +4,26 @@ import { runInTestTransaction } from "../../test-utils/test-db";
 import { CreateLocationHandler } from "./create-location.handler";
 
 describe("CreateLocationHandler", () => {
+  it("creates a location with multiple owners", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const first = await tx.user.create({
+        data: { email: `first-${suffix}@example.com`, fullName: "First" },
+      });
+      const second = await tx.user.create({
+        data: { email: `second-${suffix}@example.com`, fullName: "Second" },
+      });
+      const result = await new CreateLocationHandler(
+        tx as PrismaService,
+      ).handle(suffix, undefined, [first.id, second.id], false);
+      const owners = await tx.locationOwner.findMany({
+        where: { locationId: result.id },
+      });
+      expect(owners.map((owner) => owner.userId).sort()).toEqual(
+        [first.id, second.id].sort(),
+      );
+    });
+  });
   it("normalizes and creates a test location and value-free creation audit", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
@@ -61,7 +81,7 @@ describe("CreateLocationHandler", () => {
         new CreateLocationHandler(tx as PrismaService).handle(
           "Valid",
           undefined,
-          "missing-owner",
+          ["missing-owner"],
           false,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -79,7 +99,7 @@ describe("CreateLocationHandler", () => {
       await new CreateLocationHandler(tx as PrismaService).handle(
         `Owned ${Date.now()}-${Math.random().toString(36).slice(2)}`,
         undefined,
-        owner.id,
+        [owner.id],
         false,
       );
       await expect(

@@ -1,9 +1,16 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { faPen, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { CatTask, catsApi, TaskInput, User, usersApi } from "@/lib/api";
+import {
+  CatTask,
+  catsApi,
+  locationsApi,
+  TaskInput,
+  User,
+  usersApi,
+} from "@/lib/api";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 
@@ -21,9 +28,11 @@ function toLocalDateTime(value: string): string {
 
 export function CatTasks({
   catId,
+  currentLocationId,
   onChanged,
 }: {
   catId: string;
+  currentLocationId: string | null;
   onChanged?: () => Promise<void>;
 }) {
   const [tasks, setTasks] = useState<CatTask[]>([]);
@@ -37,6 +46,15 @@ export function CatTasks({
   const [isSaving, setIsSaving] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingDefaults, setIsLoadingDefaults] = useState(false);
+  const defaultsRequest = useRef(0);
+
+  useEffect(() => {
+    setIsLoadingDefaults(false);
+    return () => {
+      defaultsRequest.current += 1;
+    };
+  }, [catId, currentLocationId]);
 
   const refresh = async () => setTasks(await catsApi.listTasks(catId));
 
@@ -78,13 +96,36 @@ export function CatTasks({
       },
   );
 
-  const openNewTask = () => {
+  const openNewTask = async () => {
+    const request = ++defaultsRequest.current;
     setEditingId(null);
     setForm(emptyTask());
     setReceiverChoice("");
     setError(null);
-    setIsFormOpen(true);
     setIsExpanded(true);
+    setIsFormOpen(false);
+    setIsLoadingDefaults(true);
+    try {
+      const location = currentLocationId
+        ? await locationsApi.getLocation(currentLocationId)
+        : null;
+      if (request !== defaultsRequest.current) return;
+      setForm({
+        ...emptyTask(),
+        receiverIds:
+          location?.owners
+            .filter((owner) => owner.status === "ACTIVE" && !owner.deletedAt)
+            .map((owner) => owner.id) ?? [],
+      });
+      setIsFormOpen(true);
+    } catch (reason) {
+      if (request === defaultsRequest.current)
+        setError(
+          `Could not load responsible users: ${ApiErrorHandler.handle(reason)}`,
+        );
+    } finally {
+      if (request === defaultsRequest.current) setIsLoadingDefaults(false);
+    }
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -109,12 +150,12 @@ export function CatTasks({
       };
       if (editingId) await catsApi.updateTask(editingId, payload);
       else await catsApi.createTask(catId, payload);
-      await refresh();
-      await onChanged?.();
       setForm(emptyTask());
       setEditingId(null);
       setReceiverChoice("");
       setIsFormOpen(false);
+      await refresh();
+      await onChanged?.();
     } catch (reason) {
       setError(ApiErrorHandler.handle(reason));
     } finally {
@@ -123,6 +164,8 @@ export function CatTasks({
   };
 
   const edit = (task: CatTask) => {
+    defaultsRequest.current += 1;
+    setIsLoadingDefaults(false);
     setEditingId(task.id);
     setForm({
       comment: task.comment,
@@ -136,6 +179,8 @@ export function CatTasks({
   };
 
   const cancel = () => {
+    defaultsRequest.current += 1;
+    setIsLoadingDefaults(false);
     setEditingId(null);
     setForm(emptyTask());
     setReceiverChoice("");
@@ -166,12 +211,17 @@ export function CatTasks({
           if (isExpanded) cancel();
           setIsExpanded((current) => !current);
         }}
-        onAdd={openNewTask}
+        onAdd={isLoadingDefaults ? undefined : openNewTask}
         addLabel="Add reminder"
       />
 
       {isExpanded && (
         <>
+          {isLoadingDefaults && (
+            <p className="mt-3 text-sm text-[#6d6a66]">
+              Loading responsible users...
+            </p>
+          )}
           {isFormOpen && (
             <form
               onSubmit={submit}

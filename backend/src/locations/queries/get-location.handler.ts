@@ -13,9 +13,23 @@ export class GetLocationHandler {
     if (!id?.trim()) throw new BadRequestException("Location ID is required");
     const location = await this.prisma.location.findFirst({
       where: { id, isTest, deletedAt: null },
-      include: { owner: { select: { id: true, email: true, fullName: true } } },
+      include: {
+        owners: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                fullName: true,
+                deletedAt: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
     });
     if (!location) throw new NotFoundException("Location not found");
-    return location;
+    return { ...location, owners: location.owners.map(({ user }) => user) };
   }
 }

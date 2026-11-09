@@ -23,7 +23,7 @@ model User {
   version                         Int                          @default(0)
   createdAt                       DateTime                     @default(now())
   updatedAt                       DateTime                     @updatedAt
-  ownedLocations                  Location[]                   @relation("ownedLocations")
+  locationOwners                  LocationOwner[]
   createdCats                     Cat[]                        @relation("createdCats")
   createdPhotos                   CatPhoto[]                   @relation("createdPhotos")
   deletedPhotos                   CatPhoto[]                   @relation("deletedPhotos")
@@ -139,8 +139,6 @@ model Location {
   id          String         @id @default(cuid())
   name        String
   description String?
-  ownerId     String?
-  owner       User?          @relation("ownedLocations", fields: [ownerId], references: [id], onDelete: SetNull)
   isTest      Boolean        @default(false)
   status      LocationStatus @default(ACTIVE)
   deletedAt   DateTime?
@@ -149,11 +147,21 @@ model Location {
   updatedAt   DateTime       @updatedAt
   cats        Cat[]
   auditEvents AuditEvent[]
+  owners      LocationOwner[]
 
-  @@index([ownerId])
   @@index([isTest])
   @@index([status])
   @@index([deletedAt])
+}
+
+model LocationOwner {
+  locationId String
+  userId     String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([locationId, userId])
+  @@index([userId])
 }
 
 model Cat {

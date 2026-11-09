@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { runInNewTransaction } from "../../database/helpers";
 
@@ -14,7 +13,7 @@ export class CreateLocationHandler {
   async handle(
     name: string,
     description: string | undefined,
-    ownerId: string | undefined,
+    ownerIds: string[] | undefined,
     isTest: boolean,
     actorUserId?: string,
   ): Promise<{ id: string }> {
@@ -23,13 +22,14 @@ export class CreateLocationHandler {
       throw new BadRequestException("Location name is required");
 
     return runInNewTransaction(this.prisma, async (tx) => {
-      if (ownerId) {
-        const owner = await tx.user.findFirst({
-          where: { id: ownerId, deletedAt: null },
-          select: { id: true },
+      const ids = [...new Set(ownerIds ?? [])];
+      if (ids.length) {
+        const updated = await tx.user.updateMany({
+          where: { id: { in: ids }, deletedAt: null, status: "ACTIVE", isTest },
+          data: { version: { increment: 1 } },
         });
-        if (!owner)
-          throw new BadRequestException("Specified owner user does not exist");
+        if (updated.count !== ids.length)
+          throw new BadRequestException("One or more owners are unavailable");
       }
       const duplicate = await tx.location.findFirst({
         where: { name: normalizedName, isTest, deletedAt: null },
@@ -42,24 +42,17 @@ export class CreateLocationHandler {
         data: {
           name: normalizedName,
           description: description?.trim() || null,
-          ownerId: ownerId || null,
+          owners: { create: ids.map((userId) => ({ userId })) },
           isTest,
           status: "ACTIVE",
         },
-        include: {
-          owner: { select: { id: true, email: true, fullName: true } },
-        },
       });
-      if (ownerId)
-        await tx.user.update({
-          where: { id: ownerId },
-          data: { version: { increment: 1 } },
-        });
       if (actorUserId) {
         await tx.auditEvent.create({
           data: {
             locationId: location.id,
             actorUserId,
+            isTest,
             action: "create",
             eventType: "location_action",
           },

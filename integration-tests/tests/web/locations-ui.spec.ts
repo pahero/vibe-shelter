@@ -21,6 +21,7 @@ async function openShelterManagement(page: Page) {
   );
   await page.goto("/shelter-management");
   expect((await locationsLoaded).status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
 }
 
 async function findLocationRow(
@@ -112,6 +113,32 @@ test.describe("locations UI", () => {
 
     await expect(page.getByText("Location updated.")).toBeVisible();
     await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+  });
+
+  test("admin can assign and remove responsible users", async ({ page }) => {
+    const locationName = uniqueName("Responsible users");
+    const { adminTestUser, staffTestUser } = getTestEnv();
+    await authenticateAsAdmin(page);
+    await openShelterManagement(page);
+    await page.getByRole("button", { name: "Add location" }).click();
+    const form = page.locator("#new-location-form");
+    await form.getByPlaceholder("New location name").fill(locationName);
+    await form.getByLabel(adminTestUser.fullName).check();
+    await form.getByLabel(staffTestUser.fullName).check();
+    await form.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Location added.")).toBeVisible();
+    const row = await findLocationRow(page, locationName);
+    await expect(row).toContainText(adminTestUser.fullName);
+    await expect(row).toContainText(staffTestUser.fullName);
+    await row.getByRole("button", { name: `Edit ${locationName}` }).click();
+    const editor = page
+      .locator("div.rounded-lg")
+      .filter({ has: page.locator("select") });
+    await editor.getByLabel(staffTestUser.fullName).uncheck();
+    await editor.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Location updated.")).toBeVisible();
+    await expect(row).toContainText(adminTestUser.fullName);
+    await expect(row).not.toContainText(staffTestUser.fullName);
   });
 
   test("admin can remove (archive) a location", async ({ page }) => {

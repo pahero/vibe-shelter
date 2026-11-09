@@ -229,11 +229,14 @@ describe("Cats endpoints", () => {
 
     const regularLocation = await regularAuth.agent
       .post("/api/locations")
-      .send({ name: unique("regular-location"), ownerId: regularAuth.user.id })
+      .send({
+        name: unique("regular-location"),
+        ownerIds: [regularAuth.user.id],
+      })
       .expect(201);
     const testLocation = await testAuth.agent
       .post("/api/locations")
-      .send({ name: unique("test-location"), ownerId: regularAuth.user.id })
+      .send({ name: unique("test-location"), ownerIds: [testAuth.user.id] })
       .expect(201);
 
     const regularLocationDetails = await regularAuth.agent
@@ -273,7 +276,7 @@ describe("Cats endpoints", () => {
       .expect(200);
     const testLocations = await testAuth.agent
       .get("/api/locations")
-      .query({ ownerId: regularAuth.user.id })
+      .query({ ownerId: testAuth.user.id })
       .expect(200);
     expect(
       regularLocations.body.data.map((location: { id: string }) => location.id),
@@ -1265,6 +1268,47 @@ describe("Cats endpoints", () => {
     });
   });
 
+  it("creates, reads, and replaces multiple location owners", async () => {
+    const other = await prisma.user.create({
+      data: {
+        email: `${unique("location-owner")}@example.com`,
+        fullName: "Other Owner",
+        isTest: authUser.isTest,
+      },
+    });
+    const created = await authAgent
+      .post("/api/locations")
+      .send({
+        name: unique("multiple-owners"),
+        ownerIds: [authUser.id, other.id],
+      })
+      .expect(201);
+    const read = await authAgent
+      .get(`/api/locations/${created.body.id}`)
+      .expect(200);
+    expect(
+      read.body.owners.map((owner: { id: string }) => owner.id).sort(),
+    ).toEqual([authUser.id, other.id].sort());
+    await authAgent
+      .patch(`/api/locations/${created.body.id}`)
+      .send({ ownerIds: [other.id] })
+      .expect(200);
+    const updated = await authAgent
+      .get(`/api/locations/${created.body.id}`)
+      .expect(200);
+    expect(
+      updated.body.owners.map((owner: { id: string }) => owner.id),
+    ).toEqual([other.id]);
+    await authAgent
+      .patch(`/api/locations/${created.body.id}`)
+      .send({ ownerIds: [] })
+      .expect(200);
+    const cleared = await authAgent
+      .get(`/api/locations/${created.body.id}`)
+      .expect(200);
+    expect(cleared.body.owners).toEqual([]);
+  });
+
   it("audits location mutations and soft deletes locations", async () => {
     const created = await authAgent
       .post("/api/locations")
@@ -1273,7 +1317,7 @@ describe("Cats endpoints", () => {
 
     await authAgent
       .patch(`/api/locations/${created.body.id}`)
-      .send({ description: "After", ownerId: authUser.id })
+      .send({ description: "After", ownerIds: [authUser.id] })
       .expect(200);
 
     await authAgent.delete(`/api/locations/${created.body.id}`).expect(204);

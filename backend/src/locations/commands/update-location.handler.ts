@@ -19,7 +19,7 @@ export class UpdateLocationHandler {
     data: {
       name?: string;
       description?: string | null;
-      ownerId?: string | null;
+      ownerIds?: string[];
       status?: string;
     },
     isTest: boolean,
@@ -34,10 +34,6 @@ export class UpdateLocationHandler {
     }
     if (data.description !== undefined)
       updateData.description = data.description?.trim() || null;
-    if (data.ownerId !== undefined)
-      updateData.owner = data.ownerId?.trim()
-        ? { connect: { id: data.ownerId.trim() } }
-        : { disconnect: true };
     if (data.status !== undefined) {
       if (
         !VALID_STATUSES.includes(data.status as (typeof VALID_STATUSES)[number])
@@ -51,21 +47,40 @@ export class UpdateLocationHandler {
     return runInNewTransaction(this.prisma, async (tx) => {
       const existing = await tx.location.findFirst({
         where: { id, isTest, deletedAt: null },
-        include: { owner: { select: { fullName: true, email: true } } },
+        include: {
+          owners: {
+            include: {
+              user: { select: { id: true, fullName: true, email: true } },
+            },
+          },
+        },
       });
       if (!existing) throw new NotFoundException("Location not found");
-      let nextOwner: {
-        id: string;
-        fullName: string | null;
-        email: string;
-      } | null = null;
-      if (data.ownerId?.trim()) {
-        nextOwner = await tx.user.findFirst({
-          where: { id: data.ownerId.trim(), deletedAt: null },
+      const ids =
+        data.ownerIds === undefined ? undefined : [...new Set(data.ownerIds)];
+      const oldIds = new Set(existing.owners.map(({ userId }) => userId));
+      const addedIds = ids?.filter((userId) => !oldIds.has(userId)) ?? [];
+      const removed =
+        ids === undefined
+          ? []
+          : existing.owners.filter(({ userId }) => !ids.includes(userId));
+      let added: { id: string; fullName: string; email: string }[] = [];
+      if (addedIds.length) {
+        const result = await tx.user.updateMany({
+          where: {
+            id: { in: addedIds },
+            deletedAt: null,
+            status: "ACTIVE",
+            isTest,
+          },
+          data: { version: { increment: 1 } },
+        });
+        if (result.count !== addedIds.length)
+          throw new BadRequestException("One or more owners are unavailable");
+        added = await tx.user.findMany({
+          where: { id: { in: addedIds } },
           select: { id: true, fullName: true, email: true },
         });
-        if (!nextOwner)
-          throw new BadRequestException("Specified owner user does not exist");
       }
       if (data.name !== undefined) {
         const duplicate = await tx.location.findFirst({
@@ -85,10 +100,18 @@ export class UpdateLocationHandler {
       const updated = await tx.location.update({
         where: { id },
         data: updateData,
-        include: {
-          owner: { select: { id: true, email: true, fullName: true } },
-        },
       });
+      if (removed.length)
+        await tx.locationOwner.deleteMany({
+          where: {
+            locationId: id,
+            userId: { in: removed.map(({ userId }) => userId) },
+          },
+        });
+      if (added.length)
+        await tx.locationOwner.createMany({
+          data: added.map(({ id: userId }) => ({ locationId: id, userId })),
+        });
       if (actorUserId) {
         const fields = [
           ...(existing.name !== updated.name
@@ -109,20 +132,18 @@ export class UpdateLocationHandler {
                 },
               ]
             : []),
-          ...(existing.ownerId !== updated.ownerId
-            ? [
-                {
-                  action: "owner_changed",
-                  oldValue: existing.owner
-                    ? `${existing.owner.fullName || existing.owner.email} <${existing.owner.email}>`
-                    : "Not set",
-                  newValue: nextOwner
-                    ? `${nextOwner.fullName || nextOwner.email} <${nextOwner.email}>`
-                    : "Not set",
-                  relatedUserId: nextOwner?.id ?? existing.ownerId,
-                },
-              ]
-            : []),
+          ...added.map((user) => ({
+            action: "owner_changed",
+            oldValue: "Not assigned",
+            newValue: `${user.fullName || user.email} <${user.email}>`,
+            relatedUserId: user.id,
+          })),
+          ...removed.map(({ user }) => ({
+            action: "owner_changed",
+            oldValue: `${user.fullName || user.email} <${user.email}>`,
+            newValue: "Not assigned",
+            relatedUserId: user.id,
+          })),
           ...(existing.status !== updated.status
             ? [
                 {
@@ -138,16 +159,11 @@ export class UpdateLocationHandler {
             data: fields.map((field) => ({
               locationId: id,
               actorUserId,
+              isTest,
               eventType: "location_action",
               ...field,
             })),
           });
-      }
-      if (existing.ownerId !== updated.ownerId && nextOwner) {
-        await tx.user.update({
-          where: { id: nextOwner.id },
-          data: { version: { increment: 1 } },
-        });
       }
       return { id: updated.id };
     });

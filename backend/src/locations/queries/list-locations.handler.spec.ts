@@ -32,7 +32,7 @@ describe("ListLocationsHandler", () => {
       const location = await tx.location.create({
         data: {
           name: `Owned ${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          ownerId: owner.id,
+          owners: { create: { userId: owner.id } },
           status: "INACTIVE",
         },
       });

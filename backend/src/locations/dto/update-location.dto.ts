@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsEnum } from "class-validator";
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  ArrayUnique,
+  ValidateIf,
+} from "class-validator";
 
 export class UpdateLocationDto {
   @IsString()
@@ -9,9 +16,11 @@ export class UpdateLocationDto {
   @IsOptional()
   description?: string | null;
 
-  @IsString()
-  @IsOptional()
-  ownerId?: string | null;
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  @ValidateIf((_object, value: unknown) => value !== undefined)
+  ownerIds?: string[];
 
   @IsEnum(["ACTIVE", "INACTIVE", "ARCHIVED"])
   @IsOptional()
@@ -20,7 +29,7 @@ export class UpdateLocationDto {
   toCommand(): {
     name?: string;
     description?: string | null;
-    ownerId?: string | null;
+    ownerIds?: string[];
     status?: string;
   } {
     return {
@@ -28,8 +37,8 @@ export class UpdateLocationDto {
       ...(this.description !== undefined
         ? { description: this.description?.trim() || null }
         : {}),
-      ...(this.ownerId !== undefined
-        ? { ownerId: this.ownerId?.trim() || null }
+      ...(this.ownerIds !== undefined
+        ? { ownerIds: this.ownerIds.map((id) => id.trim()) }
         : {}),
       ...(this.status !== undefined ? { status: this.status } : {}),
     };
