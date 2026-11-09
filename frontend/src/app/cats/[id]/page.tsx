@@ -2265,7 +2265,11 @@ export default function CatProfilePage() {
             )}
             {selectedSection === "tasks" && (
               <div id="tasks">
-                <CatTasks catId={cat.id} onChanged={refreshHistory} />
+                <CatTasks
+                  catId={cat.id}
+                  currentLocationId={cat.currentLocationId}
+                  onChanged={refreshHistory}
+                />
               </div>
             )}
             {selectedSection === "treatments" && (
