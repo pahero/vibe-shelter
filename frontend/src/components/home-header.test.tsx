@@ -36,6 +36,9 @@ describe("HomeHeader", () => {
     expect(
       screen.getByRole("menuitem", { name: "My treatments" }),
     ).toHaveAttribute("href", "/my-treatments");
+    expect(
+      screen.getByRole("menuitem", { name: "My reminders" }),
+    ).toHaveAttribute("href", "/my-reminders");
   });
 
   it("does not show My treatments to signed-out visitors", () => {
@@ -43,6 +46,9 @@ describe("HomeHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
     expect(
       screen.queryByRole("menuitem", { name: "My treatments" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "My reminders" }),
     ).not.toBeInTheDocument();
   });
 

@@ -9,12 +9,16 @@ vi.mock("@/lib/api", async () => {
     ...actual,
     catsApi: { ...actual.catsApi, listTasks: vi.fn(), createTask: vi.fn() },
     locationsApi: { ...actual.locationsApi, getLocation: vi.fn() },
-    usersApi: { ...actual.usersApi, listUsers: vi.fn() },
+    usersApi: {
+      ...actual.usersApi,
+      listUsers: vi.fn(),
+      listReminderReceivers: vi.fn(),
+    },
   };
 });
 
 const listTasks = vi.mocked(catsApi.listTasks);
-const listUsers = vi.mocked(usersApi.listUsers);
+const listUsers = vi.mocked(usersApi.listReminderReceivers);
 const getLocation = vi.mocked(locationsApi.getLocation);
 const createTask = vi.mocked(catsApi.createTask);
 
@@ -32,6 +36,29 @@ describe("CatTasks", () => {
         isTest: false,
       },
     ]);
+  });
+
+  it("loads the cat's reminders from the cat endpoint and paginates them", async () => {
+    listTasks.mockResolvedValue(
+      Array.from({ length: 21 }, (_, index) => ({
+        id: `task-${index}`,
+        catId: "cat-1",
+        comment: `Reminder ${index}`,
+        dueDate: "2030-01-01T12:00:00.000Z",
+        receiverIds: ["user-1"],
+        completedAt: null,
+        completedBy: null,
+        createdAt: "",
+        updatedAt: "",
+      })),
+    );
+    render(<CatTasks catId="cat-1" currentLocationId={null} />);
+    await screen.findByText("Reminder 0");
+    expect(listTasks).toHaveBeenCalledWith("cat-1");
+    expect(screen.getAllByRole("listitem")).toHaveLength(20);
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByText("Reminder 20")).toBeVisible();
   });
 
   it("preselects active responsible users and allows removing them", async () => {
@@ -94,6 +121,12 @@ describe("CatTasks", () => {
     await screen.findByText("No reminders yet.");
     fireEvent.click(screen.getByRole("button", { name: "Add reminder" }));
     expect(
+      await screen.findByRole("option", { name: "Receiver" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("option", { name: /receiver@example.com/ }),
+    ).not.toBeInTheDocument();
+    expect(
       await screen.findByRole("button", { name: "Remove Receiver" }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Remove Other" })).toBeVisible();
@@ -111,7 +144,7 @@ describe("CatTasks", () => {
     fireEvent.change(screen.getByLabelText("Comment"), {
       target: { value: "Feed cats" },
     });
-    fireEvent.change(screen.getByLabelText("Due date"), {
+    fireEvent.change(screen.getByLabelText("Date"), {
       target: { value: "2030-01-01T12:00" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -141,6 +174,13 @@ describe("CatTasks", () => {
       },
     ]);
     render(<CatTasks catId="cat-1" currentLocationId="location-1" />);
+    expect(await screen.findByText("Existing")).toBeVisible();
+    expect(
+      screen.getByRole("checkbox", { name: "Complete reminder: Existing" }),
+    ).not.toBeChecked();
+    expect(
+      screen.queryByRole("link", { name: /cat/i }),
+    ).not.toBeInTheDocument();
     fireEvent.click(
       await screen.findByRole("button", { name: "Edit reminder" }),
     );
@@ -148,6 +188,36 @@ describe("CatTasks", () => {
       screen.getByRole("button", { name: "Remove Receiver" }),
     ).toBeVisible();
     expect(getLocation).not.toHaveBeenCalled();
+  });
+
+  it("shows completed reminders with an active checkbox and no strikethrough", async () => {
+    listTasks.mockResolvedValue([
+      {
+        id: "done",
+        catId: "cat-1",
+        comment: "Finished",
+        dueDate: "2030-01-01T12:00:00.000Z",
+        receiverIds: ["user-1"],
+        completedAt: "2030-01-02T12:00:00.000Z",
+        completedBy: null,
+        createdAt: "",
+        updatedAt: "",
+      },
+    ]);
+    render(<CatTasks catId="cat-1" currentLocationId={null} />);
+    await screen.findByText("No reminders yet.");
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }));
+    const checkbox = await screen.findByRole("checkbox", {
+      name: "Reopen reminder: Finished",
+    });
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toBeEnabled();
+    expect(screen.getByText("Finished").closest("p")).not.toHaveClass(
+      "line-through",
+    );
+    expect(
+      screen.queryByRole("link", { name: /cat/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("reports a location lookup failure instead of silently omitting defaults", async () => {
@@ -236,7 +306,7 @@ describe("CatTasks", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add reminder" }));
 
     expect(screen.getByLabelText("Comment")).toHaveClass("w-full", "min-w-0");
-    expect(screen.getByLabelText("Due date")).toHaveClass("w-full", "min-w-0");
+    expect(screen.getByLabelText("Date")).toHaveClass("w-full", "min-w-0");
     expect(screen.getByLabelText("Notification receivers")).toHaveClass(
       "w-full",
       "min-w-0",

@@ -52,6 +52,58 @@ describe("Cat treatment endpoints", () => {
     await app?.close();
   });
 
+  it("lists the signed-in user's outstanding and completed reminders with cat details", async () => {
+    const cat = await prisma.cat.create({
+      data: {
+        name: unique("reminder-cat"),
+        currentLocation: { create: { name: "Fixture location" } },
+      },
+    });
+    const task = await prisma.catTask.create({
+      data: {
+        catId: cat.id,
+        comment: "Integration reminder",
+        dueDate: new Date("2026-01-01"),
+        receivers: { create: { userId } },
+      },
+    });
+    const completed = await prisma.catTask.create({
+      data: {
+        catId: cat.id,
+        comment: "Completed reminder",
+        dueDate: new Date("2026-01-01"),
+        completedAt: new Date(),
+        receivers: { create: { userId } },
+      },
+    });
+    const response = await agent.get("/api/cats/tasks/mine").expect(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: task.id,
+          comment: task.comment,
+          catId: cat.id,
+          completedAt: null,
+          completedBy: null,
+          receiverIds: [userId],
+          cat: { id: cat.id, name: cat.name, nameNumber: cat.nameNumber },
+        }),
+        expect.objectContaining({ id: completed.id }),
+      ]),
+    );
+    await request(app.getHttpServer()).get("/api/cats/tasks/mine").expect(401);
+    await agent
+      .post(`/api/cats/tasks/${completed.id}/reopen`)
+      .expect(201)
+      .expect({ id: completed.id });
+    expect(
+      await prisma.catTask.findUniqueOrThrow({ where: { id: completed.id } }),
+    ).toMatchObject({ completedAt: null, completedByUserId: null });
+    await request(app.getHttpServer())
+      .post(`/api/cats/tasks/${completed.id}/reopen`)
+      .expect(401);
+  });
+
   it("creates, lists, updates, checks, and unchecks a treatment with audit history", async () => {
     const cat = await prisma.cat.create({
       data: {

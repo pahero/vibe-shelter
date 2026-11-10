@@ -21,6 +21,8 @@ import { CompleteCatTaskHandler } from "./tasks/complete-cat-task.handler";
 import { CreateCatTaskHandler } from "./tasks/create-cat-task.handler";
 import { DeleteCatTaskHandler } from "./tasks/delete-cat-task.handler";
 import { ListCatTasksHandler } from "./tasks/list-cat-tasks.handler";
+import { ListMyTasksHandler } from "./tasks/list-my-tasks.handler";
+import { ReopenCatTaskHandler } from "./tasks/reopen-cat-task.handler";
 import { UpdateCatTaskHandler } from "./tasks/update-cat-task.handler";
 import { SendDueTaskNotificationsHandler } from "./tasks/send-due-task-notifications.handler";
 import { TaskNotificationCronService } from "./tasks/task-notification-cron.service";
@@ -118,6 +120,8 @@ import { TrelloClient } from "./import/trello-client";
     UpdateArchivingReasonCommand,
     DeleteArchivingReasonCommand,
     ListCatTasksHandler,
+    ListMyTasksHandler,
+    ReopenCatTaskHandler,
     CreateCatTaskHandler,
     UpdateCatTaskHandler,
     DeleteCatTaskHandler,
