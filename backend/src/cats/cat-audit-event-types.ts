@@ -38,6 +38,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   taskReceiversChanged: "task_receivers_changed",
   taskDeleted: "task_deleted",
   taskCompleted: "task_completed",
+  taskReopened: "task_reopened",
   treatmentCreated: "treatment_created",
   treatmentDeleted: "treatment_deleted",
   treatmentRestored: "treatment_restored",

@@ -99,6 +99,14 @@ export function HomeHeader({ user }: HomeFooterProps) {
               >
                 My treatments
               </Link>
+              <Link
+                role="menuitem"
+                href="/my-reminders"
+                onClick={() => setIsUserMenuOpen(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]"
+              >
+                My reminders
+              </Link>
               <LogoutButton className="block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-[#1f2320] transition hover:bg-[#efe7da]" />
             </ContextMenu>
           ) : (

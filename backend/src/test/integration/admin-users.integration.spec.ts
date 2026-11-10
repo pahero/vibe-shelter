@@ -53,6 +53,42 @@ describe("Admin user registration endpoints", () => {
     await moduleRef?.close();
   });
 
+  it("GET /users/reminder-receivers returns active users in the current partition sorted by name", async () => {
+    const suffix = unique("reminder-receiver");
+    const zed = await prisma.user.create({
+      data: {
+        fullName: `Zed ${suffix}`,
+        email: `${suffix}-z@example.com`,
+        isTest: false,
+      },
+    });
+    const amy = await prisma.user.create({
+      data: {
+        fullName: `Amy ${suffix}`,
+        email: `${suffix}-a@example.com`,
+        isTest: false,
+      },
+    });
+    const testUser = await prisma.user.create({
+      data: {
+        fullName: `Test ${suffix}`,
+        email: `${suffix}-test@example.com`,
+        isTest: true,
+      },
+    });
+    const response = await adminAgent
+      .get("/users/reminder-receivers")
+      .expect(200);
+    const returned = response.body as { id: string; fullName: string | null }[];
+    const filtered = returned.filter((user) =>
+      [zed.id, amy.id, testUser.id].includes(user.id),
+    );
+    expect(filtered.map((user) => user.id)).toEqual([amy.id, zed.id]);
+    await request(app.getHttpServer())
+      .get("/users/reminder-receivers")
+      .expect(401);
+  });
+
   it("POST /admin/users creates users with isTest and hides password data", async () => {
     const testEmail = `${unique("test-user")}@example.com`;
     const realEmail = `${unique("real-user")}@example.com`;

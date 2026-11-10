@@ -15,6 +15,8 @@ import { CompleteCatTaskHandler } from "./complete-cat-task.handler";
 import { CreateCatTaskHandler } from "./create-cat-task.handler";
 import { DeleteCatTaskHandler } from "./delete-cat-task.handler";
 import { ListCatTasksHandler } from "./list-cat-tasks.handler";
+import { ListMyTasksHandler } from "./list-my-tasks.handler";
+import { ReopenCatTaskHandler } from "./reopen-cat-task.handler";
 import { TaskDto, UpdateTaskDto } from "./task.dto";
 import { UpdateCatTaskHandler } from "./update-cat-task.handler";
 
@@ -25,11 +27,18 @@ type AuthenticatedUser = { id: string; isTest: boolean };
 export class CatTasksController {
   constructor(
     private readonly listCatTasksHandler: ListCatTasksHandler,
+    private readonly listMyTasksHandler: ListMyTasksHandler,
     private readonly createCatTaskHandler: CreateCatTaskHandler,
     private readonly updateCatTaskHandler: UpdateCatTaskHandler,
     private readonly deleteCatTaskHandler: DeleteCatTaskHandler,
     private readonly completeCatTaskHandler: CompleteCatTaskHandler,
+    private readonly reopenCatTaskHandler: ReopenCatTaskHandler,
   ) {}
+
+  @Get("tasks/mine")
+  async listMyTasks(@CurrentUser() user: AuthenticatedUser) {
+    return this.listMyTasksHandler.handle(user.id, user.isTest);
+  }
 
   @Get(":id/tasks")
   async listTasks(
@@ -83,5 +92,13 @@ export class CatTasksController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.completeCatTaskHandler.handle(taskId, user.id, user.isTest);
+  }
+
+  @Post("tasks/:taskId/reopen")
+  async reopenTask(
+    @Param("taskId") taskId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reopenCatTaskHandler.handle(taskId, user.id, user.isTest);
   }
 }

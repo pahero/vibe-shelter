@@ -32,7 +32,7 @@ type ListAllCatHistoryInput = {
 };
 
 const auditEventInclude = {
-  actorUser: { select: { id: true, fullName: true, email: true } },
+  actorUser: { select: { id: true, fullName: true } },
   photo: {
     select: { id: true, key: true },
   },
@@ -166,6 +166,7 @@ export class ListAllCatHistoryQuery {
           case "task_receivers_changed":
           case "task_deleted":
           case "task_completed":
+          case "task_reopened":
             return this.toCatTaskEventDto(event);
           case "treatment_created":
           case "treatment_deleted":
@@ -294,7 +295,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       actorId: event.actorUser.id,
-      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+      actorFullName: event.actorUser.fullName ?? "Unnamed user",
     };
   }
 
@@ -411,7 +412,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       actorId: event.actorUser.id,
-      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+      actorFullName: event.actorUser.fullName ?? "Unnamed user",
     };
   }
 
@@ -430,7 +431,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       actorId: event.actorUser.id,
-      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+      actorFullName: event.actorUser.fullName ?? "Unnamed user",
     };
   }
 
@@ -451,7 +452,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       actorId: event.actorUser.id,
-      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+      actorFullName: event.actorUser.fullName ?? "Unnamed user",
     };
   }
 
@@ -499,7 +500,7 @@ export class ListAllCatHistoryQuery {
       oldValue: event.oldValue,
       newValue: event.newValue,
       actorId: event.actorUser.id,
-      actorFullName: event.actorUser.fullName ?? event.actorUser.email,
+      actorFullName: event.actorUser.fullName ?? "Unnamed user",
     };
   }
 }

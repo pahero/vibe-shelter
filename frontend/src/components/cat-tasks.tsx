@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { faPen, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   CatTask,
@@ -9,10 +9,12 @@ import {
   locationsApi,
   TaskInput,
   User,
+  MyReminder,
   usersApi,
 } from "@/lib/api";
-import { ApiErrorHandler, formatDate } from "@/lib/utils";
+import { ApiErrorHandler } from "@/lib/utils";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
+import { RemindersList } from "@/components/reminders-list";
 
 const emptyTask = (): TaskInput => ({
   comment: "",
@@ -30,12 +32,15 @@ export function CatTasks({
   catId,
   currentLocationId,
   onChanged,
+  dashboard = false,
 }: {
-  catId: string;
-  currentLocationId: string | null;
+  catId?: string;
+  currentLocationId?: string | null;
   onChanged?: () => Promise<void>;
+  dashboard?: boolean;
 }) {
   const [tasks, setTasks] = useState<CatTask[]>([]);
+  const [reminders, setReminders] = useState<MyReminder[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [form, setForm] = useState<TaskInput>(emptyTask);
   const [receiverChoice, setReceiverChoice] = useState("");
@@ -56,14 +61,33 @@ export function CatTasks({
     };
   }, [catId, currentLocationId]);
 
-  const refresh = async () => setTasks(await catsApi.listTasks(catId));
+  const loadTasks = useCallback(async () => {
+    if (!dashboard) {
+      return {
+        tasks: catId ? await catsApi.listTasks(catId) : [],
+        reminders: [],
+      };
+    }
+    const assigned = await catsApi.listMyReminders();
+    return {
+      reminders: assigned,
+      tasks: assigned,
+    };
+  }, [catId, dashboard]);
+
+  const refresh = async () => {
+    const result = await loadTasks();
+    setTasks(result.tasks);
+    setReminders(result.reminders);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([catsApi.listTasks(catId), usersApi.listUsers()])
-      .then(([loadedTasks, loadedUsers]) => {
+    Promise.all([loadTasks(), usersApi.listReminderReceivers()])
+      .then(([result, loadedUsers]) => {
         if (!cancelled) {
-          setTasks(loadedTasks);
+          setTasks(result.tasks);
+          setReminders(result.reminders);
           setUsers(loadedUsers.filter((user) => user.status === "active"));
         }
       })
@@ -76,7 +100,7 @@ export function CatTasks({
     return () => {
       cancelled = true;
     };
-  }, [catId]);
+  }, [loadTasks]);
 
   const toggleReceiver = (userId: string) =>
     setForm((current) => ({
@@ -136,7 +160,7 @@ export function CatTasks({
       form.receiverIds.length === 0
     ) {
       setError(
-        "Enter a comment, due date, and at least one notification receiver.",
+        "Enter a comment, date, and at least one notification receiver.",
       );
       return;
     }
@@ -149,7 +173,7 @@ export function CatTasks({
         dueDate: new Date(form.dueDate).toISOString(),
       };
       if (editingId) await catsApi.updateTask(editingId, payload);
-      else await catsApi.createTask(catId, payload);
+      else if (catId) await catsApi.createTask(catId, payload);
       setForm(emptyTask());
       setEditingId(null);
       setReceiverChoice("");
@@ -203,17 +227,19 @@ export function CatTasks({
   };
 
   return (
-    <section className="md:col-span-2">
-      <CatProfileSectionHeader
-        title="Reminders"
-        isExpanded={isExpanded}
-        onToggle={() => {
-          if (isExpanded) cancel();
-          setIsExpanded((current) => !current);
-        }}
-        onAdd={isLoadingDefaults ? undefined : openNewTask}
-        addLabel="Add reminder"
-      />
+    <section className={dashboard ? undefined : "md:col-span-2"}>
+      {!dashboard && (
+        <CatProfileSectionHeader
+          title="Reminders"
+          isExpanded={isExpanded}
+          onToggle={() => {
+            if (isExpanded) cancel();
+            setIsExpanded((current) => !current);
+          }}
+          onAdd={dashboard || isLoadingDefaults ? undefined : openNewTask}
+          addLabel="Add reminder"
+        />
+      )}
 
       {isExpanded && (
         <>
@@ -242,10 +268,10 @@ export function CatTasks({
               </label>
               <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-800">
                 <span>
-                  Due date <span className="text-red-700">*</span>
+                  Date <span className="text-red-700">*</span>
                 </span>
                 <input
-                  aria-label="Due date"
+                  aria-label="Date"
                   type="datetime-local"
                   value={form.dueDate}
                   onChange={(event) =>
@@ -275,8 +301,7 @@ export function CatTasks({
                       value={user.id}
                       disabled={form.receiverIds.includes(user.id)}
                     >
-                      {user.fullName || user.email}
-                      {user.fullName ? ` (${user.email})` : ""}
+                      {user.fullName || "Unnamed user"}
                     </option>
                   ))}
                 </select>
@@ -288,12 +313,12 @@ export function CatTasks({
                       key={user.id}
                       className="inline-flex items-center gap-1 rounded-full bg-[#d05a2c]/10 py-1 pl-2 pr-1 text-xs font-semibold text-[#b24a20]"
                     >
-                      {user.fullName || user.email}
+                      {user.fullName || "Unnamed user"}
                       <button
                         type="button"
                         onClick={() => toggleReceiver(user.id)}
-                        aria-label={`Remove ${user.fullName || user.email}`}
-                        title={`Remove ${user.fullName || user.email}`}
+                        aria-label={`Remove ${user.fullName || "Unnamed user"}`}
+                        title={`Remove ${user.fullName || "Unnamed user"}`}
                         className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-[#d05a2c]/20"
                       >
                         <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
@@ -321,94 +346,33 @@ export function CatTasks({
           )}
 
           {error && (
-            <p className="mt-3 text-sm font-medium text-red-700">{error}</p>
+            <p role="alert" className="mt-3 text-sm font-medium text-red-700">
+              {error}
+            </p>
           )}
           {isLoading && (
             <p className="mt-4 text-sm text-[#6d6a66]">Loading reminders...</p>
           )}
-          {!isLoading && tasks.length === 0 && (
-            <p className="mt-4 rounded-xl border border-dashed border-[#d4c7b4] p-4 text-sm text-[#6d6a66]">
-              No reminders yet.
-            </p>
-          )}
-          <ol className="mt-4 space-y-3">
-            {tasks.map((task) => (
-              <li
-                key={task.id}
-                className="rounded-xl border border-[#d4c7b4] bg-white/60 p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p
-                      className={`font-semibold ${task.completedAt ? "text-[#6d6a66] line-through" : "text-gray-900"}`}
-                    >
-                      {task.comment}
-                    </p>
-                    <p className="mt-1 text-sm text-[#6d6a66]">
-                      Due {formatDate(task.dueDate)}
-                      {task.completedAt &&
-                        ` \u00B7 Completed ${formatDate(task.completedAt)} by ${task.completedBy?.fullName || task.completedBy?.id}`}
-                    </p>
-                    <p className="mt-1 text-xs text-[#6d6a66]">
-                      Receivers:{" "}
-                      {task.receiverIds
-                        .map(
-                          (id) =>
-                            users.find((user) => user.id === id)?.fullName ||
-                            users.find((user) => user.id === id)?.email ||
-                            id,
-                        )
-                        .join(", ")}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {!task.completedAt && (
-                      <button
-                        type="button"
-                        disabled={
-                          actionId === task.id || task.canComplete === false
-                        }
-                        title={
-                          task.canComplete === false
-                            ? "Only the reminder creator or an admin can complete this reminder"
-                            : "Complete reminder"
-                        }
-                        onClick={() =>
-                          runAction(task.id, () =>
-                            catsApi.completeTask(task.id),
-                          )
-                        }
-                        className="rounded-lg bg-[#31734b] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-                      >
-                        Complete
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => edit(task)}
-                      aria-label="Edit reminder"
-                      title="Edit reminder"
-                      className="rounded-lg p-2 text-amber-700 hover:bg-amber-100"
-                    >
-                      <FontAwesomeIcon icon={faPen} />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionId === task.id}
-                      onClick={() =>
-                        runAction(task.id, () => catsApi.deleteTask(task.id))
-                      }
-                      aria-label="Delete reminder"
-                      title="Delete reminder"
-                      className="rounded-lg p-2 text-red-700 hover:bg-red-100 disabled:opacity-50"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <RemindersList
+            tasks={tasks}
+            cats={reminders}
+            users={users}
+            dashboard={dashboard}
+            isLoading={isLoading}
+            hasError={Boolean(error)}
+            actionId={actionId}
+            onEdit={edit}
+            onToggle={(task) =>
+              void runAction(task.id, () =>
+                task.completedAt
+                  ? catsApi.reopenTask(task.id)
+                  : catsApi.completeTask(task.id),
+              )
+            }
+            onDelete={(task) =>
+              void runAction(task.id, () => catsApi.deleteTask(task.id))
+            }
+          />
         </>
       )}
     </section>

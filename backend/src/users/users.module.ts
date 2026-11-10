@@ -8,6 +8,7 @@ import { UpdateUserHandler } from "./commands/update-user.handler";
 import { DeleteUserHandler } from "./commands/delete-user.handler";
 import { ListUsersHandler } from "./queries/list-users.handler";
 import { GetUserHandler } from "./queries/get-user.handler";
+import { ListReminderReceiversHandler } from "./queries/list-reminder-receivers.handler";
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -18,6 +19,7 @@ import { GetUserHandler } from "./queries/get-user.handler";
     DeleteUserHandler,
     ListUsersHandler,
     GetUserHandler,
+    ListReminderReceiversHandler,
     JwtAuthGuard,
   ],
   exports: [

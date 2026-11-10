@@ -119,6 +119,10 @@ export type CatTask = {
   canComplete?: boolean;
 };
 
+export type MyReminder = CatTask & {
+  cat: { id: string; name: string; nameNumber: number };
+};
+
 export type TaskInput = {
   comment: string;
   dueDate: string;
@@ -631,6 +635,14 @@ export const locationsApi = {
 };
 
 export const usersApi = {
+  async listReminderReceivers(): Promise<User[]> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/users/reminder-receivers`,
+      { method: "GET" },
+    );
+    return handleResponse<User[]>(response);
+  },
+
   async listUsers(): Promise<User[]> {
     const response = await authenticatedFetch(`${BACKEND_URL}/users`, {
       method: "GET",
@@ -882,6 +894,16 @@ export const catsApi = {
     return handleResponse<MutationResult>(response);
   },
 
+  async listMyReminders(): Promise<MyReminder[]> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tasks/mine`,
+      {
+        method: "GET",
+      },
+    );
+    return handleResponse<MyReminder[]>(response);
+  },
+
   async listTasks(catId: string): Promise<CatTask[]> {
     const response = await authenticatedFetch(
       `${BACKEND_URL}/api/cats/${catId}/tasks`,
@@ -923,6 +945,14 @@ export const catsApi = {
       { method: "DELETE" },
     );
     return handleResponse<void>(response);
+  },
+
+  async reopenTask(taskId: string): Promise<MutationResult> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/tasks/${taskId}/reopen`,
+      { method: "POST" },
+    );
+    return handleResponse<MutationResult>(response);
   },
 
   async completeTask(taskId: string): Promise<MutationResult> {

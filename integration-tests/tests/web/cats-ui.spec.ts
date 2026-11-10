@@ -444,9 +444,9 @@ test.describe("cats UI", () => {
       .locator("form")
       .filter({ has: page.getByLabel("Notification receivers") });
     await taskForm.getByLabel("Comment").fill(initialComment);
-    await taskForm.getByLabel("Due date").fill("2030-01-02T10:00");
+    await taskForm.getByLabel("Date").fill("2030-01-02T10:00");
     await taskForm.getByLabel("Notification receivers").selectOption({
-      label: `${staffTestUser.fullName} (${staffTestUser.email})`,
+      label: staffTestUser.fullName,
     });
 
     const createTask = page.waitForResponse(
@@ -478,9 +478,16 @@ test.describe("cats UI", () => {
         response.url().includes("/complete") &&
         response.request().method() === "POST",
     );
-    await updatedTaskCard.getByRole("button", { name: "Complete" }).click();
+    await updatedTaskCard
+      .getByRole("checkbox", { name: `Complete reminder: ${updatedComment}` })
+      .click();
     expect((await completeTask).status()).toBe(201);
-    await expect(updatedTaskCard.getByText(/Completed/)).toBeVisible();
+    await page.getByRole("button", { name: "Completed", exact: true }).click();
+    await expect(
+      updatedTaskCard.getByRole("checkbox", {
+        name: `Reopen reminder: ${updatedComment}`,
+      }),
+    ).toBeChecked();
 
     const deleteTask = page.waitForResponse(
       (response) =>
@@ -541,7 +548,7 @@ test.describe("cats UI", () => {
       .getByRole("button", { name: `Remove ${staffTestUser.fullName}` })
       .click();
     await page.getByLabel("Comment").fill("Check food");
-    await page.getByLabel("Due date").fill("2030-01-02T10:00");
+    await page.getByLabel("Date").fill("2030-01-02T10:00");
     const createTask = page.waitForResponse(
       (response) =>
         response.url().includes(`/api/cats/${cat.id}/tasks`) &&
@@ -577,9 +584,9 @@ test.describe("cats UI", () => {
       .locator("form")
       .filter({ has: page.getByLabel("Notification receivers") });
     await taskForm.getByLabel("Comment").fill(reminderComment);
-    await taskForm.getByLabel("Due date").fill("2020-01-02T10:00");
+    await taskForm.getByLabel("Date").fill("2020-01-02T10:00");
     await taskForm.getByLabel("Notification receivers").selectOption({
-      label: `${staffTestUser.fullName} (${staffTestUser.email})`,
+      label: staffTestUser.fullName,
     });
 
     const createTask = page.waitForResponse(
