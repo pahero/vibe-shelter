@@ -166,7 +166,7 @@ describe("DashboardClient", () => {
     ).not.toBeChecked();
   });
 
-  it("sorts both groups by descending due date and paginates at 20", async () => {
+  it("sorts both groups by ascending due date and paginates at 20", async () => {
     const entries = Array.from({ length: 22 }, (_, index) => ({
       ...task,
       id: `t${index}`,
@@ -197,14 +197,14 @@ describe("DashboardClient", () => {
     render(<DashboardClient />);
     expect(await screen.findByText("22 tasks")).toBeVisible();
     expect(screen.getAllByRole("listitem")).toHaveLength(20);
-    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Task 21");
-    expect(screen.queryByText("Task 0")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Task 0");
+    expect(screen.queryByText("Task 21")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Task 1");
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Task 20");
     fireEvent.click(screen.getByRole("button", { name: "Completed" }));
-    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Done new");
-    expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("Done old");
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Done old");
+    expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("Done new");
     fireEvent.click(screen.getByRole("button", { name: "Active" }));
     expect(screen.getByText("Page 1 of 2")).toBeVisible();
   });

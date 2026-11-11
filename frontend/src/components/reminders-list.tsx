@@ -37,7 +37,7 @@ export function RemindersList({
       filter === "completed" ? Boolean(task.completedAt) : !task.completedAt,
     )
     .sort(
-      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
     );
   const pageCount = Math.max(1, Math.ceil(filteredTasks.length / 20));
   const currentPage = Math.min(page, pageCount);
