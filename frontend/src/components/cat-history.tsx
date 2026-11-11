@@ -13,6 +13,14 @@ const eventLabels: Record<string, string> = {
   flight_cat_assigned: "Cat assigned",
   flight_cat_unassigned: "Cat removed",
   flight_cat_restored: "Cat assignment restored",
+  preparation_fee_price_changed: "Preparation fee price changed",
+  preparation_fee_paid_changed: "Preparation fee paid changed",
+  flight_fee_price_changed: "Flight fee price changed",
+  flight_fee_paid_changed: "Flight fee paid changed",
+  pre_payer_name_changed: "Name of pre-payer changed",
+  paid_by_adopter_changed: "Paid by adopter changed",
+  adoption_contract_changed: "Adoption contract changed",
+  adoption_form_changed: "Adoption form (Selbstauskunft) changed",
 };
 
 type CatHistoryProps = {

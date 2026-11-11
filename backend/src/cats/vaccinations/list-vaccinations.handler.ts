@@ -19,6 +19,7 @@ export class ListVaccinationsHandler {
       id: vaccination.id,
       type: vaccination.type,
       date: vaccination.date.toISOString().slice(0, 10),
+      validFrom: vaccination.validFrom?.toISOString().slice(0, 10) ?? null,
       nextDueDate: vaccination.nextDueDate?.toISOString().slice(0, 10) ?? null,
       vaccineName: vaccination.vaccineName,
       createdAt: vaccination.createdAt.toISOString(),

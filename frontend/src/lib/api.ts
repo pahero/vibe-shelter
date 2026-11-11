@@ -76,6 +76,14 @@ export type CatCard = {
   adopterName?: string | null;
   adopterAddress?: string | null;
   adopterCountry?: AdopterCountry | null;
+  preparationFeePrice?: number | null;
+  preparationFeePaid?: boolean;
+  flightFeePrice?: number | null;
+  flightFeePaid?: boolean;
+  prePayerName?: string | null;
+  paidByAdopter?: boolean;
+  adoptionContract?: boolean;
+  adoptionForm?: boolean;
   felvFivTestDone: boolean;
   intakeDetails: string | null;
   intakeSource: IntakeSource | null;
@@ -171,6 +179,7 @@ export type CatVaccination = {
   id: string;
   type: VaccinationType;
   date: string;
+  validFrom: string | null;
   nextDueDate: string | null;
   vaccineName: string | null;
   createdAt: string;
@@ -179,6 +188,7 @@ export type CatVaccination = {
 export type VaccinationInput = {
   type: VaccinationType;
   date: string;
+  validFrom?: string | null;
   nextDueDate?: string | null;
   vaccineName?: string | null;
 };
@@ -348,6 +358,14 @@ export type CreateCatDto = {
 
 export type UpdateCatDto = Partial<CreateCatDto> & {
   felvFivTestDone?: boolean;
+  preparationFeePrice?: number | null;
+  preparationFeePaid?: boolean;
+  flightFeePrice?: number | null;
+  flightFeePaid?: boolean;
+  prePayerName?: string | null;
+  paidByAdopter?: boolean;
+  adoptionContract?: boolean;
+  adoptionForm?: boolean;
 };
 
 export type FlightListItem = {

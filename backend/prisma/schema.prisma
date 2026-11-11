@@ -180,6 +180,14 @@ model Cat {
   adopterName           String?
   adopterAddress        String?
   adopterCountry        CatAdopterCountry?
+  preparationFeePrice   Decimal?              @db.Decimal(10, 2)
+  preparationFeePaid    Boolean               @default(false)
+  flightFeePrice        Decimal?              @db.Decimal(10, 2)
+  flightFeePaid         Boolean               @default(false)
+  prePayerName          String?
+  paidByAdopter         Boolean               @default(false)
+  adoptionContract      Boolean               @default(false)
+  adoptionForm          Boolean               @default(false)
   felvFivTestDone       Boolean               @default(false)
   isFlightCandidate     Boolean               @default(false)
   trelloUrl             String?               @unique
@@ -534,6 +542,7 @@ model Vaccination {
   updatedByUser    User?           @relation("updatedVaccinations", fields: [updatedByUserId], references: [id], onDelete: SetNull)
   type             VaccinationType
   date             DateTime        @db.Date
+  validFrom        DateTime?       @db.Date
   nextDueDate      DateTime?       @db.Date
   vaccineName      String
   deletedAt        DateTime?

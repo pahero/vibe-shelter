@@ -22,6 +22,14 @@ export type UpdateCatCommand = {
   adopterName?: string | null;
   adopterAddress?: string | null;
   adopterCountry?: "UK" | "EU" | "CY" | null;
+  preparationFeePrice?: number | null;
+  preparationFeePaid?: boolean;
+  flightFeePrice?: number | null;
+  flightFeePaid?: boolean;
+  prePayerName?: string | null;
+  paidByAdopter?: boolean;
+  adoptionContract?: boolean;
+  adoptionForm?: boolean;
   felvFivTestDone?: boolean;
   sterilizationStatus?: "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
   currentLocationId?: string;
@@ -108,6 +116,36 @@ export class UpdateCatDto {
   @IsOptional()
   adopterCountry?: "UK" | "EU" | "CY" | null;
 
+  @IsOptional()
+  preparationFeePrice?: number | string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  preparationFeePaid?: boolean;
+
+  @IsOptional()
+  flightFeePrice?: number | string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  flightFeePaid?: boolean;
+
+  @IsString()
+  @IsOptional()
+  prePayerName?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  paidByAdopter?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  adoptionContract?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  adoptionForm?: boolean;
+
   @IsBoolean()
   @IsOptional()
   felvFivTestDone?: boolean;
@@ -174,6 +212,23 @@ export class UpdateCatDto {
         "Invalid adopterCountry. Must be one of: UK, EU, CY",
       );
     }
+    const parsePrice = (
+      value: number | string | null | undefined,
+      field: string,
+    ): number | null | undefined => {
+      if (value === undefined || value === null || value === "")
+        return value === "" ? null : value;
+      const price = Number(value);
+      if (
+        !Number.isFinite(price) ||
+        price < 0 ||
+        !/^\d+(\.\d{1,2})?$/.test(String(value))
+      )
+        throw new BadRequestException(
+          `${field} must be a non-negative decimal with up to 2 decimal places`,
+        );
+      return price;
+    };
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
       ...(this.sex !== undefined
@@ -214,6 +269,35 @@ export class UpdateCatDto {
         : {}),
       ...(this.adopterCountry !== undefined
         ? { adopterCountry: this.adopterCountry }
+        : {}),
+      ...(this.preparationFeePrice !== undefined
+        ? {
+            preparationFeePrice: parsePrice(
+              this.preparationFeePrice,
+              "preparationFeePrice",
+            ),
+          }
+        : {}),
+      ...(this.preparationFeePaid !== undefined
+        ? { preparationFeePaid: this.preparationFeePaid }
+        : {}),
+      ...(this.flightFeePrice !== undefined
+        ? { flightFeePrice: parsePrice(this.flightFeePrice, "flightFeePrice") }
+        : {}),
+      ...(this.flightFeePaid !== undefined
+        ? { flightFeePaid: this.flightFeePaid }
+        : {}),
+      ...(this.prePayerName !== undefined
+        ? { prePayerName: optionalText(this.prePayerName) }
+        : {}),
+      ...(this.paidByAdopter !== undefined
+        ? { paidByAdopter: this.paidByAdopter }
+        : {}),
+      ...(this.adoptionContract !== undefined
+        ? { adoptionContract: this.adoptionContract }
+        : {}),
+      ...(this.adoptionForm !== undefined
+        ? { adoptionForm: this.adoptionForm }
         : {}),
       ...(this.felvFivTestDone !== undefined
         ? { felvFivTestDone: this.felvFivTestDone }

@@ -123,6 +123,18 @@ export class CreateCatHandler {
       adopterName: cat.adopterName,
       adopterAddress: cat.adopterAddress,
       adopterCountry: cat.adopterCountry,
+      preparationFeePrice:
+        cat.preparationFeePrice === null
+          ? null
+          : Number(cat.preparationFeePrice),
+      preparationFeePaid: cat.preparationFeePaid,
+      flightFeePrice:
+        cat.flightFeePrice === null ? null : Number(cat.flightFeePrice),
+      flightFeePaid: cat.flightFeePaid,
+      prePayerName: cat.prePayerName,
+      paidByAdopter: cat.paidByAdopter,
+      adoptionContract: cat.adoptionContract,
+      adoptionForm: cat.adoptionForm,
       felvFivTestDone: cat.felvFivTestDone,
       intakeDetails: cat.intakeDetails,
       intakeSource: cat.intakeSource,

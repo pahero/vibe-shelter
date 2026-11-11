@@ -21,6 +21,14 @@ export type CatCard = {
   adopterName: string | null;
   adopterAddress: string | null;
   adopterCountry: import("@prisma/client").CatAdopterCountry | null;
+  preparationFeePrice: number | null;
+  preparationFeePaid: boolean;
+  flightFeePrice: number | null;
+  flightFeePaid: boolean;
+  prePayerName: string | null;
+  paidByAdopter: boolean;
+  adoptionContract: boolean;
+  adoptionForm: boolean;
   felvFivTestDone: boolean;
   intakeDetails: string | null;
   intakeSource: import("@prisma/client").CatIntakeSource | null;

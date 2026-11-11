@@ -5,6 +5,7 @@ import { IsDateString, IsIn, IsOptional, IsString } from "class-validator";
 export type VaccinationPayload = {
   type: VaccinationType;
   date: Date;
+  validFrom?: Date | null;
   nextDueDate?: Date | null;
   vaccineName: string;
 };
@@ -57,15 +58,27 @@ export class CreateVaccinationDto {
 
   @IsDateString()
   @IsOptional()
+  validFrom?: string | null;
+
+  @IsDateString()
+  @IsOptional()
   nextDueDate?: string | null;
 
   @IsString()
   vaccineName!: string;
 
   toCommand(): VaccinationPayload {
+    const type = parseType(this.type);
+    const validFrom = parseOptionalDate(this.validFrom);
+    if (type === VaccinationType.RABIES && !validFrom) {
+      throw new BadRequestException(
+        "validFrom is required for rabies vaccinations",
+      );
+    }
     return {
-      type: parseType(this.type),
+      type,
       date: parseDate(this.date),
+      validFrom,
       nextDueDate: parseOptionalDate(this.nextDueDate),
       vaccineName: requiredText(this.vaccineName),
     };
@@ -83,6 +96,10 @@ export class UpdateVaccinationDto {
 
   @IsDateString()
   @IsOptional()
+  validFrom?: string | null;
+
+  @IsDateString()
+  @IsOptional()
   nextDueDate?: string | null;
 
   @IsString()
@@ -90,9 +107,17 @@ export class UpdateVaccinationDto {
   vaccineName?: string;
 
   toCommand(): Partial<VaccinationPayload> {
+    const type = this.type === undefined ? undefined : parseType(this.type);
+    const validFrom = parseOptionalDate(this.validFrom);
+    if (type === VaccinationType.RABIES && !validFrom) {
+      throw new BadRequestException(
+        "validFrom is required for rabies vaccinations",
+      );
+    }
     return {
-      ...(this.type !== undefined ? { type: parseType(this.type) } : {}),
+      ...(type !== undefined ? { type } : {}),
       ...(this.date !== undefined ? { date: parseDate(this.date) } : {}),
+      ...(this.validFrom !== undefined ? { validFrom } : {}),
       ...(this.nextDueDate !== undefined
         ? { nextDueDate: parseOptionalDate(this.nextDueDate) }
         : {}),

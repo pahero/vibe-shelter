@@ -42,11 +42,13 @@ describe("ListFlightCandidatesHandler", () => {
               },
               {
                 date: new Date("2026-03-01"),
+                validFrom: new Date("2026-03-22"),
                 type: "RABIES",
                 vaccineName: "Rabies",
               },
               {
                 date: new Date("2026-04-01"),
+                validFrom: new Date("2026-04-22"),
                 type: "RABIES",
                 vaccineName: "Deleted rabies",
                 deletedAt: new Date(),
@@ -62,6 +64,21 @@ describe("ListFlightCandidatesHandler", () => {
           },
           name: `Other partition ${Date.now()}`,
           isTest: true,
+        },
+      });
+      const notYetValidCat = await transaction.cat.create({
+        data: {
+          currentLocation: { connect: { id: location.id } },
+          name: `Not yet valid ${Date.now()}`,
+          isFlightCandidate: true,
+          vaccinations: {
+            create: {
+              date: new Date("2026-11-01"),
+              validFrom: new Date("2027-01-01"),
+              type: "RABIES",
+              vaccineName: "Future rabies",
+            },
+          },
         },
       });
       const activeFlight = await transaction.flight.create({
@@ -141,6 +158,14 @@ describe("ListFlightCandidatesHandler", () => {
         ]),
       );
       expect(candidates.map(({ id }) => id)).not.toContain(testCat.id);
+      expect(candidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: notYetValidCat.id,
+            requirements: expect.objectContaining({ rabies: false }),
+          }),
+        ]),
+      );
     });
   });
 

@@ -17,10 +17,16 @@ const typeLabels: Record<VaccinationType, string> = {
   RABIES: "Rabies",
   OTHER: "Other",
 };
+const addDays = (date: string, days: number) => {
+  const result = new Date(`${date}T00:00:00.000Z`);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
+};
 const emptyVaccination = (): VaccinationInput => ({
   type: "CORE",
   date: new Date().toISOString().slice(0, 10),
   nextDueDate: null,
+  validFrom: null,
   vaccineName: "",
 });
 
@@ -81,6 +87,10 @@ export function CatVaccinations({
       const payload = {
         ...form,
         vaccineName: form.vaccineName?.trim() || null,
+        validFrom:
+          form.type === "RABIES"
+            ? form.validFrom || addDays(form.date, 21)
+            : null,
         nextDueDate: form.nextDueDate || null,
       };
       if (editingId) await catsApi.updateVaccination(editingId, payload);
@@ -99,6 +109,7 @@ export function CatVaccinations({
     setForm({
       type: item.type,
       date: item.date,
+      validFrom: item.validFrom,
       nextDueDate: item.nextDueDate,
       vaccineName: item.vaccineName ?? "",
     });
@@ -173,11 +184,34 @@ export function CatVaccinations({
                   required
                   value={form.date}
                   onChange={(event) =>
-                    setForm({ ...form, date: event.target.value })
+                    setForm({
+                      ...form,
+                      date: event.target.value,
+                      ...(form.type === "RABIES"
+                        ? { validFrom: addDays(event.target.value, 21) }
+                        : {}),
+                    })
                   }
                   className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
                 />
               </label>
+              {form.type === "RABIES" && (
+                <label className="grid gap-1 text-sm font-medium">
+                  <span>Valid From</span>
+                  <input
+                    aria-label="Rabies vaccine valid from"
+                    type="date"
+                    value={form.validFrom || addDays(form.date, 21)}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        validFrom: event.target.value || null,
+                      })
+                    }
+                    className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
+                  />
+                </label>
+              )}
               <label className="grid gap-1 text-sm font-medium">
                 <span>Next Due Date</span>
                 <input
@@ -248,6 +282,9 @@ export function CatVaccinations({
                   </p>
                   <p className="text-sm text-[#6d6a66]">
                     {typeLabels[item.type]} · {formatDate(item.date)}
+                    {item.type === "RABIES" && item.validFrom
+                      ? ` · Valid from ${formatDate(item.validFrom)}`
+                      : ""}
                     {item.nextDueDate
                       ? ` · Next due ${formatDate(item.nextDueDate)}`
                       : ""}

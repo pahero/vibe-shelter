@@ -88,6 +88,14 @@ type CatEditForm = {
   adopterName: string;
   adopterAddress: string;
   adopterCountry: AdopterCountry | "";
+  preparationFeePrice: string;
+  preparationFeePaid: boolean;
+  flightFeePrice: string;
+  flightFeePaid: boolean;
+  prePayerName: string;
+  paidByAdopter: boolean;
+  adoptionContract: boolean;
+  adoptionForm: boolean;
   felvFivTestDone: boolean;
   intakeDetails: string;
   intakeSource: IntakeSource | "";
@@ -133,6 +141,14 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     adopterName: cat.adopterName ?? "",
     adopterAddress: cat.adopterAddress ?? "",
     adopterCountry: cat.adopterCountry ?? "",
+    preparationFeePrice: cat.preparationFeePrice?.toString() ?? "",
+    preparationFeePaid: cat.preparationFeePaid ?? false,
+    flightFeePrice: cat.flightFeePrice?.toString() ?? "",
+    flightFeePaid: cat.flightFeePaid ?? false,
+    prePayerName: cat.prePayerName ?? "",
+    paidByAdopter: cat.paidByAdopter ?? false,
+    adoptionContract: cat.adoptionContract ?? false,
+    adoptionForm: cat.adoptionForm ?? false,
     felvFivTestDone: cat.felvFivTestDone,
     intakeDetails: cat.intakeDetails ?? "",
     intakeSource: cat.intakeSource ?? "",
@@ -866,6 +882,20 @@ export default function CatProfilePage() {
         adopterName: editForm.adopterName.trim() || null,
         adopterAddress: editForm.adopterAddress.trim() || null,
         adopterCountry: editForm.adopterCountry || null,
+        preparationFeePrice:
+          editForm.preparationFeePrice === ""
+            ? null
+            : Number(editForm.preparationFeePrice),
+        preparationFeePaid: editForm.preparationFeePaid,
+        flightFeePrice:
+          editForm.flightFeePrice === ""
+            ? null
+            : Number(editForm.flightFeePrice),
+        flightFeePaid: editForm.flightFeePaid,
+        prePayerName: editForm.prePayerName,
+        paidByAdopter: editForm.paidByAdopter,
+        adoptionContract: editForm.adoptionContract,
+        adoptionForm: editForm.adoptionForm,
         felvFivTestDone: editForm.felvFivTestDone,
         intakeDetails: editForm.intakeDetails.trim() || null,
         intakeSource: editForm.intakeSource || null,
@@ -2126,22 +2156,6 @@ export default function CatProfilePage() {
                               className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                             />
                           </label>
-                          <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
-                            Adopter address
-                            <input
-                              value={editForm.adopterAddress}
-                              onChange={(event) =>
-                                setEditForm(
-                                  (prev) =>
-                                    prev && {
-                                      ...prev,
-                                      adopterAddress: event.target.value,
-                                    },
-                                )
-                              }
-                              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                            />
-                          </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
                             Adopter country
                             <select
@@ -2165,6 +2179,132 @@ export default function CatProfilePage() {
                               <option value="CY">CY</option>
                             </select>
                           </label>
+                          <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
+                            Adopter address
+                            <input
+                              value={editForm.adopterAddress}
+                              onChange={(event) =>
+                                setEditForm(
+                                  (prev) =>
+                                    prev && {
+                                      ...prev,
+                                      adopterAddress: event.target.value,
+                                    },
+                                )
+                              }
+                              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                            />
+                          </label>
+                          {(
+                            [
+                              [
+                                "preparationFeePrice",
+                                "Preparation fee price",
+                                "preparationFeePaid",
+                                "Preparation fee paid",
+                              ],
+                              [
+                                "flightFeePrice",
+                                "Flight fee price",
+                                "flightFeePaid",
+                                "Flight fee paid",
+                              ],
+                            ] as const
+                          ).map(
+                            ([
+                              priceField,
+                              priceLabel,
+                              paidField,
+                              paidLabel,
+                            ]) => (
+                              <div
+                                key={priceField}
+                                className="grid gap-3 md:col-span-2 md:grid-cols-2"
+                              >
+                                <label className="grid gap-1 text-sm font-medium text-gray-800">
+                                  {priceLabel}
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editForm[priceField]}
+                                    onChange={(event) =>
+                                      setEditForm(
+                                        (prev) =>
+                                          prev && {
+                                            ...prev,
+                                            [priceField]: event.target.value,
+                                          },
+                                      )
+                                    }
+                                    className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                                  />
+                                </label>
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                                  <input
+                                    type="checkbox"
+                                    checked={editForm[paidField]}
+                                    onChange={(event) =>
+                                      setEditForm(
+                                        (prev) =>
+                                          prev && {
+                                            ...prev,
+                                            [paidField]: event.target.checked,
+                                          },
+                                      )
+                                    }
+                                  />
+                                  {paidLabel}
+                                </label>
+                              </div>
+                            ),
+                          )}
+                          <label className="grid gap-1 text-sm font-medium text-gray-800">
+                            Name of pre-payer
+                            <input
+                              value={editForm.prePayerName}
+                              onChange={(event) =>
+                                setEditForm(
+                                  (prev) =>
+                                    prev && {
+                                      ...prev,
+                                      prePayerName: event.target.value,
+                                    },
+                                )
+                              }
+                              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                            />
+                          </label>
+                          {(
+                            [
+                              ["paidByAdopter", "Paid by adopter"],
+                              ["adoptionContract", "Adoption contract"],
+                              [
+                                "adoptionForm",
+                                "Adoption form (Selbstauskunft)",
+                              ],
+                            ] as const
+                          ).map(([field, label]) => (
+                            <label
+                              key={field}
+                              className={`flex items-center gap-2 text-sm font-medium text-gray-800 ${field === "adoptionContract" || field === "adoptionForm" ? "md:col-span-2" : ""}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={editForm[field]}
+                                onChange={(event) =>
+                                  setEditForm(
+                                    (prev) =>
+                                      prev && {
+                                        ...prev,
+                                        [field]: event.target.checked,
+                                      },
+                                  )
+                                }
+                              />
+                              {label}
+                            </label>
+                          ))}
                         </div>
                         <div className="flex justify-end gap-3">
                           <button
@@ -2217,16 +2357,40 @@ export default function CatProfilePage() {
                               ? INTAKE_SOURCE_LABELS[cat.intakeSource]
                               : "Not set",
                           ],
-                          ["Passport", cat.passport ? "Yes" : "No"],
-                          [
-                            "FIV/FeLV test",
-                            cat.felvFivTestDone ? "Done" : "Not done",
-                          ],
+                          ["Passport", cat.passport ? "✅" : "❌"],
+                          ["FIV/FeLV test", cat.felvFivTestDone ? "✅" : "❌"],
                           ["Sponsor name", cat.sponsorName || "Not set"],
                           ["Comment", cat.intakeDetails || "Not set"],
                           ["Adopter name", cat.adopterName || "Not set"],
-                          ["Adopter address", cat.adopterAddress || "Not set"],
                           ["Adopter country", cat.adopterCountry || "Not set"],
+                          ["Adopter address", cat.adopterAddress || "Not set"],
+                          [
+                            "Preparation fee price",
+                            cat.preparationFeePrice == null
+                              ? "Not set"
+                              : String(cat.preparationFeePrice),
+                          ],
+                          [
+                            "Preparation fee paid",
+                            cat.preparationFeePaid ? "✅" : "❌",
+                          ],
+                          [
+                            "Flight fee price",
+                            cat.flightFeePrice == null
+                              ? "Not set"
+                              : String(cat.flightFeePrice),
+                          ],
+                          ["Flight fee paid", cat.flightFeePaid ? "✅" : "❌"],
+                          ["Name of pre-payer", cat.prePayerName || "Not set"],
+                          ["Paid by adopter", cat.paidByAdopter ? "✅" : "❌"],
+                          [
+                            "Adoption contract",
+                            cat.adoptionContract ? "✅" : "❌",
+                          ],
+                          [
+                            "Adoption form (Selbstauskunft)",
+                            cat.adoptionForm ? "✅" : "❌",
+                          ],
                           ...(cat.archivingReasonName
                             ? [
                                 [
@@ -2246,12 +2410,15 @@ export default function CatProfilePage() {
                               </div>
                             )}
                             <div
-                              className={`min-w-0 border-b border-[#d4c7b4]/65 py-2 ${label === "Comment" ? "border-b-0 sm:col-span-2" : ""}`}
+                              className={`min-w-0 border-b border-[#d4c7b4]/65 py-2 ${["Comment", "Adopter address", "Adoption contract", "Adoption form (Selbstauskunft)"].includes(label) ? "border-b-0 sm:col-span-2" : ""}`}
                             >
                               <dt className="font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]">
                                 {label}
                               </dt>
-                              <dd className="mt-0.5 break-words whitespace-pre-wrap text-sm font-semibold leading-5 text-gray-900">
+                              <dd
+                                aria-label={`${label}: ${value === "✅" ? "marked" : value === "❌" ? "unmarked" : value}`}
+                                className="mt-0.5 break-words whitespace-pre-wrap text-sm font-semibold leading-5 text-gray-900"
+                              >
                                 {value}
                               </dd>
                             </div>

@@ -67,4 +67,20 @@ describe("CatVaccinations", () => {
     );
     await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
   });
+
+  it("recalculates rabies valid-from after every vaccination date change", async () => {
+    render(<CatVaccinations catId="cat-1" />);
+    await screen.findByText("No vaccinations recorded.");
+    fireEvent.click(screen.getByRole("button", { name: "Add vaccination" }));
+    fireEvent.change(screen.getByLabelText("Vaccine Type"), {
+      target: { value: "RABIES" },
+    });
+    const date = screen.getByLabelText("Vaccination date");
+    const validFrom = screen.getByLabelText("Rabies vaccine valid from");
+
+    fireEvent.change(date, { target: { value: "2026-01-02" } });
+    expect(validFrom).toHaveValue("2026-01-23");
+    fireEvent.change(date, { target: { value: "2026-02-10" } });
+    expect(validFrom).toHaveValue("2026-03-03");
+  });
 });

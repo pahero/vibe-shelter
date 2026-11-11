@@ -17,6 +17,14 @@ describe("UpdateCatDto.toCommand", () => {
       adopterName: "  Foster  ",
       adopterAddress: "  Address  ",
       adopterCountry: "CY",
+      preparationFeePrice: "25.50",
+      preparationFeePaid: true,
+      flightFeePrice: 120,
+      flightFeePaid: false,
+      prePayerName: "  Alex  ",
+      paidByAdopter: true,
+      adoptionContract: true,
+      adoptionForm: false,
       felvFivTestDone: true,
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-id",
@@ -35,6 +43,14 @@ describe("UpdateCatDto.toCommand", () => {
       adopterName: "Foster",
       adopterAddress: "Address",
       adopterCountry: "CY",
+      preparationFeePrice: 25.5,
+      preparationFeePaid: true,
+      flightFeePrice: 120,
+      flightFeePaid: false,
+      prePayerName: "Alex",
+      paidByAdopter: true,
+      adoptionContract: true,
+      adoptionForm: false,
       felvFivTestDone: true,
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-id",
@@ -43,6 +59,19 @@ describe("UpdateCatDto.toCommand", () => {
 
   it("returns an empty command when every field is omitted", () => {
     expect(new UpdateCatDto().toCommand()).toEqual({});
+  });
+
+  it("normalizes blank fee prices to null and rejects invalid decimals", () => {
+    expect(
+      Object.assign(new UpdateCatDto(), {
+        preparationFeePrice: "",
+      }).toCommand(),
+    ).toEqual({ preparationFeePrice: null });
+    for (const preparationFeePrice of ["-1", "1.234", "abc"]) {
+      expect(() =>
+        Object.assign(new UpdateCatDto(), { preparationFeePrice }).toCommand(),
+      ).toThrow(BadRequestException);
+    }
   });
 
   it("normalizes empty nullable text, dates, and location IDs to null", () => {
