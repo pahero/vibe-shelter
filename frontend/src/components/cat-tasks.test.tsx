@@ -61,6 +61,55 @@ describe("CatTasks", () => {
     expect(screen.getByText("Reminder 20")).toBeVisible();
   });
 
+  it("sorts active and completed reminders by ascending due date", async () => {
+    const base = {
+      catId: "cat-1",
+      receiverIds: ["user-1"],
+      completedBy: null,
+      createdAt: "",
+      updatedAt: "",
+    };
+    listTasks.mockResolvedValue([
+      {
+        ...base,
+        id: "later",
+        comment: "Later",
+        dueDate: "2030-02-01T12:00:00.000Z",
+        completedAt: null,
+      },
+      {
+        ...base,
+        id: "earlier",
+        comment: "Earlier",
+        dueDate: "2030-01-01T12:00:00.000Z",
+        completedAt: null,
+      },
+      {
+        ...base,
+        id: "done-later",
+        comment: "Done later",
+        dueDate: "2030-02-01T12:00:00.000Z",
+        completedAt: "2031-01-01T00:00:00.000Z",
+      },
+      {
+        ...base,
+        id: "done-earlier",
+        comment: "Done earlier",
+        dueDate: "2030-01-01T12:00:00.000Z",
+        completedAt: "2031-01-01T00:00:00.000Z",
+      },
+    ]);
+    render(<CatTasks catId="cat-1" currentLocationId={null} />);
+    await screen.findByText("Earlier");
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("Earlier");
+    expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("Later");
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }));
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent(
+      "Done earlier",
+    );
+    expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("Done later");
+  });
+
   it("preselects active responsible users and allows removing them", async () => {
     listUsers.mockResolvedValue([
       {
