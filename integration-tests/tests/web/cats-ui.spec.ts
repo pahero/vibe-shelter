@@ -395,6 +395,47 @@ test.describe("cats UI", () => {
     await page.getByRole("button", { name: "Close", exact: true }).click();
   });
 
+  test("user can upload and open a WebM video in the cat gallery", async ({
+    page,
+  }) => {
+    const catName = uniqueName("Video Cat");
+
+    await authenticateAsStaff(page);
+    const cat = await createCatViaApi(page, { name: catName });
+
+    await page.goto(`/cats/${cat.id}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: catName }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Gallery" }).click();
+
+    const uploadResponsePromise = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/api/cats/${cat.id}/photos`) &&
+        res.request().method() === "POST",
+    );
+    await page
+      .locator('input[type="file"][accept*="video/webm"]')
+      .setInputFiles({
+        name: "gallery-video.webm",
+        mimeType: "video/webm",
+        buffer: Buffer.from("minimal WebM test fixture"),
+      });
+    expect((await uploadResponsePromise).status()).toBe(201);
+
+    const videoThumbnail = page.getByRole("button", {
+      name: `Open video of ${catName}`,
+    });
+    await expect(videoThumbnail).toBeVisible();
+    await videoThumbnail.click();
+    await expect(
+      page.getByRole("dialog", { name: `Photo of ${catName}` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog").locator("video[aria-label]"),
+    ).toHaveAttribute("aria-label", `Video of ${catName}`);
+  });
+
   test("edit form rejects an empty cat name", async ({ page }) => {
     const locationName = uniqueName("Validation Location");
     const catName = uniqueName("Validation Cat");
@@ -460,6 +501,7 @@ test.describe("cats UI", () => {
 
     const taskCard = page.locator("li").filter({ hasText: initialComment });
     await taskCard.getByRole("button", { name: "Edit reminder" }).click();
+    await expect(taskForm.getByRole("button", { name: "Save" })).toBeVisible();
     await taskForm.getByLabel("Comment").fill(updatedComment);
     const updateTask = page.waitForResponse(
       (response) =>
