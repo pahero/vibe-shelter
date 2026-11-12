@@ -68,6 +68,30 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.adopterCountry !== undefined
       ? { adopterCountry: data.adopterCountry }
       : {}),
+    ...(data.preparationFeePrice !== undefined
+      ? { preparationFeePrice: data.preparationFeePrice }
+      : {}),
+    ...(data.preparationFeePaid !== undefined
+      ? { preparationFeePaid: data.preparationFeePaid }
+      : {}),
+    ...(data.flightFeePrice !== undefined
+      ? { flightFeePrice: data.flightFeePrice }
+      : {}),
+    ...(data.flightFeePaid !== undefined
+      ? { flightFeePaid: data.flightFeePaid }
+      : {}),
+    ...(data.prePayerName !== undefined
+      ? { prePayerName: optionalTrim(data.prePayerName) }
+      : {}),
+    ...(data.paidByAdopter !== undefined
+      ? { paidByAdopter: data.paidByAdopter }
+      : {}),
+    ...(data.adoptionContract !== undefined
+      ? { adoptionContract: data.adoptionContract }
+      : {}),
+    ...(data.adoptionForm !== undefined
+      ? { adoptionForm: data.adoptionForm }
+      : {}),
     ...(data.felvFivTestDone !== undefined
       ? { felvFivTestDone: data.felvFivTestDone }
       : {}),

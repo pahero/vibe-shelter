@@ -599,7 +599,12 @@ describe("Cats endpoints", () => {
       .expect(201);
     await authAgent
       .post(`/api/cats/${cat.id}/vaccinations`)
-      .send({ date: "2026-03-01", type: "RABIES", vaccineName: "Rabies" })
+      .send({
+        date: "2026-03-01",
+        type: "RABIES",
+        validFrom: "2026-03-22",
+        vaccineName: "Rabies",
+      })
       .expect(201);
 
     const vaccinations = await authAgent

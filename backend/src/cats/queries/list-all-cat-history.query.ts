@@ -143,6 +143,14 @@ export class ListAllCatHistoryQuery {
           case "adopter_name_changed":
           case "adopter_address_changed":
           case "adopter_country_changed":
+          case "preparation_fee_price_changed":
+          case "preparation_fee_paid_changed":
+          case "flight_fee_price_changed":
+          case "flight_fee_paid_changed":
+          case "pre_payer_name_changed":
+          case "paid_by_adopter_changed":
+          case "adoption_contract_changed":
+          case "adoption_form_changed":
           case "felv_fiv_test_done_changed":
           case "flight_candidate_changed":
           case "sterilization_status_changed":

@@ -17,16 +17,18 @@ describe("Vaccination DTOs", () => {
     });
   });
 
-  it("requires a vaccine name while allowing the due date to be omitted or cleared", () => {
+  it("requires a vaccine name and rabies valid-from date while allowing due date to be omitted or cleared", () => {
     expect(
       Object.assign(new CreateVaccinationDto(), {
         type: "RABIES",
         date: "2026-01-02",
+        validFrom: "2026-01-23",
         vaccineName: "Rabies vaccine",
       }).toCommand(),
     ).toEqual({
       type: "RABIES",
       date: new Date("2026-01-02"),
+      validFrom: new Date("2026-01-23"),
       nextDueDate: undefined,
       vaccineName: "Rabies vaccine",
     });
@@ -36,6 +38,13 @@ describe("Vaccination DTOs", () => {
         vaccineName: "Updated name",
       }).toCommand(),
     ).toEqual({ nextDueDate: null, vaccineName: "Updated name" });
+    expect(() =>
+      Object.assign(new CreateVaccinationDto(), {
+        type: "RABIES",
+        date: "2026-01-02",
+        vaccineName: "Rabies vaccine",
+      }).toCommand(),
+    ).toThrow(BadRequestException);
     expect(() =>
       Object.assign(new CreateVaccinationDto(), {
         type: "CORE",

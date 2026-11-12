@@ -39,6 +39,7 @@ export class ListFlightCandidatesHandler {
   ) {}
 
   async handle(isTest: boolean): Promise<FlightCandidate[]> {
+    const now = new Date();
     const cats = await this.prisma.cat.findMany({
       where: {
         isTest,
@@ -60,7 +61,7 @@ export class ListFlightCandidatesHandler {
         currentLocation: { select: { name: true } },
         vaccinations: {
           where: { deletedAt: null },
-          select: { type: true },
+          select: { type: true, validFrom: true },
         },
         flightAssignments: {
           where: { deletedAt: null, flight: { deletedAt: null } },
@@ -107,7 +108,10 @@ export class ListFlightCandidatesHandler {
             firstVaccine: coreVaccineCount >= 1,
             secondVaccine: coreVaccineCount >= 2,
             rabies: cat.vaccinations.some(
-              ({ type }) => type === VaccinationType.RABIES,
+              ({ type, validFrom }) =>
+                type === VaccinationType.RABIES &&
+                validFrom !== null &&
+                validFrom < now,
             ),
             passport: cat.passport,
             chipped: cat.microchipNumber !== null,
