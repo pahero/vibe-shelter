@@ -13,6 +13,13 @@ export async function cleanupTestData(): Promise<void> {
   });
 
   try {
+    await pool.query(
+      'DELETE FROM "FlightPhoto" WHERE "flightId" IN (SELECT "id" FROM "Flight" WHERE "isTest" = true);',
+    );
+    await pool.query(
+      'DELETE FROM "FlightCatAssignment" WHERE "flightId" IN (SELECT "id" FROM "Flight" WHERE "isTest" = true) OR "catId" IN (SELECT "id" FROM "Cat" WHERE "isTest" = true);',
+    );
+    await pool.query('DELETE FROM "Flight" WHERE "isTest" = true;');
     await pool.query('DELETE FROM "Cat" WHERE "isTest" = true;');
     await pool.query('DELETE FROM "Location" WHERE "isTest" = true;');
     // Keep the persistent fixed test-user fixtures; purge the rest (users

@@ -18,6 +18,7 @@ export class AssignCatToFlightHandler {
           id: command.flightId,
           isTest: command.isTest,
           deletedAt: null,
+          archivedAt: null,
         },
         select: { id: true },
       });
@@ -50,7 +51,7 @@ export class AssignCatToFlightHandler {
         where: {
           catId: cat.id,
           deletedAt: null,
-          flight: { deletedAt: null },
+          flight: { is: { deletedAt: null, archivedAt: null } },
         },
         select: { id: true },
       });

@@ -4,6 +4,7 @@ import { CatsModule } from "../cats/cats.module";
 import { JwtAuthGuard } from "../auth";
 import { DatabaseModule } from "../database/database.module";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
+import { ArchiveFlightHandler } from "./commands/archive-flight.handler";
 import { CreateFlightHandler } from "./commands/create-flight.handler";
 import { DeleteFlightCatAssignmentHandler } from "./commands/delete-flight-cat-assignment.handler";
 import { DeleteFlightHandler } from "./commands/delete-flight.handler";
@@ -24,6 +25,7 @@ import { ListFlightPhotosHandler } from "./queries/list-flight-photos.handler";
   controllers: [FlightsController],
   providers: [
     AssignCatToFlightHandler,
+    ArchiveFlightHandler,
     AddFlightPhotoHandler,
     CreateFlightHandler,
     DeleteFlightCatAssignmentHandler,

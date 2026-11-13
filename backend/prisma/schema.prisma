@@ -403,6 +403,7 @@ model Flight {
   flightParent     String?
   comment          String?
   isTest           Boolean               @default(false)
+  archivedAt       DateTime?
   deletedAt        DateTime?
   concurrencyToken String                @default(cuid())
   createdAt        DateTime              @default(now())
@@ -413,6 +414,7 @@ model Flight {
 
   @@index([date])
   @@index([deletedAt])
+  @@index([archivedAt])
   @@index([isTest])
 }
 

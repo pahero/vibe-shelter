@@ -66,6 +66,7 @@ const flightEventTypes = [
   "flight_parent_changed",
   "flight_comment_changed",
   "flight_deleted",
+  "flight_archived",
   "flight_restored",
   "flight_photo_created",
   "flight_photo_deleted",
@@ -311,14 +312,22 @@ describe("ListAllCatHistoryQuery", () => {
 
       const config = new ConfigService({ s3: { bucketName } });
       const photoUrls = new CatPhotoUrlService(config, s3Client);
-      const result = await new ListAllCatHistoryQuery(
+      const query = new ListAllCatHistoryQuery(
         tx as Prisma.TransactionClient & PrismaClient,
         photoUrls,
-      ).execute({
+      );
+      const result = await query.execute({
         limit: 100,
         currentUserIsTest: true,
         userId: actor.id,
       });
+      const nextPage = await query.execute({
+        skip: result.data.length,
+        limit: 100,
+        currentUserIsTest: true,
+        userId: actor.id,
+      });
+      const events = [...result.data, ...nextPage.data];
 
       const expectedEventTypes = [
         ...catEventTypes,
@@ -328,30 +337,30 @@ describe("ListAllCatHistoryQuery", () => {
         ...flightEventTypes,
       ];
       expect(result.total).toBe(expectedEventTypes.length);
-      expect(result.data.map((event) => event.eventType).sort()).toEqual(
+      expect(events.map((event) => event.eventType).sort()).toEqual(
         [...expectedEventTypes].sort(),
       );
       expect(
-        result.data.find((event) => event.eventType === "photo_created"),
+        events.find((event) => event.eventType === "photo_created"),
       ).toMatchObject({
         fileId: photo.id,
         fileUrl: expect.stringContaining("X-Amz-Signature="),
       });
       expect(
-        result.data.find((event) => event.eventType === "document_created"),
+        events.find((event) => event.eventType === "document_created"),
       ).toMatchObject({
         fileId: document.id,
         fileUrl: expect.stringContaining("X-Amz-Signature="),
       });
       expect(
-        result.data.find((event) => event.eventType === "flight_cat_assigned"),
+        events.find((event) => event.eventType === "flight_cat_assigned"),
       ).toMatchObject({
         catId: cat.id,
         catName: cat.name,
         catNameNumber: cat.nameNumber,
       });
       expect(
-        result.data.find((event) => event.eventType === "flight_photo_created"),
+        events.find((event) => event.eventType === "flight_photo_created"),
       ).toMatchObject({
         flightPhotoId: flightPhoto.id,
         flightPhotoUrl: expect.stringContaining("X-Amz-Signature="),

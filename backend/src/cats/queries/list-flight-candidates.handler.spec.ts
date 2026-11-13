@@ -106,6 +106,22 @@ describe("ListFlightCandidatesHandler", () => {
           flightParent: "Parent",
         },
       });
+      const archivedFlight = await transaction.flight.create({
+        data: {
+          date: new Date("2026-10-04"),
+          airport: "Larnaca",
+          flightNumber: `CY${Date.now()}A`,
+          flightParent: "Parent",
+          archivedAt: new Date(),
+        },
+      });
+      const archivedFlightCandidate = await transaction.cat.create({
+        data: {
+          currentLocation: { connect: { id: location.id } },
+          name: `Archived flight candidate ${Date.now()}`,
+          isFlightCandidate: true,
+        },
+      });
       await transaction.flightCatAssignment.createMany({
         data: [
           {
@@ -122,6 +138,12 @@ describe("ListFlightCandidatesHandler", () => {
           flightId: deletedAssignmentFlight.id,
           catId: readyCat.id,
           deletedAt: new Date(),
+        },
+      });
+      await transaction.flightCatAssignment.create({
+        data: {
+          flightId: archivedFlight.id,
+          catId: archivedFlightCandidate.id,
         },
       });
 
@@ -158,6 +180,14 @@ describe("ListFlightCandidatesHandler", () => {
         ]),
       );
       expect(candidates.map(({ id }) => id)).not.toContain(testCat.id);
+      expect(candidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: archivedFlightCandidate.id,
+            flights: [],
+          }),
+        ]),
+      );
       expect(candidates).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

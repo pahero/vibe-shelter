@@ -16,6 +16,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { CurrentUser, JwtAuthGuard } from "../auth";
 import { ListAllCatHistoryQuery } from "../cats/queries/list-all-cat-history.query";
 import { AssignCatToFlightHandler } from "./commands/assign-cat-to-flight.handler";
+import { ArchiveFlightHandler } from "./commands/archive-flight.handler";
 import { CreateFlightHandler } from "./commands/create-flight.handler";
 import { DeleteFlightCatAssignmentHandler } from "./commands/delete-flight-cat-assignment.handler";
 import { DeleteFlightHandler } from "./commands/delete-flight.handler";
@@ -55,6 +56,7 @@ export class FlightsController {
     private readonly listFlightPhotos: ListFlightPhotosHandler,
     private readonly getFlight: GetFlightHandler,
     private readonly listAllCatHistoryQuery: ListAllCatHistoryQuery,
+    private readonly archiveFlight: ArchiveFlightHandler,
   ) {}
 
   @Get("deleted")
@@ -151,6 +153,14 @@ export class FlightsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.restoreFlight.handle(flightId, user.id, user.isTest);
+  }
+
+  @Post(":id/archive")
+  archive(
+    @Param("id") flightId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.archiveFlight.handle(flightId, user.id, user.isTest);
   }
 
   @Post(":id/cats")
