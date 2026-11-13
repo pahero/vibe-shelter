@@ -86,7 +86,7 @@ export function CatVaccinations({
     try {
       const payload = {
         ...form,
-        vaccineName: form.vaccineName?.trim() || null,
+        vaccineName: form.vaccineName?.trim() || typeLabels[form.type],
         validFrom:
           form.type === "RABIES"
             ? form.validFrom || addDays(form.date, 21)

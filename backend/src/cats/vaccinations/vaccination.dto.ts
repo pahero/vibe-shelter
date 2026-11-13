@@ -11,6 +11,11 @@ export type VaccinationPayload = {
 };
 
 const TYPES = Object.values(VaccinationType);
+const TYPE_LABELS: Record<VaccinationType, string> = {
+  CORE: "Core",
+  RABIES: "Rabies",
+  OTHER: "Other",
+};
 
 function parseDate(value: string): Date {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -65,7 +70,8 @@ export class CreateVaccinationDto {
   nextDueDate?: string | null;
 
   @IsString()
-  vaccineName!: string;
+  @IsOptional()
+  vaccineName?: string | null;
 
   toCommand(): VaccinationPayload {
     const type = parseType(this.type);
@@ -80,7 +86,7 @@ export class CreateVaccinationDto {
       date: parseDate(this.date),
       validFrom,
       nextDueDate: parseOptionalDate(this.nextDueDate),
-      vaccineName: requiredText(this.vaccineName),
+      vaccineName: this.vaccineName?.trim() || TYPE_LABELS[type],
     };
   }
 }

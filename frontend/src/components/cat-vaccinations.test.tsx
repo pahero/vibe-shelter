@@ -68,6 +68,23 @@ describe("CatVaccinations", () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
   });
 
+  it("uses the selected vaccine type as the name when the name is blank", async () => {
+    render(<CatVaccinations catId="cat-1" />);
+    await screen.findByText("No vaccinations recorded.");
+    fireEvent.click(screen.getByRole("button", { name: "Add vaccination" }));
+    fireEvent.change(screen.getByLabelText("Vaccine Type"), {
+      target: { value: "RABIES" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(create).toHaveBeenCalledWith(
+        "cat-1",
+        expect.objectContaining({ type: "RABIES", vaccineName: "Rabies" }),
+      ),
+    );
+  });
+
   it("recalculates rabies valid-from after every vaccination date change", async () => {
     render(<CatVaccinations catId="cat-1" />);
     await screen.findByText("No vaccinations recorded.");
