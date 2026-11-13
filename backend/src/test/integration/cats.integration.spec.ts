@@ -760,6 +760,20 @@ describe("Cats endpoints", () => {
       .expect(204);
   });
 
+  it("creates a vaccination with the type as its name when vaccineName is omitted", async () => {
+    const cat = await createCat(prisma, { name: unique("unnamed-vaccination") });
+    const vaccination = await authAgent
+      .post(`/api/cats/${cat.id}/vaccinations`)
+      .send({ type: "CORE", date: "2026-01-01" })
+      .expect(201);
+
+    await expect(
+      prisma.vaccination.findUniqueOrThrow({
+        where: { id: vaccination.body.id },
+      }),
+    ).resolves.toMatchObject({ type: "CORE", vaccineName: "Core" });
+  });
+
   it("GET /api/cats/:id/card returns one cat card", async () => {
     const cat = await createCat(prisma, { name: unique("card") });
 
