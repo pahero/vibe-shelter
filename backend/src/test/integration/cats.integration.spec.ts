@@ -761,7 +761,9 @@ describe("Cats endpoints", () => {
   });
 
   it("creates a vaccination with the type as its name when vaccineName is omitted", async () => {
-    const cat = await createCat(prisma, { name: unique("unnamed-vaccination") });
+    const cat = await createCat(prisma, {
+      name: unique("unnamed-vaccination"),
+    });
     const vaccination = await authAgent
       .post(`/api/cats/${cat.id}/vaccinations`)
       .send({ type: "CORE", date: "2026-01-01" })
