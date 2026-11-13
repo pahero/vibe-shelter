@@ -22,6 +22,7 @@ export async function createFlightFixture(
       Prisma.FlightCreateInput,
       | "isTest"
       | "deletedAt"
+      | "archivedAt"
       | "date"
       | "airport"
       | "flightNumber"

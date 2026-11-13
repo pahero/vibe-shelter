@@ -35,6 +35,7 @@ export type CatCard = {
   intakeSource: import("@prisma/client").CatIntakeSource | null;
   createdByUserId: string | null;
   isTest: boolean;
+  isFlightCandidate: boolean;
   updatedAt: string;
   tags: CatTag[];
   archivedAt: string | null;

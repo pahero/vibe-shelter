@@ -180,4 +180,35 @@ describe("AssignCatToFlightHandler", () => {
       ).rejects.toThrow(ConflictException);
     });
   });
+
+  it("allows assignment when the cat's only existing flight is archived", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const actor = await createFlightTestActor(transaction);
+      const archivedFlight = await createFlightFixture(transaction, {
+        archivedAt: new Date(),
+      });
+      const activeFlight = await createFlightFixture(transaction);
+      const cat = await createFlightTestCat(transaction);
+      await transaction.cat.update({
+        where: { id: cat.id },
+        data: { isFlightCandidate: true },
+      });
+      await transaction.flightCatAssignment.create({
+        data: { flightId: archivedFlight.id, catId: cat.id },
+      });
+      const handler = new AssignCatToFlightHandler(
+        transaction as PrismaService,
+      );
+
+      const result = await handler.handle(
+        new AssignCatToFlightCommand(activeFlight.id, cat.id, actor.id, false),
+      );
+
+      expect(
+        await transaction.flightCatAssignment.findUniqueOrThrow({
+          where: { id: result.id },
+        }),
+      ).toMatchObject({ flightId: activeFlight.id, catId: cat.id });
+    });
+  });
 });

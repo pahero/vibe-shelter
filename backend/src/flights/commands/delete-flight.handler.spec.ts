@@ -47,6 +47,22 @@ describe("DeleteFlightHandler", () => {
     });
   });
 
+  it("rejects an archived flight", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const actor = await createFlightTestActor(transaction);
+      const archived = await createFlightFixture(transaction, {
+        archivedAt: new Date(),
+      });
+      await expect(
+        new DeleteFlightHandler(transaction as PrismaService).handle(
+          archived.id,
+          actor.id,
+          false,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   it("rejects a missing flight", async () => {
     await runInTestTransaction(async (transaction) => {
       const actor = await createFlightTestActor(transaction);
