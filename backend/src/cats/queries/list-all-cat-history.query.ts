@@ -231,6 +231,7 @@ export class ListAllCatHistoryQuery {
           case "flight_parent_changed":
           case "flight_comment_changed":
           case "flight_deleted":
+          case "flight_archived":
           case "flight_restored":
             return this.toFlightAuditEventDto(event, eventType);
           case "flight_photo_created":

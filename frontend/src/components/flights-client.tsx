@@ -7,6 +7,7 @@ import {
   faBoxArchive,
   faPen,
   faPlus,
+  faRotateLeft,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -58,6 +59,9 @@ export function FlightsClient({
   const [flightHistoryTotal, setFlightHistoryTotal] = useState(0);
   const [isLoadingFlight, setIsLoadingFlight] = useState(false);
   const [isDeletedSelection, setIsDeletedSelection] = useState(false);
+  const [inactiveFlightStatus, setInactiveFlightStatus] = useState<
+    "Archived" | "Deleted" | null
+  >(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<FlightInput>(emptyFlightForm);
@@ -117,33 +121,12 @@ export function FlightsClient({
         setSelectedFlight(detail);
         setFlightHistory(history.data);
         setFlightHistoryTotal(history.total);
-        setIsDeletedSelection(false);
-      } catch (activeReason) {
-        try {
-          const deletedFlights = await flightsApi.list(true);
-          const deletedFlight = deletedFlights.find(
-            ({ id }) => id === standaloneFlightId,
-          );
-          if (!deletedFlight) throw activeReason;
-          const history = await flightsApi.history(standaloneFlightId);
-          if (cancelled) return;
-          setSelectedFlightId(standaloneFlightId);
-          setSelectedFlight({
-            id: deletedFlight.id,
-            date: deletedFlight.date,
-            airport: deletedFlight.airport,
-            flightNumber: deletedFlight.flightNumber,
-            flightParent: deletedFlight.flightParent,
-            comment: deletedFlight.comment,
-            updatedAt: "",
-            cats: [],
-          });
-          setFlightHistory(history.data);
-          setFlightHistoryTotal(history.total);
-          setIsDeletedSelection(true);
-        } catch (reason) {
-          if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
-        }
+        setIsDeletedSelection(Boolean(detail.archivedAt || detail.deletedAt));
+        setInactiveFlightStatus(
+          detail.deletedAt ? "Deleted" : detail.archivedAt ? "Archived" : null,
+        );
+      } catch (reason) {
+        if (!cancelled) setActionError(ApiErrorHandler.handle(reason));
       }
       if (!cancelled) setIsLoadingFlight(false);
     };
@@ -181,34 +164,24 @@ export function FlightsClient({
   const loadFlight = async (flight: FlightListItem, deleted: boolean) => {
     setSelectedFlightId(flight.id);
     setIsDeletedSelection(deleted);
+    setInactiveFlightStatus(
+      deleted ? (flight.deletedAt ? "Deleted" : "Archived") : null,
+    );
     setIsLoadingFlight(true);
     setActionError(null);
     setIsEditing(false);
     setIsFormOpen(false);
     try {
-      if (deleted) {
-        setSelectedFlight({
-          id: flight.id,
-          date: flight.date,
-          airport: flight.airport,
-          flightNumber: flight.flightNumber,
-          flightParent: flight.flightParent,
-          comment: flight.comment,
-          updatedAt: "",
-          cats: [],
-        });
-        const history = await flightsApi.history(flight.id);
-        setFlightHistory(history.data);
-        setFlightHistoryTotal(history.total);
-      } else {
-        const [detail, history] = await Promise.all([
-          flightsApi.get(flight.id),
-          flightsApi.history(flight.id),
-        ]);
-        setSelectedFlight(detail);
-        setFlightHistory(history.data);
-        setFlightHistoryTotal(history.total);
-      }
+      const [detail, history] = await Promise.all([
+        flightsApi.get(flight.id),
+        flightsApi.history(flight.id),
+      ]);
+      setSelectedFlight(detail);
+      setFlightHistory(history.data);
+      setFlightHistoryTotal(history.total);
+      setInactiveFlightStatus(
+        deleted ? (flight.deletedAt ? "Deleted" : "Archived") : null,
+      );
     } catch (reason) {
       setActionError(ApiErrorHandler.handle(reason));
     } finally {
@@ -277,8 +250,10 @@ export function FlightsClient({
         const createdFlight: FlightListItem = {
           id: result.id,
           ...payload,
+          archivedAt: null,
           deletedAt: null,
           catCount: 0,
+          assignedCats: [],
         };
         await loadFlight(createdFlight, false);
       }
@@ -304,6 +279,48 @@ export function FlightsClient({
             ...selectedFlight,
             deletedAt: new Date().toISOString(),
             catCount: selectedFlight.cats.length,
+            assignedCats: selectedFlight.cats.map(({ cat }) => ({
+              id: cat.id,
+              name: cat.name,
+              nameNumber: cat.nameNumber,
+              primaryPhotoUrl: null,
+            })),
+          },
+          true,
+        );
+      } else {
+        setSelectedFlightId(null);
+        setSelectedFlight(null);
+        setFlightHistory([]);
+        setFlightHistoryTotal(0);
+      }
+      refreshLists();
+    } catch (reason) {
+      setActionError(ApiErrorHandler.handle(reason));
+    } finally {
+      setFlightActionId(null);
+    }
+  };
+
+  const archiveFlight = async () => {
+    if (!selectedFlightId) return;
+    setFlightActionId(selectedFlightId);
+    setActionError(null);
+    try {
+      await flightsApi.archive(selectedFlightId);
+      if (standaloneFlightId && selectedFlight) {
+        await loadFlight(
+          {
+            ...selectedFlight,
+            archivedAt: new Date().toISOString(),
+            deletedAt: null,
+            catCount: selectedFlight.cats.length,
+            assignedCats: selectedFlight.cats.map(({ cat }) => ({
+              id: cat.id,
+              name: cat.name,
+              nameNumber: cat.nameNumber,
+              primaryPhotoUrl: null,
+            })),
           },
           true,
         );
@@ -362,10 +379,15 @@ export function FlightsClient({
     try {
       await flightsApi.restore(flightId);
       if (selectedFlightId === flightId) {
-        setSelectedFlightId(null);
-        setSelectedFlight(null);
-        setFlightHistory([]);
-        setFlightHistoryTotal(0);
+        const [restoredFlight, history] = await Promise.all([
+          flightsApi.get(flightId),
+          flightsApi.history(flightId),
+        ]);
+        setSelectedFlight(restoredFlight);
+        setFlightHistory(history.data);
+        setFlightHistoryTotal(history.total);
+        setIsDeletedSelection(false);
+        setInactiveFlightStatus(null);
       }
       refreshLists();
     } catch (reason) {
@@ -454,7 +476,7 @@ export function FlightsClient({
       sortedPhotos[(expandedPhotoIndex + 1) % sortedPhotos.length].id,
     );
   };
-  const deletedFlightCats: FlightDetails["cats"] = [];
+  const deletedFlightCats: FlightDetails["cats"] = selectedFlight?.cats ?? [];
 
   return (
     <section
@@ -612,14 +634,14 @@ export function FlightsClient({
             <aside className="rounded-2xl border border-[#d4c7b4] bg-white/50 p-4">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {showDeleted ? "Deleted flights" : "Scheduled flights"}
+                  {showDeleted ? "Inactive flights" : "Scheduled flights"}
                 </h2>
                 <button
                   type="button"
                   onClick={() => setShowDeleted((value) => !value)}
                   className="text-xs font-semibold text-[#a83f1a] underline underline-offset-2"
                 >
-                  {showDeleted ? "Show active" : "Show deleted"}
+                  {showDeleted ? "Show active" : "Show inactive"}
                 </button>
               </div>
               {isLoading && (
@@ -629,7 +651,7 @@ export function FlightsClient({
               )}
               {!isLoading && visibleFlights.length === 0 && (
                 <p className="mt-4 text-sm text-[#6d6a66]">
-                  {showDeleted ? "No deleted flights." : "No flights yet."}
+                  {showDeleted ? "No inactive flights." : "No flights yet."}
                 </p>
               )}
               <ul className="mt-3 space-y-2">
@@ -657,18 +679,6 @@ export function FlightsClient({
                         Flight parent: {flight.flightParent ?? "Not set"}
                       </span>
                     </button>
-                    {showDeleted && (
-                      <button
-                        type="button"
-                        disabled={flightActionId === flight.id}
-                        onClick={() => void restoreFlight(flight.id)}
-                        className="mt-2 rounded-lg border border-[#31734b] px-3 py-1 text-xs font-semibold text-[#31734b] disabled:opacity-50"
-                      >
-                        {flightActionId === flight.id
-                          ? "Restoring..."
-                          : "Restore flight"}
-                      </button>
-                    )}
                   </li>
                 ))}
               </ul>
@@ -726,7 +736,34 @@ export function FlightsClient({
                       </p>
                     )}
                   </div>
-                  {!isDeletedSelection && (
+                  {isDeletedSelection ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="rounded-full bg-[#f1d8c7]/60 px-2 py-1 text-xs font-semibold text-[#514a43]">
+                        {inactiveFlightStatus}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void restoreFlight(selectedFlight.id)}
+                        disabled={flightActionId === selectedFlight.id}
+                        aria-label={
+                          flightActionId === selectedFlight.id
+                            ? "Restoring flight"
+                            : "Restore flight"
+                        }
+                        title={
+                          flightActionId === selectedFlight.id
+                            ? "Restoring flight"
+                            : "Restore flight"
+                        }
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#31734b] text-[#31734b] disabled:opacity-50"
+                      >
+                        <FontAwesomeIcon
+                          icon={faRotateLeft}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                  ) : (
                     <div className="flex gap-1">
                       <button
                         type="button"
@@ -739,13 +776,23 @@ export function FlightsClient({
                       </button>
                       <button
                         type="button"
-                        onClick={() => void removeFlight()}
+                        onClick={() => void archiveFlight()}
                         disabled={flightActionId === selectedFlight.id}
                         aria-label="Archive flight"
                         title="Archive flight"
-                        className="rounded-md p-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        className="rounded-md p-2 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
                       >
                         <FontAwesomeIcon icon={faBoxArchive} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeFlight()}
+                        disabled={flightActionId === selectedFlight.id}
+                        aria-label="Delete flight"
+                        title="Delete flight"
+                        className="rounded-md p-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
                       </button>
                     </div>
                   )}
@@ -818,8 +865,8 @@ export function FlightsClient({
                 )}
                 {isDeletedSelection && (
                   <p className="mt-3 text-sm text-red-800">
-                    This flight is deleted. Its assignments cannot be managed
-                    until it is restored.
+                    This flight is {inactiveFlightStatus?.toLowerCase()}. Its
+                    assignments cannot be managed until it is restored.
                   </p>
                 )}
               </section>
@@ -981,7 +1028,8 @@ export function FlightsClient({
                       Assigned cats
                     </h2>
                     <p className="text-xs text-[#6d6a66]">
-                      Read-only assignments for this deleted flight.
+                      Read-only assignments for this{" "}
+                      {inactiveFlightStatus?.toLowerCase()} flight.
                     </p>
                   </div>
                   {deletedFlightCats.length === 0 ? (

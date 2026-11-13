@@ -13,7 +13,7 @@ export class DeleteFlightHandler {
   ): Promise<void> {
     await runInNewTransaction(this.prisma, async (transaction) => {
       const flight = await transaction.flight.findFirst({
-        where: { id: flightId, isTest, deletedAt: null },
+        where: { id: flightId, isTest, deletedAt: null, archivedAt: null },
         select: { id: true },
       });
       if (!flight) throw new NotFoundException("Flight not found");

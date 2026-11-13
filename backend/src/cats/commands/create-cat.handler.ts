@@ -109,6 +109,7 @@ export class CreateCatHandler {
       archivingReasonId: null,
       archivingReasonName: null,
       isTest: cat.isTest,
+      isFlightCandidate: cat.isFlightCandidate,
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,

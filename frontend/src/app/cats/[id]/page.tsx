@@ -348,7 +348,9 @@ export default function CatProfilePage() {
       setIsLoading(true);
       setError(null);
       try {
-        setCat(await catsApi.getCatCard(catId));
+        const loadedCat = await catsApi.getCatCard(catId);
+        setCat(loadedCat);
+        setIsFlightCandidate(loadedCat.isFlightCandidate ?? false);
       } catch (err) {
         if (ApiErrorHandler.isNotFoundError(err)) {
           setError("Cat not found");
@@ -364,22 +366,22 @@ export default function CatProfilePage() {
   }, [catId]);
 
   useEffect(() => {
+    setIsFlightCandidate(cat?.isFlightCandidate ?? false);
+  }, [cat?.id, cat?.isFlightCandidate]);
+
+  useEffect(() => {
     if (!catId) return;
-    let cancelled = false;
-    catsApi
-      .listFlightCandidateIds()
-      .then((candidates) => {
-        if (!cancelled)
-          setIsFlightCandidate(
-            candidates.some((candidate) => candidate.id === catId),
-          );
-      })
-      .catch(() => {
-        if (!cancelled) setIsFlightCandidate(false);
-      });
-    return () => {
-      cancelled = true;
+    const refreshCandidateState = () => {
+      void catsApi
+        .getCatCard(catId)
+        .then((updatedCat) => {
+          setCat(updatedCat);
+          setIsFlightCandidate(updatedCat.isFlightCandidate ?? false);
+        })
+        .catch(() => undefined);
     };
+    window.addEventListener("focus", refreshCandidateState);
+    return () => window.removeEventListener("focus", refreshCandidateState);
   }, [catId]);
 
   useEffect(() => {
@@ -833,7 +835,9 @@ export default function CatProfilePage() {
     try {
       if (isFlightCandidate) await catsApi.unmarkFlightCandidate(cat.id);
       else await catsApi.markFlightCandidate(cat.id);
-      setIsFlightCandidate(!isFlightCandidate);
+      const updatedCat = await catsApi.getCatCard(cat.id);
+      setCat(updatedCat);
+      setIsFlightCandidate(updatedCat.isFlightCandidate ?? !isFlightCandidate);
       await refreshHistory();
     } catch (err) {
       setFlightCandidateError(ApiErrorHandler.handle(err));

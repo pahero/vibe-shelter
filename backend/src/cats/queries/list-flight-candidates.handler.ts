@@ -64,7 +64,10 @@ export class ListFlightCandidatesHandler {
           select: { type: true, validFrom: true },
         },
         flightAssignments: {
-          where: { deletedAt: null, flight: { deletedAt: null } },
+          where: {
+            deletedAt: null,
+            flight: { is: { deletedAt: null, archivedAt: null } },
+          },
           select: {
             f2fDone: true,
             tracesDone: true,

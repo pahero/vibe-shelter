@@ -7,7 +7,7 @@ export class GetFlightHandler {
 
   async handle(flightId: string, isTest: boolean) {
     const flight = await this.prisma.flight.findFirst({
-      where: { id: flightId, isTest, deletedAt: null },
+      where: { id: flightId, isTest },
       select: {
         id: true,
         date: true,
@@ -16,6 +16,8 @@ export class GetFlightHandler {
         flightParent: true,
         comment: true,
         updatedAt: true,
+        archivedAt: true,
+        deletedAt: true,
         assignments: {
           where: { deletedAt: null },
           select: {
@@ -26,6 +28,7 @@ export class GetFlightHandler {
               select: {
                 id: true,
                 name: true,
+                nameNumber: true,
                 archivedAt: true,
                 microchipNumber: true,
                 passport: true,
@@ -45,6 +48,8 @@ export class GetFlightHandler {
       flightParent: flight.flightParent,
       comment: flight.comment,
       updatedAt: flight.updatedAt.toISOString(),
+      archivedAt: flight.archivedAt?.toISOString() ?? null,
+      deletedAt: flight.deletedAt?.toISOString() ?? null,
       cats: flight.assignments.map((assignment) => ({
         assignmentId: assignment.id,
         cat: assignment.cat,

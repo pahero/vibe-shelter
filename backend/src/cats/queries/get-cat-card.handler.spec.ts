@@ -21,6 +21,7 @@ describe("GetCatCardHandler", () => {
           currentLocation: { create: { name: "Fixture location" } },
           name: `Card ${Date.now()}-${Math.random().toString(36).slice(2)}`,
           adopterName: "Foster",
+          isFlightCandidate: true,
         },
       });
       await expect(
@@ -28,7 +29,12 @@ describe("GetCatCardHandler", () => {
           cat.id,
           false,
         ),
-      ).resolves.toMatchObject({ id: cat.id, adopterName: "Foster", tags: [] });
+      ).resolves.toMatchObject({
+        id: cat.id,
+        adopterName: "Foster",
+        isFlightCandidate: true,
+        tags: [],
+      });
     });
   });
 
