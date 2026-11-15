@@ -67,6 +67,17 @@ export class ArchiveLocationHandler {
         });
         if (!replacement)
           throw new NotFoundException("Replacement location not found");
+        const reservedReplacement = await tx.location.updateMany({
+          where: {
+            id: replacement.id,
+            isTest,
+            deletedAt: null,
+            status: "ACTIVE",
+          },
+          data: { version: { increment: 1 } },
+        });
+        if (reservedReplacement.count !== 1)
+          throw new NotFoundException("Replacement location not found");
         await tx.cat.updateMany({
           where: { currentLocationId: { in: archivedLocationIds }, isTest },
           data: {
@@ -74,10 +85,6 @@ export class ArchiveLocationHandler {
             version: { increment: 1 },
             concurrencyToken: randomUUID(),
           },
-        });
-        await tx.location.update({
-          where: { id: replacement.id },
-          data: { version: { increment: 1 } },
         });
         if (actorUserId)
           await tx.auditEvent.createMany({

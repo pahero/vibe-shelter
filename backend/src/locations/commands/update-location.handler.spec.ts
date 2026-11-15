@@ -302,7 +302,7 @@ describe("UpdateLocationHandler", () => {
         tx.location.findUniqueOrThrow({ where: { id: child.id } }),
       ).resolves.toMatchObject({
         parentId: parent.id,
-        version: 1,
+        version: 2,
       });
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
@@ -315,7 +315,7 @@ describe("UpdateLocationHandler", () => {
         tx.location.findUniqueOrThrow({ where: { id: child.id } }),
       ).resolves.toMatchObject({
         parentId: null,
-        version: 2,
+        version: 3,
       });
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
@@ -365,6 +365,21 @@ describe("UpdateLocationHandler", () => {
       ).rejects.toThrow(
         "A location with sublocations cannot be made a sublocation",
       );
+    });
+  });
+
+  it("rejects assigning a location as its own parent", async () => {
+    await runInTestTransaction(async (tx) => {
+      const location = await tx.location.create({
+        data: { name: `Self ${crypto.randomUUID()}` },
+      });
+      await expect(
+        new UpdateLocationHandler(tx as PrismaService).handle(
+          location.id,
+          { parentId: location.id },
+          false,
+        ),
+      ).rejects.toThrow("A location cannot be its own parent");
     });
   });
 });

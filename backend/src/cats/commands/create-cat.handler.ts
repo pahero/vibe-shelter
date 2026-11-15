@@ -44,10 +44,17 @@ export class CreateCatHandler {
         ) {
           throw new NotFoundException("Active location not found");
         }
-        await transaction.location.update({
-          where: { id: command.currentLocationId },
+        const updatedLocation = await transaction.location.updateMany({
+          where: {
+            id: command.currentLocationId,
+            isTest: command.isTest,
+            deletedAt: null,
+            status: "ACTIVE",
+          },
           data: { version: { increment: 1 } },
         });
+        if (updatedLocation.count !== 1)
+          throw new NotFoundException("Active location not found");
       }
 
       if (command.microchipNumber) {

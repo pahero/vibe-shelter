@@ -80,6 +80,10 @@ export class UpdateLocationHandler {
           if (!parent)
             throw new BadRequestException("Parent location is unavailable");
           newParentName = parent.name;
+          await tx.location.update({
+            where: { id },
+            data: { version: { increment: 1 } },
+          });
           const sublocationCount = await tx.location.count({
             where: { parentId: id, isTest, deletedAt: null },
           });

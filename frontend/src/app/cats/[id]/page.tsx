@@ -470,21 +470,25 @@ export default function CatProfilePage() {
       setIsLoadingLocations(true);
       setLocationsError(null);
       try {
-        const response = await locationsApi.listLocations({
-          status: "ACTIVE",
-          limit: 100,
-        });
+        const response = await locationsApi.listLocations({ limit: 100 });
         if (!cancelled) {
           setLocations(response.data);
           setEditForm((prev) => {
             if (
               !prev ||
               response.data.some(
-                (location) => location.id === prev.currentLocationId,
+                (location) =>
+                  location.id === prev.currentLocationId &&
+                  location.status === "ACTIVE",
               )
             )
               return prev;
-            return { ...prev, currentLocationId: response.data[0]?.id ?? "" };
+            return {
+              ...prev,
+              currentLocationId:
+                response.data.find((location) => location.status === "ACTIVE")
+                  ?.id ?? "",
+            };
           });
         }
       } catch (err) {
@@ -1937,11 +1941,21 @@ export default function CatProfilePage() {
                               }
                             >
                               {locations
-                                .filter((location) => !location.parentId)
+                                .filter(
+                                  (location) =>
+                                    !location.parentId &&
+                                    (location.status === "ACTIVE" ||
+                                      locations.some(
+                                        (candidate) =>
+                                          candidate.parentId === location.id &&
+                                          candidate.status === "ACTIVE",
+                                      )),
+                                )
                                 .map((location) => {
                                   const sublocations = locations.filter(
                                     (candidate) =>
-                                      candidate.parentId === location.id,
+                                      candidate.parentId === location.id &&
+                                      candidate.status === "ACTIVE",
                                   );
                                   const isExpanded =
                                     expandedLocationIds.includes(location.id);
@@ -1971,7 +1985,10 @@ export default function CatProfilePage() {
                                           onClick={() =>
                                             selectLocation(location.id)
                                           }
-                                          className="min-w-0 flex-1 px-3 py-2 text-left text-gray-900 transition hover:bg-[#fff0e8]"
+                                          disabled={
+                                            location.status !== "ACTIVE"
+                                          }
+                                          className="min-w-0 flex-1 px-3 py-2 text-left text-gray-900 transition hover:bg-[#fff0e8] disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
                                         >
                                           {location.name}
                                         </button>
