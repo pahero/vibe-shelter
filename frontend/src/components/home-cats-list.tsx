@@ -117,15 +117,25 @@ export function HomeCatsList() {
       setLocationError(null);
 
       try {
-        const response = await locationsApi.listLocations({
-          limit: 100,
-        });
+        const pageSize = 100;
+        let skip = 0;
+        let locations: Location[] = [];
+        let total = 0;
+        do {
+          const response = await locationsApi.listLocations({
+            limit: pageSize,
+            skip,
+          });
+          locations = [...locations, ...response.data];
+          total = response.total;
+          skip += response.data.length;
+        } while (skip < total);
 
         if (!cancelled) {
-          const activeLocations = response.data.filter(
+          const activeLocations = locations.filter(
             (location) => location.status === "ACTIVE",
           );
-          setLocations(response.data);
+          setLocations(locations);
           setCreateForm((prev) => ({
             ...prev,
             currentLocationId: activeLocations.some(

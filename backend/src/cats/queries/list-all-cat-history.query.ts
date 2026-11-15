@@ -49,6 +49,7 @@ const auditEventInclude = {
     select: { id: true, date: true, productName: true },
   },
   location: { select: { id: true, name: true } },
+  relatedLocation: { select: { id: true, name: true, deletedAt: true } },
   flight: {
     select: { id: true, flightNumber: true, airport: true, date: true },
   },
@@ -222,6 +223,7 @@ export class ListAllCatHistoryQuery {
           case "location_description_changed":
           case "location_owner_changed":
           case "location_status_changed":
+          case "location_parent_changed":
           case "location_delete":
             return this.toLocationAuditEventDto(event, eventType);
           case "flight_created":
@@ -434,6 +436,13 @@ export class ListAllCatHistoryQuery {
       id: event.id,
       locationId: event.location.id,
       locationName: event.location.name,
+      relatedLocation: event.relatedLocation
+        ? {
+            id: event.relatedLocation.id,
+            name: event.relatedLocation.name,
+            deleted: event.relatedLocation.deletedAt !== null,
+          }
+        : null,
       occurredAt: event.occurredAt.toISOString(),
       eventType,
       oldValue: event.oldValue,

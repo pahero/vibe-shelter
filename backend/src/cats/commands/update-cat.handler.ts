@@ -47,6 +47,19 @@ export class UpdateCatHandler {
         if (location?.status !== "ACTIVE" || location.isTest !== isTest)
           throw new NotFoundException("Active location not found");
         nextLocationName = location.name;
+        if (data.currentLocationId !== existing.currentLocationId) {
+          const reservedLocation = await tx.location.updateMany({
+            where: {
+              id: data.currentLocationId,
+              isTest,
+              deletedAt: null,
+              status: "ACTIVE",
+            },
+            data: { version: { increment: 1 } },
+          });
+          if (reservedLocation.count !== 1)
+            throw new NotFoundException("Active location not found");
+        }
       }
       if (updateData.microchipNumber) {
         const duplicate = await tx.cat.findFirst({
@@ -93,15 +106,6 @@ export class UpdateCatHandler {
         },
         include: CAT_CARD_INCLUDE,
       });
-      if (
-        existing.currentLocationId !== updated.currentLocationId &&
-        updated.currentLocationId
-      ) {
-        await tx.location.update({
-          where: { id: updated.currentLocationId },
-          data: { version: { increment: 1 } },
-        });
-      }
       if (actorUserId) {
         const events = toCatFieldAuditEvents(
           existing,
