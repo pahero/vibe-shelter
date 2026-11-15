@@ -248,17 +248,7 @@ export function EditShelterClient({
         allLocations.push(...response.data);
         if (response.data.length === 0) break;
       }
-      setLocations(
-        allLocations.filter(
-          (location) =>
-            location.status !== "ARCHIVED" ||
-            allLocations.some(
-              (candidate) =>
-                candidate.parentId === location.id &&
-                candidate.status === "ACTIVE",
-            ),
-        ),
-      );
+      setLocations(allLocations);
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {

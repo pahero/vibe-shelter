@@ -149,8 +149,9 @@ model Location {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   cats         Cat[]
-  auditEvents  AuditEvent[]
-  owners       LocationOwner[]
+  auditEvents        AuditEvent[] @relation("auditLocations")
+  relatedAuditEvents AuditEvent[] @relation("auditRelatedLocations")
+  owners             LocationOwner[]
 
   @@index([isTest])
   @@index([status])
@@ -464,7 +465,9 @@ model AuditEvent {
   assignmentId                String?
   assignment                  FlightCatAssignment? @relation("auditAssignments", fields: [assignmentId], references: [id], onDelete: SetNull)
   locationId                  String?
-  location                    Location?            @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  location                    Location?            @relation("auditLocations", fields: [locationId], references: [id], onDelete: SetNull)
+  relatedLocationId           String?
+  relatedLocation             Location?            @relation("auditRelatedLocations", fields: [relatedLocationId], references: [id], onDelete: SetNull)
   tagId                       String?
   tag                         CatTag?              @relation("auditTags", fields: [tagId], references: [id], onDelete: SetNull)
   archivingReasonId           String?
@@ -503,6 +506,7 @@ model AuditEvent {
   @@index([catId, occurredAt])
   @@index([flightId, createdAt])
   @@index([locationId])
+  @@index([relatedLocationId])
   @@index([tagId])
   @@index([actorUserId])
   @@index([createdAt])

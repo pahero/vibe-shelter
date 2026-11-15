@@ -326,7 +326,10 @@ describe("UpdateLocationHandler", () => {
         tx.auditEvent.findMany({
           where: { locationId: child.id, action: "parent_changed" },
         }),
-      ).resolves.toHaveLength(2);
+      ).resolves.toMatchObject([
+        { relatedLocationId: parent.id },
+        { relatedLocationId: parent.id },
+      ]);
     });
   });
 

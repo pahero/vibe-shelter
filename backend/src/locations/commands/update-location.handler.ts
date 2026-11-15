@@ -214,6 +214,7 @@ export class UpdateLocationHandler {
                   action: "parent_changed",
                   oldValue: existing.parent?.name ?? "Top level",
                   newValue: newParentName ?? "Top level",
+                  relatedLocationId: updated.parentId ?? existing.parentId,
                 },
               ]
             : []),
