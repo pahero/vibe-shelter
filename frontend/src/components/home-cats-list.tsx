@@ -125,7 +125,7 @@ export function HomeCatsList() {
           const activeLocations = response.data.filter(
             (location) => location.status === "ACTIVE",
           );
-          setLocations(activeLocations);
+          setLocations(response.data);
           setCreateForm((prev) => ({
             ...prev,
             currentLocationId: activeLocations.some(
@@ -437,18 +437,25 @@ export function HomeCatsList() {
                 {locations.length === 0 && (
                   <option value="">No active locations</option>
                 )}
-                {rootLocations.flatMap((location) => [
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>,
-                  ...(sublocationsByParentId.get(location.id) ?? []).map(
-                    (sublocation) => (
-                      <option key={sublocation.id} value={sublocation.id}>
-                        {`  - ${sublocation.name}`}
-                      </option>
+                {rootLocations
+                  .flatMap((location) => [
+                    ...(location.status === "ACTIVE"
+                      ? [
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>,
+                        ]
+                      : []),
+                    ...(sublocationsByParentId.get(location.id) ?? []).map(
+                      (sublocation) =>
+                        sublocation.status === "ACTIVE" && (
+                          <option key={sublocation.id} value={sublocation.id}>
+                            {`  - ${sublocation.name}`}
+                          </option>
+                        ),
                     ),
-                  ),
-                ])}
+                  ])
+                  .filter(Boolean)}
               </SelectWithChevron>
             </label>
             <label
@@ -678,10 +685,13 @@ export function HomeCatsList() {
                         aria-selected={locationFilter === location.id}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => selectLocation(location.id)}
+                        disabled={location.status !== "ACTIVE"}
                         className={`block min-w-0 flex-1 px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
                           locationFilter === location.id
                             ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                            : "text-gray-900"
+                            : location.status === "ACTIVE"
+                              ? "text-gray-900"
+                              : "cursor-not-allowed text-gray-400"
                         }`}
                       >
                         {location.name}
@@ -717,10 +727,13 @@ export function HomeCatsList() {
                           aria-selected={locationFilter === sublocation.id}
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => selectLocation(sublocation.id)}
+                          disabled={sublocation.status !== "ACTIVE"}
                           className={`block w-full py-2 pl-8 pr-3 text-left transition hover:bg-[#fff0e8] ${
                             locationFilter === sublocation.id
                               ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                              : "text-gray-900"
+                              : sublocation.status === "ACTIVE"
+                                ? "text-gray-900"
+                                : "cursor-not-allowed text-gray-400"
                           }`}
                         >
                           {sublocation.name}

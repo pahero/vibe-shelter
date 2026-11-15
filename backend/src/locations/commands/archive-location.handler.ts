@@ -23,6 +23,13 @@ export class ArchiveLocationHandler {
         select: { id: true, name: true, parentId: true },
       });
       if (!location) throw new NotFoundException("Location not found");
+      // Lock the parent before reading its children so a concurrent sublocation
+      // creation either completes before this snapshot or fails after archival.
+      const locked = await tx.location.updateMany({
+        where: { id: location.id, isTest, deletedAt: null },
+        data: { version: { increment: 1 } },
+      });
+      if (locked.count !== 1) throw new NotFoundException("Location not found");
       const sublocations = await tx.location.findMany({
         where: { parentId: id, isTest, deletedAt: null },
         select: { id: true, name: true },

@@ -24,7 +24,7 @@ describe("ArchiveLocationHandler", () => {
       );
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: location.id } }),
-      ).resolves.toMatchObject({ status: "ARCHIVED", version: 1 });
+      ).resolves.toMatchObject({ status: "ARCHIVED", version: 2 });
       await expect(
         tx.auditEvent.findFirstOrThrow({
           where: { locationId: location.id },
@@ -86,7 +86,7 @@ describe("ArchiveLocationHandler", () => {
       ).rejects.toThrow(ConflictException);
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: assigned.id } }),
-      ).resolves.toMatchObject({ deletedAt: null, version: 0 });
+      ).resolves.toMatchObject({ deletedAt: null, version: 1 });
     });
   });
 
