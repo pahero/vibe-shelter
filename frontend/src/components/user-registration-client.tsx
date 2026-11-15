@@ -4,6 +4,7 @@ import { FormEvent, startTransition, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { PaginationControls } from "@/components/pagination-controls";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 import {
   AdminUser,
   createAdminUser,
@@ -302,7 +303,7 @@ export function UserRegistrationClient({
 
             <label className="flex flex-col gap-2 text-sm font-semibold text-[#1f2320]">
               Role
-              <select
+              <SelectWithChevron
                 className="min-h-11 rounded-xl border border-[#d4c7b4] bg-white px-3 text-base font-normal outline-none transition focus:border-[#d05a2c] focus:ring-2 focus:ring-[#ffd4bf]"
                 value={form.role}
                 onChange={(event) =>
@@ -314,7 +315,7 @@ export function UserRegistrationClient({
                 {currentUser?.role === "owner" && (
                   <option value="owner">Owner</option>
                 )}
-              </select>
+              </SelectWithChevron>
             </label>
 
             <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-[#1f2320]">
@@ -433,7 +434,7 @@ export function UserRegistrationClient({
                           user.role !== "owner") && (
                           <label className="flex items-center gap-2 text-sm text-[#6d6a66]">
                             <span>Role</span>
-                            <select
+                            <SelectWithChevron
                               aria-label={`Change role for ${user.email}`}
                               value={user.role}
                               disabled={updatingRoleUserId === user.id}
@@ -450,7 +451,7 @@ export function UserRegistrationClient({
                               )}
                               <option value="admin">Admin</option>
                               <option value="staff">Staff</option>
-                            </select>
+                            </SelectWithChevron>
                           </label>
                         )}
                     </div>

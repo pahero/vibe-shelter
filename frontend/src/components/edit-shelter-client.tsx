@@ -37,6 +37,7 @@ import {
   tagChipStyle,
 } from "@/lib/tag-colors";
 import { OwnerToolsClient } from "@/components/owner-tools-client";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 
 const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center rounded-xl bg-[#d05a2c] px-4 text-sm font-semibold text-white transition hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60";
@@ -50,6 +51,7 @@ type LocationDraft = {
   name: string;
   description: string;
   ownerIds: string[];
+  parentId: string;
 };
 
 type EditingLocation = {
@@ -58,6 +60,7 @@ type EditingLocation = {
   description: string;
   status: Location["status"];
   ownerIds: string[];
+  parentId: string;
 };
 
 type EditingTag = {
@@ -84,6 +87,7 @@ const emptyLocation: LocationDraft = {
   name: "",
   description: "",
   ownerIds: [],
+  parentId: "",
 };
 
 function OwnerSelector({
@@ -160,6 +164,8 @@ export function EditShelterClient({
     useState<LocationDraft>(emptyLocation);
   const [editingLocation, setEditingLocation] =
     useState<EditingLocation | null>(null);
+  const [newSublocationName, setNewSublocationName] = useState("");
+  const [isAddingSublocation, setIsAddingSublocation] = useState(false);
   const [locationToRemove, setLocationToRemove] = useState<Location | null>(
     null,
   );
@@ -382,6 +388,7 @@ export function EditShelterClient({
         name,
         description: locationDraft.description.trim() || undefined,
         ownerIds: locationDraft.ownerIds,
+        parentId: null,
       });
       setLocationDraft(emptyLocation);
       setIsAddingLocation(false);
@@ -410,10 +417,40 @@ export function EditShelterClient({
         description: location.description.trim() || null,
         status: location.status,
         ownerIds: location.ownerIds,
+        parentId: location.parentId || null,
       });
       setEditingLocation(null);
+      setNewSublocationName("");
+      setIsAddingSublocation(false);
       await loadEditors();
       setMessage("Location updated.");
+    } catch (err) {
+      setError(ApiErrorHandler.handle(err));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function createSublocation(parent: Location) {
+    const name = newSublocationName.trim();
+    if (!name) {
+      setError("Sublocation name is required.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await locationsApi.createLocation({
+        name,
+        description: parent.description ?? undefined,
+        ownerIds: parent.owners.map((owner) => owner.id),
+        parentId: parent.id,
+      });
+      setNewSublocationName("");
+      await loadEditors();
+      setMessage("Sublocation added.");
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
     } finally {
@@ -435,6 +472,10 @@ export function EditShelterClient({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function isInRemovalTree(candidate: Location, location: Location) {
+    return candidate.id === location.id || candidate.parentId === location.id;
   }
 
   async function saveTag(event: FormEvent<HTMLFormElement>) {
@@ -619,17 +660,6 @@ export function EditShelterClient({
                       className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       placeholder="New location name"
                     />
-                    <input
-                      value={locationDraft.description}
-                      onChange={(event) =>
-                        setLocationDraft((prev) => ({
-                          ...prev,
-                          description: event.target.value,
-                        }))
-                      }
-                      className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      placeholder="Description"
-                    />
                     <OwnerSelector
                       users={locationUsers}
                       selected={locationDraft.ownerIds}
@@ -669,6 +699,7 @@ export function EditShelterClient({
 
                 <div className="grid gap-2">
                   {locations
+                    .filter((location) => !location.parentId)
                     .slice(
                       (sectionPages.locations - 1) * pageSize,
                       sectionPages.locations * pageSize,
@@ -692,18 +723,7 @@ export function EditShelterClient({
                                 }
                                 className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm"
                               />
-                              <input
-                                value={editingLocation.description}
-                                onChange={(event) =>
-                                  setEditingLocation({
-                                    ...editingLocation,
-                                    description: event.target.value,
-                                  })
-                                }
-                                className="rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm"
-                                placeholder="Description"
-                              />
-                              <select
+                              <SelectWithChevron
                                 value={editingLocation.status}
                                 onChange={(event) =>
                                   setEditingLocation({
@@ -717,7 +737,7 @@ export function EditShelterClient({
                                 <option value="ACTIVE">Active</option>
                                 <option value="INACTIVE">Inactive</option>
                                 <option value="ARCHIVED">Archived</option>
-                              </select>
+                              </SelectWithChevron>
                               <OwnerSelector
                                 users={locationUsers}
                                 selected={editingLocation.ownerIds}
@@ -728,35 +748,59 @@ export function EditShelterClient({
                                   })
                                 }
                               />
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => saveLocation(editingLocation)}
-                                  disabled={isSaving}
-                                  className={primaryButtonClass}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingLocation(null)}
-                                  className={secondaryButtonClass}
-                                >
-                                  Cancel
-                                </button>
+                              <div className="text-left">
+                                <div className="inline-flex items-center gap-2">
+                                  <p className="text-sm font-medium text-gray-800">
+                                    Sublocations
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setIsAddingSublocation(
+                                        (isAdding) => !isAdding,
+                                      )
+                                    }
+                                    aria-label="Show sublocation form"
+                                    title="Add sublocation"
+                                    className="rounded-lg p-2 text-[#b24a20] hover:bg-[#fff0e8]"
+                                  >
+                                    <FontAwesomeIcon icon={faPlus} />
+                                  </button>
+                                </div>
+                                {isAddingSublocation && (
+                                  <div className="mt-2 flex gap-2">
+                                    <input
+                                      value={newSublocationName}
+                                      onChange={(event) =>
+                                        setNewSublocationName(
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="Sublocation name"
+                                      className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        createSublocation(location)
+                                      }
+                                      disabled={isSaving}
+                                      className={secondaryButtonClass}
+                                    >
+                                      Add
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ) : (
                             <div className="flex items-center justify-between gap-2">
                               <div>
-                                <p className="text-base font-semibold text-gray-900">
+                                <p
+                                  className={`text-base font-semibold text-gray-900 ${location.parentId ? "pl-6" : ""}`}
+                                >
                                   {location.name}
                                 </p>
-                                {location.description && (
-                                  <p className="mt-1 text-sm text-[#6d6a66]">
-                                    {location.description}
-                                  </p>
-                                )}
                                 {location.owners.length > 0 && (
                                   <p className="mt-2 text-xs text-gray-600">
                                     <strong>Responsible users:</strong>{" "}
@@ -772,17 +816,20 @@ export function EditShelterClient({
                               <div className="flex shrink-0 gap-2">
                                 <button
                                   type="button"
-                                  onClick={() =>
+                                  onClick={() => {
                                     setEditingLocation({
                                       id: location.id,
                                       name: location.name,
                                       description: location.description ?? "",
                                       status: location.status,
+                                      parentId: location.parentId ?? "",
                                       ownerIds: location.owners.map(
                                         (owner) => owner.id,
                                       ),
-                                    })
-                                  }
+                                    });
+                                    setNewSublocationName("");
+                                    setIsAddingSublocation(false);
+                                  }}
                                   aria-label={`Edit ${location.name}`}
                                   title={`Edit ${location.name}`}
                                   className="rounded-lg p-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
@@ -796,8 +843,10 @@ export function EditShelterClient({
                                     setReplacementLocationId(
                                       locations.find(
                                         (candidate) =>
-                                          candidate.id !== location.id &&
-                                          candidate.status === "ACTIVE",
+                                          !isInRemovalTree(
+                                            candidate,
+                                            location,
+                                          ) && candidate.status === "ACTIVE",
                                       )?.id ?? "",
                                     );
                                     setError(null);
@@ -810,6 +859,70 @@ export function EditShelterClient({
                                   <FontAwesomeIcon icon={faTrash} />
                                 </button>
                               </div>
+                            </div>
+                          )}
+                          {locations
+                            .filter(
+                              (sublocation) =>
+                                sublocation.parentId === location.id,
+                            )
+                            .map((sublocation) => (
+                              <div
+                                key={sublocation.id}
+                                className="mt-2 flex items-center justify-between gap-2 border-l-2 border-[#d05a2c] pl-3 text-left"
+                              >
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {sublocation.name}
+                                  </p>
+                                </div>
+                                {isEditing && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setLocationToRemove(sublocation);
+                                      setReplacementLocationId(
+                                        locations.find(
+                                          (candidate) =>
+                                            !isInRemovalTree(
+                                              candidate,
+                                              sublocation,
+                                            ) && candidate.status === "ACTIVE",
+                                        )?.id ?? "",
+                                      );
+                                      setError(null);
+                                    }}
+                                    disabled={isSaving}
+                                    aria-label={`Remove ${sublocation.name}`}
+                                    title={`Remove ${sublocation.name}`}
+                                    className="rounded-lg p-2 text-red-700 hover:bg-red-50 hover:text-red-800 disabled:opacity-60"
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          {isEditing && editingLocation && (
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => saveLocation(editingLocation)}
+                                disabled={isSaving}
+                                className={primaryButtonClass}
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingLocation(null);
+                                  setNewSublocationName("");
+                                  setIsAddingSublocation(false);
+                                }}
+                                className={secondaryButtonClass}
+                              >
+                                Cancel
+                              </button>
                             </div>
                           )}
                         </div>
@@ -830,12 +943,12 @@ export function EditShelterClient({
                       Remove {locationToRemove.name}?
                     </h2>
                     <p className="mt-1 text-sm text-gray-700">
-                      Cats assigned to this location must be moved to another
-                      active location.
+                      Cats assigned to this location and its sublocations will
+                      be moved to another active location.
                     </p>
                     <label className="mt-3 block text-sm font-medium">
                       Move cats to
-                      <select
+                      <SelectWithChevron
                         value={replacementLocationId}
                         onChange={(event) =>
                           setReplacementLocationId(event.target.value)
@@ -846,7 +959,7 @@ export function EditShelterClient({
                         {locations
                           .filter(
                             (candidate) =>
-                              candidate.id !== locationToRemove.id &&
+                              !isInRemovalTree(candidate, locationToRemove) &&
                               candidate.status === "ACTIVE",
                           )
                           .map((candidate) => (
@@ -854,7 +967,7 @@ export function EditShelterClient({
                               {candidate.name}
                             </option>
                           ))}
-                      </select>
+                      </SelectWithChevron>
                     </label>
                     <div className="mt-3 flex gap-2">
                       <button
@@ -1295,7 +1408,7 @@ export function EditShelterClient({
                     </p>
                     <label className="mt-2 grid gap-1 text-sm text-gray-700">
                       Replacement for assigned cats
-                      <select
+                      <SelectWithChevron
                         value={replacementReasonId}
                         onChange={(event) =>
                           setReplacementReasonId(event.target.value)
@@ -1310,7 +1423,7 @@ export function EditShelterClient({
                               {reason.name}
                             </option>
                           ))}
-                      </select>
+                      </SelectWithChevron>
                     </label>
                     {archivingReasons.length < 2 && (
                       <p className="mt-2 text-sm text-red-700">
@@ -1353,7 +1466,7 @@ export function EditShelterClient({
                   onSubmit={filterAudit}
                   className="mt-4 flex flex-wrap gap-2"
                 >
-                  <select
+                  <SelectWithChevron
                     value={auditUser}
                     onChange={(event) => setAuditUser(event.target.value)}
                     className="w-48 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
@@ -1367,8 +1480,8 @@ export function EditShelterClient({
                           : user.email}
                       </option>
                     ))}
-                  </select>
-                  <select
+                  </SelectWithChevron>
+                  <SelectWithChevron
                     value={auditCatId}
                     onChange={(event) => setAuditCatId(event.target.value)}
                     className="w-48 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
@@ -1380,7 +1493,7 @@ export function EditShelterClient({
                         {cat.name} #{cat.nameNumber}
                       </option>
                     ))}
-                  </select>
+                  </SelectWithChevron>
                   <div className="flex basis-full flex-wrap items-end gap-2">
                     <label className="grid gap-1 text-xs font-medium text-[#6d6a66]">
                       From date

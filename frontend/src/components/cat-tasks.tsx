@@ -15,6 +15,7 @@ import {
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
 import { RemindersList } from "@/components/reminders-list";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 
 const emptyTask = (): TaskInput => ({
   comment: "",
@@ -284,7 +285,7 @@ export function CatTasks({
                 <span>
                   Notification receivers <span className="text-red-700">*</span>
                 </span>
-                <select
+                <SelectWithChevron
                   aria-label="Notification receivers"
                   value={receiverChoice}
                   onChange={(event) => {
@@ -304,7 +305,7 @@ export function CatTasks({
                       {user.fullName || "Unnamed user"}
                     </option>
                   ))}
-                </select>
+                </SelectWithChevron>
               </label>
               {selectedReceivers.length > 0 && (
                 <div className="flex flex-wrap gap-1 md:col-span-2">

@@ -13,7 +13,9 @@ import { WriteCatAuditEventCommand } from "./write-cat-audit-event.command";
 import { runInNewTransaction } from "@/database/helpers";
 
 const CAT_CARD_INCLUDE = {
-  currentLocation: { select: { name: true } },
+  currentLocation: {
+    select: { name: true, parent: { select: { name: true } } },
+  },
 } satisfies Prisma.CatInclude;
 
 @Injectable()
@@ -112,6 +114,7 @@ export class CreateCatHandler {
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
+      currentLocationParentName: cat.currentLocation?.parent?.name ?? null,
       createdByUserId: cat.createdByUserId,
       primaryPhotoUrl: cat.primaryPhotoKey
         ? await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey)

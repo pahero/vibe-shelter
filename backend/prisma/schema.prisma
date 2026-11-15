@@ -136,22 +136,26 @@ enum ParasiteTreatmentType {
 }
 
 model Location {
-  id          String         @id @default(cuid())
-  name        String
-  description String?
-  isTest      Boolean        @default(false)
-  status      LocationStatus @default(ACTIVE)
-  deletedAt   DateTime?
-  version     Int            @default(0)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  cats        Cat[]
-  auditEvents AuditEvent[]
-  owners      LocationOwner[]
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  parentId     String?
+  parent       Location?      @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  sublocations Location[]     @relation("LocationHierarchy")
+  isTest       Boolean        @default(false)
+  status       LocationStatus @default(ACTIVE)
+  deletedAt    DateTime?
+  version      Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  cats         Cat[]
+  auditEvents  AuditEvent[]
+  owners       LocationOwner[]
 
   @@index([isTest])
   @@index([status])
   @@index([deletedAt])
+  @@index([parentId])
 }
 
 model LocationOwner {

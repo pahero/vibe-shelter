@@ -230,7 +230,9 @@ export function CatCard({
           <div className="flex justify-between gap-3">
             <dt className="text-[#6d6a66]">Location</dt>
             <dd className="text-right font-medium">
-              {cat.currentLocationName || "Not set"}
+              {cat.currentLocationParentName && cat.currentLocationName
+                ? `${cat.currentLocationParentName}, ${cat.currentLocationName}`
+                : cat.currentLocationName || "Not set"}
             </dd>
           </div>
           <div className="flex justify-between gap-3">

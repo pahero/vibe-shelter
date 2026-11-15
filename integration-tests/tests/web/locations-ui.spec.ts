@@ -79,9 +79,6 @@ test.describe("locations UI", () => {
     await newLocationForm
       .getByPlaceholder("New location name")
       .fill(locationName);
-    await newLocationForm
-      .getByPlaceholder("Description")
-      .fill("Created from the shelter editor");
     await newLocationForm.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("Location added.")).toBeVisible();

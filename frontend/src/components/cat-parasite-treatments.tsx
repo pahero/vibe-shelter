@@ -10,6 +10,7 @@ import {
   ParasiteTreatmentType,
 } from "@/lib/api";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
 
 const typeLabels: Record<ParasiteTreatmentType, string> = {
@@ -146,7 +147,7 @@ export function CatParasiteTreatments({
                 <span>
                   Treatment Type <span className="text-red-700">*</span>
                 </span>
-                <select
+                <SelectWithChevron
                   aria-label="Treatment Type"
                   required
                   value={form.type}
@@ -163,7 +164,7 @@ export function CatParasiteTreatments({
                       {label}
                     </option>
                   ))}
-                </select>
+                </SelectWithChevron>
               </label>
               <label className="grid gap-1 text-sm font-medium">
                 <span>

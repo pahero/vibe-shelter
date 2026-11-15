@@ -13,6 +13,7 @@ export type CatCard = {
   sterilizationStatus: string;
   currentLocationId: string | null;
   currentLocationName: string | null;
+  currentLocationParentName: string | null;
   primaryPhotoUrl: string | null;
   primaryPhotoPositionY: number | null;
   microchipNumber: string | null;
@@ -83,7 +84,9 @@ export type PrimaryPhotoUpload = {
 };
 
 export const CAT_CARD_INCLUDE = {
-  currentLocation: { select: { name: true } },
+  currentLocation: {
+    select: { name: true, parent: { select: { name: true } } },
+  },
   archivingReason: { select: { name: true } },
   tags: {
     where: { deletedAt: null, tag: { deletedAt: null } },

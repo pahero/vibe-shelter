@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CatTreatment, catsApi, TreatmentInput } from "@/lib/api";
 import { ApiErrorHandler } from "@/lib/utils";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const emptyTreatment = (): TreatmentInput => ({
@@ -371,11 +372,15 @@ export function CatTreatments({
                   className="w-full min-w-0 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2"
                 />
               </label>
-              <label className="grid min-w-0 gap-1 text-sm font-medium">
+              <label
+                htmlFor="treatment-doses-per-day"
+                className="grid min-w-0 gap-1 text-sm font-medium"
+              >
                 <span>
                   Doses per day <span className="text-red-700">*</span>
                 </span>
-                <select
+                <SelectWithChevron
+                  id="treatment-doses-per-day"
                   aria-label="Doses per day"
                   value={form.dosesPerDay}
                   onChange={(event) =>
@@ -388,7 +393,7 @@ export function CatTreatments({
                 >
                   <option value={1}>Once daily</option>
                   <option value={2}>Twice daily (morning and evening)</option>
-                </select>
+                </SelectWithChevron>
               </label>
               <label className="grid min-w-0 gap-1 text-sm font-medium">
                 <span>

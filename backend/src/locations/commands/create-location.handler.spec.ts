@@ -24,6 +24,31 @@ describe("CreateLocationHandler", () => {
       );
     });
   });
+
+  it("creates a sublocation only under an active top-level location", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const parent = await tx.location.create({
+        data: { name: `Parent ${suffix}` },
+      });
+      const result = await new CreateLocationHandler(
+        tx as PrismaService,
+      ).handle(
+        `Child ${suffix}`,
+        undefined,
+        undefined,
+        false,
+        undefined,
+        parent.id,
+      );
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({ parentId: parent.id });
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
+      ).resolves.toMatchObject({ version: 1 });
+    });
+  });
   it("normalizes and creates a test location and value-free creation audit", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({

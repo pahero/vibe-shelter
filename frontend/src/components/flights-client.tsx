@@ -25,6 +25,7 @@ import {
   flightsApi,
 } from "@/lib/api";
 import { CatHistory } from "@/components/cat-history";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 
 function emptyFlightForm(): FlightInput {
   return {
@@ -836,7 +837,7 @@ export function FlightsClient({
                       <label className="sr-only" htmlFor="flight-cat-select">
                         Cat to assign
                       </label>
-                      <select
+                      <SelectWithChevron
                         id="flight-cat-select"
                         value={selectedCatId}
                         onChange={(event) =>
@@ -850,7 +851,7 @@ export function FlightsClient({
                             {cat.name}
                           </option>
                         ))}
-                      </select>
+                      </SelectWithChevron>
                       <button
                         type="button"
                         disabled={

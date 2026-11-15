@@ -16,6 +16,7 @@ export class CreateLocationHandler {
     ownerIds: string[] | undefined,
     isTest: boolean,
     actorUserId?: string,
+    parentId?: string | null,
   ): Promise<{ id: string }> {
     const normalizedName = name?.trim();
     if (!normalizedName)
@@ -38,10 +39,30 @@ export class CreateLocationHandler {
       if (duplicate)
         throw new ConflictException("A location with this name already exists");
 
+      if (parentId) {
+        const parent = await tx.location.findFirst({
+          where: {
+            id: parentId,
+            isTest,
+            deletedAt: null,
+            status: "ACTIVE",
+            parentId: null,
+          },
+          select: { id: true },
+        });
+        if (!parent)
+          throw new BadRequestException("Parent location is unavailable");
+        await tx.location.update({
+          where: { id: parent.id },
+          data: { version: { increment: 1 } },
+        });
+      }
+
       const location = await tx.location.create({
         data: {
           name: normalizedName,
           description: description?.trim() || null,
+          parentId: parentId ?? null,
           owners: { create: ids.map((userId) => ({ userId })) },
           isTest,
           status: "ACTIVE",

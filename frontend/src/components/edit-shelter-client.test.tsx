@@ -112,3 +112,72 @@ it("shows owners and saves changes to an existing location", async () => {
     ).toBe(true),
   );
 });
+
+it("adds a sublocation from the parent editor using inherited details", async () => {
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/admin/users"))
+        return Response.json([
+          user("admin", "Admin"),
+          user("first", "First User"),
+        ]);
+      if (url.includes("/api/locations") && init?.method === "POST")
+        return Response.json({ id: "sublocation" });
+      if (url.includes("/api/locations"))
+        return Response.json({
+          data: [
+            {
+              id: "parent",
+              name: "House",
+              description: "Main building",
+              status: "ACTIVE",
+              owners: [
+                {
+                  id: "first",
+                  fullName: "First User",
+                  email: "first@example.com",
+                  status: "ACTIVE",
+                  deletedAt: null,
+                },
+              ],
+            },
+          ],
+          total: 1,
+          skip: 0,
+          limit: 100,
+        });
+      throw new Error(`Unexpected request ${url}`);
+    },
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  render(<EditShelterClient currentUser={{ id: "admin", role: "admin" }} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Edit House" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show sublocation form" }),
+  );
+  fireEvent.change(screen.getByPlaceholderText("Sublocation name"), {
+    target: { value: "Room 1" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Add" }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.some(([url, options]) => {
+        if (
+          !String(url).includes("/api/locations") ||
+          options?.method !== "POST"
+        )
+          return false;
+        return (
+          JSON.stringify(JSON.parse(String(options.body))) ===
+          JSON.stringify({
+            name: "Room 1",
+            description: "Main building",
+            ownerIds: ["first"],
+            parentId: "parent",
+          })
+        );
+      }),
+    ).toBe(true),
+  );
+});
