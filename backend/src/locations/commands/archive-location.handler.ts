@@ -34,6 +34,18 @@ export class ArchiveLocationHandler {
         where: { parentId: id, isTest, deletedAt: null },
         select: { id: true, name: true },
       });
+      if (sublocations.length) {
+        const lockedSublocations = await tx.location.updateMany({
+          where: {
+            id: { in: sublocations.map((sublocation) => sublocation.id) },
+            isTest,
+            deletedAt: null,
+          },
+          data: { version: { increment: 1 } },
+        });
+        if (lockedSublocations.count !== sublocations.length)
+          throw new NotFoundException("Sublocation not found");
+      }
       const archivedLocationIds = [
         location.id,
         ...sublocations.map((sublocation) => sublocation.id),

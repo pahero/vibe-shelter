@@ -248,7 +248,9 @@ export function HomeCatsList() {
     }
     if (
       !locations.some(
-        (location) => location.id === createForm.currentLocationId,
+        (location) =>
+          location.id === createForm.currentLocationId &&
+          location.status === "ACTIVE",
       )
     ) {
       setError("Choose an active location for this cat.");
@@ -271,7 +273,11 @@ export function HomeCatsList() {
     setIsCreating(true);
     try {
       const created = await catsApi.createCat(payload);
-      setCreateForm(emptyCatForm(locations[0]?.id ?? ""));
+      setCreateForm(
+        emptyCatForm(
+          locations.find((location) => location.status === "ACTIVE")?.id ?? "",
+        ),
+      );
       setShowCreateForm(false);
       setCreateSuccess(`${created.name} was added.`);
       setCurrentPage(1);
@@ -421,7 +427,9 @@ export function HomeCatsList() {
               htmlFor="new-cat-current-location"
               className="grid gap-1 text-sm font-medium text-gray-800"
             >
-              Current location
+              <span>
+                Current location <span className="text-red-600">*</span>
+              </span>
               <SelectWithChevron
                 id="new-cat-current-location"
                 value={createForm.currentLocationId}

@@ -229,7 +229,9 @@ export function LocationCatsSection({
               htmlFor="location-cat-current-location"
               className="grid gap-1 text-sm font-medium text-gray-800"
             >
-              Current location
+              <span>
+                Current location <span className="text-red-600">*</span>
+              </span>
               <SelectWithChevron
                 id="location-cat-current-location"
                 value={form.currentLocationId}
