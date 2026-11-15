@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CreateLocationDto, UpdateLocationDto, Location } from "@/lib/api";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 
 export type LocationFormProps = {
   initialData?: Location;
@@ -143,7 +144,7 @@ export function LocationForm({
           >
             Status
           </label>
-          <select
+          <SelectWithChevron
             id="status"
             value={formData.status}
             onChange={(e) => handleChange("status", e.target.value)}
@@ -152,7 +153,7 @@ export function LocationForm({
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
             <option value="ARCHIVED">Archived</option>
-          </select>
+          </SelectWithChevron>
         </div>
       )}
 

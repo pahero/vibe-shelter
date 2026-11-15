@@ -25,7 +25,23 @@ export class ListCatsHandler {
       isTest,
       archivingReasonId: filters.archived ? { not: null } : null,
     };
-    if (filters.locationId) where.currentLocationId = filters.locationId;
+    if (filters.locationId) {
+      const location = await this.prisma.location.findFirst({
+        where: { id: filters.locationId, isTest, deletedAt: null },
+        select: { parentId: true },
+      });
+      if (location?.parentId === null) {
+        const sublocations = await this.prisma.location.findMany({
+          where: { parentId: filters.locationId, isTest, deletedAt: null },
+          select: { id: true },
+        });
+        where.currentLocationId = {
+          in: [filters.locationId, ...sublocations.map(({ id }) => id)],
+        };
+      } else {
+        where.currentLocationId = filters.locationId;
+      }
+    }
     if (filters.tagId)
       where.tags = { some: { tagId: filters.tagId, deletedAt: null } };
     const search = filters.search?.trim();

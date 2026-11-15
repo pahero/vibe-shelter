@@ -7,11 +7,13 @@ describe("location DTO command conversion", () => {
       name: "  Shelter  ",
       description: "  Main  ",
       ownerIds: [" user-1 ", " user-2 "],
+      parentId: " parent-1 ",
     });
     expect(dto.toCommand()).toEqual({
       name: "Shelter",
       description: "Main",
       ownerIds: ["user-1", "user-2"],
+      parentId: "parent-1",
     });
     expect(
       Object.assign(new CreateLocationDto(), { name: "Shelter" }).toCommand(),
@@ -24,12 +26,14 @@ describe("location DTO command conversion", () => {
       description: "  ",
       ownerIds: [],
       status: "INACTIVE",
+      parentId: " ",
     });
     expect(dto.toCommand()).toEqual({
       name: "New",
       description: null,
       ownerIds: [],
       status: "INACTIVE",
+      parentId: null,
     });
     expect(new UpdateLocationDto().toCommand()).toEqual({});
   });

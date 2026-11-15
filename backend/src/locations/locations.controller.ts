@@ -49,6 +49,7 @@ export class LocationsController {
       command.ownerIds,
       user.isTest,
       user.id,
+      command.parentId,
     );
   }
 

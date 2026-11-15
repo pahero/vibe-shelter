@@ -15,6 +15,7 @@ import {
   faBoxArchive,
   faBugs,
   faCat,
+  faChevronDown,
   faClockRotateLeft,
   faDownload,
   faEllipsis,
@@ -45,6 +46,7 @@ import { CatParasiteTreatments } from "@/components/cat-parasite-treatments";
 import { ContextMenu } from "@/components/context-menu";
 import { MediaThumbnail } from "@/components/media-thumbnail";
 import { MediaThumbnailGrid } from "@/components/media-thumbnail-grid";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 import {
   AdopterCountry,
   CatArchivingReason,
@@ -194,6 +196,8 @@ export default function CatProfilePage() {
   const [editForm, setEditForm] = useState<CatEditForm | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+  const [expandedLocationIds, setExpandedLocationIds] = useState<string[]>([]);
   const [locationsError, setLocationsError] = useState<string | null>(null);
   const [weights, setWeights] = useState<CatWeight[]>([]);
   const [isLoadingWeights, setIsLoadingWeights] = useState(true);
@@ -466,21 +470,37 @@ export default function CatProfilePage() {
       setIsLoadingLocations(true);
       setLocationsError(null);
       try {
-        const response = await locationsApi.listLocations({
-          status: "ACTIVE",
-          limit: 100,
-        });
+        const pageSize = 100;
+        let skip = 0;
+        let locations: Location[] = [];
+        let total = 0;
+        do {
+          const response = await locationsApi.listLocations({
+            limit: pageSize,
+            skip,
+          });
+          locations = [...locations, ...response.data];
+          total = response.total;
+          skip += response.data.length;
+        } while (skip < total);
         if (!cancelled) {
-          setLocations(response.data);
+          setLocations(locations);
           setEditForm((prev) => {
             if (
               !prev ||
-              response.data.some(
-                (location) => location.id === prev.currentLocationId,
+              locations.some(
+                (location) =>
+                  location.id === prev.currentLocationId &&
+                  location.status === "ACTIVE",
               )
             )
               return prev;
-            return { ...prev, currentLocationId: response.data[0]?.id ?? "" };
+            return {
+              ...prev,
+              currentLocationId:
+                locations.find((location) => location.status === "ACTIVE")
+                  ?.id ?? "",
+            };
           });
         }
       } catch (err) {
@@ -1691,7 +1711,7 @@ export default function CatProfilePage() {
                       <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
                         <label className="grid gap-1 text-sm font-medium text-gray-800">
                           Archiving reason
-                          <select
+                          <SelectWithChevron
                             value={archivingReasonId}
                             onChange={(event) =>
                               setArchivingReasonId(event.target.value)
@@ -1703,7 +1723,7 @@ export default function CatProfilePage() {
                                 {reason.name}
                               </option>
                             ))}
-                          </select>
+                          </SelectWithChevron>
                         </label>
                         <label className="mt-3 grid gap-1 text-sm font-medium text-gray-800">
                           <span>
@@ -1893,47 +1913,165 @@ export default function CatProfilePage() {
                               className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
                             />
                           </label>
-                          <label className="grid gap-1 text-sm font-medium text-gray-800">
-                            Current location
-                            <select
-                              value={editForm.currentLocationId}
-                              onChange={(event) =>
-                                setEditForm(
-                                  (prev) =>
-                                    prev && {
-                                      ...prev,
-                                      currentLocationId: event.target.value,
-                                    },
-                                )
-                              }
-                              disabled={isLoadingLocations}
-                              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {cat.currentLocationId &&
-                                !locations.some(
-                                  (location) =>
-                                    location.id === cat.currentLocationId,
-                                ) && (
-                                  <option value={cat.currentLocationId}>
-                                    {cat.currentLocationName ||
+                          <div className="grid gap-1 text-sm font-medium text-gray-800">
+                            <span id="cat-location-picker-label">
+                              Current location{" "}
+                              <span className="text-red-600">*</span>
+                            </span>
+                            <ContextMenu
+                              open={isLocationPickerOpen}
+                              onOpenChange={setIsLocationPickerOpen}
+                              menuLabel="Current location"
+                              role="listbox"
+                              className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#d4c7b4] bg-white py-1 text-sm shadow-lg"
+                              trigger={
+                                <button
+                                  type="button"
+                                  aria-labelledby="cat-location-picker-label"
+                                  aria-haspopup="listbox"
+                                  aria-expanded={isLocationPickerOpen}
+                                  disabled={isLoadingLocations}
+                                  onClick={() =>
+                                    setIsLocationPickerOpen((isOpen) => !isOpen)
+                                  }
+                                  className="flex w-full items-center justify-between rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <span>
+                                    {locations.find(
+                                      (location) =>
+                                        location.id ===
+                                        editForm.currentLocationId,
+                                    )?.name ??
+                                      cat.currentLocationName ??
                                       "Current location"}
-                                  </option>
-                                )}
-                              {locations.map((location) => (
-                                <option key={location.id} value={location.id}>
-                                  {location.name}
-                                </option>
-                              ))}
-                            </select>
+                                  </span>
+                                  <FontAwesomeIcon
+                                    icon={faChevronDown}
+                                    className="text-[#6d6a66]"
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              }
+                            >
+                              {locations
+                                .filter(
+                                  (location) =>
+                                    !location.parentId &&
+                                    (location.status === "ACTIVE" ||
+                                      locations.some(
+                                        (candidate) =>
+                                          candidate.parentId === location.id &&
+                                          candidate.status === "ACTIVE",
+                                      )),
+                                )
+                                .map((location) => {
+                                  const sublocations = locations.filter(
+                                    (candidate) =>
+                                      candidate.parentId === location.id &&
+                                      candidate.status === "ACTIVE",
+                                  );
+                                  const isExpanded =
+                                    expandedLocationIds.includes(location.id);
+                                  const selectLocation = (id: string) => {
+                                    setEditForm(
+                                      (prev) =>
+                                        prev && {
+                                          ...prev,
+                                          currentLocationId: id,
+                                        },
+                                    );
+                                    setIsLocationPickerOpen(false);
+                                  };
+                                  return (
+                                    <div key={location.id}>
+                                      <div className="flex">
+                                        <button
+                                          type="button"
+                                          role="option"
+                                          aria-selected={
+                                            editForm.currentLocationId ===
+                                            location.id
+                                          }
+                                          onMouseDown={(event) =>
+                                            event.preventDefault()
+                                          }
+                                          onClick={() =>
+                                            selectLocation(location.id)
+                                          }
+                                          disabled={
+                                            location.status !== "ACTIVE"
+                                          }
+                                          className="min-w-0 flex-1 px-3 py-2 text-left text-gray-900 transition hover:bg-[#fff0e8] disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
+                                        >
+                                          {location.name}
+                                        </button>
+                                        {sublocations.length > 0 && (
+                                          <button
+                                            type="button"
+                                            aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+                                            title={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+                                            onMouseDown={(event) =>
+                                              event.preventDefault()
+                                            }
+                                            onClick={() =>
+                                              setExpandedLocationIds((ids) =>
+                                                isExpanded
+                                                  ? ids.filter(
+                                                      (id) =>
+                                                        id !== location.id,
+                                                    )
+                                                  : [...ids, location.id],
+                                              )
+                                            }
+                                            className="w-10 text-[#6d6a66] hover:bg-[#fff0e8]"
+                                          >
+                                            <FontAwesomeIcon
+                                              icon={faChevronDown}
+                                              className={
+                                                isExpanded ? "rotate-180" : ""
+                                              }
+                                            />
+                                          </button>
+                                        )}
+                                      </div>
+                                      {isExpanded &&
+                                        sublocations.map((sublocation) => (
+                                          <button
+                                            key={sublocation.id}
+                                            type="button"
+                                            role="option"
+                                            aria-selected={
+                                              editForm.currentLocationId ===
+                                              sublocation.id
+                                            }
+                                            onMouseDown={(event) =>
+                                              event.preventDefault()
+                                            }
+                                            onClick={() =>
+                                              selectLocation(sublocation.id)
+                                            }
+                                            className="block w-full py-2 pl-8 pr-3 text-left text-gray-900 transition hover:bg-[#fff0e8]"
+                                          >
+                                            {sublocation.name}
+                                          </button>
+                                        ))}
+                                    </div>
+                                  );
+                                })}
+                            </ContextMenu>
                             {locationsError && (
                               <span className="text-xs font-medium text-red-700">
                                 Locations could not be loaded: {locationsError}
                               </span>
                             )}
-                          </label>
-                          <label className="grid gap-1 text-sm font-medium text-gray-800">
+                          </div>
+                          <label
+                            htmlFor="cat-sex"
+                            className="grid gap-1 text-sm font-medium text-gray-800"
+                          >
                             Sex
-                            <select
+                            <SelectWithChevron
+                              id="cat-sex"
                               value={editForm.sex}
                               onChange={(event) =>
                                 setEditForm(
@@ -1949,11 +2087,15 @@ export default function CatProfilePage() {
                               <option value="UNKNOWN">Unknown</option>
                               <option value="FEMALE">Female</option>
                               <option value="MALE">Male</option>
-                            </select>
+                            </SelectWithChevron>
                           </label>
-                          <label className="grid gap-1 text-sm font-medium text-gray-800">
+                          <label
+                            htmlFor="cat-sterilization-status"
+                            className="grid gap-1 text-sm font-medium text-gray-800"
+                          >
                             Neutering status
-                            <select
+                            <SelectWithChevron
+                              id="cat-sterilization-status"
                               value={editForm.sterilizationStatus}
                               onChange={(event) =>
                                 setEditForm(
@@ -1972,7 +2114,7 @@ export default function CatProfilePage() {
                               <option value="NOT_STERILIZED">
                                 Not neutered
                               </option>
-                            </select>
+                            </SelectWithChevron>
                           </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
                             Color
@@ -2044,7 +2186,8 @@ export default function CatProfilePage() {
                           </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
                             Intake source
-                            <select
+                            <SelectWithChevron
+                              id="cat-intake-source"
                               value={editForm.intakeSource}
                               onChange={(event) =>
                                 setEditForm(
@@ -2066,7 +2209,7 @@ export default function CatProfilePage() {
                                   </option>
                                 ),
                               )}
-                            </select>
+                            </SelectWithChevron>
                           </label>
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
                             <input
@@ -2156,9 +2299,13 @@ export default function CatProfilePage() {
                               className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                             />
                           </label>
-                          <label className="grid gap-1 text-sm font-medium text-gray-800">
+                          <label
+                            htmlFor="cat-adopter-country"
+                            className="grid gap-1 text-sm font-medium text-gray-800"
+                          >
                             Adopter country
-                            <select
+                            <SelectWithChevron
+                              id="cat-adopter-country"
                               value={editForm.adopterCountry}
                               onChange={(event) =>
                                 setEditForm(
@@ -2177,7 +2324,7 @@ export default function CatProfilePage() {
                               <option value="UK">UK</option>
                               <option value="EU">EU</option>
                               <option value="CY">CY</option>
-                            </select>
+                            </SelectWithChevron>
                           </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
                             Adopter address

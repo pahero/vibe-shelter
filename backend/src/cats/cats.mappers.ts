@@ -36,6 +36,7 @@ export async function toCatCard(
     sterilizationStatus: cat.sterilizationStatus,
     currentLocationId: cat.currentLocationId,
     currentLocationName: cat.currentLocation?.name ?? null,
+    currentLocationParentName: cat.currentLocation?.parent?.name ?? null,
     createdByUserId: cat.createdByUserId,
     isTest: cat.isTest,
     primaryPhotoUrl: await photoUrls.getPreviewPhotoUrl(cat.primaryPhotoKey),

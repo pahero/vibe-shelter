@@ -13,7 +13,9 @@ import { WriteCatAuditEventCommand } from "./write-cat-audit-event.command";
 import { runInNewTransaction } from "@/database/helpers";
 
 const CAT_CARD_INCLUDE = {
-  currentLocation: { select: { name: true } },
+  currentLocation: {
+    select: { name: true, parent: { select: { name: true } } },
+  },
 } satisfies Prisma.CatInclude;
 
 @Injectable()
@@ -42,10 +44,17 @@ export class CreateCatHandler {
         ) {
           throw new NotFoundException("Active location not found");
         }
-        await transaction.location.update({
-          where: { id: command.currentLocationId },
+        const updatedLocation = await transaction.location.updateMany({
+          where: {
+            id: command.currentLocationId,
+            isTest: command.isTest,
+            deletedAt: null,
+            status: "ACTIVE",
+          },
           data: { version: { increment: 1 } },
         });
+        if (updatedLocation.count !== 1)
+          throw new NotFoundException("Active location not found");
       }
 
       if (command.microchipNumber) {
@@ -112,6 +121,7 @@ export class CreateCatHandler {
       sterilizationStatus: cat.sterilizationStatus,
       currentLocationId: cat.currentLocationId,
       currentLocationName: cat.currentLocation?.name ?? null,
+      currentLocationParentName: cat.currentLocation?.parent?.name ?? null,
       createdByUserId: cat.createdByUserId,
       primaryPhotoUrl: cat.primaryPhotoKey
         ? await this.photoUrls.getPrimaryPhotoUrl(cat.primaryPhotoKey)

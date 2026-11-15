@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { CatCard } from "@/components/cat-card";
 import { AddNewButton } from "@/components/add-new-button";
 import { CatColorDatalist } from "@/components/cat-color-options";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 import { ApiErrorHandler } from "@/lib/utils";
 import {
   CatCard as CatCardType,
@@ -154,10 +155,7 @@ export function LocationCatsSection({
     setIsCreating(true);
     try {
       const created = await catsApi.createCat(payload);
-      if (created.currentLocationId === locationId) {
-        setCats((prev) => [created, ...prev].slice(0, CATS_PER_PAGE));
-        setTotal((prev) => prev + 1);
-      }
+      await fetchCats();
       setForm(emptyForm(locationId));
       setShowForm(false);
       setSuccess(
@@ -212,9 +210,13 @@ export function LocationCatsSection({
           className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4"
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="location-cat-name"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Name *
               <input
+                id="location-cat-name"
                 value={form.name}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, name: event.target.value }))
@@ -223,9 +225,15 @@ export function LocationCatsSection({
                 placeholder="Mila"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Current location
-              <select
+            <label
+              htmlFor="location-cat-current-location"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
+              <span>
+                Current location <span className="text-red-600">*</span>
+              </span>
+              <SelectWithChevron
+                id="location-cat-current-location"
                 value={form.currentLocationId}
                 onChange={(event) =>
                   setForm((prev) => ({
@@ -241,14 +249,18 @@ export function LocationCatsSection({
                 )}
                 {locations.map((location) => (
                   <option key={location.id} value={location.id}>
-                    {location.name}
+                    {location.parentId ? `  - ${location.name}` : location.name}
                   </option>
                 ))}
-              </select>
+              </SelectWithChevron>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="location-cat-intake-source"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Intake source
-              <select
+              <SelectWithChevron
+                id="location-cat-intake-source"
                 value={form.intakeSource}
                 onChange={(event) =>
                   setForm((prev) => ({
@@ -264,11 +276,15 @@ export function LocationCatsSection({
                     {label}
                   </option>
                 ))}
-              </select>
+              </SelectWithChevron>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="location-cat-sex"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Sex *
-              <select
+              <SelectWithChevron
+                id="location-cat-sex"
                 value={form.sex}
                 onChange={(event) =>
                   setForm((prev) => ({
@@ -281,11 +297,15 @@ export function LocationCatsSection({
                 <option value="UNKNOWN">Unknown</option>
                 <option value="FEMALE">Female</option>
                 <option value="MALE">Male</option>
-              </select>
+              </SelectWithChevron>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="location-cat-sterilization-status"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Neutering status *
-              <select
+              <SelectWithChevron
+                id="location-cat-sterilization-status"
                 value={form.sterilizationStatus}
                 onChange={(event) =>
                   setForm((prev) => ({
@@ -299,7 +319,7 @@ export function LocationCatsSection({
                 <option value="UNKNOWN">Unknown</option>
                 <option value="STERILIZED">Neutered</option>
                 <option value="NOT_STERILIZED">Not neutered</option>
-              </select>
+              </SelectWithChevron>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Color

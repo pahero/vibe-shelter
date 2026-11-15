@@ -70,6 +70,7 @@ export type TagAuditEventDto = CatHistoryEventDto & {
 export type LocationAuditEventDto = CatHistoryEventDto & {
   locationId: string;
   locationName: string;
+  relatedLocation: { id: string; name: string; deleted: boolean } | null;
 };
 
 export type FlightAuditEventDto = CatHistoryEventDto & {

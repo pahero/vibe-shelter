@@ -21,6 +21,7 @@ export class UpdateLocationHandler {
       description?: string | null;
       ownerIds?: string[];
       status?: string;
+      parentId?: string | null;
     },
     isTest: boolean,
     actorUserId?: string,
@@ -44,6 +45,10 @@ export class UpdateLocationHandler {
       }
       updateData.status = data.status as LocationStatus;
     }
+    if (data.parentId !== undefined)
+      updateData.parent = data.parentId
+        ? { connect: { id: data.parentId } }
+        : { disconnect: true };
     return runInNewTransaction(this.prisma, async (tx) => {
       const existing = await tx.location.findFirst({
         where: { id, isTest, deletedAt: null },
@@ -53,9 +58,59 @@ export class UpdateLocationHandler {
               user: { select: { id: true, fullName: true, email: true } },
             },
           },
+          parent: { select: { name: true } },
         },
       });
       if (!existing) throw new NotFoundException("Location not found");
+      let newParentName: string | null = null;
+      if (data.parentId !== undefined && data.parentId !== existing.parentId) {
+        if (data.parentId === id)
+          throw new BadRequestException("A location cannot be its own parent");
+        if (data.parentId) {
+          const parent = await tx.location.findFirst({
+            where: {
+              id: data.parentId,
+              isTest,
+              deletedAt: null,
+              status: "ACTIVE",
+              parentId: null,
+            },
+            select: { id: true, name: true },
+          });
+          if (!parent)
+            throw new BadRequestException("Parent location is unavailable");
+          newParentName = parent.name;
+          await tx.location.update({
+            where: { id },
+            data: { version: { increment: 1 } },
+          });
+          const sublocationCount = await tx.location.count({
+            where: { parentId: id, isTest, deletedAt: null },
+          });
+          if (sublocationCount)
+            throw new BadRequestException(
+              "A location with sublocations cannot be made a sublocation",
+            );
+          const updatedParent = await tx.location.updateMany({
+            where: {
+              id: parent.id,
+              isTest,
+              deletedAt: null,
+              status: "ACTIVE",
+              parentId: null,
+            },
+            data: { version: { increment: 1 } },
+          });
+          if (updatedParent.count !== 1)
+            throw new BadRequestException("Parent location is unavailable");
+        }
+        if (existing.parentId) {
+          await tx.location.update({
+            where: { id: existing.parentId },
+            data: { version: { increment: 1 } },
+          });
+        }
+      }
       const ids =
         data.ownerIds === undefined ? undefined : [...new Set(data.ownerIds)];
       const oldIds = new Set(existing.owners.map(({ userId }) => userId));
@@ -150,6 +205,16 @@ export class UpdateLocationHandler {
                   action: "status_changed",
                   oldValue: existing.status,
                   newValue: updated.status,
+                },
+              ]
+            : []),
+          ...(existing.parentId !== updated.parentId
+            ? [
+                {
+                  action: "parent_changed",
+                  oldValue: existing.parent?.name ?? "Top level",
+                  newValue: newParentName ?? "Top level",
+                  relatedLocationId: updated.parentId ?? existing.parentId,
                 },
               ]
             : []),

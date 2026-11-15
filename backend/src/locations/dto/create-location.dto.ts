@@ -22,7 +22,16 @@ export class CreateLocationDto {
   @ValidateIf((_object, value: unknown) => value !== undefined)
   ownerIds?: string[];
 
-  toCommand(): { name: string; description?: string; ownerIds?: string[] } {
+  @IsString()
+  @IsOptional()
+  parentId?: string | null;
+
+  toCommand(): {
+    name: string;
+    description?: string;
+    ownerIds?: string[];
+    parentId?: string | null;
+  } {
     return {
       name: this.name.trim(),
       ...(this.description !== undefined
@@ -30,6 +39,9 @@ export class CreateLocationDto {
         : {}),
       ...(this.ownerIds !== undefined
         ? { ownerIds: this.ownerIds.map((id) => id.trim()) }
+        : {}),
+      ...(this.parentId !== undefined
+        ? { parentId: this.parentId?.trim() || null }
         : {}),
     };
   }

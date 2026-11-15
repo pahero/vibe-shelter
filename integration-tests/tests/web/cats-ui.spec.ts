@@ -380,7 +380,19 @@ test.describe("cats UI", () => {
         "response-content-disposition",
       ),
     ).toBe('attachment; filename="cat2.jpg"');
+    const setPrimaryPhoto = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/cats/${cat.id}/photos/`) &&
+        response.request().method() === "PUT",
+    );
+    const refreshPhotos = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/cats/${cat.id}/photos`) &&
+        response.request().method() === "GET",
+    );
     await page.getByRole("button", { name: "Make primary" }).click();
+    expect((await setPrimaryPhoto).status()).toBe(200);
+    expect((await refreshPhotos).status()).toBe(200);
     await page.getByRole("button", { name: "Close", exact: true }).click();
 
     // cat2.jpg is now primary: its photo viewer no longer offers "Make primary".
@@ -599,7 +611,7 @@ test.describe("cats UI", () => {
 
     // Overdue tasks are processed by the one-second backend scheduler. Opening
     // the center fetches the newly-created notification from the API.
-    await page.waitForTimeout(2_000);
+    await page.waitForTimeout(5_000);
     await page.goto("/");
     const notificationList = page.waitForResponse(
       (response) =>

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ContextMenu } from "@/components/context-menu";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 import { ApiErrorHandler } from "@/lib/utils";
 import {
   CatCard as CatCardType,
@@ -48,6 +49,7 @@ export function HomeCatsList() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
+  const [expandedLocationIds, setExpandedLocationIds] = useState<string[]>([]);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
@@ -115,20 +117,32 @@ export function HomeCatsList() {
       setLocationError(null);
 
       try {
-        const response = await locationsApi.listLocations({
-          status: "ACTIVE",
-          limit: 100,
-        });
+        const pageSize = 100;
+        let skip = 0;
+        let locations: Location[] = [];
+        let total = 0;
+        do {
+          const response = await locationsApi.listLocations({
+            limit: pageSize,
+            skip,
+          });
+          locations = [...locations, ...response.data];
+          total = response.total;
+          skip += response.data.length;
+        } while (skip < total);
 
         if (!cancelled) {
-          setLocations(response.data);
+          const activeLocations = locations.filter(
+            (location) => location.status === "ACTIVE",
+          );
+          setLocations(locations);
           setCreateForm((prev) => ({
             ...prev,
-            currentLocationId: response.data.some(
+            currentLocationId: activeLocations.some(
               (location) => location.id === prev.currentLocationId,
             )
               ? prev.currentLocationId
-              : (response.data[0]?.id ?? ""),
+              : (activeLocations[0]?.id ?? ""),
           }));
         }
       } catch (err) {
@@ -244,7 +258,9 @@ export function HomeCatsList() {
     }
     if (
       !locations.some(
-        (location) => location.id === createForm.currentLocationId,
+        (location) =>
+          location.id === createForm.currentLocationId &&
+          location.status === "ACTIVE",
       )
     ) {
       setError("Choose an active location for this cat.");
@@ -267,7 +283,11 @@ export function HomeCatsList() {
     setIsCreating(true);
     try {
       const created = await catsApi.createCat(payload);
-      setCreateForm(emptyCatForm(locations[0]?.id ?? ""));
+      setCreateForm(
+        emptyCatForm(
+          locations.find((location) => location.status === "ACTIVE")?.id ?? "",
+        ),
+      );
       setShowCreateForm(false);
       setCreateSuccess(`${created.name} was added.`);
       setCurrentPage(1);
@@ -283,6 +303,14 @@ export function HomeCatsList() {
   const locationFilterLabel =
     locations.find((location) => location.id === locationFilter)?.name ??
     "All locations";
+  const rootLocations = locations.filter((location) => !location.parentId);
+  const sublocationsByParentId = new Map<string, Location[]>();
+  for (const location of locations) {
+    if (!location.parentId) continue;
+    const sublocations = sublocationsByParentId.get(location.parentId) ?? [];
+    sublocations.push(location);
+    sublocationsByParentId.set(location.parentId, sublocations);
+  }
   const tagFilterLabel =
     tags.find((tag) => tag.id === tagFilter)?.name ?? "All tags";
 
@@ -387,9 +415,13 @@ export function HomeCatsList() {
           className="mt-5 rounded-2xl border border-[#d4c7b4] bg-white/60 p-4"
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="new-cat-name"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Name *
               <input
+                id="new-cat-name"
                 value={createForm.name}
                 onChange={(event) =>
                   setCreateForm((prev) => ({
@@ -401,9 +433,15 @@ export function HomeCatsList() {
                 placeholder="Mila"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
-              Current location
-              <select
+            <label
+              htmlFor="new-cat-current-location"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
+              <span>
+                Current location <span className="text-red-600">*</span>
+              </span>
+              <SelectWithChevron
+                id="new-cat-current-location"
                 value={createForm.currentLocationId}
                 onChange={(event) =>
                   setCreateForm((prev) => ({
@@ -417,16 +455,34 @@ export function HomeCatsList() {
                 {locations.length === 0 && (
                   <option value="">No active locations</option>
                 )}
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
+                {rootLocations
+                  .flatMap((location) => [
+                    ...(location.status === "ACTIVE"
+                      ? [
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>,
+                        ]
+                      : []),
+                    ...(sublocationsByParentId.get(location.id) ?? []).map(
+                      (sublocation) =>
+                        sublocation.status === "ACTIVE" && (
+                          <option key={sublocation.id} value={sublocation.id}>
+                            {`  - ${sublocation.name}`}
+                          </option>
+                        ),
+                    ),
+                  ])
+                  .filter(Boolean)}
+              </SelectWithChevron>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="new-cat-sex"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Sex *
-              <select
+              <SelectWithChevron
+                id="new-cat-sex"
                 value={createForm.sex}
                 onChange={(event) =>
                   setCreateForm((prev) => ({
@@ -439,11 +495,15 @@ export function HomeCatsList() {
                 <option value="UNKNOWN">Unknown</option>
                 <option value="FEMALE">Female</option>
                 <option value="MALE">Male</option>
-              </select>
+              </SelectWithChevron>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-gray-800">
+            <label
+              htmlFor="new-cat-sterilization-status"
+              className="grid gap-1 text-sm font-medium text-gray-800"
+            >
               Neutering status *
-              <select
+              <SelectWithChevron
+                id="new-cat-sterilization-status"
                 value={createForm.sterilizationStatus}
                 onChange={(event) =>
                   setCreateForm((prev) => ({
@@ -457,7 +517,7 @@ export function HomeCatsList() {
                 <option value="UNKNOWN">Unknown</option>
                 <option value="STERILIZED">Neutered</option>
                 <option value="NOT_STERILIZED">Not neutered</option>
-              </select>
+              </SelectWithChevron>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Color
@@ -518,7 +578,7 @@ export function HomeCatsList() {
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800">
               Intake source
-              <select
+              <SelectWithChevron
                 value={createForm.intakeSource}
                 onChange={(event) =>
                   setCreateForm((prev) => ({
@@ -534,7 +594,7 @@ export function HomeCatsList() {
                     {label}
                   </option>
                 ))}
-              </select>
+              </SelectWithChevron>
             </label>
             <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
               Comment
@@ -625,27 +685,81 @@ export function HomeCatsList() {
               >
                 All locations
               </button>
-              {locations.map((location) => (
-                <button
-                  key={location.id}
-                  type="button"
-                  role="option"
-                  aria-selected={locationFilter === location.id}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    setLocationFilter(location.id);
-                    setCurrentPage(1);
-                    setIsLocationFilterOpen(false);
-                  }}
-                  className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                    locationFilter === location.id
-                      ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                      : "text-gray-900"
-                  }`}
-                >
-                  {location.name}
-                </button>
-              ))}
+              {rootLocations.map((location) => {
+                const sublocations =
+                  sublocationsByParentId.get(location.id) ?? [];
+                const isExpanded = expandedLocationIds.includes(location.id);
+                const selectLocation = (id: string) => {
+                  setLocationFilter(id);
+                  setCurrentPage(1);
+                  setIsLocationFilterOpen(false);
+                };
+                return (
+                  <div key={location.id}>
+                    <div className="flex">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={locationFilter === location.id}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectLocation(location.id)}
+                        disabled={location.status !== "ACTIVE"}
+                        className={`block min-w-0 flex-1 px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
+                          locationFilter === location.id
+                            ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
+                            : location.status === "ACTIVE"
+                              ? "text-gray-900"
+                              : "cursor-not-allowed text-gray-400"
+                        }`}
+                      >
+                        {location.name}
+                      </button>
+                      {sublocations.length > 0 && (
+                        <button
+                          type="button"
+                          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+                          title={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() =>
+                            setExpandedLocationIds((ids) =>
+                              isExpanded
+                                ? ids.filter((id) => id !== location.id)
+                                : [...ids, location.id],
+                            )
+                          }
+                          className="w-10 text-[#6d6a66] hover:bg-[#fff0e8]"
+                        >
+                          <FontAwesomeIcon
+                            icon={faChevronDown}
+                            className={isExpanded ? "rotate-180" : ""}
+                          />
+                        </button>
+                      )}
+                    </div>
+                    {isExpanded &&
+                      sublocations.map((sublocation) => (
+                        <button
+                          key={sublocation.id}
+                          type="button"
+                          role="option"
+                          aria-selected={locationFilter === sublocation.id}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => selectLocation(sublocation.id)}
+                          disabled={sublocation.status !== "ACTIVE"}
+                          className={`block w-full py-2 pl-8 pr-3 text-left transition hover:bg-[#fff0e8] ${
+                            locationFilter === sublocation.id
+                              ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
+                              : sublocation.status === "ACTIVE"
+                                ? "text-gray-900"
+                                : "cursor-not-allowed text-gray-400"
+                          }`}
+                        >
+                          {sublocation.name}
+                        </button>
+                      ))}
+                  </div>
+                );
+              })}
             </ContextMenu>
           </div>
 

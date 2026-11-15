@@ -24,6 +24,71 @@ describe("CreateLocationHandler", () => {
       );
     });
   });
+
+  it("creates a sublocation only under an active top-level location", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const parent = await tx.location.create({
+        data: { name: `Parent ${suffix}` },
+      });
+      const result = await new CreateLocationHandler(
+        tx as PrismaService,
+      ).handle(
+        `Child ${suffix}`,
+        undefined,
+        undefined,
+        false,
+        undefined,
+        parent.id,
+      );
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({ parentId: parent.id });
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
+      ).resolves.toMatchObject({ version: 1 });
+    });
+  });
+
+  it("rejects unavailable parents", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const inactive = await tx.location.create({
+        data: { name: `Inactive ${suffix}`, status: "INACTIVE" },
+      });
+      const deleted = await tx.location.create({
+        data: { name: `Deleted ${suffix}`, deletedAt: new Date() },
+      });
+      const otherPartition = await tx.location.create({
+        data: { name: `Other ${suffix}`, isTest: true },
+      });
+      const parent = await tx.location.create({
+        data: { name: `Parent ${suffix}` },
+      });
+      const sublocation = await tx.location.create({
+        data: { name: `Child ${suffix}`, parentId: parent.id },
+      });
+      const handler = new CreateLocationHandler(tx as PrismaService);
+
+      for (const parentId of [
+        inactive.id,
+        deleted.id,
+        otherPartition.id,
+        sublocation.id,
+      ]) {
+        await expect(
+          handler.handle(
+            `New ${parentId}`,
+            undefined,
+            undefined,
+            false,
+            undefined,
+            parentId,
+          ),
+        ).rejects.toThrow(BadRequestException);
+      }
+    });
+  });
   it("normalizes and creates a test location and value-free creation audit", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({

@@ -24,7 +24,7 @@ describe("ArchiveLocationHandler", () => {
       );
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: location.id } }),
-      ).resolves.toMatchObject({ status: "ARCHIVED", version: 1 });
+      ).resolves.toMatchObject({ status: "ARCHIVED", version: 2 });
       await expect(
         tx.auditEvent.findFirstOrThrow({
           where: { locationId: location.id },
@@ -86,7 +86,7 @@ describe("ArchiveLocationHandler", () => {
       ).rejects.toThrow(ConflictException);
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: assigned.id } }),
-      ).resolves.toMatchObject({ deletedAt: null, version: 0 });
+      ).resolves.toMatchObject({ deletedAt: null, version: 1 });
     });
   });
 
@@ -152,6 +152,67 @@ describe("ArchiveLocationHandler", () => {
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: source.id } }),
       ).resolves.toMatchObject({ deletedAt: expect.any(Date) });
+    });
+  });
+
+  it("moves cats from a location and its sublocations before archiving the whole tree", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const actor = await tx.user.create({
+        data: { fullName: "Actor", email: `actor-${suffix}@example.com` },
+      });
+      const parent = await tx.location.create({
+        data: { name: `Parent ${suffix}` },
+      });
+      const sublocation = await tx.location.create({
+        data: { name: `Child ${suffix}`, parentId: parent.id },
+      });
+      const replacement = await tx.location.create({
+        data: { name: `Replacement ${suffix}` },
+      });
+      const parentCat = await tx.cat.create({
+        data: { name: `Parent cat ${suffix}`, currentLocationId: parent.id },
+      });
+      const childCat = await tx.cat.create({
+        data: {
+          name: `Child cat ${suffix}`,
+          currentLocationId: sublocation.id,
+        },
+      });
+
+      await new ArchiveLocationHandler(tx as PrismaService).handle(
+        parent.id,
+        false,
+        actor.id,
+        replacement.id,
+      );
+
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
+      ).resolves.toMatchObject({
+        status: "ARCHIVED",
+        deletedAt: expect.any(Date),
+      });
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: sublocation.id } }),
+      ).resolves.toMatchObject({
+        status: "ARCHIVED",
+        deletedAt: expect.any(Date),
+      });
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: parentCat.id } }),
+      ).resolves.toMatchObject({ currentLocationId: replacement.id });
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: childCat.id } }),
+      ).resolves.toMatchObject({ currentLocationId: replacement.id });
+      await expect(
+        tx.auditEvent.findMany({
+          where: {
+            catId: { in: [parentCat.id, childCat.id] },
+            eventType: "current_location_changed",
+          },
+        }),
+      ).resolves.toHaveLength(2);
     });
   });
 });

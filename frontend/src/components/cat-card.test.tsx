@@ -18,7 +18,8 @@ describe("CatCard", () => {
       archivingReasonName: null,
       sterilizationStatus: "UNKNOWN",
       currentLocationId: null,
-      currentLocationName: null,
+      currentLocationName: "Vet room",
+      currentLocationParentName: "Main shelter",
       createdByUserId: null,
       isTest: false,
       primaryPhotoUrl: null,
@@ -38,6 +39,8 @@ describe("CatCard", () => {
     render(<CatCard cat={cat} showProfileLink={false} />);
 
     expect(screen.getByRole("heading", { name: "Tom #3" })).toBeVisible();
+    expect(screen.getByText("Main shelter, Vet room")).toBeVisible();
+    expect(screen.queryByText("Sublocation")).not.toBeInTheDocument();
   });
 
   it("shows a video preview and exposes it as an expandable video", () => {

@@ -4,6 +4,7 @@ export type Location = {
   id: string;
   name: string;
   description: string | null;
+  parentId?: string | null;
   owners: Array<{
     id: string;
     fullName: string;
@@ -66,6 +67,7 @@ export type CatCard = {
   sterilizationStatus: SterilizationStatus;
   currentLocationId: string | null;
   currentLocationName: string | null;
+  currentLocationParentName?: string | null;
   createdByUserId: string | null;
   isTest: boolean;
   primaryPhotoUrl: string | null;
@@ -483,6 +485,7 @@ export type CreateLocationDto = {
   name: string;
   description?: string;
   ownerIds?: string[];
+  parentId?: string | null;
 };
 
 export type UpdateLocationDto = {
@@ -490,6 +493,7 @@ export type UpdateLocationDto = {
   description?: string | null;
   ownerIds?: string[];
   status?: "ACTIVE" | "INACTIVE" | "ARCHIVED";
+  parentId?: string | null;
 };
 
 export type ApiError = {
@@ -580,6 +584,7 @@ export const locationsApi = {
   ): Promise<ListLocationsResponse> {
     const query = new URLSearchParams();
     if (params?.ownerId) query.append("ownerId", params.ownerId);
+    if (params?.status) query.append("status", params.status);
     if (params?.skip !== undefined)
       query.append("skip", params.skip.toString());
     if (params?.limit !== undefined)

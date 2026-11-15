@@ -10,6 +10,7 @@ import {
   VaccinationType,
 } from "@/lib/api";
 import { CatProfileSectionHeader } from "@/components/cat-profile-section-header";
+import { SelectWithChevron } from "@/components/select-with-chevron";
 import { ApiErrorHandler, formatDate } from "@/lib/utils";
 
 const typeLabels: Record<VaccinationType, string> = {
@@ -155,7 +156,7 @@ export function CatVaccinations({
                 <span>
                   Vaccine Type <span className="text-red-700">*</span>
                 </span>
-                <select
+                <SelectWithChevron
                   aria-label="Vaccine Type"
                   required
                   value={form.type}
@@ -172,7 +173,7 @@ export function CatVaccinations({
                       {label}
                     </option>
                   ))}
-                </select>
+                </SelectWithChevron>
               </label>
               <label className="grid gap-1 text-sm font-medium">
                 <span>

@@ -26,11 +26,16 @@ export class UpdateLocationDto {
   @IsOptional()
   status?: string;
 
+  @IsString()
+  @IsOptional()
+  parentId?: string | null;
+
   toCommand(): {
     name?: string;
     description?: string | null;
     ownerIds?: string[];
     status?: string;
+    parentId?: string | null;
   } {
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
@@ -41,6 +46,9 @@ export class UpdateLocationDto {
         ? { ownerIds: this.ownerIds.map((id) => id.trim()) }
         : {}),
       ...(this.status !== undefined ? { status: this.status } : {}),
+      ...(this.parentId !== undefined
+        ? { parentId: this.parentId?.trim() || null }
+        : {}),
     };
   }
 }
