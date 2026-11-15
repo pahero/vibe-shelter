@@ -282,4 +282,89 @@ describe("UpdateLocationHandler", () => {
       ).resolves.toBe(0);
     });
   });
+
+  it("assigns and removes a parent while updating versions and auditing each change", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const actor = await tx.user.create({
+        data: { email: `actor-${suffix}@example.com`, fullName: "Actor" },
+      });
+      const parent = await tx.location.create({
+        data: { name: `Parent ${suffix}` },
+      });
+      const child = await tx.location.create({
+        data: { name: `Child ${suffix}` },
+      });
+      const handler = new UpdateLocationHandler(tx as PrismaService);
+
+      await handler.handle(child.id, { parentId: parent.id }, false, actor.id);
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: child.id } }),
+      ).resolves.toMatchObject({
+        parentId: parent.id,
+        version: 1,
+      });
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
+      ).resolves.toMatchObject({
+        version: 1,
+      });
+
+      await handler.handle(child.id, { parentId: null }, false, actor.id);
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: child.id } }),
+      ).resolves.toMatchObject({
+        parentId: null,
+        version: 2,
+      });
+      await expect(
+        tx.location.findUniqueOrThrow({ where: { id: parent.id } }),
+      ).resolves.toMatchObject({
+        version: 2,
+      });
+      await expect(
+        tx.auditEvent.findMany({
+          where: { locationId: child.id, action: "parent_changed" },
+        }),
+      ).resolves.toHaveLength(2);
+    });
+  });
+
+  it("rejects unavailable parents and locations that already have sublocations", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const target = await tx.location.create({
+        data: { name: `Target ${suffix}` },
+      });
+      const inactiveParent = await tx.location.create({
+        data: { name: `Inactive ${suffix}`, status: "INACTIVE" },
+      });
+      await expect(
+        new UpdateLocationHandler(tx as PrismaService).handle(
+          target.id,
+          { parentId: inactiveParent.id },
+          false,
+        ),
+      ).rejects.toThrow(BadRequestException);
+
+      const root = await tx.location.create({
+        data: { name: `Root ${suffix}` },
+      });
+      await tx.location.create({
+        data: { name: `Existing child ${suffix}`, parentId: root.id },
+      });
+      const newParent = await tx.location.create({
+        data: { name: `New parent ${suffix}` },
+      });
+      await expect(
+        new UpdateLocationHandler(tx as PrismaService).handle(
+          root.id,
+          { parentId: newParent.id },
+          false,
+        ),
+      ).rejects.toThrow(
+        "A location with sublocations cannot be made a sublocation",
+      );
+    });
+  });
 });

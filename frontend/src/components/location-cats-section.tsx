@@ -155,10 +155,7 @@ export function LocationCatsSection({
     setIsCreating(true);
     try {
       const created = await catsApi.createCat(payload);
-      if (created.currentLocationId === locationId) {
-        setCats((prev) => [created, ...prev].slice(0, CATS_PER_PAGE));
-        setTotal((prev) => prev + 1);
-      }
+      await fetchCats();
       setForm(emptyForm(locationId));
       setShowForm(false);
       setSuccess(

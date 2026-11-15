@@ -68,6 +68,10 @@ export class ArchiveLocationHandler {
             concurrencyToken: randomUUID(),
           },
         });
+        await tx.location.update({
+          where: { id: replacement.id },
+          data: { version: { increment: 1 } },
+        });
         if (actorUserId)
           await tx.auditEvent.createMany({
             data: assignedCats.map((cat) => ({

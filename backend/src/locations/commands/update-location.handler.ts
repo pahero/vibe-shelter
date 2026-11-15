@@ -87,10 +87,18 @@ export class UpdateLocationHandler {
             throw new BadRequestException(
               "A location with sublocations cannot be made a sublocation",
             );
-          await tx.location.update({
-            where: { id: parent.id },
+          const updatedParent = await tx.location.updateMany({
+            where: {
+              id: parent.id,
+              isTest,
+              deletedAt: null,
+              status: "ACTIVE",
+              parentId: null,
+            },
             data: { version: { increment: 1 } },
           });
+          if (updatedParent.count !== 1)
+            throw new BadRequestException("Parent location is unavailable");
         }
         if (existing.parentId) {
           await tx.location.update({

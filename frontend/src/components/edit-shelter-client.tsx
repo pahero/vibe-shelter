@@ -660,6 +660,17 @@ export function EditShelterClient({
                       className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       placeholder="New location name"
                     />
+                    <textarea
+                      value={locationDraft.description}
+                      onChange={(event) =>
+                        setLocationDraft((prev) => ({
+                          ...prev,
+                          description: event.target.value,
+                        }))
+                      }
+                      className="min-h-20 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                      placeholder="Description"
+                    />
                     <OwnerSelector
                       users={locationUsers}
                       selected={locationDraft.ownerIds}
@@ -713,6 +724,19 @@ export function EditShelterClient({
                         >
                           {isEditing && editingLocation ? (
                             <div className="grid gap-2">
+                              <label className="grid gap-1 text-sm font-medium text-gray-800">
+                                Description
+                                <textarea
+                                  value={editingLocation.description}
+                                  onChange={(event) =>
+                                    setEditingLocation({
+                                      ...editingLocation,
+                                      description: event.target.value,
+                                    })
+                                  }
+                                  className="min-h-20 rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm"
+                                />
+                              </label>
                               <input
                                 value={editingLocation.name}
                                 onChange={(event) =>
@@ -768,27 +792,37 @@ export function EditShelterClient({
                                   </button>
                                 </div>
                                 {isAddingSublocation && (
-                                  <div className="mt-2 flex gap-2">
-                                    <input
-                                      value={newSublocationName}
-                                      onChange={(event) =>
-                                        setNewSublocationName(
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Sublocation name"
-                                      className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        createSublocation(location)
-                                      }
-                                      disabled={isSaving}
-                                      className={secondaryButtonClass}
+                                  <div className="mt-2 grid gap-1">
+                                    <label
+                                      className="text-sm font-medium text-gray-800"
+                                      htmlFor={`sublocation-name-${location.id}`}
                                     >
-                                      Add
-                                    </button>
+                                      Sublocation name{" "}
+                                      <span className="text-red-700">*</span>
+                                    </label>
+                                    <div className="flex gap-2">
+                                      <input
+                                        id={`sublocation-name-${location.id}`}
+                                        value={newSublocationName}
+                                        onChange={(event) =>
+                                          setNewSublocationName(
+                                            event.target.value,
+                                          )
+                                        }
+                                        placeholder="Sublocation name"
+                                        className="min-w-0 flex-1 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          createSublocation(location)
+                                        }
+                                        disabled={isSaving}
+                                        className={secondaryButtonClass}
+                                      >
+                                        Add
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -801,6 +835,11 @@ export function EditShelterClient({
                                 >
                                   {location.name}
                                 </p>
+                                {location.description && (
+                                  <p className="mt-1 text-sm text-gray-600">
+                                    {location.description}
+                                  </p>
+                                )}
                                 {location.owners.length > 0 && (
                                   <p className="mt-2 text-xs text-gray-600">
                                     <strong>Responsible users:</strong>{" "}
@@ -996,7 +1035,9 @@ export function EditShelterClient({
                 <PaginationControls
                   page={sectionPages.locations}
                   pageSize={pageSize}
-                  totalItems={locations.length}
+                  totalItems={
+                    locations.filter((location) => !location.parentId).length
+                  }
                   onPageChange={(page) => changePage("locations", page)}
                 />
               </section>

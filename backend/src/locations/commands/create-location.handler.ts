@@ -52,10 +52,18 @@ export class CreateLocationHandler {
         });
         if (!parent)
           throw new BadRequestException("Parent location is unavailable");
-        await tx.location.update({
-          where: { id: parent.id },
+        const updatedParent = await tx.location.updateMany({
+          where: {
+            id: parent.id,
+            isTest,
+            deletedAt: null,
+            status: "ACTIVE",
+            parentId: null,
+          },
           data: { version: { increment: 1 } },
         });
+        if (updatedParent.count !== 1)
+          throw new BadRequestException("Parent location is unavailable");
       }
 
       const location = await tx.location.create({
