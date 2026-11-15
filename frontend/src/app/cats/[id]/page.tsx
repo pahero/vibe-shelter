@@ -470,13 +470,25 @@ export default function CatProfilePage() {
       setIsLoadingLocations(true);
       setLocationsError(null);
       try {
-        const response = await locationsApi.listLocations({ limit: 100 });
+        const pageSize = 100;
+        let skip = 0;
+        let locations: Location[] = [];
+        let total = 0;
+        do {
+          const response = await locationsApi.listLocations({
+            limit: pageSize,
+            skip,
+          });
+          locations = [...locations, ...response.data];
+          total = response.total;
+          skip += response.data.length;
+        } while (skip < total);
         if (!cancelled) {
-          setLocations(response.data);
+          setLocations(locations);
           setEditForm((prev) => {
             if (
               !prev ||
-              response.data.some(
+              locations.some(
                 (location) =>
                   location.id === prev.currentLocationId &&
                   location.status === "ACTIVE",
@@ -486,7 +498,7 @@ export default function CatProfilePage() {
             return {
               ...prev,
               currentLocationId:
-                response.data.find((location) => location.status === "ACTIVE")
+                locations.find((location) => location.status === "ACTIVE")
                   ?.id ?? "",
             };
           });
@@ -1903,7 +1915,8 @@ export default function CatProfilePage() {
                           </label>
                           <div className="grid gap-1 text-sm font-medium text-gray-800">
                             <span id="cat-location-picker-label">
-                              Current location
+                              Current location{" "}
+                              <span className="text-red-600">*</span>
                             </span>
                             <ContextMenu
                               open={isLocationPickerOpen}

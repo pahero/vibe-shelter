@@ -249,7 +249,15 @@ export function EditShelterClient({
         if (response.data.length === 0) break;
       }
       setLocations(
-        allLocations.filter((location) => location.status !== "ARCHIVED"),
+        allLocations.filter(
+          (location) =>
+            location.status !== "ARCHIVED" ||
+            allLocations.some(
+              (candidate) =>
+                candidate.parentId === location.id &&
+                candidate.status === "ACTIVE",
+            ),
+        ),
       );
     } catch (err) {
       setError(ApiErrorHandler.handle(err));

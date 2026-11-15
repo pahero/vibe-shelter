@@ -339,12 +339,24 @@ describe("UpdateLocationHandler", () => {
       const inactiveParent = await tx.location.create({
         data: { name: `Inactive ${suffix}`, status: "INACTIVE" },
       });
+      const deletedParent = await tx.location.create({
+        data: { name: `Deleted ${suffix}`, deletedAt: new Date() },
+      });
+      const otherPartitionParent = await tx.location.create({
+        data: { name: `Other ${suffix}`, isTest: true },
+      });
+      const handler = new UpdateLocationHandler(tx as PrismaService);
+      for (const parentId of [
+        inactiveParent.id,
+        deletedParent.id,
+        otherPartitionParent.id,
+      ]) {
+        await expect(
+          handler.handle(target.id, { parentId }, false),
+        ).rejects.toThrow(BadRequestException);
+      }
       await expect(
-        new UpdateLocationHandler(tx as PrismaService).handle(
-          target.id,
-          { parentId: inactiveParent.id },
-          false,
-        ),
+        handler.handle(target.id, { parentId: inactiveParent.id }, false),
       ).rejects.toThrow(BadRequestException);
 
       const root = await tx.location.create({
