@@ -70,6 +70,7 @@ export type CatCard = {
   currentLocationParentName?: string | null;
   createdByUserId: string | null;
   isTest: boolean;
+  isFlightCandidate: boolean;
   primaryPhotoUrl: string | null;
   primaryPhotoPositionY: number | null;
   microchipNumber: string | null;
@@ -377,8 +378,15 @@ export type FlightListItem = {
   flightNumber: string | null;
   flightParent: string | null;
   comment: string | null;
+  archivedAt: string | null;
   deletedAt: string | null;
   catCount: number;
+  assignedCats: {
+    id: string;
+    name: string;
+    nameNumber: number;
+    primaryPhotoUrl: string | null;
+  }[];
 };
 
 export type FlightCatAssignment = {
@@ -386,6 +394,7 @@ export type FlightCatAssignment = {
   cat: {
     id: string;
     name: string;
+    nameNumber: number;
     archivedAt: string | null;
     microchipNumber: string | null;
     passport: boolean;
@@ -401,6 +410,8 @@ export type FlightDetails = {
   flightNumber: string | null;
   flightParent: string | null;
   comment: string | null;
+  archivedAt: string | null;
+  deletedAt: string | null;
   updatedAt: string;
   cats: FlightCatAssignment[];
 };
@@ -1465,6 +1476,14 @@ export const flightsApi = {
       method: "GET",
     });
     return handleResponse<FlightListItem[]>(response);
+  },
+
+  async archive(flightId: string): Promise<{ id: string }> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/flights/${flightId}/archive`,
+      { method: "POST" },
+    );
+    return handleResponse<{ id: string }>(response);
   },
 
   async get(flightId: string): Promise<FlightDetails> {

@@ -39,6 +39,7 @@ export async function toCatCard(
     currentLocationParentName: cat.currentLocation?.parent?.name ?? null,
     createdByUserId: cat.createdByUserId,
     isTest: cat.isTest,
+    isFlightCandidate: cat.isFlightCandidate,
     primaryPhotoUrl: await photoUrls.getPreviewPhotoUrl(cat.primaryPhotoKey),
     primaryPhotoPositionY: cat.primaryPhotoPositionY,
     microchipNumber: cat.microchipNumber,

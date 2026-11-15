@@ -305,6 +305,55 @@ describe("Flights endpoints", () => {
       ]),
     );
     await authAgent.post(`/api/flights/${flightId}/restore`).expect(201);
+    await authAgent.post(`/api/flights/${flightId}/archive`).expect(201);
+    expect(
+      (await authAgent.get(`/api/flights/${flightId}`).expect(200)).body.cats,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ assignmentId: assignment.body.id }),
+      ]),
+    );
+    expect(
+      (await prisma.cat.findUniqueOrThrow({ where: { id: cat.id } }))
+        .isFlightCandidate,
+    ).toBe(false);
+    expect(
+      await prisma.auditEvent.findFirstOrThrow({
+        where: { catId: cat.id, eventType: "flight_candidate_changed" },
+      }),
+    ).toMatchObject({ oldValue: "true", newValue: "false" });
+    expect(
+      (await authAgent.get(`/api/flights/${flightId}/history`).expect(200)).body
+        .data,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "flight_archived",
+          oldValue: null,
+          newValue: null,
+        }),
+      ]),
+    );
+    const archived = await authAgent.get("/api/flights/deleted").expect(200);
+    expect(archived.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: flightId,
+          archivedAt: expect.any(String),
+          deletedAt: null,
+        }),
+      ]),
+    );
+    await authAgent.post(`/api/flights/${flightId}/restore`).expect(201);
+    const restoredFlight = await prisma.flight.findUniqueOrThrow({
+      where: { id: flightId },
+    });
+    expect(restoredFlight.archivedAt).toBeNull();
+    expect(restoredFlight.deletedAt).toBeNull();
+    expect(
+      (await prisma.cat.findUniqueOrThrow({ where: { id: cat.id } }))
+        .isFlightCandidate,
+    ).toBe(true);
     expect(
       (await authAgent.get(`/api/flights/${flightId}`).expect(200)).body.id,
     ).toBe(flightId);

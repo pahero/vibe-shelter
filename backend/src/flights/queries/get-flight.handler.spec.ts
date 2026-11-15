@@ -58,16 +58,47 @@ describe("GetFlightHandler", () => {
     });
   });
 
-  it("rejects a deleted flight", async () => {
+  it("returns assigned cats for a deleted flight", async () => {
     await runInTestTransaction(async (transaction) => {
       const deleted = await createFlightFixture(transaction, {
         deletedAt: new Date(),
       });
       const handler = new GetFlightHandler(transaction as PrismaService);
 
-      await expect(handler.handle(deleted.id, false)).rejects.toThrow(
-        NotFoundException,
+      const cat = await createFlightTestCat(transaction);
+      const assignment = await createFlightAssignment(
+        transaction,
+        deleted.id,
+        cat.id,
       );
+      await expect(handler.handle(deleted.id, false)).resolves.toMatchObject({
+        id: deleted.id,
+        deletedAt: expect.any(String),
+        archivedAt: null,
+        cats: [expect.objectContaining({ assignmentId: assignment.id })],
+      });
+    });
+  });
+
+  it("returns assigned cats for an archived flight", async () => {
+    await runInTestTransaction(async (transaction) => {
+      const archived = await createFlightFixture(transaction, {
+        archivedAt: new Date(),
+      });
+      const handler = new GetFlightHandler(transaction as PrismaService);
+
+      const cat = await createFlightTestCat(transaction);
+      const assignment = await createFlightAssignment(
+        transaction,
+        archived.id,
+        cat.id,
+      );
+      await expect(handler.handle(archived.id, false)).resolves.toMatchObject({
+        id: archived.id,
+        archivedAt: expect.any(String),
+        deletedAt: null,
+        cats: [expect.objectContaining({ assignmentId: assignment.id })],
+      });
     });
   });
 

@@ -234,7 +234,7 @@ export function FlightCandidatesClient({
                       {candidate.currentLocationName || "Not assigned"}
                     </p>
                   </div>
-                  {candidate.flights.length > 0 && (
+                  {!assignedToFlightId && candidate.flights.length > 0 && (
                     <div className="flex shrink-0 gap-1.5">
                       {candidate.flights.map((flight) => (
                         <Link

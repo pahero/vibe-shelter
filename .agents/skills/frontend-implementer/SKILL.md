@@ -34,8 +34,6 @@ Use web-fetch tooling for HTTP requests, health checks, and API endpoint verific
 
 ## Backend API Contract Reference
 
-The live backend OpenAPI spec is the source of truth. When backend is running, inspect `http://localhost:4000/api/openapi.json` and `http://localhost:4000/api/docs` with web-fetch/browser tooling.
-
 ## Default Test Credentials
 
 - Email: `admin@shelter.local`

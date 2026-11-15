@@ -36,6 +36,7 @@ vi.mock("@/lib/api", async () => {
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      archive: vi.fn(),
       restore: vi.fn(),
       assignCat: vi.fn(),
       updateAssignment: vi.fn(),
@@ -52,8 +53,12 @@ const flight: FlightListItem = {
   flightNumber: "CY123",
   flightParent: "Morgan Parent",
   comment: "Morgan paid.",
+  archivedAt: null,
   deletedAt: null,
   catCount: 1,
+  assignedCats: [
+    { id: "cat-1", name: "Mila", nameNumber: 1, primaryPhotoUrl: null },
+  ],
 };
 const detail: FlightDetails = {
   ...flight,
@@ -64,6 +69,7 @@ const detail: FlightDetails = {
       cat: {
         id: "cat-1",
         name: "Mila",
+        nameNumber: 1,
         archivedAt: null,
         microchipNumber: "chip-1",
         passport: true,
@@ -120,6 +126,8 @@ describe("FlightsClient", () => {
     vi.mocked(flightsApi.create).mockReset();
     vi.mocked(flightsApi.update).mockReset();
     vi.mocked(flightsApi.delete).mockReset();
+    vi.mocked(flightsApi.archive).mockReset();
+    vi.mocked(flightsApi.restore).mockReset();
     vi.mocked(flightsApi.deletePhoto).mockReset();
     vi.mocked(flightsApi.assignCat).mockReset();
     vi.mocked(flightsApi.updateAssignment).mockReset();
@@ -139,6 +147,8 @@ describe("FlightsClient", () => {
     vi.mocked(flightsApi.create).mockResolvedValue({ id: "flight-new" });
     vi.mocked(flightsApi.update).mockResolvedValue({ id: flight.id });
     vi.mocked(flightsApi.delete).mockResolvedValue(undefined);
+    vi.mocked(flightsApi.archive).mockResolvedValue({ id: flight.id });
+    vi.mocked(flightsApi.restore).mockResolvedValue({ id: flight.id });
     vi.mocked(flightsApi.deletePhoto).mockResolvedValue(undefined);
     vi.mocked(flightsApi.assignCat).mockResolvedValue({ id: "assignment-new" });
     vi.mocked(flightsApi.updateAssignment).mockResolvedValue({
@@ -176,6 +186,48 @@ describe("FlightsClient", () => {
       await screen.findByText(/Flight CY123 · flight cat traces changed/),
     ).toBeVisible();
     expect(vi.mocked(flightsApi.history)).toHaveBeenCalledWith(flight.id);
+  });
+
+  it("keeps restored standalone flight details visible", async () => {
+    vi.mocked(flightsApi.get)
+      .mockResolvedValueOnce({
+        ...detail,
+        archivedAt: "2026-10-12T00:00:00.000Z",
+      })
+      .mockResolvedValueOnce(detail);
+    render(<FlightsClient standaloneFlightId={flight.id} />);
+
+    expect(await screen.findByText("Archived")).toBeVisible();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Restore flight" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Oct 15, 2026" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("This flight is archived."),
+    ).not.toBeInTheDocument();
+    expect(flightsApi.restore).toHaveBeenCalledWith(flight.id);
+  });
+
+  it("shows a restore conflict on inactive flight details", async () => {
+    vi.mocked(flightsApi.get).mockResolvedValueOnce({
+      ...detail,
+      archivedAt: "2026-10-12T00:00:00.000Z",
+    });
+    vi.mocked(flightsApi.restore).mockRejectedValueOnce(
+      new Error(
+        "Cannot restore this flight because Mila #1 is assigned to another active flight.",
+      ),
+    );
+    render(<FlightsClient standaloneFlightId={flight.id} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Restore flight" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Cannot restore this flight because Mila #1 is assigned to another active flight.",
+    );
   });
 
   it("assigns a cat and updates its fit-to-fly status", async () => {
@@ -265,10 +317,10 @@ describe("FlightsClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Archive flight" }));
     expect(
       await screen.findByText(
-        "This flight is deleted. Its assignments cannot be managed until it is restored.",
+        "This flight is archived. Its assignments cannot be managed until it is restored.",
       ),
     ).toBeVisible();
-    expect(vi.mocked(flightsApi.delete)).toHaveBeenCalledWith(flight.id);
+    expect(vi.mocked(flightsApi.archive)).toHaveBeenCalledWith(flight.id);
   });
 
   it("submits a flight without a number and with an optional comment", async () => {

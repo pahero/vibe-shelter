@@ -19,11 +19,20 @@ vi.mock("@/lib/api", async () => {
   return {
     ...actual,
     catsApi: { ...actual.catsApi, listFlightCandidates: vi.fn() },
-    flightsApi: { ...actual.flightsApi, list: vi.fn() },
+    flightsApi: {
+      ...actual.flightsApi,
+      list: vi.fn(),
+      restore: vi.fn(),
+      archive: vi.fn(),
+      delete: vi.fn(),
+    },
   };
 });
 
 const listFlights = vi.mocked(flightsApi.list);
+const restoreFlight = vi.mocked(flightsApi.restore);
+const archiveFlight = vi.mocked(flightsApi.archive);
+const deleteFlight = vi.mocked(flightsApi.delete);
 const listCandidates = vi.mocked(catsApi.listFlightCandidates);
 const flight: FlightListItem = {
   id: "flight-1",
@@ -32,8 +41,12 @@ const flight: FlightListItem = {
   flightNumber: "CY123",
   flightParent: "Morgan Parent",
   comment: "Meet at the airport entrance.",
+  archivedAt: null,
   deletedAt: null,
   catCount: 1,
+  assignedCats: [
+    { id: "cat-1", name: "Mila", nameNumber: 1, primaryPhotoUrl: null },
+  ],
 };
 
 const assignedCandidate: FlightCandidate = {
@@ -69,8 +82,14 @@ const assignedCandidate: FlightCandidate = {
 describe("FlightsListClient", () => {
   beforeEach(() => {
     listFlights.mockReset();
+    restoreFlight.mockReset();
+    archiveFlight.mockReset();
+    deleteFlight.mockReset();
     listCandidates.mockReset();
     listFlights.mockResolvedValue([flight]);
+    restoreFlight.mockResolvedValue({ id: flight.id });
+    archiveFlight.mockResolvedValue({ id: flight.id });
+    deleteFlight.mockResolvedValue(undefined);
     listCandidates.mockResolvedValue([]);
   });
 
@@ -94,6 +113,10 @@ describe("FlightsListClient", () => {
     ).toBeVisible();
     expect(listFlights).toHaveBeenCalledTimes(1);
     expect(listFlights).toHaveBeenCalledWith(false);
+    expect(
+      screen.getByRole("button", { name: "Archive flight" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete flight" })).toBeVisible();
   });
 
   it("links to flight creation and opens flight rows as details", async () => {
@@ -127,9 +150,22 @@ describe("FlightsListClient", () => {
     expect(within(flightCard!).getByLabelText("F2F: complete")).toBeVisible();
     expect(within(flightCard!).getByLabelText("Traces: missing")).toBeVisible();
     expect(candidateLink.closest("ul")).toHaveClass("mt-0");
+    expect(
+      within(flightCard!).queryByRole("link", { name: "CY123 flight" }),
+    ).not.toBeInTheDocument();
     expect(candidateLink.closest("section")?.parentElement).toHaveClass("mt-1");
     expect(screen.getAllByRole("link", { name: "Mila" })).toHaveLength(1);
     expect(listCandidates).toHaveBeenCalledTimes(1);
+  });
+
+  it("archives and deletes flights from the active list", async () => {
+    render(<FlightsListClient />);
+    await screen.findByText("Oct 15, 2026");
+
+    fireEvent.click(screen.getByRole("button", { name: "Archive flight" }));
+    await waitFor(() => expect(archiveFlight).toHaveBeenCalledWith(flight.id));
+    fireEvent.click(screen.getByRole("button", { name: "Delete flight" }));
+    await waitFor(() => expect(deleteFlight).toHaveBeenCalledWith(flight.id));
   });
 
   it("uses the deleted flights query when the checkbox is selected", async () => {
@@ -137,12 +173,59 @@ describe("FlightsListClient", () => {
     await screen.findByText("Oct 15, 2026");
 
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Show archived flights" }),
+      screen.getByRole("checkbox", { name: "Show inactive flights" }),
     );
 
     await waitFor(() => expect(listFlights).toHaveBeenLastCalledWith(true));
     expect(
       screen.queryByRole("heading", { name: "Flight candidates" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("refreshes flights and candidates when returning to the page", async () => {
+    render(<FlightsListClient />);
+    await screen.findByText("Oct 15, 2026");
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(listFlights).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(listCandidates).toHaveBeenCalledTimes(2));
+  });
+
+  it("restores an archived flight from the archived flights view", async () => {
+    listFlights
+      .mockResolvedValueOnce([flight])
+      .mockResolvedValueOnce([flight])
+      .mockResolvedValueOnce([]);
+    render(<FlightsListClient />);
+    await screen.findByText("Oct 15, 2026");
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Show inactive flights" }),
+    );
+    const restore = await screen.findByRole("button", {
+      name: "Restore flight",
+    });
+    expect(screen.getByRole("link", { name: "Mila #1" })).toBeVisible();
+    fireEvent.click(restore);
+    await waitFor(() => expect(restoreFlight).toHaveBeenCalledWith(flight.id));
+    await waitFor(() => expect(listFlights).toHaveBeenLastCalledWith(true));
+  });
+
+  it("shows a restore conflict in the inactive flights list", async () => {
+    listFlights.mockResolvedValueOnce([flight]).mockResolvedValueOnce([flight]);
+    restoreFlight.mockRejectedValueOnce(
+      new Error(
+        "Cannot restore this flight because Mila #1 is assigned to another active flight.",
+      ),
+    );
+    render(<FlightsListClient />);
+    await screen.findByText("Oct 15, 2026");
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Show inactive flights" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Restore flight" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Cannot restore this flight because Mila #1 is assigned to another active flight.",
+    );
   });
 });
