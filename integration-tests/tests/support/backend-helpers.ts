@@ -73,7 +73,7 @@ async function authHeaders(page: Page): Promise<Record<string, string>> {
 export async function createLocationViaApi(
   page: Page,
   name: string,
-  description?: string,
+  parentId?: string,
 ): Promise<{ id: string; name: string }> {
   const { adminTestUser } = getTestEnv();
   const adminRequest = await request.newContext({ baseURL: BACKEND_URL });
@@ -93,14 +93,15 @@ export async function createLocationViaApi(
       .join("; ");
     const response = await adminRequest.post("/api/locations", {
       headers: { Cookie: cookieHeader },
-      data: { name, ...(description ? { description } : {}) },
+      data: { name, ...(parentId ? { parentId } : {}) },
     });
     if (response.status() !== 201) {
       throw new Error(
         `Could not create location via API (${response.status()}): ${await response.text()}`,
       );
     }
-    return (await response.json()) as { id: string; name: string };
+    const location = (await response.json()) as { id: string };
+    return { ...location, name };
   } finally {
     await adminRequest.dispose();
   }
@@ -116,9 +117,19 @@ export async function createCatViaApi(
     color?: string;
     microchipNumber?: string;
     intakeDetails?: string;
+    intakeSource?:
+      | "SHELTER_VOLUNTEER"
+      | "OWNER_SURRENDER"
+      | "RESCUE_REQUEST"
+      | "VET_CLINIC"
+      | "RESCUE_ORGANISATION"
+      | "FIRST_CONFISCATION"
+      | "SECOND_CONFISCATION"
+      | "ZOI"
+      | "OTHER";
     adopterName?: string;
     adopterAddress?: string;
-    adopterCountry?: "UK" | "EU" | "CY";
+    adopterCountry?: "UK" | "EU" | "CY" | "DE" | "CH";
   },
 ): Promise<{ id: string; name: string }> {
   const locationId =
@@ -133,6 +144,7 @@ export async function createCatViaApi(
       color: input.color ?? null,
       microchipNumber: input.microchipNumber ?? null,
       intakeDetails: input.intakeDetails ?? null,
+      intakeSource: input.intakeSource ?? null,
       adopterName: input.adopterName ?? null,
       adopterAddress: input.adopterAddress ?? null,
       adopterCountry: input.adopterCountry ?? null,

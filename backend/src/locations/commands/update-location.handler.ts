@@ -18,7 +18,6 @@ export class UpdateLocationHandler {
     id: string,
     data: {
       name?: string;
-      description?: string | null;
       ownerIds?: string[];
       status?: string;
       parentId?: string | null;
@@ -33,8 +32,6 @@ export class UpdateLocationHandler {
       if (!name) throw new BadRequestException("Location name is required");
       updateData.name = name;
     }
-    if (data.description !== undefined)
-      updateData.description = data.description?.trim() || null;
     if (data.status !== undefined) {
       if (
         !VALID_STATUSES.includes(data.status as (typeof VALID_STATUSES)[number])
@@ -175,15 +172,6 @@ export class UpdateLocationHandler {
                   action: "name_changed",
                   oldValue: existing.name,
                   newValue: updated.name,
-                },
-              ]
-            : []),
-          ...(existing.description !== updated.description
-            ? [
-                {
-                  action: "description_changed",
-                  oldValue: existing.description ?? "Not set",
-                  newValue: updated.description ?? "Not set",
                 },
               ]
             : []),

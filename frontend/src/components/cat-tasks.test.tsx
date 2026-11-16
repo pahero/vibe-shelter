@@ -130,7 +130,6 @@ describe("CatTasks", () => {
     getLocation.mockResolvedValue({
       id: "location-1",
       name: "House",
-      description: null,
       isTest: false,
       status: "ACTIVE",
       createdAt: "",
@@ -299,7 +298,6 @@ describe("CatTasks", () => {
     resolveLocation({
       id: "old",
       name: "Old",
-      description: null,
       isTest: false,
       status: "ACTIVE",
       createdAt: "",

@@ -1335,12 +1335,12 @@ describe("Cats endpoints", () => {
   it("audits location mutations and soft deletes locations", async () => {
     const created = await authAgent
       .post("/api/locations")
-      .send({ name: unique("audited-location"), description: "Before" })
+      .send({ name: unique("audited-location") })
       .expect(201);
 
     await authAgent
       .patch(`/api/locations/${created.body.id}`)
-      .send({ description: "After", ownerIds: [authUser.id] })
+      .send({ name: "After", ownerIds: [authUser.id] })
       .expect(200);
 
     await authAgent.delete(`/api/locations/${created.body.id}`).expect(204);
@@ -1363,7 +1363,7 @@ describe("Cats endpoints", () => {
           actorId: authUser.id,
         }),
         expect.objectContaining({
-          eventType: "location_description_changed",
+          eventType: "location_name_changed",
           locationId: created.body.id,
           actorId: authUser.id,
         }),

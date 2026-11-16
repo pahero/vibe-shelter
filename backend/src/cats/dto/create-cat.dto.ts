@@ -51,6 +51,9 @@ export class CreateCatDto {
     "RESCUE_REQUEST",
     "VET_CLINIC",
     "RESCUE_ORGANISATION",
+    "FIRST_CONFISCATION",
+    "SECOND_CONFISCATION",
+    "ZOI",
     "OTHER",
   ])
   @IsOptional()
@@ -76,9 +79,9 @@ export class CreateCatDto {
   @IsOptional()
   adopterAddress?: string | null;
 
-  @IsIn(["UK", "EU", "CY"])
+  @IsIn(["UK", "EU", "CY", "DE", "CH"])
   @IsOptional()
-  adopterCountry?: "UK" | "EU" | "CY" | null;
+  adopterCountry?: "UK" | "EU" | "CY" | "DE" | "CH" | null;
 
   @IsBoolean()
   @IsOptional()

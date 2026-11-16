@@ -72,7 +72,6 @@ it("shows owners and saves changes to an existing location", async () => {
             {
               id: "location",
               name: "House",
-              description: null,
               status: "ACTIVE",
               owners: [
                 {
@@ -113,7 +112,7 @@ it("shows owners and saves changes to an existing location", async () => {
   );
 });
 
-it("adds a sublocation from the parent editor using inherited details", async () => {
+it("closes the sublocation form after adding a sublocation", async () => {
   const fetchMock = vi.fn(
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -130,7 +129,6 @@ it("adds a sublocation from the parent editor using inherited details", async ()
             {
               id: "parent",
               name: "House",
-              description: "Main building",
               status: "ACTIVE",
               owners: [
                 {
@@ -172,7 +170,6 @@ it("adds a sublocation from the parent editor using inherited details", async ()
           JSON.stringify(JSON.parse(String(options.body))) ===
           JSON.stringify({
             name: "Room 1",
-            description: "Main building",
             ownerIds: ["first"],
             parentId: "parent",
           })
@@ -180,4 +177,11 @@ it("adds a sublocation from the parent editor using inherited details", async ()
       }),
     ).toBe(true),
   );
+  expect(
+    screen.queryByPlaceholderText("Sublocation name"),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show sublocation form" }),
+  );
+  expect(screen.getByPlaceholderText("Sublocation name")).toBeVisible();
 });

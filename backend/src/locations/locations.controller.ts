@@ -45,7 +45,6 @@ export class LocationsController {
     const command = dto.toCommand();
     return this.createLocationHandler.handle(
       command.name,
-      command.description,
       command.ownerIds,
       user.isTest,
       user.id,

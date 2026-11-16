@@ -15,7 +15,7 @@ describe("CreateLocationHandler", () => {
       });
       const result = await new CreateLocationHandler(
         tx as PrismaService,
-      ).handle(suffix, undefined, [first.id, second.id], false);
+      ).handle(suffix, [first.id, second.id], false);
       const owners = await tx.locationOwner.findMany({
         where: { locationId: result.id },
       });
@@ -33,14 +33,7 @@ describe("CreateLocationHandler", () => {
       });
       const result = await new CreateLocationHandler(
         tx as PrismaService,
-      ).handle(
-        `Child ${suffix}`,
-        undefined,
-        undefined,
-        false,
-        undefined,
-        parent.id,
-      );
+      ).handle(`Child ${suffix}`, undefined, false, undefined, parent.id);
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: result.id } }),
       ).resolves.toMatchObject({ parentId: parent.id });
@@ -80,7 +73,6 @@ describe("CreateLocationHandler", () => {
           handler.handle(
             `New ${parentId}`,
             undefined,
-            undefined,
             false,
             undefined,
             parentId,
@@ -100,7 +92,6 @@ describe("CreateLocationHandler", () => {
       const handler = new CreateLocationHandler(tx as PrismaService);
       const result = await handler.handle(
         "  Foster home  ",
-        "  description  ",
         undefined,
         true,
         actor.id,
@@ -110,7 +101,6 @@ describe("CreateLocationHandler", () => {
         await tx.location.findUniqueOrThrow({ where: { id: result.id } }),
       ).toMatchObject({
         name: "Foster home",
-        description: "description",
         isTest: true,
         status: "ACTIVE",
       });
@@ -133,7 +123,6 @@ describe("CreateLocationHandler", () => {
         new CreateLocationHandler(tx as PrismaService).handle(
           "  ",
           undefined,
-          undefined,
           false,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -145,7 +134,6 @@ describe("CreateLocationHandler", () => {
       await expect(
         new CreateLocationHandler(tx as PrismaService).handle(
           "Valid",
-          undefined,
           ["missing-owner"],
           false,
         ),
@@ -163,7 +151,6 @@ describe("CreateLocationHandler", () => {
       });
       await new CreateLocationHandler(tx as PrismaService).handle(
         `Owned ${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        undefined,
         [owner.id],
         false,
       );
@@ -181,7 +168,6 @@ describe("CreateLocationHandler", () => {
         new CreateLocationHandler(tx as PrismaService).handle(
           name,
           undefined,
-          undefined,
           false,
         ),
       ).rejects.toThrow(ConflictException);
@@ -195,7 +181,6 @@ describe("CreateLocationHandler", () => {
       await expect(
         new CreateLocationHandler(tx as PrismaService).handle(
           name,
-          undefined,
           undefined,
           true,
         ),
@@ -213,7 +198,6 @@ describe("CreateLocationHandler", () => {
       await expect(
         new CreateLocationHandler(tx as PrismaService).handle(
           name,
-          undefined,
           undefined,
           false,
         ),

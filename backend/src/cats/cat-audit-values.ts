@@ -11,7 +11,12 @@ export function formatCatAuditValue(value: unknown): string | null {
     RESCUE_REQUEST: "Rescue request",
     VET_CLINIC: "Vet clinic",
     RESCUE_ORGANISATION: "Rescue organisation",
+    FIRST_CONFISCATION: "First confiscation",
+    SECOND_CONFISCATION: "Second confiscation",
+    ZOI: "Zoi",
     OTHER: "Other",
+    DE: "Germany",
+    CH: "Switzerland",
   };
   if (typeof value === "string" && value in intakeSourceLabels) {
     return intakeSourceLabels[value];

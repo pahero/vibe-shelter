@@ -48,6 +48,7 @@ export type CatFilters = {
   locationId?: string;
   search?: string;
   tagId?: string;
+  intakeSource?: import("@prisma/client").CatIntakeSource;
   skip?: number;
   limit?: number;
   archived?: boolean;
