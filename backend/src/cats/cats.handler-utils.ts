@@ -65,6 +65,12 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.adopterAddress !== undefined
       ? { adopterAddress: optionalTrim(data.adopterAddress) }
       : {}),
+    ...(data.adopterDetails !== undefined
+      ? { adopterDetails: optionalTrim(data.adopterDetails) }
+      : {}),
+    ...(data.flightDetails !== undefined
+      ? { flightDetails: optionalTrim(data.flightDetails) }
+      : {}),
     ...(data.adopterCountry !== undefined
       ? { adopterCountry: data.adopterCountry }
       : {}),

@@ -91,6 +91,8 @@ type CatEditForm = {
   sponsorName: string;
   adopterName: string;
   adopterAddress: string;
+  adopterDetails: string;
+  flightDetails: string;
   adopterCountry: AdopterCountry | "";
   preparationFeePrice: string;
   preparationFeePaid: boolean;
@@ -144,6 +146,8 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     sponsorName: cat.sponsorName ?? "",
     adopterName: cat.adopterName ?? "",
     adopterAddress: cat.adopterAddress ?? "",
+    adopterDetails: cat.adopterDetails ?? "",
+    flightDetails: cat.flightDetails ?? "",
     adopterCountry: cat.adopterCountry ?? "",
     preparationFeePrice: cat.preparationFeePrice?.toString() ?? "",
     preparationFeePaid: cat.preparationFeePaid ?? false,
@@ -906,6 +910,8 @@ export default function CatProfilePage() {
         sponsorName: editForm.sponsorName.trim() || null,
         adopterName: editForm.adopterName.trim() || null,
         adopterAddress: editForm.adopterAddress.trim() || null,
+        adopterDetails: editForm.adopterDetails.trim() || null,
+        flightDetails: editForm.flightDetails.trim() || null,
         adopterCountry: editForm.adopterCountry || null,
         preparationFeePrice:
           editForm.preparationFeePrice === ""
@@ -2271,6 +2277,33 @@ export default function CatProfilePage() {
                           </label>
                           {(
                             [
+                              ["adopterDetails", "Adopter details"],
+                              ["flightDetails", "Flight details"],
+                            ] as const
+                          ).map(([field, label]) => (
+                            <label
+                              key={field}
+                              className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2"
+                            >
+                              {label}
+                              <textarea
+                                rows={4}
+                                value={editForm[field]}
+                                onChange={(event) =>
+                                  setEditForm(
+                                    (prev) =>
+                                      prev && {
+                                        ...prev,
+                                        [field]: event.target.value,
+                                      },
+                                  )
+                                }
+                                className="resize-y rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+                              />
+                            </label>
+                          ))}
+                          {(
+                            [
                               [
                                 "preparationFeePrice",
                                 "Preparation fee price",
@@ -2440,6 +2473,8 @@ export default function CatProfilePage() {
                               : "Not set",
                           ],
                           ["Adopter address", cat.adopterAddress || "Not set"],
+                          ["Adopter details", cat.adopterDetails || "Not set"],
+                          ["Flight details", cat.flightDetails || "Not set"],
                           [
                             "Preparation fee price",
                             cat.preparationFeePrice == null
@@ -2468,10 +2503,13 @@ export default function CatProfilePage() {
                             cat.adoptionForm ? "✅" : "❌",
                           ],
                           ...(cat.archivingReasonName
+                            ? [["Archiving reason", cat.archivingReasonName]]
+                            : []),
+                          ...(cat.archivedAt
                             ? [
                                 [
-                                  "Archiving reason",
-                                  cat.archivingReasonName,
+                                  "Archiving date",
+                                  formatDateShort(cat.archivedAt),
                                 ] as const,
                               ]
                             : []),

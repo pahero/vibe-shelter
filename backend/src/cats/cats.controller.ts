@@ -226,10 +226,13 @@ export class CatsController {
     @Body() dto: ImportTrelloDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    const command = dto.toCommand();
     return this.importTrelloHandler.handle(
-      dto.toCommand(),
+      command.trelloUrl,
       user.id,
       user.isTest,
+      command.transferAdopterByColumnName,
+      command.tagName,
     );
   }
 
@@ -239,8 +242,9 @@ export class CatsController {
     @Body() dto: ImportTrelloDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    const command = dto.toCommand();
     return this.importTrelloAttachmentsHandler.handle(
-      dto.toCommand(),
+      command.trelloUrl,
       user.id,
       user.isTest,
     );

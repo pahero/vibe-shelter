@@ -52,6 +52,7 @@ describe("Trello import parsing", () => {
           { name: "EU Heimtierausweis", state: "complete" },
           { name: "Chip 956000018355049", state: "complete" },
           { name: "Chip 123456789012345", state: "incomplete" },
+          { name: "Adoption contract", state: "complete" },
         ],
       },
       {
@@ -60,6 +61,15 @@ describe("Trello import parsing", () => {
           { name: "Name of adopter Jane Doe", state: "complete" },
           { name: "Address of adopter 5 Main Street", state: "complete" },
           { name: "Name of adopter Ignored", state: "incomplete" },
+          { name: "Preparation fee paid", state: "complete" },
+          { name: "Flight fee paid", state: "incomplete" },
+        ],
+      },
+      {
+        name: "flight informations",
+        checkItems: [
+          { name: "Flight date 12/10/2026", state: "complete" },
+          { name: "Flight number LH123", state: "incomplete" },
         ],
       },
       {
@@ -77,6 +87,12 @@ describe("Trello import parsing", () => {
       microchipNumber: "956000018355049",
       adopterName: "Jane Doe",
       adopterAddress: "5 Main Street",
+      adopterDetails:
+        "Name of adopter Jane Doe\nAddress of adopter 5 Main Street\nPreparation fee paid",
+      flightDetails: "Flight date 12/10/2026",
+      preparationFeePaid: true,
+      flightFeePaid: false,
+      adoptionContract: true,
       vaccines: [
         { type: "CORE", vaccineName: "First vaccination" },
         { type: "RABIES", vaccineName: "Rabies" },

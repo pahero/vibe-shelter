@@ -1,11 +1,24 @@
 import { BadRequestException } from "@nestjs/common";
-import { IsString } from "class-validator";
+import { IsBoolean, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class ImportTrelloDto {
   @IsString()
   trelloUrl!: string;
 
-  toCommand(): string {
+  @IsOptional()
+  @IsBoolean()
+  transferAdopterByColumnName?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  tagName?: string | null;
+
+  toCommand(): {
+    trelloUrl: string;
+    transferAdopterByColumnName: boolean;
+    tagName: string | null;
+  } {
     const trelloUrl = this.trelloUrl?.trim();
     if (
       !trelloUrl ||
@@ -13,6 +26,13 @@ export class ImportTrelloDto {
     ) {
       throw new BadRequestException("trelloUrl must be a Trello card URL");
     }
-    return trelloUrl;
+    const tagName = this.tagName?.trim() || null;
+    if (tagName && tagName.length > 40)
+      throw new BadRequestException("tagName must be at most 40 characters");
+    return {
+      trelloUrl,
+      transferAdopterByColumnName: this.transferAdopterByColumnName === true,
+      tagName,
+    };
   }
 }

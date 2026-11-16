@@ -11,6 +11,7 @@ describe("TrelloClient", () => {
   it("loads a card, its labels, checklists and attachments from the specified card URL", async () => {
     const payload = {
       id: "0123456789abcdef01234567",
+      idList: "list-123",
       name: "Momo",
       url: "https://trello.com/c/abc123/momo",
       shortUrl: "https://trello.com/c/abc123",
@@ -44,13 +45,17 @@ describe("TrelloClient", () => {
             },
           ]),
         ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ name: "EU-completed 2026" })),
       );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      client().getCard("https://trello.com/c/abc123"),
+      client().getCard("https://trello.com/c/abc123", true),
     ).resolves.toMatchObject({
       ...payload,
+      columnName: "EU-completed 2026",
       checklists: [
         {
           name: "Documents",
@@ -81,6 +86,9 @@ describe("TrelloClient", () => {
     expect(attachmentsUrl.pathname).toBe(
       "/1/cards/0123456789abcdef01234567/attachments",
     );
+    const listUrl = new URL(fetchMock.mock.calls[3][0] as URL);
+    expect(listUrl.pathname).toBe("/1/lists/list-123");
+    expect(listUrl.searchParams.get("fields")).toBe("name");
   });
 
   it("rejects malformed card links before calling Trello", async () => {

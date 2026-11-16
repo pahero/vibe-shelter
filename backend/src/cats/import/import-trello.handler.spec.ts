@@ -1,4 +1,5 @@
 import { ConflictException } from "@nestjs/common";
+import { vi } from "vitest";
 import { ConfigService } from "@nestjs/config";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Prisma } from "@prisma/client";
@@ -45,6 +46,23 @@ describe("ImportTrelloHandler", () => {
               { name: "EU passport", state: "complete" },
               { name: "FIV test", state: "complete" },
               { name: "Microchip 956000018355049", state: "complete" },
+              { name: "Adoption contract", state: "complete" },
+            ],
+          },
+          {
+            name: "adopter informations",
+            checkItems: [
+              { name: "Name of adopter Jane Doe", state: "complete" },
+              { name: "Address of adopter 5 Main Street", state: "complete" },
+              { name: "Preparation fee paid", state: "complete" },
+              { name: "Flight fee paid", state: "incomplete" },
+            ],
+          },
+          {
+            name: "flight informations",
+            checkItems: [
+              { name: "Flight date 12/10/2026", state: "complete" },
+              { name: "Flight number LH123", state: "incomplete" },
             ],
           },
           {
@@ -76,6 +94,14 @@ describe("ImportTrelloHandler", () => {
         microchipNumber: "956000018355049",
         passport: true,
         felvFivTestDone: true,
+        adopterName: "Jane Doe",
+        adopterAddress: "5 Main Street",
+        adopterDetails:
+          "Name of adopter Jane Doe\nAddress of adopter 5 Main Street\nPreparation fee paid",
+        flightDetails: "Flight date 12/10/2026",
+        preparationFeePaid: true,
+        flightFeePaid: false,
+        adoptionContract: true,
       });
       await expect(
         tx.location.findUniqueOrThrow({ where: { id: cat.currentLocationId } }),
@@ -109,6 +135,240 @@ describe("ImportTrelloHandler", () => {
     });
   });
 
+  it("trims leading and trailing whitespace from the imported Comment field", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const result = await handler(
+        tx as PrismaService,
+        sampleCard({ desc: "\n\n  Comment text\n\n" }),
+      ).handle("https://trello.com/c/card123", actorId, false);
+
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({ intakeDetails: "Comment text" });
+    });
+  });
+
+  it("creates and assigns the optional import tag to the cat", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const result = await handler(tx as PrismaService, sampleCard()).handle(
+        "https://trello.com/c/card123",
+        actorId,
+        false,
+        false,
+        "Imported batch",
+      );
+      const tag = await tx.catTag.findFirstOrThrow({
+        where: { name: "Imported batch", isTest: false },
+      });
+
+      await expect(
+        tx.catTagOnCat.findFirstOrThrow({
+          where: { catId: result.id, tagId: tag.id },
+        }),
+      ).resolves.toMatchObject({ catId: result.id, tagId: tag.id });
+      await expect(
+        tx.auditEvent.findFirstOrThrow({
+          where: { tagId: tag.id, eventType: "tag_action" },
+        }),
+      ).resolves.toMatchObject({
+        action: "create",
+        actorUserId: actorId,
+      });
+    });
+  });
+
+  it("creates and assigns an optional tag supplied for import", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const result = await handler(tx as PrismaService, sampleCard()).handle(
+        "https://trello.com/c/card123",
+        actorId,
+        false,
+        false,
+        "Imported batch",
+      );
+      const tag = await tx.catTag.findFirstOrThrow({
+        where: { name: "Imported batch", isTest: false },
+      });
+
+      await expect(
+        tx.catTagOnCat.findFirstOrThrow({
+          where: { catId: result.id, tagId: tag.id },
+        }),
+      ).resolves.toMatchObject({ catId: result.id, tagId: tag.id });
+      await expect(
+        tx.auditEvent.findFirstOrThrow({
+          where: { tagId: tag.id, eventType: "tag_action" },
+        }),
+      ).resolves.toMatchObject({
+        action: "create",
+        actorUserId: actorId,
+      });
+    });
+  });
+
+  it("imports adopter country and archive data from the column, not the card name", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const reason = await tx.catArchivingReason.create({
+        data: { name: "Adopted in Germany" },
+      });
+      const card = sampleCard({
+        name: "Lucia #1",
+        desc: "Location: old location",
+        columnName: "DE-completed 2020",
+        checklists: [
+          {
+            name: "Vaccinations",
+            checkItems: [
+              { name: "1st vaccination", state: "complete" },
+              { name: "2nd vaccination", state: "complete" },
+              { name: "Rabies", state: "complete" },
+            ],
+          },
+        ],
+      });
+      const result = await handler(tx as PrismaService, card).handle(
+        "https://trello.com/c/card123",
+        actorId,
+        false,
+        true,
+      );
+
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({
+        name: "Lucia",
+        nameNumber: 1,
+        adopterCountry: "EU",
+        archivedAt: new Date("2020-01-01T00:00:00.000Z"),
+        archivingReasonId: reason.id,
+      });
+      const cat = await tx.cat.findUniqueOrThrow({
+        where: { id: result.id },
+        select: { currentLocation: { select: { name: true } } },
+      });
+      expect(cat.currentLocation.name).toBe("Shelter");
+      await expect(
+        tx.vaccination.findMany({
+          where: { catId: result.id },
+          orderBy: { vaccineName: "asc" },
+          select: { vaccineName: true, date: true },
+        }),
+      ).resolves.toEqual([
+        {
+          vaccineName: "First vaccination",
+          date: new Date("2020-09-01T00:00:00.000Z"),
+        },
+        { vaccineName: "Rabies", date: new Date("2020-09-22T00:00:00.000Z") },
+        {
+          vaccineName: "Second vaccination",
+          date: new Date("2020-09-22T00:00:00.000Z"),
+        },
+      ]);
+    });
+  });
+
+  it("parses hyphenated country names such as EU-completed 2026", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const reason = await tx.catArchivingReason.create({
+        data: { name: "Adopted in the EU" },
+      });
+      const result = await handler(
+        tx as PrismaService,
+        sampleCard({
+          name: "Lucia #1",
+          columnName: "EU-completed 2026",
+        }),
+      ).handle("https://trello.com/c/card123", actorId, false, true);
+
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({
+        name: "Lucia",
+        nameNumber: 1,
+        adopterCountry: "EU",
+        archivedAt: new Date("2026-01-01T00:00:00.000Z"),
+        archivingReasonId: reason.id,
+      });
+    });
+  });
+
+  it("normalizes copied non-breaking spaces in the column name", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const reason = await tx.catArchivingReason.create({
+        data: { name: "Adopted in the EU" },
+      });
+      const result = await handler(
+        tx as PrismaService,
+        sampleCard({
+          name: "Lucia #1",
+          columnName: "EU\u00a0-completed\u00a02026",
+        }),
+      ).handle("https://trello.com/c/card123", actorId, false, true);
+
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({
+        name: "Lucia",
+        nameNumber: 1,
+        adopterCountry: "EU",
+        archivingReasonId: reason.id,
+      });
+    });
+  });
+
+  it("creates a missing adopter archiving reason with a creation audit event", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      const result = await handler(
+        tx as PrismaService,
+        sampleCard({ name: "Lucia #1", columnName: "CY-completed 2020" }),
+      ).handle("https://trello.com/c/card123", actorId, false, true);
+      const reason = await tx.catArchivingReason.findFirstOrThrow({
+        where: { name: "Adopted in CY", isTest: false },
+      });
+
+      await expect(
+        tx.cat.findUniqueOrThrow({ where: { id: result.id } }),
+      ).resolves.toMatchObject({
+        archivingReasonId: reason.id,
+        adopterCountry: "CY",
+      });
+      await expect(
+        tx.auditEvent.findFirstOrThrow({
+          where: {
+            archivingReasonId: reason.id,
+            eventType: "archiving_reason_create",
+          },
+        }),
+      ).resolves.toMatchObject({
+        actorUserId: actorId,
+        oldValue: null,
+        newValue: null,
+      });
+    });
+  });
+
+  it.each([
+    ["unstructured column", "no code or year"],
+    ["unsupported country", "US-completed 2020"],
+  ])("rejects adopter transfer with %s", async (_caseName, columnName) => {
+    await runInTestTransaction(async (tx) => {
+      const actorId = await createActor(tx);
+      await expect(
+        handler(
+          tx as PrismaService,
+          sampleCard({ name: "Lucia #1", columnName }),
+        ).handle("https://trello.com/c/card123", actorId, false, true),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
   it("rejects a Trello card already linked to a cat", async () => {
     await runInTestTransaction(async (tx) => {
       const actorId = await createActor(tx);
@@ -120,8 +380,10 @@ describe("ImportTrelloHandler", () => {
           currentLocation: { create: { name: "Existing location" } },
         },
       });
+      const trello = new TestTrelloClient(card);
+      const getCard = vi.spyOn(trello, "getCard");
       await expect(
-        handler(tx as PrismaService, card).handle(
+        new ImportTrelloHandler(tx as PrismaService, trello, photoUrls).handle(
           "https://trello.com/c/card123",
           actorId,
           false,
@@ -135,6 +397,7 @@ describe("ImportTrelloHandler", () => {
           },
         },
       });
+      expect(getCard).not.toHaveBeenCalled();
     });
   });
 
@@ -265,12 +528,21 @@ describe("ImportTrelloHandler", () => {
         const card = sampleCard({
           attachments: [
             {
+              id: "cover-attachment",
               name: "cat-photo.jpg",
               url: "https://trello.com/1/cards/card123/attachments/file123/download/cat-photo.jpg",
               mimeType: "image/jpeg",
               isUpload: true,
             },
+            {
+              id: "other-attachment",
+              name: "other-photo.jpg",
+              url: "https://trello.com/1/cards/card123/attachments/file124/download/other-photo.jpg",
+              mimeType: "image/jpeg",
+              isUpload: true,
+            },
           ],
+          cover: { idAttachment: "other-attachment" },
         });
         const client = new TestTrelloClient(card, {
           bytes: jpeg,
@@ -286,14 +558,17 @@ describe("ImportTrelloHandler", () => {
           urls,
         ).handle("https://trello.com/c/card123", actorId, false);
 
-        await expect(
-          tx.catPhoto.findMany({ where: { catId: result.id } }),
-        ).resolves.toMatchObject([
+        const photos = await tx.catPhoto.findMany({
+          where: { catId: result.id },
+          orderBy: { fileName: "asc" },
+        });
+        expect(photos).toMatchObject([
           { fileName: "cat-photo.jpg", createdByUserId: actorId },
+          { fileName: "other-photo.jpg", createdByUserId: actorId },
         ]);
         await expect(
           tx.cat.findUniqueOrThrow({ where: { id: result.id } }),
-        ).resolves.toMatchObject({ primaryPhotoKey: expect.any(String) });
+        ).resolves.toMatchObject({ primaryPhotoKey: photos[1].key });
         await expect(
           tx.auditEvent.findMany({ where: { catId: result.id } }),
         ).resolves.toHaveLength(1);
