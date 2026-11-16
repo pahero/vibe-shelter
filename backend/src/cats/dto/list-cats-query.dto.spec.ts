@@ -7,6 +7,7 @@ describe("ListCatsQueryDto.toQuery", () => {
         locationId: " location ",
         search: " Luna ",
         tagId: " tag ",
+        intakeSource: " ZOI ",
         archived: "true",
         skip: "4",
         limit: "20",
@@ -15,6 +16,7 @@ describe("ListCatsQueryDto.toQuery", () => {
       locationId: "location",
       search: "Luna",
       tagId: "tag",
+      intakeSource: "ZOI",
       archived: true,
       skip: 4,
       limit: 20,
@@ -27,6 +29,7 @@ describe("ListCatsQueryDto.toQuery", () => {
       locationId: undefined,
       search: undefined,
       tagId: undefined,
+      intakeSource: undefined,
       skip: undefined,
       limit: undefined,
     });
@@ -35,5 +38,11 @@ describe("ListCatsQueryDto.toQuery", () => {
   it("keeps invalid numbers as NaN for the handler to reject", () => {
     const query = ListCatsQueryDto.toQuery({ skip: "invalid" });
     expect(Number.isNaN(query.skip)).toBe(true);
+  });
+
+  it("rejects an unknown intake source", () => {
+    expect(() => ListCatsQueryDto.toQuery({ intakeSource: "UNKNOWN" })).toThrow(
+      "Invalid intakeSource",
+    );
   });
 });

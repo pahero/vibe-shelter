@@ -14,6 +14,9 @@ export type UpdateCatCommand = {
     | "RESCUE_REQUEST"
     | "VET_CLINIC"
     | "RESCUE_ORGANISATION"
+    | "FIRST_CONFISCATION"
+    | "SECOND_CONFISCATION"
+    | "ZOI"
     | "OTHER"
     | null;
   microchipNumber?: string | null;
@@ -21,7 +24,7 @@ export type UpdateCatCommand = {
   sponsorName?: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
-  adopterCountry?: "UK" | "EU" | "CY" | null;
+  adopterCountry?: "UK" | "EU" | "CY" | "DE" | "CH" | null;
   preparationFeePrice?: number | null;
   preparationFeePaid?: boolean;
   flightFeePrice?: number | null;
@@ -87,6 +90,9 @@ export class UpdateCatDto {
     "RESCUE_REQUEST",
     "VET_CLINIC",
     "RESCUE_ORGANISATION",
+    "FIRST_CONFISCATION",
+    "SECOND_CONFISCATION",
+    "ZOI",
     "OTHER",
   ])
   @IsOptional()
@@ -112,9 +118,9 @@ export class UpdateCatDto {
   @IsOptional()
   adopterAddress?: string | null;
 
-  @IsIn(["UK", "EU", "CY"])
+  @IsIn(["UK", "EU", "CY", "DE", "CH"])
   @IsOptional()
-  adopterCountry?: "UK" | "EU" | "CY" | null;
+  adopterCountry?: "UK" | "EU" | "CY" | "DE" | "CH" | null;
 
   @IsOptional()
   preparationFeePrice?: number | string | null;
@@ -192,6 +198,9 @@ export class UpdateCatDto {
       "RESCUE_REQUEST",
       "VET_CLINIC",
       "RESCUE_ORGANISATION",
+      "FIRST_CONFISCATION",
+      "SECOND_CONFISCATION",
+      "ZOI",
       "OTHER",
     ];
     if (
@@ -206,10 +215,10 @@ export class UpdateCatDto {
     if (
       this.adopterCountry !== undefined &&
       this.adopterCountry !== null &&
-      !["UK", "EU", "CY"].includes(this.adopterCountry)
+      !["UK", "EU", "CY", "DE", "CH"].includes(this.adopterCountry)
     ) {
       throw new BadRequestException(
-        "Invalid adopterCountry. Must be one of: UK, EU, CY",
+        "Invalid adopterCountry. Must be one of: UK, EU, CY, DE, CH",
       );
     }
     const parsePrice = (

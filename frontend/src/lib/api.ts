@@ -32,7 +32,14 @@ export type ListLocationsResponse = {
 };
 
 export type CatSex = "FEMALE" | "MALE" | "UNKNOWN";
-export type AdopterCountry = "UK" | "EU" | "CY";
+export type AdopterCountry = "UK" | "EU" | "CY" | "DE" | "CH";
+export const ADOPTER_COUNTRY_LABELS: Record<AdopterCountry, string> = {
+  UK: "UK",
+  EU: "EU",
+  CY: "CY",
+  DE: "Germany",
+  CH: "Switzerland",
+};
 export type SterilizationStatus = "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
 export type IntakeSource =
   | "SHELTER_VOLUNTEER"
@@ -40,6 +47,9 @@ export type IntakeSource =
   | "RESCUE_REQUEST"
   | "VET_CLINIC"
   | "RESCUE_ORGANISATION"
+  | "FIRST_CONFISCATION"
+  | "SECOND_CONFISCATION"
+  | "ZOI"
   | "OTHER";
 export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
   SHELTER_VOLUNTEER: "FOLC volunteer",
@@ -47,6 +57,9 @@ export const INTAKE_SOURCE_LABELS: Record<IntakeSource, string> = {
   RESCUE_REQUEST: "Rescue request",
   VET_CLINIC: "Vet clinic",
   RESCUE_ORGANISATION: "Rescue organisation",
+  FIRST_CONFISCATION: "First confiscation",
+  SECOND_CONFISCATION: "Second confiscation",
+  ZOI: "Zoi",
   OTHER: "Other",
 };
 
@@ -328,6 +341,7 @@ export type ListCatsParams = {
   locationId?: string;
   search?: string;
   tagId?: string;
+  intakeSource?: IntakeSource;
   archived?: boolean;
   skip?: number;
   limit?: number;
@@ -999,6 +1013,7 @@ export const catsApi = {
     if (params?.locationId) query.append("locationId", params.locationId);
     if (params?.search) query.append("search", params.search);
     if (params?.tagId) query.append("tagId", params.tagId);
+    if (params?.intakeSource) query.append("intakeSource", params.intakeSource);
     if (params?.archived) query.append("archived", "true");
     if (params?.skip !== undefined)
       query.append("skip", params.skip.toString());

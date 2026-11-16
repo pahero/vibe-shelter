@@ -2,6 +2,14 @@ import { BadRequestException } from "@nestjs/common";
 import { UpdateCatDto } from "./update-cat.dto";
 
 describe("UpdateCatDto.toCommand", () => {
+  it.each(["FIRST_CONFISCATION", "SECOND_CONFISCATION", "ZOI"] as const)(
+    "accepts intake source %s",
+    (intakeSource) => {
+      const dto = Object.assign(new UpdateCatDto(), { intakeSource });
+      expect(dto.toCommand().intakeSource).toBe(intakeSource);
+    },
+  );
+
   it("normalizes all populated fields into a flat update command", () => {
     const dto = Object.assign(new UpdateCatDto(), {
       name: "  Luna  ",
@@ -10,7 +18,7 @@ describe("UpdateCatDto.toCommand", () => {
       estimatedBirthDate: "2020-01-02",
       intakeDate: "2024-03-04",
       intakeDetails: "  Clinic  ",
-      intakeSource: "RESCUE_ORGANISATION",
+      intakeSource: "SECOND_CONFISCATION",
       microchipNumber: "  chip  ",
       passport: true,
       sponsorName: "  Sponsor  ",
@@ -36,7 +44,7 @@ describe("UpdateCatDto.toCommand", () => {
       estimatedBirthDate: new Date("2020-01-02"),
       intakeDate: new Date("2024-03-04"),
       intakeDetails: "Clinic",
-      intakeSource: "RESCUE_ORGANISATION",
+      intakeSource: "SECOND_CONFISCATION",
       microchipNumber: "chip",
       passport: true,
       sponsorName: "Sponsor",
@@ -137,7 +145,7 @@ describe("UpdateCatDto.toCommand", () => {
     expect(() => dto.toCommand()).toThrow("Invalid intakeSource");
   });
 
-  it.each(["UK", "EU", "CY"] as const)(
+  it.each(["UK", "EU", "CY", "DE", "CH"] as const)(
     "accepts adopter country %s",
     (adopterCountry) => {
       expect(

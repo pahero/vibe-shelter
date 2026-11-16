@@ -44,6 +44,7 @@ export class ListCatsHandler {
     }
     if (filters.tagId)
       where.tags = { some: { tagId: filters.tagId, deletedAt: null } };
+    if (filters.intakeSource) where.intakeSource = filters.intakeSource;
     const search = filters.search?.trim();
     if (search)
       where.OR = [

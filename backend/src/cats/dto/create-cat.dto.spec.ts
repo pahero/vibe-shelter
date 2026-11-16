@@ -10,7 +10,7 @@ describe("CreateCatDto", () => {
     dto.estimatedBirthDate = "2024-03-15";
     dto.intakeDate = "2026-04-01";
     dto.intakeDetails = "  Found near clinic  ";
-    dto.intakeSource = "RESCUE_ORGANISATION";
+    dto.intakeSource = "FIRST_CONFISCATION";
     dto.microchipNumber = "  900123456789012  ";
     dto.passport = true;
     dto.sponsorName = "  Taylor Sponsor  ";
@@ -31,7 +31,7 @@ describe("CreateCatDto", () => {
       estimatedBirthDate: new Date("2024-03-15"),
       intakeDate: new Date("2026-04-01"),
       intakeDetails: "Found near clinic",
-      intakeSource: "RESCUE_ORGANISATION",
+      intakeSource: "FIRST_CONFISCATION",
       microchipNumber: "900123456789012",
       passport: true,
       sponsorName: "Taylor Sponsor",
@@ -82,7 +82,16 @@ describe("CreateCatDto", () => {
     expect(dto.toCommand("user-1", false).passport).toBe(false);
   });
 
-  it.each(["UK", "EU", "CY"] as const)(
+  it.each(["FIRST_CONFISCATION", "SECOND_CONFISCATION", "ZOI"] as const)(
+    "accepts intake source %s",
+    (intakeSource) => {
+      const dto = createRequiredDto();
+      dto.intakeSource = intakeSource;
+      expect(dto.toCommand("user-1", false).intakeSource).toBe(intakeSource);
+    },
+  );
+
+  it.each(["UK", "EU", "CY", "DE", "CH"] as const)(
     "accepts adopter country %s",
     (adopterCountry) => {
       const dto = createRequiredDto();

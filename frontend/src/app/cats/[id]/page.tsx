@@ -50,6 +50,7 @@ import { SelectWithChevron } from "@/components/select-with-chevron";
 import { LocationOptionsList } from "@/components/location-options-list";
 import {
   AdopterCountry,
+  ADOPTER_COUNTRY_LABELS,
   CatArchivingReason,
   CatCard as CatCardType,
   CatDocument,
@@ -2248,6 +2249,8 @@ export default function CatProfilePage() {
                               <option value="UK">UK</option>
                               <option value="EU">EU</option>
                               <option value="CY">CY</option>
+                              <option value="DE">Germany</option>
+                              <option value="CH">Switzerland</option>
                             </SelectWithChevron>
                           </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800 md:col-span-2">
@@ -2430,7 +2433,12 @@ export default function CatProfilePage() {
                           ["Sponsor name", cat.sponsorName || "Not set"],
                           ["Comment", cat.intakeDetails || "Not set"],
                           ["Adopter name", cat.adopterName || "Not set"],
-                          ["Adopter country", cat.adopterCountry || "Not set"],
+                          [
+                            "Adopter country",
+                            cat.adopterCountry
+                              ? ADOPTER_COUNTRY_LABELS[cat.adopterCountry]
+                              : "Not set",
+                          ],
                           ["Adopter address", cat.adopterAddress || "Not set"],
                           [
                             "Preparation fee price",

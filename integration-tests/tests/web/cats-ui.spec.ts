@@ -225,6 +225,46 @@ test.describe("cats UI", () => {
     ).toHaveCount(2);
   });
 
+  test("filters the cats list by intake source", async ({ page }) => {
+    await authenticateAsStaff(page);
+    const location = await createLocationViaApi(
+      page,
+      uniqueName("Intake source location"),
+    );
+    const zoiCatName = uniqueName("Zoi intake");
+    const otherCatName = uniqueName("Other intake");
+    await createCatViaApi(page, {
+      name: zoiCatName,
+      locationId: location.id,
+      intakeSource: "ZOI",
+    });
+    await createCatViaApi(page, {
+      name: otherCatName,
+      locationId: location.id,
+      intakeSource: "OTHER",
+    });
+
+    await page.goto("/");
+    await page.getByLabel("Search cats").fill(zoiCatName);
+    await page.getByRole("button", { name: "Filters" }).click();
+    await page.getByLabel("Intake source").selectOption("ZOI");
+
+    await expect(
+      page.getByRole("link", { name: `Open profile for ${zoiCatName}` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: `Open profile for ${otherCatName}` }),
+    ).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Clear filters" }).click();
+    await expect(
+      page.getByRole("link", { name: `Open profile for ${zoiCatName}` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: `Open profile for ${otherCatName}` }),
+    ).toBeVisible();
+  });
+
   test("cat profile places the full-width comment before the adoption fields", async ({
     page,
   }) => {
@@ -332,6 +372,7 @@ test.describe("cats UI", () => {
     await page.getByRole("button", { name: "Edit cat profile" }).click();
     await page.getByLabel("Cat name").fill(updatedName);
     await page.getByLabel("Color").fill(updatedColor);
+    await page.getByLabel("Adopter country").selectOption("DE");
     await page.getByRole("button", { name: "Save details" }).click();
 
     await expect(page.getByText("Cat details were updated.")).toBeVisible();
@@ -343,6 +384,7 @@ test.describe("cats UI", () => {
     await expect(
       details.getByText(updatedColor, { exact: true }),
     ).toBeVisible();
+    await expect(details.getByText("Germany", { exact: true })).toBeVisible();
   });
 
   test("user can add a second photo and make it the primary photo", async ({

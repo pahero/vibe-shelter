@@ -100,6 +100,34 @@ describe("ListCatsHandler", () => {
     });
   });
 
+  it("filters cats by intake source", async () => {
+    await runInTestTransaction(async (tx) => {
+      const suffix = crypto.randomUUID();
+      const included = await tx.cat.create({
+        data: {
+          name: `Matching ${suffix}`,
+          intakeSource: "ZOI",
+          currentLocation: { create: { name: `Location ${suffix}` } },
+        },
+      });
+      await tx.cat.create({
+        data: {
+          name: `Not matching ${suffix}`,
+          intakeSource: "FIRST_CONFISCATION",
+          currentLocation: { create: { name: `Other ${suffix}` } },
+        },
+      });
+
+      const result = await new ListCatsHandler(
+        tx as PrismaService,
+        photoUrls,
+      ).handle({ intakeSource: "ZOI", search: suffix }, false);
+
+      expect(result.data.map(({ id }) => id)).toEqual([included.id]);
+      expect(result.total).toBe(1);
+    });
+  });
+
   it("rejects invalid pagination", async () => {
     await runInTestTransaction(async (tx) => {
       await expect(

@@ -101,6 +101,9 @@ enum CatIntakeSource {
   RESCUE_REQUEST
   VET_CLINIC
   RESCUE_ORGANISATION
+  FIRST_CONFISCATION
+  SECOND_CONFISCATION
+  ZOI
   OTHER
 }
 
@@ -108,6 +111,8 @@ enum CatAdopterCountry {
   UK
   EU
   CY
+  DE
+  CH
 }
 
 enum CatSex {

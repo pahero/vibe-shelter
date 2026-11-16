@@ -50,6 +50,9 @@ export function HomeCatsList() {
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const [intakeSourceFilter, setIntakeSourceFilter] = useState<
+    IntakeSource | ""
+  >("");
   const [searchArchived, setSearchArchived] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
@@ -75,6 +78,9 @@ export function HomeCatsList() {
     setSearch(params.get("search") ?? "");
     setLocationFilter(params.get("location") ?? "");
     setTagFilter(params.get("tag") ?? "");
+    setIntakeSourceFilter(
+      (params.get("intakeSource") as IntakeSource | null) ?? "",
+    );
     setSearchArchived(params.get("archived") === "true");
     setHasRestoredListState(true);
   }, []);
@@ -86,6 +92,7 @@ export function HomeCatsList() {
     if (search) params.set("search", search);
     if (locationFilter) params.set("location", locationFilter);
     if (tagFilter) params.set("tag", tagFilter);
+    if (intakeSourceFilter) params.set("intakeSource", intakeSourceFilter);
     if (searchArchived) params.set("archived", "true");
     const query = params.toString();
     window.history.replaceState(
@@ -98,6 +105,7 @@ export function HomeCatsList() {
     search,
     locationFilter,
     tagFilter,
+    intakeSourceFilter,
     searchArchived,
     hasRestoredListState,
   ]);
@@ -206,6 +214,7 @@ export function HomeCatsList() {
           archived: searchArchived,
           search: search.trim() || undefined,
           tagId: tagFilter || undefined,
+          intakeSource: intakeSourceFilter || undefined,
           skip: (currentPage - 1) * CATS_PER_PAGE,
           limit: CATS_PER_PAGE,
         });
@@ -247,6 +256,7 @@ export function HomeCatsList() {
     search,
     searchArchived,
     tagFilter,
+    intakeSourceFilter,
   ]);
 
   const handleCreateCat = async (event: FormEvent<HTMLFormElement>) => {
@@ -314,6 +324,12 @@ export function HomeCatsList() {
     "All locations";
   const tagFilterLabel =
     tags.find((tag) => tag.id === tagFilter)?.name ?? "All tags";
+  const hasActiveFilters =
+    search !== "" ||
+    locationFilter !== "" ||
+    tagFilter !== "" ||
+    intakeSourceFilter !== "" ||
+    searchArchived;
 
   return (
     <section className="w-full animate-rise [animation-delay:160ms]">
@@ -635,7 +651,7 @@ export function HomeCatsList() {
       {isFiltersOpen && (
         <div
           id="home-cat-filters"
-          className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end"
+          className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end"
         >
           <div className="grid gap-1 text-sm font-medium text-gray-800">
             <span id="home-location-filter-label">Location</span>
@@ -749,18 +765,60 @@ export function HomeCatsList() {
             </ContextMenu>
           </div>
 
-          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-gray-800">
-            <input
-              type="checkbox"
-              checked={searchArchived}
+          <label
+            htmlFor="home-intake-source-filter"
+            className="grid gap-1 text-sm font-medium text-gray-800"
+          >
+            Intake source
+            <SelectWithChevron
+              id="home-intake-source-filter"
+              value={intakeSourceFilter}
               onChange={(event) => {
-                setSearchArchived(event.target.checked);
+                setIntakeSourceFilter(event.target.value as IntakeSource | "");
                 setCurrentPage(1);
               }}
-              className="h-4 w-4 rounded border-[#d4c7b4] text-[#d05a2c] focus:ring-[#d05a2c]"
-            />
-            Search archived
+              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+            >
+              <option value="">All intake sources</option>
+              {Object.entries(INTAKE_SOURCE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </SelectWithChevron>
           </label>
+
+          <div className="flex items-center justify-between gap-3 self-end pb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+              <input
+                type="checkbox"
+                checked={searchArchived}
+                onChange={(event) => {
+                  setSearchArchived(event.target.checked);
+                  setCurrentPage(1);
+                }}
+                className="h-4 w-4 rounded border-[#d4c7b4] text-[#d05a2c] focus:ring-[#d05a2c]"
+              />
+              Search archived
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setLocationFilter("");
+                setTagFilter("");
+                setIntakeSourceFilter("");
+                setSearchArchived(false);
+                setCurrentPage(1);
+                setIsLocationFilterOpen(false);
+                setIsTagFilterOpen(false);
+              }}
+              disabled={!hasActiveFilters}
+              className="rounded-lg px-2 py-1 text-xs font-semibold text-[#b24a20] transition hover:bg-[#fff0e8] disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
+            >
+              Clear filters
+            </button>
+          </div>
         </div>
       )}
 
@@ -811,7 +869,7 @@ export function HomeCatsList() {
               key={cat.id}
               cat={cat}
               showTags={false}
-              profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(searchArchived ? { archived: "true" } : {}) }).toString()}`}
+              profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(intakeSourceFilter ? { intakeSource: intakeSourceFilter } : {}), ...(searchArchived ? { archived: "true" } : {}) }).toString()}`}
             />
           ))}
         </div>
