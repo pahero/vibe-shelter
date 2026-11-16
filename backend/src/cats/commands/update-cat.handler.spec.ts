@@ -59,6 +59,8 @@ describe("UpdateCatHandler", () => {
           sponsorName: "Sponsor",
           adopterName: "Foster",
           adopterAddress: "Address",
+          adopterDetails: "  Adopter details  ",
+          flightDetails: "  Flight details  ",
           adopterCountry: "UK",
           felvFivTestDone: true,
           sterilizationStatus: "STERILIZED",
@@ -75,6 +77,8 @@ describe("UpdateCatHandler", () => {
         color: "Black",
         adopterName: "Foster",
         adopterAddress: "Address",
+        adopterDetails: "Adopter details",
+        flightDetails: "Flight details",
         adopterCountry: "UK",
         felvFivTestDone: true,
         currentLocationId: location.id,
@@ -91,7 +95,7 @@ describe("UpdateCatHandler", () => {
       const events = await tx.auditEvent.findMany({
         where: { catId: cat.id },
       });
-      expect(events).toHaveLength(16);
+      expect(events).toHaveLength(18);
       expect(events).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -103,6 +107,16 @@ describe("UpdateCatHandler", () => {
             eventType: "adopter_name_changed",
             oldValue: "Not set",
             newValue: "Foster",
+          }),
+          expect.objectContaining({
+            eventType: "adopter_details_changed",
+            oldValue: "Not set",
+            newValue: "Adopter details",
+          }),
+          expect.objectContaining({
+            eventType: "flight_details_changed",
+            oldValue: "Not set",
+            newValue: "Flight details",
           }),
           expect.objectContaining({
             eventType: "adopter_country_changed",

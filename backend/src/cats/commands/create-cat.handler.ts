@@ -133,6 +133,8 @@ export class CreateCatHandler {
       sponsorName: cat.sponsorName,
       adopterName: cat.adopterName,
       adopterAddress: cat.adopterAddress,
+      adopterDetails: cat.adopterDetails,
+      flightDetails: cat.flightDetails,
       adopterCountry: cat.adopterCountry,
       preparationFeePrice:
         cat.preparationFeePrice === null

@@ -368,6 +368,72 @@ describe("ListAllCatHistoryQuery", () => {
     });
   });
 
+  it("maps adopter and flight details audit event types as cat history events", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({
+        data: {
+          email: `details-history-${crypto.randomUUID()}@example.com`,
+          fullName: "Details History Actor",
+        },
+      });
+      const cat = await tx.cat.create({
+        data: {
+          name: `Details History Cat ${crypto.randomUUID()}`,
+          currentLocation: { create: { name: "Details History Location" } },
+        },
+      });
+      await tx.auditEvent.createMany({
+        data: [
+          {
+            eventType: "adopter_details_changed",
+            catId: cat.id,
+            actorUserId: actor.id,
+            isTest: true,
+            oldValue: "Not set",
+            newValue: "Jane Doe",
+          },
+          {
+            eventType: "flight_details_changed",
+            catId: cat.id,
+            actorUserId: actor.id,
+            isTest: true,
+            oldValue: "Not set",
+            newValue: "Flight LH123",
+          },
+        ],
+      });
+
+      const query = new ListAllCatHistoryQuery(
+        tx as Prisma.TransactionClient & PrismaClient,
+        new CatPhotoUrlService(
+          new ConfigService({ s3: { bucketName } }),
+          s3Client,
+        ),
+      );
+      const result = await query.execute({
+        catId: cat.id,
+        currentUserIsTest: true,
+      });
+
+      expect(result.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            catId: cat.id,
+            eventType: "adopter_details_changed",
+            oldValue: "Not set",
+            newValue: "Jane Doe",
+          }),
+          expect.objectContaining({
+            catId: cat.id,
+            eventType: "flight_details_changed",
+            oldValue: "Not set",
+            newValue: "Flight LH123",
+          }),
+        ]),
+      );
+    });
+  });
+
   it("rejects event types that do not have a DTO mapping", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({

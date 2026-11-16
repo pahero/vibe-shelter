@@ -21,6 +21,8 @@ export type CatCard = {
   sponsorName: string | null;
   adopterName: string | null;
   adopterAddress: string | null;
+  adopterDetails: string | null;
+  flightDetails: string | null;
   adopterCountry: import("@prisma/client").CatAdopterCountry | null;
   preparationFeePrice: number | null;
   preparationFeePaid: boolean;

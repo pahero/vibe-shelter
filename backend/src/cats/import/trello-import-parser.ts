@@ -58,6 +58,11 @@ export type CheckedImportData = {
   microchipNumber: string | null;
   adopterName: string | null;
   adopterAddress: string | null;
+  adopterDetails: string | null;
+  flightDetails: string | null;
+  preparationFeePaid: boolean;
+  flightFeePaid: boolean;
+  adoptionContract: boolean;
   vaccines: Array<{ type: "CORE" | "RABIES"; vaccineName: string }>;
 };
 
@@ -70,13 +75,30 @@ export function readCheckedData(
     microchipNumber: null,
     adopterName: null,
     adopterAddress: null,
+    adopterDetails: null,
+    flightDetails: null,
+    preparationFeePaid: false,
+    flightFeePaid: false,
+    adoptionContract: false,
     vaccines: [],
   };
   const vaccineNames = new Set<string>();
+  const adopterDetails: string[] = [];
+  const flightDetails: string[] = [];
   for (const checklist of checklists) {
+    const checklistKey = normalized(checklist.name);
     for (const item of checklist.checkItems ?? []) {
       if (item.state.toLowerCase() !== "complete") continue;
       const key = normalized(item.name);
+      if (checklistKey.includes("adopter information")) {
+        adopterDetails.push(item.name.trim());
+        if (/\bpreparation fee paid\b/.test(key))
+          result.preparationFeePaid = true;
+        if (/\bflight fee paid\b/.test(key)) result.flightFeePaid = true;
+      }
+      if (checklistKey.includes("flight information"))
+        flightDetails.push(item.name.trim());
+      if (/\badoption contract\b/.test(key)) result.adoptionContract = true;
       if (/\b(fiv|felv)\b/.test(key) && /test/.test(key))
         result.felvFivTestDone = true;
       if (/\b(eu pass|eu heimtierausweis|passport)\b/.test(key))
@@ -88,7 +110,7 @@ export function readCheckedData(
         );
         if (number) result.microchipNumber = number;
       }
-      if (checklist.name.toLowerCase().includes("adopter")) {
+      if (checklistKey.includes("adopter")) {
         const name = item.name.match(/^name\s+of\s+adopter\s+(.+)$/i);
         const address = item.name.match(/^address\s+of\s+adopter\s+(.+)$/i);
         if (name?.[1].trim()) result.adopterName = name[1].trim();
@@ -110,7 +132,7 @@ export function readCheckedData(
             result.adopterName ??= item.name.trim();
         }
       }
-      if (checklist.name.toLowerCase().includes("vaccination")) {
+      if (checklistKey.includes("vaccination")) {
         const vaccine = key.startsWith("1st vaccination")
           ? "First vaccination"
           : key.startsWith("2nd vaccination")
@@ -128,5 +150,9 @@ export function readCheckedData(
       }
     }
   }
+  result.adopterDetails = adopterDetails.length
+    ? adopterDetails.join("\n")
+    : null;
+  result.flightDetails = flightDetails.length ? flightDetails.join("\n") : null;
   return result;
 }

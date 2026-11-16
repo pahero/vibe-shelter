@@ -90,6 +90,8 @@ export type CatCard = {
   sponsorName: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
+  adopterDetails?: string | null;
+  flightDetails?: string | null;
   adopterCountry?: AdopterCountry | null;
   preparationFeePrice?: number | null;
   preparationFeePaid?: boolean;
@@ -367,6 +369,8 @@ export type CreateCatDto = {
   sponsorName?: string | null;
   adopterName?: string | null;
   adopterAddress?: string | null;
+  adopterDetails?: string | null;
+  flightDetails?: string | null;
   adopterCountry?: AdopterCountry | null;
   sterilizationStatus: SterilizationStatus;
   currentLocationId?: string | null;
@@ -1055,13 +1059,21 @@ export const catsApi = {
     return handleResponse<MutationResult>(response);
   },
 
-  async importTrelloCard(trelloUrl: string): Promise<MutationResult> {
+  async importTrelloCard(
+    trelloUrl: string,
+    transferAdopterByColumnName = false,
+    tagName: string | null = null,
+  ): Promise<MutationResult> {
     const response = await authenticatedFetch(
       `${BACKEND_URL}/api/cats/import/trello`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trelloUrl }),
+        body: JSON.stringify({
+          trelloUrl,
+          transferAdopterByColumnName,
+          tagName,
+        }),
       },
     );
     return handleResponse<MutationResult>(response);

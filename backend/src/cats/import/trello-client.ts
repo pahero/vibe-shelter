@@ -9,6 +9,8 @@ import type { TrelloChecklist } from "./trello-import-parser";
 export type TrelloCard = {
   id: string;
   name: string;
+  idList?: string;
+  columnName?: string;
   url: string;
   shortUrl?: string;
   desc: string;
@@ -16,9 +18,11 @@ export type TrelloCard = {
   labels?: Array<{ id: string; name: string }>;
   checklists: TrelloChecklist[];
   attachments: TrelloAttachment[];
+  cover?: { idAttachment?: string | null } | null;
 };
 
 export type TrelloAttachment = {
+  id?: string;
   url?: string;
   name?: string;
   mimeType?: string;
@@ -29,7 +33,10 @@ export type TrelloAttachment = {
 export class TrelloClient {
   constructor(private readonly config: ConfigService) {}
 
-  async getCard(cardUrl: string): Promise<TrelloCard> {
+  async getCard(
+    cardUrl: string,
+    includeColumnName = false,
+  ): Promise<TrelloCard> {
     const match = cardUrl.match(
       /^https:\/\/trello\.com\/c\/([A-Za-z0-9]+)(?:\/[^/?#]+)?$/,
     );
@@ -66,7 +73,30 @@ export class TrelloClient {
     const card = (await response.json()) as TrelloCard;
     card.checklists = await this.getCardChecklists(card.id, key, token);
     card.attachments = await this.getCardAttachments(card.id, key, token);
+    card.columnName =
+      includeColumnName && card.idList
+        ? await this.getListName(card.idList, key, token)
+        : undefined;
     return card;
+  }
+
+  private async getListName(
+    listId: string,
+    key: string,
+    token: string,
+  ): Promise<string> {
+    const endpoint = new URL(`https://api.trello.com/1/lists/${listId}`);
+    endpoint.searchParams.set("key", key);
+    endpoint.searchParams.set("token", token);
+    endpoint.searchParams.set("fields", "name");
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new ServiceUnavailableException(
+        `Trello list request failed (${response.status})`,
+      );
+    }
+    const list = (await response.json()) as { name: string };
+    return list.name;
   }
 
   private async getCardChecklists(

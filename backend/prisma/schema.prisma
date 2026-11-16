@@ -188,6 +188,8 @@ model Cat {
   sponsorName           String?
   adopterName           String?
   adopterAddress        String?
+  adopterDetails        String?
+  flightDetails         String?
   adopterCountry        CatAdopterCountry?
   preparationFeePrice   Decimal?              @db.Decimal(10, 2)
   preparationFeePaid    Boolean               @default(false)

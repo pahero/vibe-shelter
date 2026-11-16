@@ -7,7 +7,11 @@ describe("ImportTrelloDto", () => {
     const dto = Object.assign(new ImportTrelloDto(), {
       trelloUrl: " https://trello.com/c/abc123 ",
     });
-    expect(dto.toCommand()).toBe("https://trello.com/c/abc123");
+    expect(dto.toCommand()).toEqual({
+      trelloUrl: "https://trello.com/c/abc123",
+      transferAdopterByColumnName: false,
+      tagName: null,
+    });
   });
 
   it("is accepted by the global whitelist validation pipe", async () => {
@@ -23,7 +27,53 @@ describe("ImportTrelloDto", () => {
     const dto = Object.assign(new ImportTrelloDto(), {
       trelloUrl: "https://trello.com/c/abc123/cat-name",
     });
-    expect(dto.toCommand()).toBe("https://trello.com/c/abc123/cat-name");
+    expect(dto.toCommand()).toEqual({
+      trelloUrl: "https://trello.com/c/abc123/cat-name",
+      transferAdopterByColumnName: false,
+      tagName: null,
+    });
+  });
+
+  it("keeps adopter-by-column transfer disabled by default and accepts true", () => {
+    const dto = Object.assign(new ImportTrelloDto(), {
+      trelloUrl: "https://trello.com/c/abc123",
+      transferAdopterByColumnName: true,
+    });
+    expect(dto.toCommand()).toEqual({
+      trelloUrl: "https://trello.com/c/abc123",
+      transferAdopterByColumnName: true,
+      tagName: null,
+    });
+  });
+
+  it("trims an optional tag name and treats blank as omitted", () => {
+    expect(
+      Object.assign(new ImportTrelloDto(), {
+        trelloUrl: "https://trello.com/c/abc123",
+        tagName: "  Imported from board  ",
+      }).toCommand(),
+    ).toEqual({
+      trelloUrl: "https://trello.com/c/abc123",
+      transferAdopterByColumnName: false,
+      tagName: "Imported from board",
+    });
+    expect(
+      Object.assign(new ImportTrelloDto(), {
+        trelloUrl: "https://trello.com/c/abc123",
+        tagName: "   ",
+      }).toCommand().tagName,
+    ).toBeNull();
+  });
+
+  it("rejects a tag name longer than 40 characters", async () => {
+    const dto = Object.assign(new ImportTrelloDto(), {
+      trelloUrl: "https://trello.com/c/abc123",
+      tagName: "a".repeat(41),
+    });
+    expect(() => dto.toCommand()).toThrow(BadRequestException);
+    await expect(
+      validate(dto, { whitelist: true, forbidNonWhitelisted: true }),
+    ).resolves.toHaveLength(1);
   });
 
   it.each([

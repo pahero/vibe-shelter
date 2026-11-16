@@ -143,6 +143,8 @@ export class ListAllCatHistoryQuery {
           case "sponsor_name_changed":
           case "adopter_name_changed":
           case "adopter_address_changed":
+          case "adopter_details_changed":
+          case "flight_details_changed":
           case "adopter_country_changed":
           case "preparation_fee_price_changed":
           case "preparation_fee_paid_changed":

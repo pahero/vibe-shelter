@@ -25,6 +25,8 @@ export type UpdateCatCommand = {
   adopterName?: string | null;
   adopterAddress?: string | null;
   adopterCountry?: "UK" | "EU" | "CY" | "DE" | "CH" | null;
+  adopterDetails?: string | null;
+  flightDetails?: string | null;
   preparationFeePrice?: number | null;
   preparationFeePaid?: boolean;
   flightFeePrice?: number | null;
@@ -117,6 +119,14 @@ export class UpdateCatDto {
   @IsString()
   @IsOptional()
   adopterAddress?: string | null;
+
+  @IsString()
+  @IsOptional()
+  adopterDetails?: string | null;
+
+  @IsString()
+  @IsOptional()
+  flightDetails?: string | null;
 
   @IsIn(["UK", "EU", "CY", "DE", "CH"])
   @IsOptional()
@@ -275,6 +285,12 @@ export class UpdateCatDto {
         : {}),
       ...(this.adopterAddress !== undefined
         ? { adopterAddress: optionalText(this.adopterAddress) }
+        : {}),
+      ...(this.adopterDetails !== undefined
+        ? { adopterDetails: optionalText(this.adopterDetails) }
+        : {}),
+      ...(this.flightDetails !== undefined
+        ? { flightDetails: optionalText(this.flightDetails) }
         : {}),
       ...(this.adopterCountry !== undefined
         ? { adopterCountry: this.adopterCountry }

@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from "@nestjs/common";
-import { CatSex, SterilizationStatus } from "@prisma/client";
+import { CatAdopterCountry, CatSex, SterilizationStatus } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { runInNewTransaction } from "../../database/helpers";
 import { CAT_AUDIT_EVENT_TYPES } from "../cat-audit-event-types";
@@ -27,8 +27,31 @@ export class ImportTrelloHandler {
     trelloUrl: string,
     userId: string,
     isTest: boolean,
+    transferAdopterByColumnName = false,
+    tagName: string | null = null,
   ): Promise<{ id: string }> {
-    const card = await this.trello.getCard(trelloUrl);
+    const requestedShortId = trelloCardShortId(trelloUrl);
+    if (requestedShortId) {
+      const existingCats = await this.prisma.cat.findMany({
+        where: {
+          trelloUrl: {
+            startsWith: `https://trello.com/c/${requestedShortId}`,
+          },
+        },
+        select: { id: true, name: true, nameNumber: true, trelloUrl: true },
+      });
+      const duplicate = existingCats.find(
+        (candidate) =>
+          candidate.trelloUrl &&
+          trelloCardShortId(candidate.trelloUrl) === requestedShortId,
+      );
+      if (duplicate) throw this.duplicateCardException(duplicate);
+    }
+
+    const card = await this.trello.getCard(
+      trelloUrl,
+      transferAdopterByColumnName,
+    );
     const cardUrl = card.shortUrl ?? `https://trello.com/c/${card.id}`;
     const possibleCardUrls = [...new Set([cardUrl, card.url, trelloUrl])];
     const possibleShortIds = [
@@ -38,6 +61,9 @@ export class ImportTrelloHandler {
           .filter((shortId): shortId is string => shortId !== null),
       ),
     ];
+    const adopterTransfer = transferAdopterByColumnName
+      ? parseAdopterTransferName(card.columnName ?? "")
+      : null;
     const parsedName = parseCardName(card.name);
     const description = parseDescription(card.desc ?? "");
     const checked = readCheckedData(card.checklists ?? []);
@@ -52,7 +78,9 @@ export class ImportTrelloHandler {
       vaccineRecords.push({ type: "RABIES", vaccineName: "Rabies" });
     }
     const vaccineDate = previousMonthDate();
-    const locationName = description.locationName ?? "Sanctuary";
+    const locationName = adopterTransfer
+      ? "Shelter"
+      : (description.locationName ?? "Sanctuary");
     const preparedAttachments = await mapWithConcurrency(
       card.attachments ?? [],
       5,
@@ -139,6 +167,30 @@ export class ImportTrelloHandler {
     const imported = await runInNewTransaction(this.prisma, async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`trello:${card.id}`}))`;
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${isTest}:${parsedName.name}`}))`;
+      let archivingReason = adopterTransfer
+        ? await tx.catArchivingReason.findFirst({
+            where: {
+              name: adopterTransfer.reasonName,
+              isTest,
+              deletedAt: null,
+            },
+            select: { id: true },
+          })
+        : null;
+      if (adopterTransfer && !archivingReason) {
+        archivingReason = await tx.catArchivingReason.create({
+          data: { name: adopterTransfer.reasonName, isTest },
+          select: { id: true },
+        });
+        await tx.auditEvent.create({
+          data: {
+            archivingReasonId: archivingReason.id,
+            actorUserId: userId,
+            isTest,
+            eventType: CAT_AUDIT_EVENT_TYPES.archivingReasonCreate,
+          },
+        });
+      }
       const possibleDuplicates = await tx.cat.findMany({
         where: {
           OR: [
@@ -156,15 +208,7 @@ export class ImportTrelloHandler {
           trelloCardShortId(candidate.trelloUrl) ?? "",
         );
       });
-      if (duplicate)
-        throw new ConflictException({
-          message: `A cat with this Trello card already exists. [duplicateCatId=${duplicate.id}]`,
-          duplicateCat: {
-            id: duplicate.id,
-            name: duplicate.name,
-            nameNumber: duplicate.nameNumber,
-          },
-        });
+      if (duplicate) throw this.duplicateCardException(duplicate);
       if (checked.microchipNumber) {
         const chipCat = await tx.cat.findUnique({
           where: { microchipNumber: checked.microchipNumber },
@@ -231,11 +275,19 @@ export class ImportTrelloHandler {
             ? SterilizationStatus.STERILIZED
             : SterilizationStatus.UNKNOWN,
           sponsorName: description.sponsorName,
-          intakeDetails: card.desc || null,
+          intakeDetails: card.desc.trim() || null,
           microchipNumber: checked.microchipNumber,
           passport: checked.passport,
           adopterName: checked.adopterName,
           adopterAddress: checked.adopterAddress,
+          adopterDetails: checked.adopterDetails,
+          flightDetails: checked.flightDetails,
+          preparationFeePaid: checked.preparationFeePaid,
+          flightFeePaid: checked.flightFeePaid,
+          adoptionContract: checked.adoptionContract,
+          adopterCountry: adopterTransfer?.country ?? null,
+          archivedAt: adopterTransfer?.archivedAt ?? null,
+          archivingReasonId: archivingReason?.id ?? null,
           felvFivTestDone: checked.felvFivTestDone,
           currentLocationId: location.id,
           createdByUserId: userId,
@@ -252,9 +304,14 @@ export class ImportTrelloHandler {
         },
       });
 
-      const desiredTags = IMPORT_TAGS.filter((name) =>
-        labelNames.has(name.toLocaleLowerCase()),
-      );
+      const desiredTags = [
+        ...new Set([
+          ...IMPORT_TAGS.filter((name) =>
+            labelNames.has(name.toLocaleLowerCase()),
+          ),
+          ...(tagName?.trim() ? [tagName.trim()] : []),
+        ]),
+      ];
       for (const name of desiredTags) {
         let tag = await tx.catTag.findFirst({
           where: { name, isTest },
@@ -312,15 +369,25 @@ export class ImportTrelloHandler {
             createdByUserId: userId,
             updatedByUserId: userId,
             type: vaccine.type,
-            date: vaccineDate,
+            date: adopterTransfer
+              ? adopterTransferVaccineDate(
+                  vaccine.vaccineName,
+                  adopterTransfer.archivedAt.getUTCFullYear(),
+                  vaccineDate,
+                )
+              : vaccineDate,
             vaccineName: vaccine.vaccineName,
           },
         });
       }
 
-      let primaryPhotoKey: string | null = null;
-      for (const attachment of preparedAttachments) {
+      let firstMediaKey: string | null = null;
+      let trelloCoverKey: string | null = null;
+      for (const [index, attachment] of preparedAttachments.entries()) {
         if (!attachment) continue;
+        const isCover =
+          card.attachments?.[index]?.id !== undefined &&
+          card.attachments?.[index]?.id === card.cover?.idAttachment;
         if (attachment.kind === "document") {
           const key = await this.photoUrls.uploadDocument({
             catId: cat.id,
@@ -351,7 +418,8 @@ export class ImportTrelloHandler {
               createdByUserId: userId,
             },
           });
-          primaryPhotoKey ??= key;
+          firstMediaKey ??= key;
+          if (isCover) trelloCoverKey = key;
         } else {
           const variants = await this.photoUrls.uploadPhotoVariants({
             catId: cat.id,
@@ -369,9 +437,11 @@ export class ImportTrelloHandler {
               createdByUserId: userId,
             },
           });
-          primaryPhotoKey ??= variants.key;
+          firstMediaKey ??= variants.key;
+          if (isCover) trelloCoverKey = variants.key;
         }
       }
+      const primaryPhotoKey = trelloCoverKey ?? firstMediaKey;
       if (primaryPhotoKey) {
         await tx.cat.update({
           where: { id: cat.id },
@@ -385,6 +455,77 @@ export class ImportTrelloHandler {
     });
     return imported;
   }
+
+  private duplicateCardException(duplicate: {
+    id: string;
+    name: string;
+    nameNumber: number;
+  }): ConflictException {
+    return new ConflictException({
+      message: `A cat with this Trello card already exists. [duplicateCatId=${duplicate.id}]`,
+      duplicateCat: {
+        id: duplicate.id,
+        name: duplicate.name,
+        nameNumber: duplicate.nameNumber,
+      },
+    });
+  }
+}
+
+function adopterTransferVaccineDate(
+  vaccineName: string,
+  year: number,
+  fallback: Date,
+): Date {
+  if (vaccineName === "First vaccination")
+    return new Date(Date.UTC(year, 8, 1));
+  if (vaccineName === "Second vaccination" || vaccineName === "Rabies")
+    return new Date(Date.UTC(year, 8, 22));
+  return fallback;
+}
+
+function parseAdopterTransferName(value: string): {
+  country: CatAdopterCountry;
+  reasonName: string;
+  archivedAt: Date;
+} {
+  const normalizedName = value
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\u00A0/g, " ")
+    .trim();
+  const match = normalizedName.match(/^([A-Za-z]{2})(.*?)(\d{4})\s*$/);
+  if (!match)
+    throw new ConflictException(
+      `Trello column name "${value}" must start with a country code and end with a four-digit adoption year`,
+    );
+  const code = match[1].toUpperCase();
+  const countryByCode: Record<string, CatAdopterCountry> = {
+    CY: CatAdopterCountry.CY,
+    EU: CatAdopterCountry.EU,
+    UK: CatAdopterCountry.UK,
+    DE: CatAdopterCountry.EU,
+    CH: CatAdopterCountry.EU,
+  };
+  const country = countryByCode[code];
+  if (!country)
+    throw new ConflictException(`Country code "${code}" is not supported`);
+  const reasonByCode: Record<string, string> = {
+    CY: "Adopted in CY",
+    DE: "Adopted in Germany",
+    CH: "Adopted in Switzerland",
+    EU: "Adopted in the EU",
+    UK: "Adopted in the UK",
+  };
+  const year = Number(match[3]);
+  const currentYear = new Date().getUTCFullYear();
+  if (year < 1900 || year > currentYear)
+    throw new ConflictException(`Adoption year "${match[3]}" is invalid`);
+  return {
+    country,
+    reasonName: reasonByCode[code],
+    archivedAt: new Date(Date.UTC(year, 0, 1)),
+  };
 }
 
 function previousMonthDate(): Date {

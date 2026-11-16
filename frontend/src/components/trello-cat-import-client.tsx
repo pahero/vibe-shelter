@@ -6,15 +6,25 @@ import { type DuplicateCatReference, catsApi } from "@/lib/api";
 import { ApiErrorHandler } from "@/lib/utils";
 
 export function TrelloCatImportClient() {
-  const [trelloUrl, setTrelloUrl] = useState("");
+  const [trelloUrls, setTrelloUrls] = useState("");
+  const [tagName, setTagName] = useState("");
+  const [transferAdopterByColumnName, setTransferAdopterByColumnName] =
+    useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [duplicateCat, setDuplicateCat] =
-    useState<DuplicateCatReference | null>(null);
-  const [importedCat, setImportedCat] = useState<{
-    id: string;
-    name: string;
+  const [importProgress, setImportProgress] = useState<{
+    completed: number;
+    total: number;
+    currentUrl: string | null;
   } | null>(null);
+  const [importResults, setImportResults] = useState<
+    Array<{
+      trelloUrl: string;
+      cat: { id: string; name: string } | null;
+      error: string | null;
+      duplicateCat: DuplicateCatReference | null;
+      skipped: boolean;
+    }>
+  >([]);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [isImportingAttachments, setIsImportingAttachments] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
@@ -22,21 +32,58 @@ export function TrelloCatImportClient() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
-    setDuplicateCat(null);
-    setImportedCat(null);
+    const urls = [
+      ...new Set(
+        trelloUrls
+          .split(/\r?\n/)
+          .map((url) => url.trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (urls.length === 0) return;
+    setImportResults([]);
+    setImportProgress({
+      completed: 0,
+      total: urls.length,
+      currentUrl: urls[0],
+    });
     setIsImporting(true);
-    try {
-      const result = await catsApi.importTrelloCard(trelloUrl.trim());
-      const cat = await catsApi.getCatCard(result.id);
-      setImportedCat({ id: cat.id, name: cat.name });
-      setTrelloUrl("");
-    } catch (caught) {
-      setError(ApiErrorHandler.handle(caught));
-      setDuplicateCat(ApiErrorHandler.getDuplicateCat(caught));
-    } finally {
-      setIsImporting(false);
+    const results: typeof importResults = [];
+    for (const [index, url] of urls.entries()) {
+      try {
+        const result = await catsApi.importTrelloCard(
+          url,
+          transferAdopterByColumnName,
+          tagName.trim() || null,
+        );
+        const cat = await catsApi.getCatCard(result.id);
+        results.push({
+          trelloUrl: url,
+          cat: { id: cat.id, name: cat.name },
+          error: null,
+          duplicateCat: null,
+          skipped: false,
+        });
+      } catch (caught) {
+        const duplicateCat = ApiErrorHandler.getDuplicateCat(caught);
+        results.push({
+          trelloUrl: url,
+          cat: duplicateCat
+            ? { id: duplicateCat.id, name: duplicateCat.name }
+            : null,
+          error: duplicateCat ? null : ApiErrorHandler.handle(caught),
+          duplicateCat,
+          skipped: duplicateCat !== null,
+        });
+      }
+      setImportResults([...results]);
+      setImportProgress({
+        completed: index + 1,
+        total: urls.length,
+        currentUrl: urls[index + 1] ?? null,
+      });
     }
+    setIsImporting(false);
   }
 
   async function submitAttachments(event: FormEvent<HTMLFormElement>) {
@@ -64,8 +111,8 @@ export function TrelloCatImportClient() {
           Import cat from Trello
         </h1>
         <p className="mt-3 text-sm text-gray-700">
-          Import a cat and its details, vaccinations, photos, and documents from
-          a Trello card.
+          Import cats and their details, vaccinations, photos, and documents
+          from Trello, one card at a time. Paste one card URL per line.
         </p>
         <form
           onSubmit={(event) => void submit(event)}
@@ -73,64 +120,141 @@ export function TrelloCatImportClient() {
         >
           <label
             className="grid gap-1 text-sm font-semibold text-gray-800"
-            htmlFor="trello-card-url"
+            htmlFor="trello-card-urls"
           >
             <span>
-              Trello card URL <span className="text-red-600">*</span>
+              Trello card URLs <span className="text-red-600">*</span>
             </span>
           </label>
-          <input
-            id="trello-card-url"
-            type="url"
+          <textarea
+            id="trello-card-urls"
             required
-            value={trelloUrl}
-            onChange={(event) => setTrelloUrl(event.target.value)}
-            placeholder="https://trello.com/c/wqNVNDIs"
-            className="w-full rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+            rows={5}
+            value={trelloUrls}
+            onChange={(event) => setTrelloUrls(event.target.value)}
+            placeholder={
+              "https://trello.com/c/wqNVNDIs\nhttps://trello.com/c/anotherCard"
+            }
+            className="w-full resize-y rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
           />
+          <label
+            className="grid gap-1 text-sm font-semibold text-gray-800"
+            htmlFor="trello-import-tag"
+          >
+            Tag to assign to imported cats
+            <input
+              id="trello-import-tag"
+              type="text"
+              maxLength={40}
+              value={tagName}
+              onChange={(event) => setTagName(event.target.value)}
+              placeholder="Optional tag"
+              className="w-full rounded-xl border border-[#d4c7b4] bg-white px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
+            />
+          </label>
+          <label className="flex items-center gap-3 rounded-xl border border-[#d4c7b4] bg-[#fff8ee] px-3 py-3 text-sm font-medium text-gray-900">
+            <input
+              type="checkbox"
+              checked={transferAdopterByColumnName}
+              onChange={(event) =>
+                setTransferAdopterByColumnName(event.target.checked)
+              }
+              className="h-5 w-5 shrink-0 accent-[#d05a2c]"
+            />
+            Перенос adopter по имени столбца
+          </label>
           <button
             type="submit"
-            disabled={isImporting || !trelloUrl.trim()}
+            disabled={isImporting || !trelloUrls.trim()}
             className="min-h-11 rounded-xl bg-[#d05a2c] px-5 font-semibold text-white hover:bg-[#b24a20] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isImporting ? "Importing…" : "Import cat"}
+            {isImporting
+              ? `Importing ${importProgress?.completed ?? 0}/${importProgress?.total ?? 0}…`
+              : "Import cats"}
           </button>
         </form>
-        {error && (
-          <p
-            role="alert"
-            className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-800"
-          >
-            {error}
-            {duplicateCat && (
-              <>
-                {" "}
-                <Link
-                  className="font-semibold underline"
-                  href={`/cats/${duplicateCat.id}`}
-                >
-                  View {duplicateCat.name}
-                  {duplicateCat.nameNumber > 1
-                    ? ` #${duplicateCat.nameNumber}`
-                    : ""}
-                </Link>
-              </>
-            )}
-          </p>
-        )}
-        {importedCat && (
-          <p
-            role="status"
-            className="mt-4 rounded-lg bg-green-100 p-3 text-sm text-green-900"
-          >
-            {importedCat.name} was imported from Trello.{" "}
-            <Link
-              className="font-semibold underline"
-              href={`/cats/${importedCat.id}`}
+        {importProgress && (
+          <div className="mt-4 space-y-2">
+            <div
+              role="progressbar"
+              aria-label="Trello import progress"
+              aria-valuemin={0}
+              aria-valuemax={importProgress.total}
+              aria-valuenow={importProgress.completed}
+              className="h-3 overflow-hidden rounded-full bg-[#eadfce]"
             >
-              View cat
-            </Link>
-          </p>
+              <div
+                className="h-full rounded-full bg-[#d05a2c] transition-[width]"
+                style={{
+                  width: `${(importProgress.completed / importProgress.total) * 100}%`,
+                }}
+              />
+            </div>
+            <p role="status" className="text-sm text-gray-700">
+              {isImporting
+                ? `Imported ${importProgress.completed} of ${importProgress.total}. ${importProgress.currentUrl ? `${importProgress.completed === 0 ? "Current" : "Next"}: ${importProgress.currentUrl}` : ""}`
+                : `Finished: ${importResults.filter((result) => result.cat && !result.skipped).length} imported, ${importResults.filter((result) => result.skipped).length} skipped, ${importResults.filter((result) => result.error).length} failed.`}
+            </p>
+          </div>
+        )}
+        {importResults.length > 0 && (
+          <ul aria-label="Trello import results" className="mt-4 space-y-2">
+            {importResults.map((result) => (
+              <li
+                key={result.trelloUrl}
+                className={`rounded-lg p-3 text-sm ${result.error ? "bg-red-100 text-red-800" : result.skipped ? "bg-amber-100 text-amber-900" : "bg-green-100 text-green-900"}`}
+              >
+                {result.error ? (
+                  <>
+                    <span role="alert">
+                      {result.trelloUrl}: {result.error}
+                    </span>
+                    {result.duplicateCat && (
+                      <>
+                        {" "}
+                        <Link
+                          className="font-semibold underline"
+                          href={`/cats/${result.duplicateCat.id}`}
+                        >
+                          View {result.duplicateCat.name}
+                          {result.duplicateCat.nameNumber > 1
+                            ? ` #${result.duplicateCat.nameNumber}`
+                            : ""}
+                        </Link>
+                      </>
+                    )}
+                  </>
+                ) : result.skipped && result.duplicateCat ? (
+                  <>
+                    Already imported, skipped: {result.duplicateCat.name}
+                    {result.duplicateCat.nameNumber > 1
+                      ? ` #${result.duplicateCat.nameNumber}`
+                      : ""}
+                    .{" "}
+                    <Link
+                      className="font-semibold underline"
+                      href={`/cats/${result.duplicateCat.id}`}
+                    >
+                      View {result.duplicateCat.name}
+                      {result.duplicateCat.nameNumber > 1
+                        ? ` #${result.duplicateCat.nameNumber}`
+                        : ""}
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    {result.cat?.name} was imported.{" "}
+                    <Link
+                      className="font-semibold underline"
+                      href={`/cats/${result.cat?.id}`}
+                    >
+                      View cat
+                    </Link>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
       <section className="w-full max-w-3xl rounded-2xl border border-[#d4c7b4] bg-white/80 p-6 shadow-panel">
