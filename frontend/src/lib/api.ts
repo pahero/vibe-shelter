@@ -3,7 +3,6 @@
 export type Location = {
   id: string;
   name: string;
-  description: string | null;
   parentId?: string | null;
   owners: Array<{
     id: string;
@@ -494,14 +493,12 @@ export type FlightCandidate = {
 
 export type CreateLocationDto = {
   name: string;
-  description?: string;
   ownerIds?: string[];
   parentId?: string | null;
 };
 
 export type UpdateLocationDto = {
   name?: string;
-  description?: string | null;
   ownerIds?: string[];
   status?: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   parentId?: string | null;

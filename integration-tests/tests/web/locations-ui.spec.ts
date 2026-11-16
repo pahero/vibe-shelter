@@ -92,7 +92,7 @@ test.describe("locations UI", () => {
 
     await authenticateAsAdmin(page);
 
-    await createLocationViaApi(page, originalName, "Seeded from API");
+    await createLocationViaApi(page, originalName);
 
     await openShelterManagement(page);
 
@@ -144,12 +144,8 @@ test.describe("locations UI", () => {
 
     await authenticateAsAdmin(page);
 
-    await createLocationViaApi(page, locationName, "Seeded from API");
-    await createLocationViaApi(
-      page,
-      replacementName,
-      "Replacement for location removal",
-    );
+    await createLocationViaApi(page, locationName);
+    await createLocationViaApi(page, replacementName);
 
     await openShelterManagement(page);
 

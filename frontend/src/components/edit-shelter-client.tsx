@@ -49,7 +49,6 @@ const pageSize = 20;
 
 type LocationDraft = {
   name: string;
-  description: string;
   ownerIds: string[];
   parentId: string;
 };
@@ -57,7 +56,6 @@ type LocationDraft = {
 type EditingLocation = {
   id: string;
   name: string;
-  description: string;
   status: Location["status"];
   ownerIds: string[];
   parentId: string;
@@ -85,7 +83,6 @@ type CatCardOptions = {
 
 const emptyLocation: LocationDraft = {
   name: "",
-  description: "",
   ownerIds: [],
   parentId: "",
 };
@@ -221,40 +218,43 @@ export function EditShelterClient({
     await Promise.all([loadAuditCats(), loadAudit()]);
   }
 
-  const loadLocations = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const pageLimit = 100;
-      const firstPage = await locationsApi.listLocations({
-        skip: 0,
-        limit: pageLimit,
-      });
-      const users = await fetchAdminUsers();
-      const partition = users.find(
-        (user) => user.id === currentUser.id,
-      )?.isTest;
-      setLocationUsers(users.filter((user) => user.isTest === partition));
-      const allLocations = [...firstPage.data];
-      for (
-        let skip = firstPage.data.length;
-        skip < firstPage.total;
-        skip += pageLimit
-      ) {
-        const response = await locationsApi.listLocations({
-          skip,
+  const loadLocations = useCallback(
+    async (showLoading = true) => {
+      if (showLoading) setIsLoading(true);
+      setError(null);
+      try {
+        const pageLimit = 100;
+        const firstPage = await locationsApi.listLocations({
+          skip: 0,
           limit: pageLimit,
         });
-        allLocations.push(...response.data);
-        if (response.data.length === 0) break;
+        const users = await fetchAdminUsers();
+        const partition = users.find(
+          (user) => user.id === currentUser.id,
+        )?.isTest;
+        setLocationUsers(users.filter((user) => user.isTest === partition));
+        const allLocations = [...firstPage.data];
+        for (
+          let skip = firstPage.data.length;
+          skip < firstPage.total;
+          skip += pageLimit
+        ) {
+          const response = await locationsApi.listLocations({
+            skip,
+            limit: pageLimit,
+          });
+          allLocations.push(...response.data);
+          if (response.data.length === 0) break;
+        }
+        setLocations(allLocations);
+      } catch (err) {
+        setError(ApiErrorHandler.handle(err));
+      } finally {
+        if (showLoading) setIsLoading(false);
       }
-      setLocations(allLocations);
-    } catch (err) {
-      setError(ApiErrorHandler.handle(err));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentUser.id]);
+    },
+    [currentUser.id],
+  );
 
   useEffect(() => {
     void loadLocations();
@@ -384,7 +384,6 @@ export function EditShelterClient({
     try {
       await locationsApi.createLocation({
         name,
-        description: locationDraft.description.trim() || undefined,
         ownerIds: locationDraft.ownerIds,
         parentId: null,
       });
@@ -412,7 +411,6 @@ export function EditShelterClient({
     try {
       await locationsApi.updateLocation(location.id, {
         name,
-        description: location.description.trim() || null,
         status: location.status,
         ownerIds: location.ownerIds,
         parentId: location.parentId || null,
@@ -442,12 +440,12 @@ export function EditShelterClient({
     try {
       await locationsApi.createLocation({
         name,
-        description: parent.description ?? undefined,
         ownerIds: parent.owners.map((owner) => owner.id),
         parentId: parent.id,
       });
       setNewSublocationName("");
-      await loadEditors();
+      setIsAddingSublocation(false);
+      await loadLocations(false);
       setMessage("Sublocation added.");
     } catch (err) {
       setError(ApiErrorHandler.handle(err));
@@ -658,17 +656,6 @@ export function EditShelterClient({
                       className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
                       placeholder="New location name"
                     />
-                    <textarea
-                      value={locationDraft.description}
-                      onChange={(event) =>
-                        setLocationDraft((prev) => ({
-                          ...prev,
-                          description: event.target.value,
-                        }))
-                      }
-                      className="min-h-20 rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-                      placeholder="Description"
-                    />
                     <OwnerSelector
                       users={locationUsers}
                       selected={locationDraft.ownerIds}
@@ -722,19 +709,6 @@ export function EditShelterClient({
                         >
                           {isEditing && editingLocation ? (
                             <div className="grid gap-2">
-                              <label className="grid gap-1 text-sm font-medium text-gray-800">
-                                Description
-                                <textarea
-                                  value={editingLocation.description}
-                                  onChange={(event) =>
-                                    setEditingLocation({
-                                      ...editingLocation,
-                                      description: event.target.value,
-                                    })
-                                  }
-                                  className="min-h-20 rounded-lg border border-[#d4c7b4] px-3 py-2 text-sm"
-                                />
-                              </label>
                               <input
                                 value={editingLocation.name}
                                 onChange={(event) =>
@@ -833,11 +807,6 @@ export function EditShelterClient({
                                 >
                                   {location.name}
                                 </p>
-                                {location.description && (
-                                  <p className="mt-1 text-sm text-gray-600">
-                                    {location.description}
-                                  </p>
-                                )}
                                 {location.owners.length > 0 && (
                                   <p className="mt-2 text-xs text-gray-600">
                                     <strong>Responsible users:</strong>{" "}
@@ -857,7 +826,6 @@ export function EditShelterClient({
                                     setEditingLocation({
                                       id: location.id,
                                       name: location.name,
-                                      description: location.description ?? "",
                                       status: location.status,
                                       parentId: location.parentId ?? "",
                                       ownerIds: location.owners.map(

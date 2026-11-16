@@ -12,7 +12,6 @@ export class CreateLocationHandler {
 
   async handle(
     name: string,
-    description: string | undefined,
     ownerIds: string[] | undefined,
     isTest: boolean,
     actorUserId?: string,
@@ -69,7 +68,6 @@ export class CreateLocationHandler {
       const location = await tx.location.create({
         data: {
           name: normalizedName,
-          description: description?.trim() || null,
           parentId: parentId ?? null,
           owners: { create: ids.map((userId) => ({ userId })) },
           isTest,

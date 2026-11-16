@@ -7,6 +7,11 @@ import { CatCard } from "@/components/cat-card";
 import { CatColorDatalist } from "@/components/cat-color-options";
 import { ContextMenu } from "@/components/context-menu";
 import { SelectWithChevron } from "@/components/select-with-chevron";
+import { LocationOptionsList } from "@/components/location-options-list";
+import {
+  getDefaultLocationId,
+  sortLocationsForDisplay,
+} from "@/lib/location-sort";
 import { ApiErrorHandler } from "@/lib/utils";
 import {
   CatCard as CatCardType,
@@ -49,7 +54,6 @@ export function HomeCatsList() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
-  const [expandedLocationIds, setExpandedLocationIds] = useState<string[]>([]);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
@@ -132,17 +136,16 @@ export function HomeCatsList() {
         } while (skip < total);
 
         if (!cancelled) {
-          const activeLocations = locations.filter(
-            (location) => location.status === "ACTIVE",
-          );
           setLocations(locations);
           setCreateForm((prev) => ({
             ...prev,
-            currentLocationId: activeLocations.some(
-              (location) => location.id === prev.currentLocationId,
+            currentLocationId: locations.some(
+              (location) =>
+                location.status === "ACTIVE" &&
+                location.id === prev.currentLocationId,
             )
               ? prev.currentLocationId
-              : (activeLocations[0]?.id ?? ""),
+              : getDefaultLocationId(locations),
           }));
         }
       } catch (err) {
@@ -283,11 +286,7 @@ export function HomeCatsList() {
     setIsCreating(true);
     try {
       const created = await catsApi.createCat(payload);
-      setCreateForm(
-        emptyCatForm(
-          locations.find((location) => location.status === "ACTIVE")?.id ?? "",
-        ),
-      );
+      setCreateForm(emptyCatForm(getDefaultLocationId(locations)));
       setShowCreateForm(false);
       setCreateSuccess(`${created.name} was added.`);
       setCurrentPage(1);
@@ -300,17 +299,19 @@ export function HomeCatsList() {
   };
 
   const totalPages = Math.ceil(total / CATS_PER_PAGE);
-  const locationFilterLabel =
-    locations.find((location) => location.id === locationFilter)?.name ??
-    "All locations";
-  const rootLocations = locations.filter((location) => !location.parentId);
+  const rootLocations = sortLocationsForDisplay(
+    locations.filter((location) => !location.parentId),
+  );
   const sublocationsByParentId = new Map<string, Location[]>();
-  for (const location of locations) {
+  for (const location of sortLocationsForDisplay(locations)) {
     if (!location.parentId) continue;
     const sublocations = sublocationsByParentId.get(location.parentId) ?? [];
     sublocations.push(location);
     sublocationsByParentId.set(location.parentId, sublocations);
   }
+  const locationFilterLabel =
+    locations.find((location) => location.id === locationFilter)?.name ??
+    "All locations";
   const tagFilterLabel =
     tags.find((tag) => tag.id === tagFilter)?.name ?? "All tags";
 
@@ -667,99 +668,16 @@ export function HomeCatsList() {
                 </button>
               }
             >
-              <button
-                type="button"
-                role="option"
-                aria-selected={locationFilter === ""}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  setLocationFilter("");
-                  setCurrentPage(1);
-                  setIsLocationFilterOpen(false);
-                }}
-                className={`block w-full px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                  locationFilter === ""
-                    ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                    : "text-gray-900"
-                }`}
-              >
-                All locations
-              </button>
-              {rootLocations.map((location) => {
-                const sublocations =
-                  sublocationsByParentId.get(location.id) ?? [];
-                const isExpanded = expandedLocationIds.includes(location.id);
-                const selectLocation = (id: string) => {
+              <LocationOptionsList
+                locations={locations}
+                value={locationFilter}
+                includeAllOption
+                onSelect={(id) => {
                   setLocationFilter(id);
                   setCurrentPage(1);
                   setIsLocationFilterOpen(false);
-                };
-                return (
-                  <div key={location.id}>
-                    <div className="flex">
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={locationFilter === location.id}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => selectLocation(location.id)}
-                        disabled={location.status !== "ACTIVE"}
-                        className={`block min-w-0 flex-1 px-3 py-2 text-left transition hover:bg-[#fff0e8] ${
-                          locationFilter === location.id
-                            ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                            : location.status === "ACTIVE"
-                              ? "text-gray-900"
-                              : "cursor-not-allowed text-gray-400"
-                        }`}
-                      >
-                        {location.name}
-                      </button>
-                      {sublocations.length > 0 && (
-                        <button
-                          type="button"
-                          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
-                          title={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() =>
-                            setExpandedLocationIds((ids) =>
-                              isExpanded
-                                ? ids.filter((id) => id !== location.id)
-                                : [...ids, location.id],
-                            )
-                          }
-                          className="w-10 text-[#6d6a66] hover:bg-[#fff0e8]"
-                        >
-                          <FontAwesomeIcon
-                            icon={faChevronDown}
-                            className={isExpanded ? "rotate-180" : ""}
-                          />
-                        </button>
-                      )}
-                    </div>
-                    {isExpanded &&
-                      sublocations.map((sublocation) => (
-                        <button
-                          key={sublocation.id}
-                          type="button"
-                          role="option"
-                          aria-selected={locationFilter === sublocation.id}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => selectLocation(sublocation.id)}
-                          disabled={sublocation.status !== "ACTIVE"}
-                          className={`block w-full py-2 pl-8 pr-3 text-left transition hover:bg-[#fff0e8] ${
-                            locationFilter === sublocation.id
-                              ? "bg-[#d05a2c] text-white hover:bg-[#d05a2c]"
-                              : sublocation.status === "ACTIVE"
-                                ? "text-gray-900"
-                                : "cursor-not-allowed text-gray-400"
-                          }`}
-                        >
-                          {sublocation.name}
-                        </button>
-                      ))}
-                  </div>
-                );
-              })}
+                }}
+              />
             </ContextMenu>
           </div>
 

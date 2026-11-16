@@ -95,7 +95,6 @@ describe("UpdateLocationHandler", () => {
       const location = await tx.location.create({
         data: {
           name: `Before ${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          description: "Old",
         },
       });
       const result = await new UpdateLocationHandler(
@@ -104,7 +103,6 @@ describe("UpdateLocationHandler", () => {
         location.id,
         {
           name: "  After  ",
-          description: "  New  ",
           ownerIds: [owner.id],
           status: "INACTIVE",
         },
@@ -116,7 +114,6 @@ describe("UpdateLocationHandler", () => {
         tx.location.findUniqueOrThrow({ where: { id: location.id } }),
       ).resolves.toMatchObject({
         name: "After",
-        description: "New",
         status: "INACTIVE",
         version: 1,
       });
@@ -129,14 +126,13 @@ describe("UpdateLocationHandler", () => {
       const events = await tx.auditEvent.findMany({
         where: { locationId: location.id },
       });
-      expect(events).toHaveLength(4);
+      expect(events).toHaveLength(3);
       expect(
         events.every(
           (event) => event.oldValue !== null && event.newValue !== null,
         ),
       ).toBe(true);
       expect(events.map((event) => event.action).sort()).toEqual([
-        "description_changed",
         "name_changed",
         "owner_changed",
         "status_changed",

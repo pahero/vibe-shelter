@@ -19,7 +19,6 @@ export function LocationForm({
 }: LocationFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name ?? "",
-    description: initialData?.description ?? "",
     status: (initialData?.status ?? "ACTIVE") as
       | "ACTIVE"
       | "INACTIVE"
@@ -69,12 +68,10 @@ export function LocationForm({
     const submitData = initialData
       ? {
           name: formData.name,
-          description: formData.description || null,
           status: formData.status,
         }
       : {
           name: formData.name,
-          description: formData.description || undefined,
         };
 
     try {
@@ -115,24 +112,6 @@ export function LocationForm({
         {validationErrors.name && (
           <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
         )}
-      </div>
-
-      {/* Description */}
-      <div>
-        <label
-          htmlFor="description"
-          className="block font-mono text-xs uppercase tracking-[0.1em] text-[#6d6a66]"
-        >
-          Description
-        </label>
-        <textarea
-          id="description"
-          placeholder="Enter location description (optional)"
-          value={formData.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          rows={4}
-          className="mt-2 w-full rounded-lg border border-[#d4c7b4] bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d05a2c]"
-        />
       </div>
 
       {/* Status (Edit only) */}

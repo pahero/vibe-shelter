@@ -73,7 +73,7 @@ async function authHeaders(page: Page): Promise<Record<string, string>> {
 export async function createLocationViaApi(
   page: Page,
   name: string,
-  description?: string,
+  parentId?: string,
 ): Promise<{ id: string; name: string }> {
   const { adminTestUser } = getTestEnv();
   const adminRequest = await request.newContext({ baseURL: BACKEND_URL });
@@ -93,14 +93,15 @@ export async function createLocationViaApi(
       .join("; ");
     const response = await adminRequest.post("/api/locations", {
       headers: { Cookie: cookieHeader },
-      data: { name, ...(description ? { description } : {}) },
+      data: { name, ...(parentId ? { parentId } : {}) },
     });
     if (response.status() !== 201) {
       throw new Error(
         `Could not create location via API (${response.status()}): ${await response.text()}`,
       );
     }
-    return (await response.json()) as { id: string; name: string };
+    const location = (await response.json()) as { id: string };
+    return { ...location, name };
   } finally {
     await adminRequest.dispose();
   }

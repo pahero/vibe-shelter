@@ -138,7 +138,6 @@ enum ParasiteTreatmentType {
 model Location {
   id           String         @id @default(cuid())
   name         String
-  description  String?
   parentId     String?
   parent       Location?      @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   sublocations Location[]     @relation("LocationHierarchy")

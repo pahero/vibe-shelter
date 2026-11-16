@@ -40,11 +40,7 @@ test.describe("cats UI", () => {
     await authenticateAsStaff(page);
     await page.goto("/");
 
-    await createLocationViaApi(
-      page,
-      locationName,
-      "Active location for new cats",
-    );
+    await createLocationViaApi(page, locationName);
     await page.reload();
 
     await page.getByRole("button", { name: "Add cat" }).click();
@@ -201,6 +197,32 @@ test.describe("cats UI", () => {
     await expect(
       page.getByRole("button", { name: "Edit cat profile" }),
     ).toBeVisible();
+  });
+
+  test("cat profile shows the parent and sublocation together", async ({
+    page,
+  }) => {
+    const parent = await createLocationViaApi(
+      page,
+      uniqueName("Profile parent"),
+    );
+    const sublocation = await createLocationViaApi(
+      page,
+      uniqueName("Profile sublocation"),
+      parent.id,
+    );
+    const catName = uniqueName("Sublocation cat");
+    await authenticateAsStaff(page);
+    const cat = await createCatViaApi(page, {
+      name: catName,
+      locationId: sublocation.id,
+    });
+
+    await page.goto(`/cats/${cat.id}`);
+
+    await expect(
+      page.getByText(`${parent.name}, ${sublocation.name}`, { exact: true }),
+    ).toHaveCount(2);
   });
 
   test("cat profile places the full-width comment before the adoption fields", async ({

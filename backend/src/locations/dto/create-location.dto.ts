@@ -12,10 +12,6 @@ export class CreateLocationDto {
   @IsNotEmpty()
   name!: string;
 
-  @IsString()
-  @IsOptional()
-  description?: string;
-
   @IsArray()
   @ArrayUnique()
   @IsString({ each: true })
@@ -28,15 +24,11 @@ export class CreateLocationDto {
 
   toCommand(): {
     name: string;
-    description?: string;
     ownerIds?: string[];
     parentId?: string | null;
   } {
     return {
       name: this.name.trim(),
-      ...(this.description !== undefined
-        ? { description: this.description.trim() }
-        : {}),
       ...(this.ownerIds !== undefined
         ? { ownerIds: this.ownerIds.map((id) => id.trim()) }
         : {}),

@@ -12,10 +12,6 @@ export class UpdateLocationDto {
   @IsOptional()
   name?: string;
 
-  @IsString()
-  @IsOptional()
-  description?: string | null;
-
   @IsArray()
   @ArrayUnique()
   @IsString({ each: true })
@@ -32,16 +28,12 @@ export class UpdateLocationDto {
 
   toCommand(): {
     name?: string;
-    description?: string | null;
     ownerIds?: string[];
     status?: string;
     parentId?: string | null;
   } {
     return {
       ...(this.name !== undefined ? { name: this.name.trim() } : {}),
-      ...(this.description !== undefined
-        ? { description: this.description?.trim() || null }
-        : {}),
       ...(this.ownerIds !== undefined
         ? { ownerIds: this.ownerIds.map((id) => id.trim()) }
         : {}),
