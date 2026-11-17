@@ -20,6 +20,7 @@ import { CreateArchivingReasonCommand } from "./create-archiving-reason.command"
 import { DeleteArchivingReasonCommand } from "./delete-archiving-reason.command";
 import { ListArchivingReasonsQuery } from "./list-archiving-reasons.query";
 import { UpdateArchivingReasonCommand } from "./update-archiving-reason.command";
+import { GetMinimumArchivingYearQuery } from "./get-minimum-archiving-year.query";
 
 type AuthenticatedUser = { id: string; isTest: boolean };
 
@@ -31,11 +32,17 @@ export class ArchivingReasonsController {
     private readonly createReasonCommand: CreateArchivingReasonCommand,
     private readonly updateReasonCommand: UpdateArchivingReasonCommand,
     private readonly deleteReasonCommand: DeleteArchivingReasonCommand,
+    private readonly minimumArchivingYearQuery: GetMinimumArchivingYearQuery,
   ) {}
 
   @Get()
   async list(@CurrentUser() user: AuthenticatedUser) {
     return this.listReasonsQuery.execute(user.isTest);
+  }
+
+  @Get("minimum-year")
+  async getMinimumYear(@CurrentUser() user: AuthenticatedUser) {
+    return { year: await this.minimumArchivingYearQuery.execute(user.isTest) };
   }
 
   @Post()

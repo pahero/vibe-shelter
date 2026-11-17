@@ -21,6 +21,7 @@ import {
   IntakeSource,
   INTAKE_SOURCE_LABELS,
   Location,
+  CatArchivingReason,
   SterilizationStatus,
   catsApi,
   locationsApi,
@@ -54,6 +55,17 @@ export function HomeCatsList() {
     IntakeSource | ""
   >("");
   const [searchArchived, setSearchArchived] = useState(false);
+  const [archivingReasonFilter, setArchivingReasonFilter] = useState("");
+  const [archivedYearFilter, setArchivedYearFilter] = useState("");
+  const [ageGroupFilter, setAgeGroupFilter] = useState<"" | "KITTEN" | "ADULT">(
+    "",
+  );
+  const [archivingReasons, setArchivingReasons] = useState<
+    CatArchivingReason[]
+  >([]);
+  const [minimumArchivingYear, setMinimumArchivingYear] = useState<
+    number | null
+  >(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [tags, setTags] = useState<CatTag[]>([]);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
@@ -81,7 +93,15 @@ export function HomeCatsList() {
     setIntakeSourceFilter(
       (params.get("intakeSource") as IntakeSource | null) ?? "",
     );
+    const ageGroup = params.get("ageGroup");
+    setAgeGroupFilter(
+      ageGroup === "KITTEN" || ageGroup === "ADULT" ? ageGroup : "",
+    );
     setSearchArchived(params.get("archived") === "true");
+    if (params.get("archived") === "true") {
+      setArchivingReasonFilter(params.get("archivingReasonId") ?? "");
+      setArchivedYearFilter(params.get("archivedYear") ?? "");
+    }
     setHasRestoredListState(true);
   }, []);
 
@@ -93,7 +113,12 @@ export function HomeCatsList() {
     if (locationFilter) params.set("location", locationFilter);
     if (tagFilter) params.set("tag", tagFilter);
     if (intakeSourceFilter) params.set("intakeSource", intakeSourceFilter);
+    if (ageGroupFilter) params.set("ageGroup", ageGroupFilter);
     if (searchArchived) params.set("archived", "true");
+    if (searchArchived && archivingReasonFilter)
+      params.set("archivingReasonId", archivingReasonFilter);
+    if (searchArchived && archivedYearFilter)
+      params.set("archivedYear", archivedYearFilter);
     const query = params.toString();
     window.history.replaceState(
       window.history.state,
@@ -106,7 +131,10 @@ export function HomeCatsList() {
     locationFilter,
     tagFilter,
     intakeSourceFilter,
+    ageGroupFilter,
     searchArchived,
+    archivingReasonFilter,
+    archivedYearFilter,
     hasRestoredListState,
   ]);
 
@@ -176,6 +204,21 @@ export function HomeCatsList() {
   }, []);
 
   useEffect(() => {
+    Promise.all([
+      catsApi.listArchivingReasons(),
+      catsApi.getMinimumArchivingYear(),
+    ])
+      .then(([reasons, year]) => {
+        setArchivingReasons(reasons);
+        setMinimumArchivingYear(year);
+      })
+      .catch(() => {
+        setArchivingReasons([]);
+        setMinimumArchivingYear(null);
+      });
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function fetchTags() {
@@ -212,9 +255,17 @@ export function HomeCatsList() {
         const response = await catsApi.listCats({
           locationId: locationFilter || undefined,
           archived: searchArchived,
+          archivingReasonId: searchArchived
+            ? archivingReasonFilter || undefined
+            : undefined,
+          archivedYear:
+            searchArchived && archivedYearFilter
+              ? Number(archivedYearFilter)
+              : undefined,
           search: search.trim() || undefined,
           tagId: tagFilter || undefined,
           intakeSource: intakeSourceFilter || undefined,
+          ageGroup: ageGroupFilter || undefined,
           skip: (currentPage - 1) * CATS_PER_PAGE,
           limit: CATS_PER_PAGE,
         });
@@ -255,8 +306,11 @@ export function HomeCatsList() {
     refreshKey,
     search,
     searchArchived,
+    archivingReasonFilter,
+    archivedYearFilter,
     tagFilter,
     intakeSourceFilter,
+    ageGroupFilter,
   ]);
 
   const handleCreateCat = async (event: FormEvent<HTMLFormElement>) => {
@@ -329,7 +383,12 @@ export function HomeCatsList() {
     locationFilter !== "" ||
     tagFilter !== "" ||
     intakeSourceFilter !== "" ||
+    ageGroupFilter !== "" ||
     searchArchived;
+  const hasAnyActiveFilters =
+    hasActiveFilters ||
+    (searchArchived &&
+      (archivingReasonFilter !== "" || archivedYearFilter !== ""));
 
   return (
     <section className="w-full animate-rise [animation-delay:160ms]">
@@ -651,7 +710,7 @@ export function HomeCatsList() {
       {isFiltersOpen && (
         <div
           id="home-cat-filters"
-          className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end"
+          className="mt-3 grid gap-3 rounded-xl border border-[#d4c7b4] bg-white/60 p-3 md:grid-cols-[repeat(3,minmax(180px,260px))_auto] md:items-end"
         >
           <div className="grid gap-1 text-sm font-medium text-gray-800">
             <span id="home-location-filter-label">Location</span>
@@ -788,6 +847,79 @@ export function HomeCatsList() {
             </SelectWithChevron>
           </label>
 
+          <label
+            htmlFor="home-age-filter"
+            className="grid gap-1 text-sm font-medium text-gray-800"
+          >
+            Age
+            <SelectWithChevron
+              id="home-age-filter"
+              value={ageGroupFilter}
+              onChange={(event) => {
+                const value = event.target.value;
+                setAgeGroupFilter(
+                  value === "KITTEN" || value === "ADULT" ? value : "",
+                );
+                setCurrentPage(1);
+              }}
+              className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+            >
+              <option value="">All ages</option>
+              <option value="KITTEN">Kitten (under 1 year)</option>
+              <option value="ADULT">Adult (1 year or older)</option>
+            </SelectWithChevron>
+          </label>
+
+          {searchArchived && (
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Archiving reason
+              <SelectWithChevron
+                value={archivingReasonFilter}
+                onChange={(event) => {
+                  setArchivingReasonFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+              >
+                <option value="">All archiving reasons</option>
+                {archivingReasons.map((reason) => (
+                  <option key={reason.id} value={reason.id}>
+                    {reason.name}
+                  </option>
+                ))}
+              </SelectWithChevron>
+            </label>
+          )}
+          {searchArchived && (
+            <label className="grid gap-1 text-sm font-medium text-gray-800">
+              Archiving year
+              <SelectWithChevron
+                value={archivedYearFilter}
+                onChange={(event) => {
+                  setArchivedYearFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="rounded-lg border border-[#d4c7b4] bg-white px-3 py-2 text-sm"
+              >
+                <option value="">All years</option>
+                {minimumArchivingYear !== null &&
+                  Array.from(
+                    {
+                      length: Math.max(
+                        0,
+                        new Date().getFullYear() - minimumArchivingYear + 1,
+                      ),
+                    },
+                    (_, index) => new Date().getFullYear() - index,
+                  ).map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+              </SelectWithChevron>
+            </label>
+          )}
+
           <div className="flex items-center justify-between gap-3 self-end pb-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
               <input
@@ -795,6 +927,10 @@ export function HomeCatsList() {
                 checked={searchArchived}
                 onChange={(event) => {
                   setSearchArchived(event.target.checked);
+                  if (!event.target.checked) {
+                    setArchivingReasonFilter("");
+                    setArchivedYearFilter("");
+                  }
                   setCurrentPage(1);
                 }}
                 className="h-4 w-4 rounded border-[#d4c7b4] text-[#d05a2c] focus:ring-[#d05a2c]"
@@ -808,12 +944,15 @@ export function HomeCatsList() {
                 setLocationFilter("");
                 setTagFilter("");
                 setIntakeSourceFilter("");
+                setAgeGroupFilter("");
                 setSearchArchived(false);
+                setArchivingReasonFilter("");
+                setArchivedYearFilter("");
                 setCurrentPage(1);
                 setIsLocationFilterOpen(false);
                 setIsTagFilterOpen(false);
               }}
-              disabled={!hasActiveFilters}
+              disabled={!hasAnyActiveFilters}
               className="rounded-lg px-2 py-1 text-xs font-semibold text-[#b24a20] transition hover:bg-[#fff0e8] disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
             >
               Clear filters
@@ -862,6 +1001,15 @@ export function HomeCatsList() {
         </div>
       )}
 
+      {!isLoading && !needsSignIn && !error && (
+        <p
+          className="mt-4 text-sm font-medium text-[#6d6a66]"
+          aria-live="polite"
+        >
+          Total cats matching filters: {total}
+        </p>
+      )}
+
       {!isLoading && cats.length > 0 && (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {cats.map((cat) => (
@@ -869,7 +1017,7 @@ export function HomeCatsList() {
               key={cat.id}
               cat={cat}
               showTags={false}
-              profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(intakeSourceFilter ? { intakeSource: intakeSourceFilter } : {}), ...(searchArchived ? { archived: "true" } : {}) }).toString()}`}
+              profileHref={`/cats/${cat.id}?${new URLSearchParams({ ...(currentPage > 1 ? { page: String(currentPage) } : {}), ...(search ? { search } : {}), ...(locationFilter ? { location: locationFilter } : {}), ...(tagFilter ? { tag: tagFilter } : {}), ...(intakeSourceFilter ? { intakeSource: intakeSourceFilter } : {}), ...(ageGroupFilter ? { ageGroup: ageGroupFilter } : {}), ...(searchArchived ? { archived: "true", ...(archivingReasonFilter ? { archivingReasonId: archivingReasonFilter } : {}), ...(archivedYearFilter ? { archivedYear: archivedYearFilter } : {}) } : {}) }).toString()}`}
             />
           ))}
         </div>
