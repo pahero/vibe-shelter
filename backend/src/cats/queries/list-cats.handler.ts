@@ -44,6 +44,29 @@ export class ListCatsHandler {
     }
     if (filters.tagId)
       where.tags = { some: { tagId: filters.tagId, deletedAt: null } };
+    if (filters.archivingReasonId)
+      where.archivingReasonId = filters.archivingReasonId;
+    if (filters.archivedYear !== undefined) {
+      const yearStart = new Date(Date.UTC(filters.archivedYear, 0, 1));
+      const yearEnd = new Date(Date.UTC(filters.archivedYear + 1, 0, 1));
+      where.archivedAt = { gte: yearStart, lt: yearEnd };
+    }
+    if (filters.ageGroup) {
+      const oneYearAgo = new Date();
+      oneYearAgo.setUTCFullYear(oneYearAgo.getUTCFullYear() - 1);
+      if (filters.ageGroup === "KITTEN") {
+        where.estimatedBirthDate = { gt: oneYearAgo };
+      } else {
+        where.AND = [
+          {
+            OR: [
+              { estimatedBirthDate: null },
+              { estimatedBirthDate: { lte: oneYearAgo } },
+            ],
+          },
+        ];
+      }
+    }
     if (filters.intakeSource) where.intakeSource = filters.intakeSource;
     const search = filters.search?.trim();
     if (search)
@@ -56,7 +79,7 @@ export class ListCatsHandler {
       this.prisma.cat.findMany({
         where,
         include: CAT_CARD_INCLUDE,
-        orderBy: [{ name: "asc" }, { id: "asc" }],
+        orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
         skip,
         take: limit,
       }),

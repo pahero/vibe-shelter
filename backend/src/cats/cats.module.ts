@@ -16,6 +16,7 @@ import { ArchivingReasonsController } from "./archiving-reasons/archiving-reason
 import { CreateArchivingReasonCommand } from "./archiving-reasons/create-archiving-reason.command";
 import { DeleteArchivingReasonCommand } from "./archiving-reasons/delete-archiving-reason.command";
 import { ListArchivingReasonsQuery } from "./archiving-reasons/list-archiving-reasons.query";
+import { GetMinimumArchivingYearQuery } from "./archiving-reasons/get-minimum-archiving-year.query";
 import { UpdateArchivingReasonCommand } from "./archiving-reasons/update-archiving-reason.command";
 import { CompleteCatTaskHandler } from "./tasks/complete-cat-task.handler";
 import { CreateCatTaskHandler } from "./tasks/create-cat-task.handler";
@@ -116,6 +117,7 @@ import { TrelloClient } from "./import/trello-client";
     ListAllCatHistoryQuery,
     ListFlightCandidatesHandler,
     ListArchivingReasonsQuery,
+    GetMinimumArchivingYearQuery,
     CreateArchivingReasonCommand,
     UpdateArchivingReasonCommand,
     DeleteArchivingReasonCommand,

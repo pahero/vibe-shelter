@@ -54,6 +54,9 @@ export type CatFilters = {
   skip?: number;
   limit?: number;
   archived?: boolean;
+  archivingReasonId?: string;
+  archivedYear?: number;
+  ageGroup?: "KITTEN" | "ADULT";
 };
 export type CatWeight = {
   id: string;

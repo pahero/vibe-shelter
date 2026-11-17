@@ -345,6 +345,9 @@ export type ListCatsParams = {
   tagId?: string;
   intakeSource?: IntakeSource;
   archived?: boolean;
+  archivingReasonId?: string;
+  archivedYear?: number;
+  ageGroup?: "KITTEN" | "ADULT";
   skip?: number;
   limit?: number;
 };
@@ -1019,6 +1022,11 @@ export const catsApi = {
     if (params?.tagId) query.append("tagId", params.tagId);
     if (params?.intakeSource) query.append("intakeSource", params.intakeSource);
     if (params?.archived) query.append("archived", "true");
+    if (params?.archivingReasonId)
+      query.append("archivingReasonId", params.archivingReasonId);
+    if (params?.archivedYear !== undefined)
+      query.append("archivedYear", String(params.archivedYear));
+    if (params?.ageGroup) query.append("ageGroup", params.ageGroup);
     if (params?.skip !== undefined)
       query.append("skip", params.skip.toString());
     if (params?.limit !== undefined)
@@ -1159,6 +1167,15 @@ export const catsApi = {
       { method: "GET" },
     );
     return handleResponse<CatArchivingReason[]>(response);
+  },
+
+  async getMinimumArchivingYear(): Promise<number | null> {
+    const response = await authenticatedFetch(
+      `${BACKEND_URL}/api/cats/archiving-reasons/minimum-year`,
+      { method: "GET" },
+    );
+    const result = await handleResponse<{ year: number | null }>(response);
+    return result.year;
   },
 
   async createArchivingReason(name: string): Promise<MutationResult> {
