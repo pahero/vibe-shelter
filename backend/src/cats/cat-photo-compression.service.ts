@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import convertHeic from "heic-convert";
 import type { PrimaryPhotoUpload } from "./cats.types";
 
 const MAX_PHOTO_DIMENSION = 1920;
@@ -20,25 +21,38 @@ export class CatPhotoCompressionService {
       throw new Error("Photo buffer is required for compression");
 
     try {
-      const image = sharp(photo.buffer, { failOn: "none" }).rotate();
-      const [fullBuffer, previewBuffer] = await Promise.all([
-        image
-          .clone()
-          .resize(MAX_PHOTO_DIMENSION, MAX_PHOTO_DIMENSION, {
-            fit: "inside",
-            withoutEnlargement: true,
-          })
-          .jpeg({ quality: 82, mozjpeg: true })
-          .toBuffer(),
-        image
-          .clone()
-          .resize({
-            width: PREVIEW_PHOTO_DIMENSION,
-            withoutEnlargement: true,
-          })
-          .jpeg({ quality: 80, mozjpeg: true })
-          .toBuffer(),
-      ]);
+      const compressInput = async (input: Buffer) => {
+        const image = sharp(input, { failOn: "none" }).rotate();
+        return Promise.all([
+          image
+            .clone()
+            .resize(MAX_PHOTO_DIMENSION, MAX_PHOTO_DIMENSION, {
+              fit: "inside",
+              withoutEnlargement: true,
+            })
+            .jpeg({ quality: 82, mozjpeg: true })
+            .toBuffer(),
+          image
+            .clone()
+            .resize({
+              width: PREVIEW_PHOTO_DIMENSION,
+              withoutEnlargement: true,
+            })
+            .jpeg({ quality: 80, mozjpeg: true })
+            .toBuffer(),
+        ]);
+      };
+      let fullBuffer: Buffer;
+      let previewBuffer: Buffer;
+      try {
+        [fullBuffer, previewBuffer] = await compressInput(photo.buffer);
+      } catch {
+        const decoded = await convertHeic({
+          buffer: photo.buffer,
+          format: "PNG",
+        });
+        [fullBuffer, previewBuffer] = await compressInput(Buffer.from(decoded));
+      }
       const name = this.toJpegName(photo.originalname ?? "photo");
       return {
         full: {

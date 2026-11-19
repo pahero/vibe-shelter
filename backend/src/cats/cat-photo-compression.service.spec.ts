@@ -1,7 +1,41 @@
 import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { CatPhotoCompressionService } from "./cat-photo-compression.service";
 
 describe("CatPhotoCompressionService", () => {
+  it("converts HEIC photos to compressed JPEG variants", async () => {
+    const input = await readFile(
+      join(process.cwd(), "src", "test", "img", "preview.heic"),
+    );
+
+    const result = await CatPhotoCompressionService.compress({
+      buffer: input,
+      mimetype: "image/heic",
+      originalname: "preview.heic",
+    });
+
+    expect(result.full.mimetype).toBe("image/jpeg");
+    expect(result.full.originalname).toBe("preview.jpg");
+    expect((await sharp(result.full.buffer).metadata()).format).toBe("jpeg");
+    expect(result.preview.mimetype).toBe("image/jpeg");
+    expect((await sharp(result.preview.buffer).metadata()).format).toBe("jpeg");
+  });
+
+  it("retains the original when neither decoder can read the image", async () => {
+    const input = Buffer.from("not an image");
+    const result = await CatPhotoCompressionService.compress({
+      buffer: input,
+      mimetype: "image/heic",
+      originalname: "broken.heic",
+    });
+
+    expect(result.full.buffer).toEqual(input);
+    expect(result.preview.buffer).toEqual(input);
+    expect(result.full.mimetype).toBe("image/heic");
+    expect(result.full.originalname).toBe("broken.heic");
+  });
+
   it("resizes large photos and encodes them as JPEGs", async () => {
     const input = await sharp({
       create: {
