@@ -14,6 +14,41 @@ describe("UpdateCatHandler", () => {
   const urls = new CatPhotoUrlService(new ConfigService(), s3);
   afterAll(() => s3.destroy());
 
+  it("clears traces and audits the change", async () => {
+    await runInTestTransaction(async (tx) => {
+      const actor = await tx.user.create({
+        data: {
+          fullName: "Test User",
+          email: `traces-${crypto.randomUUID()}@example.com`,
+        },
+      });
+      const cat = await tx.cat.create({
+        data: {
+          name: "Traces test",
+          traces: true,
+          currentLocation: { create: { name: "Traces location" } },
+        },
+      });
+      const result = await new UpdateCatHandler(
+        tx as PrismaService,
+        urls,
+      ).handle(cat.id, { traces: false }, actor.id, false);
+      expect(result.traces).toBe(false);
+      expect(
+        await tx.cat.findUniqueOrThrow({ where: { id: cat.id } }),
+      ).toMatchObject({ traces: false });
+      expect(
+        await tx.auditEvent.findMany({ where: { catId: cat.id } }),
+      ).toEqual([
+        expect.objectContaining({
+          eventType: "traces_changed",
+          oldValue: "true",
+          newValue: "false",
+        }),
+      ]);
+    });
+  });
+
   it("updates fields and writes scalar audit values for changed fields only", async () => {
     await runInTestTransaction(async (tx) => {
       const actor = await tx.user.create({
@@ -63,6 +98,7 @@ describe("UpdateCatHandler", () => {
           flightDetails: "  Flight details  ",
           adopterCountry: "UK",
           felvFivTestDone: true,
+          traces: true,
           sterilizationStatus: "STERILIZED",
           currentLocationId: location.id,
         },
@@ -81,6 +117,7 @@ describe("UpdateCatHandler", () => {
         flightDetails: "Flight details",
         adopterCountry: "UK",
         felvFivTestDone: true,
+        traces: true,
         currentLocationId: location.id,
         microchipNumber: expect.stringContaining("chip-"),
         passport: true,
@@ -95,7 +132,7 @@ describe("UpdateCatHandler", () => {
       const events = await tx.auditEvent.findMany({
         where: { catId: cat.id },
       });
-      expect(events).toHaveLength(18);
+      expect(events).toHaveLength(19);
       expect(events).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -140,6 +177,11 @@ describe("UpdateCatHandler", () => {
           }),
           expect.objectContaining({
             eventType: "felv_fiv_test_done_changed",
+            oldValue: "false",
+            newValue: "true",
+          }),
+          expect.objectContaining({
+            eventType: "traces_changed",
             oldValue: "false",
             newValue: "true",
           }),

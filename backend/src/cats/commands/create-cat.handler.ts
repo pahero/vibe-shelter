@@ -149,6 +149,7 @@ export class CreateCatHandler {
       adoptionContract: cat.adoptionContract,
       adoptionForm: cat.adoptionForm,
       felvFivTestDone: cat.felvFivTestDone,
+      traces: cat.traces,
       intakeDetails: cat.intakeDetails,
       intakeSource: cat.intakeSource,
       updatedAt: cat.updatedAt.toISOString(),

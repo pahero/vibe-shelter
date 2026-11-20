@@ -373,6 +373,7 @@ test.describe("cats UI", () => {
     await page.getByLabel("Cat name").fill(updatedName);
     await page.getByLabel("Color").fill(updatedColor);
     await page.getByLabel("Adopter country").selectOption("DE");
+    await page.getByRole("checkbox", { name: "Traces" }).check();
     await page.getByRole("button", { name: "Save details" }).click();
 
     await expect(page.getByText("Cat details were updated.")).toBeVisible();
@@ -385,6 +386,8 @@ test.describe("cats UI", () => {
       details.getByText(updatedColor, { exact: true }),
     ).toBeVisible();
     await expect(details.getByText("Germany", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Edit cat profile" }).click();
+    await expect(page.getByRole("checkbox", { name: "Traces" })).toBeChecked();
   });
 
   test("user can add a second photo and make it the primary photo", async ({

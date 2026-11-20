@@ -36,6 +36,7 @@ describe("UpdateCatDto.toCommand", () => {
       adoptionContract: true,
       adoptionForm: false,
       felvFivTestDone: true,
+      traces: true,
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-id",
     });
@@ -64,6 +65,7 @@ describe("UpdateCatDto.toCommand", () => {
       adoptionContract: true,
       adoptionForm: false,
       felvFivTestDone: true,
+      traces: true,
       sterilizationStatus: "STERILIZED",
       currentLocationId: "location-id",
     });

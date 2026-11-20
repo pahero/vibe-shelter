@@ -33,6 +33,7 @@ export type CatCard = {
   adoptionContract: boolean;
   adoptionForm: boolean;
   felvFivTestDone: boolean;
+  traces: boolean;
   intakeDetails: string | null;
   intakeSource: import("@prisma/client").CatIntakeSource | null;
   createdByUserId: string | null;

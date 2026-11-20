@@ -36,6 +36,7 @@ const catEventTypes = [
   "adoption_contract_changed",
   "adoption_form_changed",
   "felv_fiv_test_done_changed",
+  "traces_changed",
   "flight_candidate_changed",
   "sterilization_status_changed",
   "current_location_changed",
