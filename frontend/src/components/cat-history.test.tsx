@@ -89,6 +89,7 @@ describe("CatHistory", () => {
     ["pre_payer_name_changed", "Name of pre-payer changed"],
     ["paid_by_adopter_changed", "Paid by adopter changed"],
     ["adoption_contract_changed", "Adoption contract changed"],
+    ["traces_changed", "Traces changed"],
     ["adoption_form_changed", "Adoption form (Selbstauskunft) changed"],
   ])("maps %s to its readable audit label", (eventType, label) => {
     expect(auditEventLabel({ ...event, eventType })).toBe(label);

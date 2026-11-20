@@ -200,6 +200,7 @@ model Cat {
   adoptionContract      Boolean               @default(false)
   adoptionForm          Boolean               @default(false)
   felvFivTestDone       Boolean               @default(false)
+  traces                Boolean               @default(false)
   isFlightCandidate     Boolean               @default(false)
   trelloUrl             String?               @unique
   sterilizationStatus   SterilizationStatus   @default(UNKNOWN)

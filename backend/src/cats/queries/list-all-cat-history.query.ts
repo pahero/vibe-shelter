@@ -155,6 +155,7 @@ export class ListAllCatHistoryQuery {
           case "adoption_contract_changed":
           case "adoption_form_changed":
           case "felv_fiv_test_done_changed":
+          case "traces_changed":
           case "flight_candidate_changed":
           case "sterilization_status_changed":
           case "current_location_changed":

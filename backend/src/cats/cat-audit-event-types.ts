@@ -30,6 +30,7 @@ export const CAT_AUDIT_EVENT_TYPES = {
   adoptionContract: "adoption_contract_changed",
   adoptionForm: "adoption_form_changed",
   felvFivTestDone: "felv_fiv_test_done_changed",
+  traces: "traces_changed",
   flightCandidate: "flight_candidate_changed",
   sterilizationStatus: "sterilization_status_changed",
   currentLocationId: "current_location_changed",
@@ -107,6 +108,7 @@ export const CAT_AUDIT_EDITABLE_FIELDS = [
   "adoptionContract",
   "adoptionForm",
   "felvFivTestDone",
+  "traces",
   "sterilizationStatus",
   "currentLocationId",
 ] as const;
@@ -141,6 +143,7 @@ export const CAT_AUDIT_FIELD_EVENT_TYPES: Record<
   adoptionContract: CAT_AUDIT_EVENT_TYPES.adoptionContract,
   adoptionForm: CAT_AUDIT_EVENT_TYPES.adoptionForm,
   felvFivTestDone: CAT_AUDIT_EVENT_TYPES.felvFivTestDone,
+  traces: CAT_AUDIT_EVENT_TYPES.traces,
   sterilizationStatus: CAT_AUDIT_EVENT_TYPES.sterilizationStatus,
   currentLocationId: CAT_AUDIT_EVENT_TYPES.currentLocationId,
 };

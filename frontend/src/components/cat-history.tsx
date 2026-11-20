@@ -21,6 +21,7 @@ const eventLabels: Record<string, string> = {
   paid_by_adopter_changed: "Paid by adopter changed",
   adoption_contract_changed: "Adoption contract changed",
   adoption_form_changed: "Adoption form (Selbstauskunft) changed",
+  traces_changed: "Traces changed",
 };
 
 type CatHistoryProps = {

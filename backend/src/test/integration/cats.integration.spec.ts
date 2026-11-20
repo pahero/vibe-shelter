@@ -819,11 +819,12 @@ describe("Cats endpoints", () => {
 
     const response = await authAgent
       .patch(`/api/cats/${cat.id}`)
-      .send({ name: "Updated cat", felvFivTestDone: true })
+      .send({ name: "Updated cat", felvFivTestDone: true, traces: true })
       .expect(200);
 
     expect(response.body.name).toBe("Updated cat");
     expect(response.body.felvFivTestDone).toBe(true);
+    expect(response.body.traces).toBe(true);
 
     const history = await authAgent
       .get(`/api/cats/${cat.id}/history`)
@@ -840,10 +841,27 @@ describe("Cats endpoints", () => {
           oldValue: "false",
           newValue: "true",
         }),
+        expect.objectContaining({
+          eventType: "traces_changed",
+          oldValue: "false",
+          newValue: "true",
+        }),
       ]),
     );
     expect(history.body.data[0].actorId).toBe(authUser.id);
     expect(history.body.data[0].actorFullName).toEqual(expect.any(String));
+  });
+
+  it("rejects invalid traces values and accepts false", async () => {
+    const cat = await createCat(prisma, { name: unique("traces") });
+    for (const traces of ["true", null]) {
+      await authAgent.patch(`/api/cats/${cat.id}`).send({ traces }).expect(400);
+    }
+    const response = await authAgent
+      .patch(`/api/cats/${cat.id}`)
+      .send({ traces: false })
+      .expect(200);
+    expect(response.body.traces).toBe(false);
   });
 
   it("PATCH /api/cats/:id rejects a non-boolean FeLV/FIV test status", async () => {

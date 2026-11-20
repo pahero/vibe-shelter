@@ -102,6 +102,7 @@ export type CatCard = {
   adoptionContract?: boolean;
   adoptionForm?: boolean;
   felvFivTestDone: boolean;
+  traces: boolean;
   intakeDetails: string | null;
   intakeSource: IntakeSource | null;
   updatedAt: string;
@@ -381,6 +382,7 @@ export type CreateCatDto = {
 
 export type UpdateCatDto = Partial<CreateCatDto> & {
   felvFivTestDone?: boolean;
+  traces?: boolean;
   preparationFeePrice?: number | null;
   preparationFeePaid?: boolean;
   flightFeePrice?: number | null;

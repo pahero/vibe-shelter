@@ -1,4 +1,10 @@
-import { IsBoolean, IsIn, IsOptional, IsString } from "class-validator";
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from "class-validator";
 import { BadRequestException } from "@nestjs/common";
 
 export type UpdateCatCommand = {
@@ -36,6 +42,7 @@ export type UpdateCatCommand = {
   adoptionContract?: boolean;
   adoptionForm?: boolean;
   felvFivTestDone?: boolean;
+  traces?: boolean;
   sterilizationStatus?: "STERILIZED" | "NOT_STERILIZED" | "UNKNOWN";
   currentLocationId?: string;
 };
@@ -165,6 +172,10 @@ export class UpdateCatDto {
   @IsBoolean()
   @IsOptional()
   felvFivTestDone?: boolean;
+
+  @IsBoolean()
+  @ValidateIf((_, value: unknown) => value !== undefined)
+  traces?: boolean;
 
   @IsIn(["STERILIZED", "NOT_STERILIZED", "UNKNOWN"])
   @IsOptional()
@@ -327,6 +338,7 @@ export class UpdateCatDto {
       ...(this.felvFivTestDone !== undefined
         ? { felvFivTestDone: this.felvFivTestDone }
         : {}),
+      ...(this.traces !== undefined ? { traces: this.traces } : {}),
       ...(this.sterilizationStatus !== undefined
         ? {
             sterilizationStatus: this

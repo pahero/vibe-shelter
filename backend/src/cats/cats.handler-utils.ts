@@ -101,6 +101,7 @@ export function toCatUpdateData(data: UpdateCatCommand) {
     ...(data.felvFivTestDone !== undefined
       ? { felvFivTestDone: data.felvFivTestDone }
       : {}),
+    ...(data.traces !== undefined ? { traces: data.traces } : {}),
     ...(data.sterilizationStatus !== undefined
       ? {
           sterilizationStatus: data.sterilizationStatus as

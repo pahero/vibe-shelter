@@ -103,6 +103,7 @@ type CatEditForm = {
   adoptionContract: boolean;
   adoptionForm: boolean;
   felvFivTestDone: boolean;
+  traces: boolean;
   intakeDetails: string;
   intakeSource: IntakeSource | "";
   sterilizationStatus: SterilizationStatus;
@@ -158,6 +159,7 @@ function catToEditForm(cat: CatCardType): CatEditForm {
     adoptionContract: cat.adoptionContract ?? false,
     adoptionForm: cat.adoptionForm ?? false,
     felvFivTestDone: cat.felvFivTestDone,
+    traces: cat.traces,
     intakeDetails: cat.intakeDetails ?? "",
     intakeSource: cat.intakeSource ?? "",
     sterilizationStatus: cat.sterilizationStatus,
@@ -928,6 +930,7 @@ export default function CatProfilePage() {
         adoptionContract: editForm.adoptionContract,
         adoptionForm: editForm.adoptionForm,
         felvFivTestDone: editForm.felvFivTestDone,
+        traces: editForm.traces,
         intakeDetails: editForm.intakeDetails.trim() || null,
         intakeSource: editForm.intakeSource || null,
         sterilizationStatus: editForm.sterilizationStatus,
@@ -2176,6 +2179,21 @@ export default function CatProfilePage() {
                             />
                             FIV/FeLV test
                           </label>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                            <input
+                              type="checkbox"
+                              checked={editForm.traces}
+                              onChange={(event) =>
+                                setEditForm((prev) =>
+                                  prev
+                                    ? { ...prev, traces: event.target.checked }
+                                    : prev,
+                                )
+                              }
+                              className="h-4 w-4 rounded border-[#d4c7b4] accent-[#d05a2c] focus:ring-[#d05a2c]"
+                            />
+                            Traces
+                          </label>
                           <label className="grid gap-1 text-sm font-medium text-gray-800">
                             Sponsor name
                             <input
@@ -2463,6 +2481,7 @@ export default function CatProfilePage() {
                           ],
                           ["Passport", cat.passport ? "✅" : "❌"],
                           ["FIV/FeLV test", cat.felvFivTestDone ? "✅" : "❌"],
+                          ["Traces", cat.traces ? "✅" : "❌"],
                           ["Sponsor name", cat.sponsorName || "Not set"],
                           ["Comment", cat.intakeDetails || "Not set"],
                           ["Adopter name", cat.adopterName || "Not set"],
